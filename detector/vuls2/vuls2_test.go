@@ -148,6 +148,124 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "suse.linux.enterprise.server -> suse.linux.enterprise",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "sles-15",
+					Family:     "suse.linux.enterprise.server",
+					Release:    "15.3",
+					RunningKernel: models.Kernel{
+						Release:        "5.3.18-59.37-default",
+						Version:        "",
+						RebootRequired: false,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "sles-release",
+							Version: "15.3",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "sles-15",
+				Family:      ecosystemTypes.Ecosystem("suse.linux.enterprise"),
+				Release:     "15.3",
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.3.18-59.37-default",
+					Version:        "",
+					RebootRequired: false,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "sles-release",
+						Version: "15.3",
+					},
+				},
+			},
+		},
+		{
+			name: "suse.linux.enterprise.desktop -> suse.linux.enterprise",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "sled-15",
+					Family:     "suse.linux.enterprise.desktop",
+					Release:    "15.3",
+					RunningKernel: models.Kernel{
+						Release:        "5.3.18-59.37-default",
+						Version:        "",
+						RebootRequired: false,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "sled-release",
+							Version: "15.3",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "sled-15",
+				Family:      ecosystemTypes.Ecosystem("suse.linux.enterprise"),
+				Release:     "15.3",
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.3.18-59.37-default",
+					Version:        "",
+					RebootRequired: false,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "sled-release",
+						Version: "15.3",
+					},
+				},
+			},
+		},
+		{
+			name: "opensuse:tumbleweed",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "tumbleweed",
+					Family:     "opensuse",
+					Release:    "tumbleweed",
+					RunningKernel: models.Kernel{
+						Release:        "5.3.18-59.37-default",
+						Version:        "",
+						RebootRequired: false,
+					},
+					Packages: models.Packages{
+						"cron": models.Package{
+							Name:    "openSUSE-release",
+							Version: "20210101",
+							Release: "0",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "tumbleweed",
+				Family:      ecosystemTypes.EcosystemTypeOpenSUSETumbleweed,
+
+				Kernel: scanTypes.Kernel{
+					Release:        "5.3.18-59.37-default",
+					Version:        "",
+					RebootRequired: false,
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "openSUSE-release",
+						Version: "20210101",
+						Release: "0",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -6201,6 +6319,1612 @@ func Test_postConvert(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "suse: prefer unfixed to fixed",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.3.18-59.37-default",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "binutils",
+							Version: "2.37",
+							Release: "7.26.1",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "sles-release",
+							Version: "15.3",
+							Release: "55.4.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2022-4285",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "SUSE-CU-2023:3179-1",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2022-4285"): {
+												{
+													Content: advisoryContentTypes.Content{
+														ID: "SUSE-CU-2023:3179-1",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2022-4285",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2022-4285"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2022-4285",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "SUSE",
+																CVSSv31: toPtr(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterias: []criteriaTypes.FilteredCriteria{
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{1},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: true,
+																					FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																						Class: vcFixStatusTypes.ClassFixed,
+																					}),
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "binutils",
+																							Architectures: []string{
+																								"aarch64",
+																								"ppc64le",
+																								"s390x",
+																								"x86_64",
+																							},
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPM,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								LessThan: "0:2.41-150100.7.46.1",
+																							},
+																						},
+																						Fixed: []string{"0:2.41-150100.7.46.1"},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{0},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{1},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: true,
+																					FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																						Class: vcFixStatusTypes.ClassUnfixed,
+																					}),
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "binutils",
+																							Architectures: []string{
+																								"aarch64",
+																								"ppc64le",
+																								"s390x",
+																								"x86_64",
+																							},
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPM,
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{0},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2022-4285": {
+					CveID:       "CVE-2022-4285",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "binutils",
+							NotFixedYet: true,
+						},
+					},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "SUSE-CU-2023:3179-1",
+							Issued:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.SUSE: []models.CveContent{
+							{
+								Type:          models.SUSE,
+								CveID:         "CVE-2022-4285",
+								Cvss3Score:    5.5,
+								Cvss3Vector:   "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://www.suse.com/security/cve/CVE-2022-4285.html",
+								References: models.References{
+									{
+										Link:   "https://www.suse.com/security/cve/SUSE-CU-2023:3179-1.html",
+										Source: "SUSE",
+										RefID:  "SUSE-CU-2023:3179-1",
+									},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2022-4285\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "suse: kernel livepatch 1, in less-than range",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.3.17-59.37-default",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "kernel-default",
+							Version: "5.3.17",
+							Release: "59.37.2",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "sles-release",
+							Version: "15.3",
+							Release: "55.4.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2021-33655",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2021-33655",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2021-33655"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2021-33655",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterias: []criteriaTypes.FilteredCriteria{
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{1},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterias: []criteriaTypes.FilteredCriteria{
+																		{
+																			Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																			Criterias: []criteriaTypes.FilteredCriteria{
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: true,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.43.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{},
+																							},
+																						},
+																					},
+																				},
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: true,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.46.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{},
+																							},
+																						},
+																					},
+																				},
+																			},
+																			Criterions: []criterionTypes.FilteredCriterion{
+																				{
+																					Criterion: criterionTypes.Criterion{
+																						Type: criterionTypes.CriterionTypeVersion,
+																						Version: toPtr(versioncriterionTypes.Criterion{
+																							Vulnerable: true,
+																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																								Class: vcFixStatusTypes.ClassFixed,
+																							}),
+																							Package: vcPackageTypes.Package{
+																								Type: vcPackageTypes.PackageTypeBinary,
+																								Binary: &vcBinaryPackageTypes.Package{
+																									Name: "kernel-default",
+																								},
+																							},
+																							Affected: &vcAffectedTypes.Affected{
+																								Type: vcAffectedRangeTypes.RangeTypeRPM,
+																								Range: []vcAffectedRangeTypes.Range{
+																									{
+																										LessThan: "0:5.3.18-59.40.1",
+																									},
+																								},
+																							},
+																						}),
+																					},
+																					Accepts: criterionTypes.AcceptQueries{
+																						Version: []int{0},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2021-33655": {
+					CveID:       "CVE-2021-33655",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "kernel-default",
+							NotFixedYet: false,
+						},
+					},
+					CveContents: models.CveContents{
+						models.SUSE: []models.CveContent{
+							{
+								Type:         models.SUSE,
+								CveID:        "CVE-2021-33655",
+								SourceLink:   "https://www.suse.com/security/cve/CVE-2021-33655.html",
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2021-33655\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "suse: kernel livepatch 2, hit equals",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.3.17-59.37-default",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "kernel-default",
+							Version: "5.3.18",
+							Release: "150300.59.43.1",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "sles-release",
+							Version: "15.3",
+							Release: "55.4.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2021-33655",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2021-33655",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2021-33655"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2021-33655",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterias: []criteriaTypes.FilteredCriteria{
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{1},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterias: []criteriaTypes.FilteredCriteria{
+																		{
+																			Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																			Criterias: []criteriaTypes.FilteredCriteria{
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: true,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.43.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{0},
+																							},
+																						},
+																					},
+																				},
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: true,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.46.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{},
+																							},
+																						},
+																					},
+																				},
+																			},
+																			Criterions: []criterionTypes.FilteredCriterion{
+																				{
+																					Criterion: criterionTypes.Criterion{
+																						Type: criterionTypes.CriterionTypeVersion,
+																						Version: toPtr(versioncriterionTypes.Criterion{
+																							Vulnerable: true,
+																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																								Class: vcFixStatusTypes.ClassFixed,
+																							}),
+																							Package: vcPackageTypes.Package{
+																								Type: vcPackageTypes.PackageTypeBinary,
+																								Binary: &vcBinaryPackageTypes.Package{
+																									Name: "kernel-default",
+																								},
+																							},
+																							Affected: &vcAffectedTypes.Affected{
+																								Type: vcAffectedRangeTypes.RangeTypeRPM,
+																								Range: []vcAffectedRangeTypes.Range{
+																									{
+																										LessThan: "0:5.3.18-59.40.1",
+																									},
+																								},
+																							},
+																						}),
+																					},
+																					Accepts: criterionTypes.AcceptQueries{
+																						Version: []int{},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2021-33655": {
+					CveID:       "CVE-2021-33655",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "kernel-default",
+							NotFixedYet: false,
+						},
+					},
+					CveContents: models.CveContents{
+						models.SUSE: []models.CveContent{
+							{
+								Type:         models.SUSE,
+								CveID:        "CVE-2021-33655",
+								SourceLink:   "https://www.suse.com/security/cve/CVE-2021-33655.html",
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2021-33655\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "suse: kernel livepatch 3, livepatch is vulnerable",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.3.17-59.37-default",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "kernel-default",
+							Version: "5.3.18",
+							Release: "150300.59.43.1",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "kernel-livepatch-5_3_18-150300_59_43-default",
+							Version: "15",
+							Release: "150300.2.2-0",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "sles-release",
+							Version: "15.3",
+							Release: "55.4.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2021-33655",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2021-33655",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2021-33655"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2021-33655",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterias: []criteriaTypes.FilteredCriteria{
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{2},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterias: []criteriaTypes.FilteredCriteria{
+																		{
+																			Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																			Criterias: []criteriaTypes.FilteredCriteria{
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{1},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: false,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.43.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{0},
+																							},
+																						},
+																					},
+																				},
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: true,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.46.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{},
+																							},
+																						},
+																					},
+																				},
+																			},
+																			Criterions: []criterionTypes.FilteredCriterion{
+																				{
+																					Criterion: criterionTypes.Criterion{
+																						Type: criterionTypes.CriterionTypeVersion,
+																						Version: toPtr(versioncriterionTypes.Criterion{
+																							Vulnerable: true,
+																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																								Class: vcFixStatusTypes.ClassFixed,
+																							}),
+																							Package: vcPackageTypes.Package{
+																								Type: vcPackageTypes.PackageTypeBinary,
+																								Binary: &vcBinaryPackageTypes.Package{
+																									Name: "kernel-default",
+																								},
+																							},
+																							Affected: &vcAffectedTypes.Affected{
+																								Type: vcAffectedRangeTypes.RangeTypeRPM,
+																								Range: []vcAffectedRangeTypes.Range{
+																									{
+																										LessThan: "0:5.3.18-59.40.1",
+																									},
+																								},
+																							},
+																						}),
+																					},
+																					Accepts: criterionTypes.AcceptQueries{
+																						Version: []int{},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2021-33655": {
+					CveID:       "CVE-2021-33655",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "kernel-default",
+							NotFixedYet: false,
+						},
+						{
+							Name:        "kernel-livepatch-5_3_18-150300_59_43-default",
+							NotFixedYet: false,
+						},
+					},
+					CveContents: models.CveContents{
+						models.SUSE: []models.CveContent{
+							{
+								Type:         models.SUSE,
+								CveID:        "CVE-2021-33655",
+								SourceLink:   "https://www.suse.com/security/cve/CVE-2021-33655.html",
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2021-33655\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "suse: kernel livepatch 4, not vulnerable by livepatch",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Kernel: scanTypes.Kernel{
+						Release: "5.3.17-59.37-default",
+					},
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "kernel-default",
+							Version: "5.3.18",
+							Release: "150300.59.43.1",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "kernel-livepatch-5_3_18-150300_59_43-default",
+							Version: "16",
+							Release: "150300.2.2-0",
+							Arch:    "x86_64",
+						},
+						{
+							Name:    "sles-release",
+							Version: "15.3",
+							Release: "55.4.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2021-33655",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2021-33655",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("CVE-2021-33655"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2021-33655",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterias: []criteriaTypes.FilteredCriteria{
+														{
+															Operator: criteriaTypes.CriteriaOperatorTypeAND,
+															Criterias: []criteriaTypes.FilteredCriteria{
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterions: []criterionTypes.FilteredCriterion{
+																		{
+																			Criterion: criterionTypes.Criterion{
+																				Type: criterionTypes.CriterionTypeVersion,
+																				Version: toPtr(versioncriterionTypes.Criterion{
+																					Vulnerable: false,
+																					Package: vcPackageTypes.Package{
+																						Type: vcPackageTypes.PackageTypeBinary,
+																						Binary: &vcBinaryPackageTypes.Package{
+																							Name: "sles-release",
+																						},
+																					},
+																					Affected: &vcAffectedTypes.Affected{
+																						Type: vcAffectedRangeTypes.RangeTypeRPMVersionOnly,
+																						Range: []vcAffectedRangeTypes.Range{
+																							{
+																								Equal: "15.3",
+																							},
+																						},
+																					},
+																				}),
+																			},
+																			Accepts: criterionTypes.AcceptQueries{
+																				Version: []int{2},
+																			},
+																		},
+																	},
+																},
+																{
+																	Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																	Criterias: []criteriaTypes.FilteredCriteria{
+																		{
+																			Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																			Criterias: []criteriaTypes.FilteredCriteria{
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_43-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: false,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.43.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{0},
+																							},
+																						},
+																					},
+																				},
+																				{
+																					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+																					Criterias: []criteriaTypes.FilteredCriteria{
+																						{
+																							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+																							Criterions: []criterionTypes.FilteredCriterion{
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeVersion,
+																										Version: toPtr(versioncriterionTypes.Criterion{
+																											Vulnerable: true,
+																											FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																												Class: vcFixStatusTypes.ClassFixed,
+																											}),
+																											Package: vcPackageTypes.Package{
+																												Type: vcPackageTypes.PackageTypeBinary,
+																												Binary: &vcBinaryPackageTypes.Package{
+																													Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																												},
+																											},
+																											Affected: &vcAffectedTypes.Affected{
+																												Type: vcAffectedRangeTypes.RangeTypeRPM,
+																												Range: []vcAffectedRangeTypes.Range{
+																													{
+																														LessThan: "0:16-150300.2.2-0",
+																													},
+																												},
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										Version: []int{},
+																									},
+																								},
+																								{
+																									Criterion: criterionTypes.Criterion{
+																										Type: criterionTypes.CriterionTypeNoneExist,
+																										NoneExist: toPtr(noneexistcriterionTypes.Criterion{
+																											Binary: &necBinaryPackageTypes.Package{
+																												Name: "kernel-livepatch-5_3_18-150300_59_46-default",
+																											},
+																										}),
+																									},
+																									Accepts: criterionTypes.AcceptQueries{
+																										NoneExist: true,
+																									},
+																								},
+																							},
+																						},
+																					},
+																					Criterions: []criterionTypes.FilteredCriterion{
+																						{
+																							Criterion: criterionTypes.Criterion{
+																								Type: criterionTypes.CriterionTypeVersion,
+																								Version: toPtr(versioncriterionTypes.Criterion{
+																									Vulnerable: true,
+																									FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																										Class: vcFixStatusTypes.ClassFixed,
+																									}),
+																									Package: vcPackageTypes.Package{
+																										Type: vcPackageTypes.PackageTypeBinary,
+																										Binary: &vcBinaryPackageTypes.Package{
+																											Name: "kernel-default",
+																										},
+																									},
+																									Affected: &vcAffectedTypes.Affected{
+																										Type: vcAffectedRangeTypes.RangeTypeRPM,
+																										Range: []vcAffectedRangeTypes.Range{
+																											{
+																												Equal: "0:5.3.18-150300.59.46.1",
+																											},
+																										},
+																									},
+																								}),
+																							},
+																							Accepts: criterionTypes.AcceptQueries{
+																								Version: []int{},
+																							},
+																						},
+																					},
+																				},
+																			},
+																			Criterions: []criterionTypes.FilteredCriterion{
+																				{
+																					Criterion: criterionTypes.Criterion{
+																						Type: criterionTypes.CriterionTypeVersion,
+																						Version: toPtr(versioncriterionTypes.Criterion{
+																							Vulnerable: true,
+																							FixStatus: toPtr(vcFixStatusTypes.FixStatus{
+																								Class: vcFixStatusTypes.ClassFixed,
+																							}),
+																							Package: vcPackageTypes.Package{
+																								Type: vcPackageTypes.PackageTypeBinary,
+																								Binary: &vcBinaryPackageTypes.Package{
+																									Name: "kernel-default",
+																								},
+																							},
+																							Affected: &vcAffectedTypes.Affected{
+																								Type: vcAffectedRangeTypes.RangeTypeRPM,
+																								Range: []vcAffectedRangeTypes.Range{
+																									{
+																										LessThan: "0:5.3.18-59.40.1",
+																									},
+																								},
+																							},
+																						}),
+																					},
+																					Accepts: criterionTypes.AcceptQueries{
+																						Version: []int{},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
 		},
 	}
 	for _, tt := range tests {
