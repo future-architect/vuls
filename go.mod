@@ -42,7 +42,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nlopes/slack v0.6.0
 	github.com/olekukonko/tablewriter v1.1.3
-	github.com/package-url/packageurl-go v0.1.4
+	github.com/package-url/packageurl-go v0.1.3
 	github.com/parnurzeal/gorequest v0.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5

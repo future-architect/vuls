@@ -720,8 +720,8 @@ github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJw
 github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgrGnAve2nCC8+7h8Q0M=
 github.com/owenrumney/squealer v1.2.12 h1:6VQxQ323q7q0eKNP5p7MX4nbTW1z8wK44YvyHLwDcx0=
 github.com/owenrumney/squealer v1.2.12/go.mod h1:yBdddxW+31mPHXgjOAYiqCtK1/f1S3o5Jq6S6vZGtxc=
-github.com/package-url/packageurl-go v0.1.4 h1:RHfiiN1SSY+Kic537DXch6fy593rxGJW6WDzAiOwNdk=
-github.com/package-url/packageurl-go v0.1.4/go.mod h1:nKAWB8E6uk1MHqiS/lQb9pYBGH2+mdJ2PJc2s50dQY0=
+github.com/package-url/packageurl-go v0.1.3 h1:4juMED3hHiz0set3Vq3KeQ75KD1avthoXLtmE3I0PLs=
+github.com/package-url/packageurl-go v0.1.3/go.mod h1:nKAWB8E6uk1MHqiS/lQb9pYBGH2+mdJ2PJc2s50dQY0=
 github.com/pandatix/go-cvss v0.6.2 h1:TFiHlzUkT67s6UkelHmK6s1INKVUG7nlKYiWWDTITGI=
 github.com/pandatix/go-cvss v0.6.2/go.mod h1:jDXYlQBZrc8nvrMUVVvTG8PhmuShOnKrxP53nOFkt8Q=
 github.com/parnurzeal/gorequest v0.3.0 h1:SoFyqCDC9COr1xuS6VA8fC8RU7XyrJZN2ona1kEX7FI=
