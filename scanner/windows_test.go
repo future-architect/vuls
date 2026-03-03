@@ -662,6 +662,22 @@ ProviderName : msu
 			},
 			wantErr: false,
 		},
+		{
+			name: "include MSG:UnableToDownload warning",
+			args: args{stdout: "WARNING: MSG:UnableToDownload \r\n\xaehttps://go.microsoft.com/fwlink/?LinkID=627338&clcid=0x409\xaf \xae\xaf\n\r\n\r\nName         : Oracle VM VirtualBox Guest Additions 6.1.0\r\nVersion      : 6.1.0.0\r\nProviderName : Programs\r\nPublisher    : Oracle Corporation\r\n\r\nName         : Vim 8.2 (x64)\r\nVersion      : 8.2\r\nProviderName : Programs\r\nPublisher    : Bram Moolenaar et al.\r\n\r\n\r\n\r\n\r\n"},
+			want: models.Packages{
+				"Oracle VM VirtualBox Guest Additions 6.1.0": {
+					Name:    "Oracle VM VirtualBox Guest Additions 6.1.0",
+					Version: "6.1.0.0",
+					Vendor:  "Oracle Corporation",
+				},
+				"Vim 8.2 (x64)": {
+					Name:    "Vim 8.2 (x64)",
+					Version: "8.2",
+					Vendor:  "Bram Moolenaar et al.",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
