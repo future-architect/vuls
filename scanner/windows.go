@@ -283,7 +283,6 @@ func parseGetComputerInfo(stdout string) (osInfo, error) {
 			}
 			o.installationType = strings.TrimSpace(rhs)
 		default:
-			return osInfo{}, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"WindowsProductName : <ProductName>", "OsVersion : <Version>", "WindowsEditionId : <EditionId>", "OsCSDVersion : <CSDVersion>", "CsSystemType : <SystemType>", "WindowsInstallationType : <InstallationType>"}, line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -503,7 +502,6 @@ func parseWmiObject(stdout string) (osInfo, error) {
 				return osInfo{}, xerrors.Errorf("Failed to detect Installation Type from DomainRole. err: %s is invalid DomainRole", domainRole)
 			}
 		default:
-			return osInfo{}, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"Caption : <Caption>", "Version : <Version>", "OperatingSystemSKU : <OperatingSystemSKU>", "CSDVersion : <CSDVersion>", "SystemType : <SystemType>", "DomainRole : <DomainRole>"}, line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -586,7 +584,6 @@ func parseRegistry(stdout string) (osInfo, error) {
 			}
 			o.arch = strings.TrimSpace(rhs)
 		default:
-			return osInfo{}, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"ProductName : <ProductName>", "CurrentVersion : <Version>", "CurrentMajorVersionNumber : <MajorVersion>", "CurrentMinorVersionNumber : <MinorVersion>", "CurrentBuildNumber : <Build>", "UBR : <Revision>", "EditionID : <EditionID>", "CSDVersion : <CSDVersion>", "InstallationType : <InstallationType>", "PROCESSOR_ARCHITECTURE : <PROCESSOR_ARCHITECTURE>"}, line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -1200,7 +1197,6 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 			}
 			vendor = strings.TrimSpace(rhs)
 		default:
-			return nil, nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"Name : <PackageName>", "Version : <Version>", "ProviderName : <ProviderName>", "Publisher : <Publisher>"}, line)
 		}
 	}
 
@@ -1240,7 +1236,6 @@ func (w *windows) parseRegistryPublishers(stdout string) (map[string]string, err
 				publisher = strings.TrimSpace(rhs)
 			}
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"DisplayName : <DisplayName>", "Publisher : <Publisher>"}, line)
 		}
 	}
 
@@ -1370,7 +1365,6 @@ func (w *windows) parseGetHotfix(stdout string) ([]string, error) {
 			}
 			kbs = append(kbs, strings.TrimPrefix(strings.TrimSpace(rhs), "KB"))
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", "HotFixID : <KBID>", line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -1399,7 +1393,6 @@ func (w *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 				kbs = append(kbs, m[1])
 			}
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", "Name : <PackageName>", line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -1471,7 +1464,6 @@ func (w *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
 				}
 			}
 		default:
-			return nil, xerrors.Errorf("Failed to parse property. expected: %q, actual: %q", []string{"Title : <Title>", "Operation : <Operation>", "ResultCode : <ResultCode>"}, line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
