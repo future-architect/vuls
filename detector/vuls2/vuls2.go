@@ -19,6 +19,7 @@ import (
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
+	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
@@ -140,8 +141,8 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	return scanTypes.ScanResult{
 		JSONVersion: 0,
 		ServerName:  sr.ServerName,
-		Family:      ecosystemTypes.Ecosystem(sr.Family),
-		Release:     sr.Release,
+		Family:      ecosystemTypes.Ecosystem(toVuls2Family(sr.Family, sr.Release)),
+		Release:     toVuls2Release(sr.Family, sr.Release),
 
 		Kernel: scanTypes.Kernel{
 			Release:        sr.RunningKernel.Release,
@@ -559,6 +560,10 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 		switch fcn.Criterion.Version.Package.Type {
 		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
+			if !cn.Criterion.Version.Vulnerable {
+				continue
+			}
+
 			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
 				if fcn.Criterion.Version.Affected == nil {
 					return vcAffectedRangeTypes.RangeTypeUnknown, ""
@@ -581,7 +586,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
 						}(),
 						FixedIn:     fixedIn,
-						NotFixedYet: fixedIn == "",
+						NotFixedYet: cn.Criterion.Version.FixStatus == nil || cn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
 					},
 				})
 			}
