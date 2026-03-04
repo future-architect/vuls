@@ -498,6 +498,23 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "SUSE",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeAmazon:
+		return models.Reference{
+			Link: func() string {
+				switch {
+				case strings.HasPrefix(da.AdvisoryID, "ALAS2023"):
+					return fmt.Sprintf("https://alas.aws.amazon.com/AL2023/ALAS%s.html", strings.TrimPrefix(da.AdvisoryID, "ALAS2023"))
+				case strings.HasPrefix(da.AdvisoryID, "ALAS2022"):
+					return fmt.Sprintf("https://alas.aws.amazon.com/AL2022/ALAS%s.html", strings.TrimPrefix(da.AdvisoryID, "ALAS2022"))
+				case strings.HasPrefix(da.AdvisoryID, "ALAS2"):
+					return fmt.Sprintf("https://alas.aws.amazon.com/AL2/ALAS%s.html", strings.TrimPrefix(da.AdvisoryID, "ALAS2"))
+				default:
+					return fmt.Sprintf("https://alas.aws.amazon.com/ALAS%s.html", strings.TrimPrefix(da.AdvisoryID, "ALAS"))
+				}
+			}(),
+			Source: "AMAZON",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
@@ -511,6 +528,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.Content.ID)
 	case models.Alpine:
 		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
+	case models.Amazon:
+		return fmt.Sprintf("https://explore.alas.aws.amazon.com/%s.html", v.Content.ID)
 	case models.Ubuntu, models.UbuntuAPI:
 		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
 	case models.Nvd:
@@ -846,7 +865,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			DetectionMethod: models.DetectionMethod("EPELMatch"),
 			SortOrder:       1,
 		}
-	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine,
+	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine, ecosystemTypes.EcosystemTypeAmazon,
 		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.OvalMatch
 	case ecosystemTypes.EcosystemTypeUbuntu:
