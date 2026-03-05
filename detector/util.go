@@ -17,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/oval"
 	"golang.org/x/xerrors"
 )
 
@@ -264,21 +263,13 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 }
 
 // ValidateDBs checks if the databases are accessible and can be closed properly
-func ValidateDBs(cveConf config.GoCveDictConf, ovalConf config.GovalDictConf, gostConf config.GostConf, exploitConf config.ExploitConf, metasploitConf config.MetasploitConf, kevulnConf config.KEVulnConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
+func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, exploitConf config.ExploitConf, metasploitConf config.MetasploitConf, kevulnConf config.KEVulnConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
 	cvec, err := newGoCveDictClient(&cveConf, logOpts)
 	if err != nil {
 		return xerrors.Errorf("Failed to new CVE client. err: %w", err)
 	}
 	if err := cvec.closeDB(); err != nil {
 		return xerrors.Errorf("Failed to close CVE DB. err: %w", err)
-	}
-
-	ovalc, err := oval.NewOVALClient(constant.ServerTypePseudo, ovalConf, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new OVAL client. err: %w", err)
-	}
-	if err := ovalc.CloseDB(); err != nil {
-		return xerrors.Errorf("Failed to close OVAL DB. err: %w", err)
 	}
 
 	gostc, err := gost.NewGostClient(gostConf, constant.ServerTypePseudo, logOpts)

@@ -20,7 +20,6 @@ import (
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/oval"
 	"github.com/future-architect/vuls/reporter"
 	"github.com/future-architect/vuls/util"
 	cvemodels "github.com/vulsio/go-cve-dictionary/models"
@@ -51,7 +50,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(&r, config.Conf.OvalDict, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
+		if err := DetectPkgCves(&r, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
@@ -318,8 +317,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 }
 
 // DetectPkgCves detects OS pkg cves
-// pass 3 configs
-func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
+func DetectPkgCves(r *models.ScanResult, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Alpine, constant.Amazon, constant.Ubuntu,
@@ -371,27 +369,27 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 	return nil
 }
 
-// isPkgCvesDetactable checks whether CVEs is detactable with gost and oval from the result
+// isPkgCvesDetactable checks whether CVEs is detactable with gost and vuls2 from the result
 func isPkgCvesDetactable(r *models.ScanResult) bool {
 	switch r.Family {
 	case constant.FreeBSD, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.ServerTypePseudo:
-		logging.Log.Infof("%s type. Skip OVAL, gost and vuls2 detection", r.Family)
+		logging.Log.Infof("%s type. Skip gost and vuls2 detection", r.Family)
 		return false
 	case constant.Windows:
 		return true
 	default:
 		if r.ScannedVia == "trivy" {
-			logging.Log.Infof("r.ScannedVia is trivy. Skip OVAL, gost and vuls2 detection")
+			logging.Log.Infof("r.ScannedVia is trivy. Skip gost and vuls2 detection")
 			return false
 		}
 
 		if r.Release == "" {
-			logging.Log.Infof("r.Release is empty. Skip OVAL, gost and vuls2 detection")
+			logging.Log.Infof("r.Release is empty. Skip gost and vuls2 detection")
 			return false
 		}
 
 		if len(r.Packages)+len(r.SrcPackages) == 0 {
-			logging.Log.Infof("Number of packages is 0. Skip OVAL, gost and vuls2 detection")
+			logging.Log.Infof("Number of packages is 0. Skip gost and vuls2 detection")
 			return false
 		}
 		return true
@@ -532,43 +530,6 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	}
 
 	return dict
-}
-
-func detectPkgsCvesWithOval(cnf config.GovalDictConf, r *models.ScanResult, logOpts logging.LogOpts) error {
-	client, err := oval.NewOVALClient(r.Family, cnf, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new OVAL client. err: %w", err)
-	}
-	defer func() {
-		if err := client.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close the OVAL DB. err: %+v", err)
-		}
-	}()
-
-	logging.Log.Debugf("Check if oval fetched: %s %s", r.Family, r.Release)
-	ok, err := client.CheckIfOvalFetched(r.Family, r.Release)
-	if err != nil {
-		return xerrors.Errorf("Failed to check if oval fetched: %w", err)
-	}
-	if !ok {
-		return xerrors.Errorf("OVAL entries of %s %s are not found. Fetch OVAL before reporting. For details, see `https://github.com/vulsio/goval-dictionary#usage`", r.Family, r.Release)
-	}
-
-	logging.Log.Debugf("Check if oval fresh: %s %s", r.Family, r.Release)
-	_, err = client.CheckIfOvalFresh(r.Family, r.Release)
-	if err != nil {
-		return xerrors.Errorf("Failed to check if oval fresh: %w", err)
-	}
-
-	logging.Log.Debugf("Fill with oval: %s %s", r.Family, r.Release)
-	nCVEs, err := client.FillWithOval(r)
-	if err != nil {
-		return xerrors.Errorf("Failed to fill with oval: %w", err)
-	}
-
-	logging.Log.Infof("%s: %d CVEs are detected with OVAL", r.FormatServerName(), nCVEs)
-
-	return nil
 }
 
 func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts logging.LogOpts) error {
