@@ -98,7 +98,6 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 	if p.configPath == "" {
 		for _, cnf := range []config.VulnDictInterface{
 			&config.Conf.CveDict,
-			&config.Conf.OvalDict,
 			&config.Conf.Gost,
 			&config.Conf.Exploit,
 			&config.Conf.Metasploit,
