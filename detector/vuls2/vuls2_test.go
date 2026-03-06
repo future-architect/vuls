@@ -2991,7 +2991,7 @@ func Test_postConvert(t *testing.T) {
 												},
 											},
 										},
-										sourceTypes.Fedora: {
+										sourceTypes.FedoraAPI: {
 											dataTypes.RootID("FEDORA-EPEL-2025-0123456789"): {
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -3143,7 +3143,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "FEDORA-EPEL-2025-0123456789",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
-										sourceTypes.Fedora: {
+										sourceTypes.FedoraAPI: {
 											dataTypes.RootID("FEDORA-EPEL-2025-0123456789"): {
 												{
 													Content: advisoryContentTypes.Content{
@@ -3210,7 +3210,7 @@ func Test_postConvert(t *testing.T) {
 												},
 											},
 										},
-										sourceTypes.Fedora: {
+										sourceTypes.FedoraAPI: {
 											dataTypes.RootID("FEDORA-EPEL-2025-0123456789"): {
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -3287,7 +3287,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0002",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.Fedora: {
+										sourceTypes.FedoraAPI: {
 											dataTypes.RootID("FEDORA-EPEL-2025-0123456789"): {
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -3330,7 +3330,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									Ecosystem: ecosystemTypes.Ecosystem("epel:9"),
 									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.Fedora: {
+										sourceTypes.FedoraAPI: {
 											{
 												Criteria: criteriaTypes.FilteredCriteria{
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -3479,7 +3479,7 @@ func Test_postConvert(t *testing.T) {
 								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"FEDORA-EPEL-2025-0123456789\",\"source_id\":\"fedora\",\"segment\":{\"ecosystem\":\"epel:9\"}}]",
+									"vuls2-sources": "[{\"root_id\":\"FEDORA-EPEL-2025-0123456789\",\"source_id\":\"fedora-api\",\"segment\":{\"ecosystem\":\"epel:9\"}}]",
 								},
 							},
 						},
@@ -3533,7 +3533,7 @@ func Test_postConvert(t *testing.T) {
 								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"FEDORA-EPEL-2025-0123456789\",\"source_id\":\"fedora\",\"segment\":{\"ecosystem\":\"epel:9\"}}]",
+									"vuls2-sources": "[{\"root_id\":\"FEDORA-EPEL-2025-0123456789\",\"source_id\":\"fedora-api\",\"segment\":{\"ecosystem\":\"epel:9\"}}]",
 								},
 							},
 						},
