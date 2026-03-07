@@ -323,7 +323,8 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Alpine, constant.Ubuntu,
-			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
+			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
+			constant.Debian, constant.Raspbian:
 			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
@@ -331,12 +332,7 @@ func DetectPkgCves(r *models.ScanResult, ovalCnf config.GovalDictConf, gostCnf c
 			if err := detectPkgsCvesWithOval(ovalCnf, r, logOpts); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with OVAL: %w", err)
 			}
-		case constant.Debian, constant.Raspbian, constant.Windows:
-			// gost(Debian Security Tracker) does not support Package for Raspbian, so skip it.
-			if r.Family == constant.Raspbian {
-				r = r.RemoveRaspbianPackFromResult()
-			}
-
+		case constant.Windows:
 			if err := detectPkgsCvesWithGost(gostCnf, r, logOpts); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 			}

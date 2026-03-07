@@ -35,6 +35,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/version"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
@@ -118,6 +119,9 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	pkgs := make(map[string]scanTypes.OSPackage)
 	for _, p := range sr.SrcPackages {
+		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+			continue
+		}
 		for _, bn := range p.BinaryNames {
 			pkgs[bn] = scanTypes.OSPackage{
 				SrcName:    p.Name,
@@ -126,6 +130,9 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 		}
 	}
 	for _, p := range sr.Packages {
+		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+			continue
+		}
 		base := pkgs[p.Name]
 		base.Name = p.Name
 		base.Version = preConvertBinaryVersion(sr.Family, p.Version)

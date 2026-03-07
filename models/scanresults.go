@@ -310,31 +310,6 @@ func (r ScanResult) IsContainer() bool {
 	return 0 < len(r.Container.ContainerID)
 }
 
-// RemoveRaspbianPackFromResult is for Raspberry Pi and removes the Raspberry Pi dedicated package from ScanResult.
-func (r ScanResult) RemoveRaspbianPackFromResult() *ScanResult {
-	if r.Family != constant.Raspbian {
-		return &r
-	}
-
-	packs := make(Packages)
-	for _, pack := range r.Packages {
-		if !IsRaspbianPackage(pack.Name, pack.Version) {
-			packs[pack.Name] = pack
-		}
-	}
-	srcPacks := make(SrcPackages)
-	for _, pack := range r.SrcPackages {
-		if !IsRaspbianPackage(pack.Name, pack.Version) {
-			srcPacks[pack.Name] = pack
-		}
-	}
-
-	r.Packages = packs
-	r.SrcPackages = srcPacks
-
-	return &r
-}
-
 // ClearFields clears a given fields of ScanResult
 func (r ScanResult) ClearFields(targetTagNames []string) ScanResult {
 	if len(targetTagNames) == 0 {
