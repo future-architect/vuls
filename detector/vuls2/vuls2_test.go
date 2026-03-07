@@ -7926,6 +7926,142 @@ func Test_postConvert(t *testing.T) {
 			},
 			want: models.VulnInfos{},
 		},
+		{
+			name: "debian: advisory without vulnerability",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:       "libxml2",
+							Version:    "2.9.14+dfsg-1.3~deb12u1",
+							SrcName:    "libxml2",
+							SrcVersion: "2.9.14+dfsg-1.3~deb12u1",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "DSA-5990-1",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "DSA-5990-1",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.DebianSecurityTrackerSalsa: {
+											dataTypes.RootID("DSA-5990-1"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "DSA-5990-1",
+														Description: "libxml2 security update",
+														Published:   new(time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("debian:12"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("debian:12"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.DebianSecurityTrackerSalsa: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "libxml2",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "2.9.14+dfsg-1.3~deb12u4",
+																			},
+																		},
+																		Fixed: []string{"2.9.14+dfsg-1.3~deb12u4"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"DSA-5990-1": {
+					CveID: "DSA-5990-1",
+					Confidences: models.Confidences{
+						{
+							Score:           100,
+							DetectionMethod: "DebianSecurityTrackerMatch",
+						},
+					},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "libxml2",
+							FixedIn:     "2.9.14+dfsg-1.3~deb12u4",
+							NotFixedYet: false,
+						},
+					},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "DSA-5990-1",
+							Description: "libxml2 security update",
+							Issued:      time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
+							Updated:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.DebianSecurityTracker: []models.CveContent{
+							{
+								Type:       models.DebianSecurityTracker,
+								CveID:      "DSA-5990-1",
+								Summary:    "libxml2 security update",
+								SourceLink: "https://security-tracker.debian.org/tracker/DSA-5990-1",
+								References: models.References{
+									{
+										Link:   "https://security-tracker.debian.org/tracker/DSA-5990-1",
+										Source: "DEBIAN",
+										RefID:  "DSA-5990-1",
+									},
+								},
+								Published:    time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional:     map[string]string{"vuls2-sources": `[{"root_id":"DSA-5990-1","source_id":"debian-security-tracker-salsa","segment":{"ecosystem":"debian:12"}}]`},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
