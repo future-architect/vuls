@@ -3116,7 +3116,7 @@ var nodePkgUniqueFilePathsSR = &models.ScanResult{
 			},
 		},
 	},
-	Optional: map[string]interface{}{"TRIVY_IMAGE_NAME": "myapp", "TRIVY_IMAGE_TAG": "latest"},
+	Optional: map[string]any{"TRIVY_IMAGE_NAME": "myapp", "TRIVY_IMAGE_TAG": "latest"},
 }
 
 func TestParseError(t *testing.T) {
