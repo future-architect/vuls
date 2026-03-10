@@ -39,9 +39,9 @@ func TestParse(t *testing.T) {
 			vulnJSON: includeDevDependenciesTrivy,
 			expected: includeDevDependenciesSR,
 		},
-		"nodePkgNoDuplication": {
-			vulnJSON: nodePkgNoDuplicationTrivy,
-			expected: nodePkgNoDuplicationSR,
+		"nodePkgUniqueFilePaths": {
+			vulnJSON: nodePkgUniqueFilePathsTrivy,
+			expected: nodePkgUniqueFilePathsSR,
 		},
 	}
 
@@ -3009,10 +3009,10 @@ var includeDevDependenciesSR = &models.ScanResult{
 	Optional: nil,
 }
 
-// nodePkgNoDuplicationTrivy is a test input with node-pkg type where each package
-// has a unique FilePath. This tests that the ClassLangPkg handler does not produce
-// O(N²) library entries by duplicating all packages into every LibraryScanner entry.
-var nodePkgNoDuplicationTrivy = []byte(`{
+// nodePkgUniqueFilePathsTrivy is a test input with node-pkg type where each
+// package has a unique FilePath (e.g. node_modules/<pkg>/package.json), resulting
+// in a separate LibraryScanner entry per package.
+var nodePkgUniqueFilePathsTrivy = []byte(`{
   "SchemaVersion": 2,
   "CreatedAt": "2026-03-10T00:00:00Z",
   "ArtifactName": "myapp:latest",
@@ -3069,7 +3069,7 @@ var nodePkgNoDuplicationTrivy = []byte(`{
 }
 `)
 
-var nodePkgNoDuplicationSR = &models.ScanResult{
+var nodePkgUniqueFilePathsSR = &models.ScanResult{
 	JSONVersion: 4,
 	ServerName:  "myapp",
 	Family:      "pseudo",
