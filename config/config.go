@@ -39,7 +39,6 @@ type Config struct {
 
 	// report
 	CveDict    GoCveDictConf  `json:"cveDict,omitzero"`
-	OvalDict   GovalDictConf  `json:"ovalDict,omitzero"`
 	Gost       GostConf       `json:"gost,omitzero"`
 	Exploit    ExploitConf    `json:"exploit,omitzero"`
 	Metasploit MetasploitConf `json:"metasploit,omitzero"`
@@ -190,7 +189,6 @@ func (c *Config) ValidateOnReport() bool {
 
 	for _, cnf := range []VulnDictInterface{
 		&Conf.CveDict,
-		&Conf.OvalDict,
 		&Conf.Gost,
 		&Conf.Exploit,
 		&Conf.Metasploit,

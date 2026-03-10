@@ -57,7 +57,6 @@ require (
 	github.com/vulsio/go-kev v0.4.4
 	github.com/vulsio/go-msfdb v0.4.4
 	github.com/vulsio/gost v0.7.2
-	github.com/vulsio/goval-dictionary v0.15.1
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sync v0.19.0
@@ -233,6 +232,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
+	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect

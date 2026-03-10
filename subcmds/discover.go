@@ -92,14 +92,6 @@ func printConfigToml(ips []string) (err error) {
 #timeoutSec = 0
 #timeoutSecPerRequest = 0
 
-[ovalDict]
-#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
-#sqlite3Path = "/path/to/oval.sqlite3"
-#url        = ""
-#debugSQL = false
-#timeoutSec = 0
-#timeoutSecPerRequest = 0
-
 [gost]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/gost.sqlite3"

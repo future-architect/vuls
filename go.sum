@@ -898,8 +898,6 @@ github.com/vulsio/go-msfdb v0.4.4 h1:fcuuRuNwnUU1Z9ISBinWrbkWFPJrHluuNcUOpF9GkUM
 github.com/vulsio/go-msfdb v0.4.4/go.mod h1:9EOtT+xusFgeNG11D6EKpsM2Fijs7YhTxW3iBD5RDoQ=
 github.com/vulsio/gost v0.7.2 h1:COYQ7Y8mi+YK1CDdRyaXgwocP7ZrnCNkJ8jxFe1roPE=
 github.com/vulsio/gost v0.7.2/go.mod h1:DswLTXFo0CUQie9aI1JKhrJTbWM4jgEhmEHALsSKyTs=
-github.com/vulsio/goval-dictionary v0.15.1 h1:FgEp3LWeOJZ/UxSGUDhFGdd5CVDN1mRu9SvSscpk2IE=
-github.com/vulsio/goval-dictionary v0.15.1/go.mod h1:qAHEBdYTFqdAMyc49ZRlJANN3dmTa4m66Ao0hl94hkA=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=

@@ -47,7 +47,6 @@ updates:
           - "github.com/vulsio/go-kev"
           - "github.com/vulsio/go-msfdb"
           - "github.com/vulsio/gost"
-          - "github.com/vulsio/goval-dictionary"
       trivy:
         patterns:
           - "github.com/aquasecurity/trivy"
@@ -65,7 +64,6 @@ updates:
           - "github.com/vulsio/go-kev"
           - "github.com/vulsio/go-msfdb"
           - "github.com/vulsio/gost"
-          - "github.com/vulsio/goval-dictionary"
           - "github.com/aquasecurity/trivy"
           - "github.com/aquasecurity/trivy-db"
           - "github.com/aquasecurity/trivy-java-db"
