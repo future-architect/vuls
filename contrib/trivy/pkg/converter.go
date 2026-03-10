@@ -211,15 +211,13 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 
 				libScanner := libraryScannerPaths[lockfilePath]
 				libScanner.Type = trivyResult.Type
-				for _, p := range trivyResult.Packages {
-					libScanner.Libs = append(libScanner.Libs, models.Library{
-						Name:     p.Name,
-						Version:  p.Version,
-						PURL:     getPURL(p),
-						FilePath: p.FilePath,
-						Dev:      p.Dev,
-					})
-				}
+				libScanner.Libs = append(libScanner.Libs, models.Library{
+					Name:     p.Name,
+					Version:  p.Version,
+					PURL:     getPURL(p),
+					FilePath: p.FilePath,
+					Dev:      p.Dev,
+				})
 				libraryScannerPaths[lockfilePath] = libScanner
 			}
 		default:

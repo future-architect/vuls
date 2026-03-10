@@ -39,6 +39,10 @@ func TestParse(t *testing.T) {
 			vulnJSON: includeDevDependenciesTrivy,
 			expected: includeDevDependenciesSR,
 		},
+		"nodePkgUniqueFilePaths": {
+			vulnJSON: nodePkgUniqueFilePathsTrivy,
+			expected: nodePkgUniqueFilePathsSR,
+		},
 	}
 
 	for testcase, v := range cases {
@@ -3003,6 +3007,116 @@ var includeDevDependenciesSR = &models.ScanResult{
 		},
 	},
 	Optional: nil,
+}
+
+// nodePkgUniqueFilePathsTrivy is a test input with node-pkg type where each
+// package has a unique FilePath (e.g. node_modules/<pkg>/package.json), resulting
+// in a separate LibraryScanner entry per package.
+var nodePkgUniqueFilePathsTrivy = []byte(`{
+  "SchemaVersion": 2,
+  "CreatedAt": "2026-03-10T00:00:00Z",
+  "ArtifactName": "myapp:latest",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "ImageConfig": {
+      "architecture": "amd64",
+      "created": "0001-01-01T00:00:00Z",
+      "os": "linux",
+      "rootfs": {
+        "type": "",
+        "diff_ids": null
+      },
+      "config": {}
+    }
+  },
+  "Results": [
+    {
+      "Target": "Node.js",
+      "Class": "lang-pkgs",
+      "Type": "node-pkg",
+      "Packages": [
+        {
+          "Name": "express",
+          "Identifier": {
+            "PURL": "pkg:npm/express@4.18.2"
+          },
+          "Version": "4.18.2",
+          "FilePath": "node_modules/express/package.json",
+          "Layer": {}
+        },
+        {
+          "Name": "lodash",
+          "Identifier": {
+            "PURL": "pkg:npm/lodash@4.17.21"
+          },
+          "Version": "4.17.21",
+          "FilePath": "node_modules/lodash/package.json",
+          "Layer": {}
+        },
+        {
+          "Name": "debug",
+          "Identifier": {
+            "PURL": "pkg:npm/debug@4.3.4"
+          },
+          "Version": "4.3.4",
+          "FilePath": "node_modules/debug/package.json",
+          "Layer": {}
+        }
+      ],
+      "Vulnerabilities": []
+    }
+  ]
+}
+`)
+
+var nodePkgUniqueFilePathsSR = &models.ScanResult{
+	JSONVersion: 4,
+	ServerName:  "myapp",
+	Family:      "pseudo",
+	ScannedBy:   "trivy",
+	ScannedVia:  "trivy",
+	ScannedCves: models.VulnInfos{},
+	Packages:    models.Packages{},
+	SrcPackages: models.SrcPackages{},
+	LibraryScanners: models.LibraryScanners{
+		{
+			Type:         "node-pkg",
+			LockfilePath: "/node_modules/debug/package.json",
+			Libs: []models.Library{
+				{
+					Name:     "debug",
+					Version:  "4.3.4",
+					PURL:     "pkg:npm/debug@4.3.4",
+					FilePath: "node_modules/debug/package.json",
+				},
+			},
+		},
+		{
+			Type:         "node-pkg",
+			LockfilePath: "/node_modules/express/package.json",
+			Libs: []models.Library{
+				{
+					Name:     "express",
+					Version:  "4.18.2",
+					PURL:     "pkg:npm/express@4.18.2",
+					FilePath: "node_modules/express/package.json",
+				},
+			},
+		},
+		{
+			Type:         "node-pkg",
+			LockfilePath: "/node_modules/lodash/package.json",
+			Libs: []models.Library{
+				{
+					Name:     "lodash",
+					Version:  "4.17.21",
+					PURL:     "pkg:npm/lodash@4.17.21",
+					FilePath: "node_modules/lodash/package.json",
+				},
+			},
+		},
+	},
+	Optional: map[string]any{"TRIVY_IMAGE_NAME": "myapp", "TRIVY_IMAGE_TAG": "latest"},
 }
 
 func TestParseError(t *testing.T) {
