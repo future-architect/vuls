@@ -47,6 +47,8 @@ func preConvertBinaryVersion(family, version string) string {
 
 func toVuls2Family(vuls0Family, vuls0Release string) string {
 	switch vuls0Family {
+	case constant.Raspbian:
+		return ecosystemTypes.EcosystemTypeDebian
 	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
 		return ecosystemTypes.EcosystemTypeSUSELinuxEnterprise
 	case constant.OpenSUSE:
@@ -219,6 +221,60 @@ func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, c
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
+	case ecosystemTypes.EcosystemTypeDebian:
+		switch cn.Criterion.Type {
+		case criterionTypes.CriterionTypeVersion:
+			if cn.Criterion.Version != nil {
+				switch cn.Criterion.Version.Package.Type {
+				case versioncriterionpackageTypes.PackageTypeSource:
+					if !models.IsKernelSourcePackage(constant.Debian, cn.Criterion.Version.Package.Source.Name) {
+						return cn, nil
+					}
+
+					m := make(map[string][]string)
+					for _, p := range scanned.OSPackages {
+						sn := fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Debian, p.SrcName), func() int {
+							if p.SrcEpoch != nil {
+								return *p.SrcEpoch
+							}
+							return 0
+						}(), p.SrcVersion, p.SrcRelease)
+						m[sn] = append(m[sn], p.Name)
+					}
+
+					var accepts []int
+					for _, index := range cn.Accepts.Version {
+						if len(scanned.OSPackages) <= index {
+							return criterionTypes.FilteredCriterion{}, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+						}
+
+						if slices.ContainsFunc(m[fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Debian, scanned.OSPackages[index].SrcName), func() int {
+							if scanned.OSPackages[index].SrcEpoch != nil {
+								return *scanned.OSPackages[index].SrcEpoch
+							}
+							return 0
+						}(), scanned.OSPackages[index].SrcVersion, scanned.OSPackages[index].SrcRelease)], func(s string) bool {
+							switch s {
+							case fmt.Sprintf("linux-image-%s", scanned.Kernel.Release), fmt.Sprintf("linux-headers-%s", scanned.Kernel.Release):
+								return true
+							default:
+								return false
+							}
+						}) {
+							accepts = append(accepts, index)
+						}
+					}
+					cn.Accepts.Version = accepts
+
+					return cn, nil
+				default:
+					return cn, nil
+				}
+			}
+			return cn, nil
+		default:
+			return cn, nil
+		}
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch cn.Criterion.Type {
 		case criterionTypes.CriterionTypeVersion:
@@ -486,18 +542,6 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "ORACLE",
 			RefID:  da.AdvisoryID,
 		}, nil
-	case ecosystemTypes.EcosystemTypeUbuntu:
-		return models.Reference{
-			Link:   fmt.Sprintf("https://ubuntu.com/security/notices/%s", da.AdvisoryID),
-			Source: "UBUNTU",
-			RefID:  da.AdvisoryID,
-		}, nil
-	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
-		return models.Reference{
-			Link:   fmt.Sprintf("https://www.suse.com/security/cve/%s.html", da.AdvisoryID),
-			Source: "SUSE",
-			RefID:  da.AdvisoryID,
-		}, nil
 	case ecosystemTypes.EcosystemTypeAmazon:
 		return models.Reference{
 			Link: func() string {
@@ -515,6 +559,24 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "AMAZON",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeDebian:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", da.AdvisoryID),
+			Source: "DEBIAN",
+			RefID:  da.AdvisoryID,
+		}, nil
+	case ecosystemTypes.EcosystemTypeUbuntu:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://ubuntu.com/security/notices/%s", da.AdvisoryID),
+			Source: "UBUNTU",
+			RefID:  da.AdvisoryID,
+		}, nil
+	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://www.suse.com/security/cve/%s.html", da.AdvisoryID),
+			Source: "SUSE",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
@@ -526,16 +588,18 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:
 		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.Content.ID)
-	case models.Alpine:
-		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
 	case models.Amazon:
 		return fmt.Sprintf("https://explore.alas.aws.amazon.com/%s.html", v.Content.ID)
-	case models.Ubuntu, models.UbuntuAPI:
-		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
-	case models.Nvd:
-		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
 	case models.SUSE:
 		return fmt.Sprintf("https://www.suse.com/security/cve/%s.html", v.Content.ID)
+	case models.Debian, models.DebianSecurityTracker:
+		return fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", v.Content.ID)
+	case models.Ubuntu, models.UbuntuAPI:
+		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
+	case models.Alpine:
+		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
+	case models.Nvd:
+		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
 	default:
 		return ""
 	}
@@ -637,6 +701,22 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 			}
 		}
 		return cmp.Compare(preferenceFn(a), preferenceFn(b))
+	case ecosystemTypes.EcosystemTypeDebian:
+		preferenceFn := func(sourceID sourceTypes.SourceID) int {
+			switch sourceID {
+			case sourceTypes.DebianSecurityTrackerSalsa:
+				return 5
+			case sourceTypes.DebianSecurityTrackerAPI:
+				return 4
+			case sourceTypes.DebianOVAL:
+				return 3
+			case sourceTypes.DebianOSV:
+				return 2
+			default:
+				return 1
+			}
+		}
+		return cmp.Compare(preferenceFn(a), preferenceFn(b))
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		preferenceFn := func(sourceID sourceTypes.SourceID) int {
 			switch sourceID {
@@ -732,6 +812,13 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		}
 	case ecosystemTypes.EcosystemTypeEPEL:
 		return models.CveContentType("epel")
+	case ecosystemTypes.EcosystemTypeDebian:
+		switch s {
+		case sourceTypes.DebianSecurityTrackerSalsa, sourceTypes.DebianSecurityTrackerAPI:
+			return models.DebianSecurityTracker
+		default:
+			return models.Debian
+		}
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch s {
 		case sourceTypes.UbuntuCVETracker:
@@ -758,6 +845,15 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 		switch s.Type {
 		case severityTypes.SeverityTypeVendor:
 			switch et {
+			case ecosystemTypes.EcosystemTypeDebian:
+				switch src {
+				case sourceTypes.DebianSecurityTrackerSalsa, sourceTypes.DebianSecurityTrackerAPI:
+					if s.Vendor != nil {
+						cvss2 = v2.CVSSv2{NVDBaseSeverity: *s.Vendor}
+						cvss3 = v31.CVSSv31{BaseSeverity: *s.Vendor}
+					}
+				default:
+				}
 			case ecosystemTypes.EcosystemTypeUbuntu:
 				switch src {
 				case sourceTypes.UbuntuCVETracker:
@@ -865,9 +961,16 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			DetectionMethod: models.DetectionMethod("EPELMatch"),
 			SortOrder:       1,
 		}
-	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAlpine, ecosystemTypes.EcosystemTypeAmazon,
-		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
+	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAmazon,
+		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeAlpine:
 		return models.OvalMatch
+	case ecosystemTypes.EcosystemTypeDebian:
+		switch s {
+		case sourceTypes.DebianSecurityTrackerSalsa, sourceTypes.DebianSecurityTrackerAPI:
+			return models.DebianSecurityTrackerMatch
+		default:
+			return models.OvalMatch
+		}
 	case ecosystemTypes.EcosystemTypeUbuntu:
 		switch s {
 		case sourceTypes.UbuntuCVETracker:

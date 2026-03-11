@@ -35,6 +35,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/version"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
@@ -118,6 +119,9 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 	pkgs := make(map[string]scanTypes.OSPackage)
 	for _, p := range sr.SrcPackages {
+		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+			continue
+		}
 		for _, bn := range p.BinaryNames {
 			pkgs[bn] = scanTypes.OSPackage{
 				SrcName:    p.Name,
@@ -126,6 +130,9 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 		}
 	}
 	for _, p := range sr.Packages {
+		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+			continue
+		}
 		base := pkgs[p.Name]
 		base.Name = p.Name
 		base.Version = preConvertBinaryVersion(sr.Family, p.Version)
@@ -754,6 +761,50 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 						m[src] = base
 					}
 				}
+			}
+		}
+
+		for src, das := range am {
+			if len(m[src].vulninfos) > 0 {
+				continue
+			}
+
+			fdas := filterDistroAdvisories(src.Segment.Ecosystem, das)
+			for _, da := range fdas {
+				bs, err := json.Marshal([]source{src})
+				if err != nil {
+					return xerrors.Errorf("Failed to marshal sources. err: %w", err)
+				}
+
+				cctype := toCveContentType(src.Segment.Ecosystem, src.SourceID)
+
+				ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
+				if err != nil {
+					return xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+				}
+
+				vinfo := models.VulnInfo{
+					CveID:            da.AdvisoryID,
+					Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
+					DistroAdvisories: models.DistroAdvisories{da},
+					CveContents: models.NewCveContents(models.CveContent{
+						Type:         cctype,
+						CveID:        da.AdvisoryID,
+						Summary:      da.Description,
+						SourceLink:   ar.Link,
+						References:   models.References{ar},
+						Published:    da.Issued,
+						LastModified: da.Updated,
+						Optional:     map[string]string{"vuls2-sources": string(bs)},
+					}),
+				}
+
+				base := m[src]
+				if base.vulninfos == nil {
+					base.vulninfos = make(models.VulnInfos)
+				}
+				base.vulninfos[vinfo.CveID] = vinfo
+				m[src] = base
 			}
 		}
 	}
