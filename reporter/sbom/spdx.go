@@ -90,6 +90,14 @@ func osToSpdxPackage(r models.ScanResult) spdx.Package {
 	if r.RunningKernel.Version != "" {
 		annotations = appendAnnotation(annotations, "RunningKernelVersion", r.RunningKernel.Version, r.ReportedAt)
 	}
+	if r.WindowsKB != nil {
+		for _, kb := range r.WindowsKB.Applied {
+			annotations = appendAnnotation(annotations, "WindowsKB:Applied", kb, r.ReportedAt)
+		}
+		for _, kb := range r.WindowsKB.Unapplied {
+			annotations = appendAnnotation(annotations, "WindowsKB:Unapplied", kb, r.ReportedAt)
+		}
+	}
 
 	return spdx.Package{
 		PackageSPDXIdentifier:     generateSDPXIDentifier(elementOperatingSystem),

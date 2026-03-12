@@ -137,6 +137,20 @@ func osToCdxComponent(r models.ScanResult) *cdx.Component {
 			Value: r.RunningKernel.Version,
 		})
 	}
+	if r.WindowsKB != nil {
+		for _, kb := range r.WindowsKB.Applied {
+			props = append(props, cdx.Property{
+				Name:  "future-architect:vuls:WindowsKB:Applied",
+				Value: kb,
+			})
+		}
+		for _, kb := range r.WindowsKB.Unapplied {
+			props = append(props, cdx.Property{
+				Name:  "future-architect:vuls:WindowsKB:Unapplied",
+				Value: kb,
+			})
+		}
+	}
 	return &cdx.Component{
 		BOMRef:     uuid.NewString(),
 		Type:       cdx.ComponentTypeOS,
