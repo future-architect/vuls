@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.10.0
-	github.com/MaineK00n/vuls-data-update v0.0.0-20260306060145-883a094c5837
+	github.com/MaineK00n/vuls-data-update v0.0.0-20260312024807-b59af426d836
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260309062902-6fa3e81762d9
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.69.2
@@ -24,7 +24,7 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.24.0
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-containerregistry v0.21.1
+	github.com/google/go-containerregistry v0.21.2
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gosnmp/gosnmp v1.43.2
@@ -42,7 +42,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nlopes/slack v0.6.0
 	github.com/olekukonko/tablewriter v1.1.3
-	github.com/package-url/packageurl-go v0.1.4
+	github.com/package-url/packageurl-go v0.1.5
 	github.com/parnurzeal/gorequest v0.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
@@ -59,7 +59,7 @@ require (
 	github.com/vulsio/gost v0.7.2
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/oauth2 v0.35.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/term v0.40.0
 	golang.org/x/text v0.34.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
