@@ -560,7 +560,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 		switch fcn.Criterion.Version.Package.Type {
 		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
-			if !cn.Criterion.Version.Vulnerable {
+			if !fcn.Criterion.Version.Vulnerable {
 				continue
 			}
 
@@ -586,7 +586,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
 						}(),
 						FixedIn:     fixedIn,
-						NotFixedYet: cn.Criterion.Version.FixStatus == nil || cn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
+						NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
 					},
 				})
 			}
