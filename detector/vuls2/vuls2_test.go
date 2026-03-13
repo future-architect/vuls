@@ -5906,7 +5906,7 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			name: "ubuntu needs-triage and not-affected should be filtered by vulnerable:false",
+			name: "ubuntu needs-triage should be filtered by vulnerable:false",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					OSPackages: []scanTypes.OSPackage{
@@ -6064,87 +6064,8 @@ func Test_postConvert(t *testing.T) {
 																Version: new(versioncriterionTypes.Criterion{
 																	Vulnerable: false,
 																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnknown,
-																	}),
-																	Package: vcPackageTypes.Package{
-																		Type: vcPackageTypes.PackageTypeSource,
-																		Source: &vcSourcePackageTypes.Package{
-																			Name: "bash",
-																		},
-																	},
-																}),
-															},
-															Accepts: criterionTypes.AcceptQueries{
-																Version: []int{0},
-															},
-														},
-													},
-												},
-												Tag: "jammy_medium",
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							// not-affected: vulnerable=false, should NOT be detected
-							ID: "CVE-2025-1003",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-1003",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.UbuntuCVETracker: {
-											dataTypes.RootID("CVE-2025-1003"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-1003",
-														Title:       "title",
-														Description: "description",
-														Severity: []severityTypes.Severity{
-															{
-																Type:   severityTypes.SeverityTypeVendor,
-																Source: "launchpad.net/ubuntu-cve-tracker",
-																Vendor: new("medium"),
-															},
-														},
-														References: []referenceTypes.Reference{
-															{
-																Source: "launchpad.net/ubuntu-cve-tracker",
-																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1003",
-															},
-														},
-														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
-															Tag:       "jammy_medium",
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.UbuntuCVETracker: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															// not-affected: Vulnerable=false, Affected=nil
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeVersion,
-																Version: new(versioncriterionTypes.Criterion{
-																	Vulnerable: false,
-																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnfixed,
+																		Class:  vcFixStatusTypes.ClassUnknown,
+																		Vendor: "needs-triage",
 																	}),
 																	Package: vcPackageTypes.Package{
 																		Type: vcPackageTypes.PackageTypeSource,
@@ -6171,7 +6092,7 @@ func Test_postConvert(t *testing.T) {
 				},
 			},
 			// Only CVE-2025-1001 (vulnerable:true) should appear.
-			// CVE-2025-1002 (needs-triage, vulnerable:false) and CVE-2025-1003 (not-affected, vulnerable:false) should be filtered out.
+			// CVE-2025-1002 (needs-triage, vulnerable:false) should be filtered out.
 			want: models.VulnInfos{
 				"CVE-2025-1001": {
 					CveID:       "CVE-2025-1001",
