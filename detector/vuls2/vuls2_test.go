@@ -5906,6 +5906,312 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			name: "ubuntu needs-triage and not-affected should be filtered by vulnerable:false",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:       "bash",
+							Version:    "5.1-6ubuntu1",
+							SrcName:    "bash",
+							SrcVersion: "5.1-6ubuntu1",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-1001",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1001",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "bash",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "5.1-6ubuntu2",
+																			},
+																		},
+																		Fixed: []string{"5.1-6ubuntu2"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							// needs-triage: vulnerable=false, should NOT be detected
+							ID: "CVE-2025-1002",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1002",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1002"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1002",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("medium"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1002",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_medium",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															// needs-triage: Vulnerable=false, Affected=nil
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: false,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "bash",
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: "jammy_medium",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							// not-affected: vulnerable=false, should NOT be detected
+							ID: "CVE-2025-1003",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1003"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1003",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("medium"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1003",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_medium",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															// not-affected: Vulnerable=false, Affected=nil
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: false,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnfixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "bash",
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: "jammy_medium",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			// Only CVE-2025-1001 (vulnerable:true) should appear.
+			// CVE-2025-1002 (needs-triage, vulnerable:false) and CVE-2025-1003 (not-affected, vulnerable:false) should be filtered out.
+			want: models.VulnInfos{
+				"CVE-2025-1001": {
+					CveID:       "CVE-2025-1001",
+					Confidences: models.Confidences{models.UbuntuAPIMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "bash",
+							NotFixedYet: false,
+							FixedIn:     "5.1-6ubuntu2",
+						},
+					},
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{
+							{
+								Type:          models.UbuntuAPI,
+								CveID:         "CVE-2025-1001",
+								Title:         "title",
+								Summary:       "description",
+								Cvss2Severity: "low",
+								Cvss3Severity: "low",
+								SourceLink:    "https://ubuntu.com/security/CVE-2025-1001",
+								References: []models.Reference{
+									{
+										Link:   "https://www.cve.org/CVERecord?id=CVE-2025-1001",
+										Source: "CVE",
+										RefID:  "CVE-2025-1001",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-1001\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"jammy_low\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "oracle",
 			args: args{
 				scanned: scanTypes.ScanResult{
