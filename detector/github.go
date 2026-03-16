@@ -16,17 +16,29 @@ import (
 	"github.com/future-architect/vuls/errof"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"golang.org/x/oauth2"
 )
+
+type bearerTransport struct {
+	token string
+	base  http.RoundTripper
+}
+
+func (t *bearerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	r := req.Clone(req.Context())
+	r.Header.Set("Authorization", "Bearer "+t.token)
+	return t.base.RoundTrip(r)
+}
+
+func newBearerClient(token string) *http.Client {
+	return &http.Client{
+		Transport: &bearerTransport{token: token, base: http.DefaultTransport},
+	}
+}
 
 // DetectGitHubSecurityAlerts access to owner/repo on GitHub and fetch security alerts of the repository via GitHub API v4 GraphQL and then set to the given ScanResult.
 // https://help.github.com/articles/about-security-alerts-for-vulnerable-dependencies/
 func DetectGitHubSecurityAlerts(r *models.ScanResult, owner, repo, token string, ignoreDismissed bool) (nCVEs int, err error) {
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	//TODO Proxy
-	httpClient := oauth2.NewClient(context.Background(), src)
+	httpClient := newBearerClient(token)
 
 	// TODO Use `https://github.com/shurcooL/githubv4` if the tool supports vulnerabilityAlerts Endpoint
 	// Memo : https://developer.github.com/v4/explorer/
@@ -212,11 +224,7 @@ type SecurityAlerts struct {
 // DetectGitHubDependencyGraph access to owner/repo on GitHub and fetch dependency graph of the repository via GitHub API v4 GraphQL and then set to the given ScanResult.
 // https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph
 func DetectGitHubDependencyGraph(r *models.ScanResult, owner, repo, token string) (err error) {
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	//TODO Proxy
-	httpClient := oauth2.NewClient(context.Background(), src)
+	httpClient := newBearerClient(token)
 
 	return fetchDependencyGraph(r, httpClient, owner, repo, "", "", 10, 100)
 }
