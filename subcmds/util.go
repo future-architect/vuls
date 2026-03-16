@@ -3,12 +3,10 @@ package subcmds
 import (
 	"os"
 	"path/filepath"
-
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 func mkdirDotVuls() error {
-	home, err := homedir.Dir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
