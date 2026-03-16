@@ -9,11 +9,34 @@ import (
 	"runtime"
 
 	"github.com/k0kubun/pp"
-	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 
 	formatter "github.com/kotakanbe/logrus-prefixed-formatter"
 )
+
+type fileHook struct {
+	path      string
+	formatter logrus.Formatter
+}
+
+func (h *fileHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *fileHook) Fire(entry *logrus.Entry) error {
+	f, err := os.OpenFile(h.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	b, err := h.formatter.Format(entry)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(b)
+	return err
+}
 
 // LogOpts has options for logging
 type LogOpts struct {
@@ -94,14 +117,10 @@ func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serv
 		if _, err := os.Stat(dir); err == nil {
 			path := filepath.Join(dir, fmt.Sprintf("%s.log", whereami))
 			if _, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
-				log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
-					logrus.DebugLevel: path,
-					logrus.InfoLevel:  path,
-					logrus.WarnLevel:  path,
-					logrus.ErrorLevel: path,
-					logrus.FatalLevel: path,
-					logrus.PanicLevel: path,
-				}, nil))
+				log.Hooks.Add(&fileHook{
+					path:      path,
+					formatter: &logrus.TextFormatter{DisableColors: true},
+				})
 			} else {
 				log.Errorf("Failed to create log file. path: %s, err: %+v", path, err)
 			}
