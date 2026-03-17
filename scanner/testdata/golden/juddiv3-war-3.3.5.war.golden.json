@@ -1,0 +1,506 @@
+[
+  {
+    "type": "jar",
+    "lockfilePath": "juddiv3-war-3.3.5.war",
+    "libs": [
+      {
+        "name": ":antlr",
+        "version": "2.7.7",
+        "purl": "pkg:maven/antlr@2.7.7",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/antlr-2.7.7.jar",
+        "digest": "sha1:83cd2cd674a217ade95a4bb83a8a14f351f48bd0"
+      },
+      {
+        "name": ":aopalliance",
+        "version": "1.0",
+        "purl": "pkg:maven/aopalliance@1.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/aopalliance-1.0.jar",
+        "digest": "sha1:0235ba8b489512805ac13a8f9ea77a1ca5ebe3e8"
+      },
+      {
+        "name": ":cglib-nodep",
+        "version": "2.1_3",
+        "purl": "pkg:maven/cglib-nodep@2.1_3",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cglib-nodep-2.1_3.jar",
+        "digest": "sha1:58d3be5953547c0019e5704d6ed4ffda3b0c7c66"
+      },
+      {
+        "name": ":json",
+        "version": "20090211",
+        "purl": "pkg:maven/json@20090211",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/json-20090211.jar",
+        "digest": "sha1:c183aa3a2a6250293808bba12262c8920ce5a51c"
+      },
+      {
+        "name": ":spring-aop",
+        "version": "3.2.18.RELEASE",
+        "purl": "pkg:maven/spring-aop@3.2.18.RELEASE",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/spring-aop-3.2.18.RELEASE.jar",
+        "digest": "sha1:bf3bd91214a6d0b4c4daeefbe3fcf008d9e3a368"
+      },
+      {
+        "name": ":spring-beans",
+        "version": "3.2.18.RELEASE",
+        "purl": "pkg:maven/spring-beans@3.2.18.RELEASE",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/spring-beans-3.2.18.RELEASE.jar",
+        "digest": "sha1:4c0bb7e1a69d650145e8e08a3bcc03a8bc3c453e"
+      },
+      {
+        "name": ":spring-context",
+        "version": "3.2.18.RELEASE",
+        "purl": "pkg:maven/spring-context@3.2.18.RELEASE",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/spring-context-3.2.18.RELEASE.jar",
+        "digest": "sha1:e8dc9e1b55bfb6ad5ad49b358d5ca6e3d4cd7488"
+      },
+      {
+        "name": ":spring-core",
+        "version": "3.2.18.RELEASE",
+        "purl": "pkg:maven/spring-core@3.2.18.RELEASE",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/spring-core-3.2.18.RELEASE.jar",
+        "digest": "sha1:0e2bd9c162280cd79c2ea0f67f174ee5d7b84ddd"
+      },
+      {
+        "name": ":spring-expression",
+        "version": "3.2.18.RELEASE",
+        "purl": "pkg:maven/spring-expression@3.2.18.RELEASE",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/spring-expression-3.2.18.RELEASE.jar",
+        "digest": "sha1:070c1fb9f2111601193e01a8d0c3ccbca1bf3706"
+      },
+      {
+        "name": ":spring-web",
+        "version": "3.2.18.RELEASE",
+        "purl": "pkg:maven/spring-web@3.2.18.RELEASE",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/spring-web-3.2.18.RELEASE.jar",
+        "digest": "sha1:bc0bdade0a7a52b8fae88e1febc8479383a2acad"
+      },
+      {
+        "name": ":stax-api-1.0",
+        "version": "2",
+        "purl": "pkg:maven/stax-api-1.0@2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/stax-api-1.0-2.jar",
+        "digest": "sha1:d6337b0de8b25e53e81b922352fbea9f9f57ba0b"
+      },
+      {
+        "name": "Apache Software Foundation:org.apache.xml.resolver.Catalog",
+        "version": "1.2",
+        "purl": "pkg:maven/Apache%20Software%20Foundation/org.apache.xml.resolver.Catalog@1.2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xml-resolver-1.2.jar",
+        "digest": "sha1:3d0f97750b3a03e0971831566067754ba4bfd68c"
+      },
+      {
+        "name": "France Telecom R\u0026D:ASM",
+        "version": "3.3.1",
+        "purl": "pkg:maven/France%20Telecom%20R%26D/ASM@3.3.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/asm-3.3.1.jar",
+        "digest": "sha1:1d5f20b4ea675e6fab6ab79f1cd60ec268ddc015"
+      },
+      {
+        "name": "IBM:WSDL4J",
+        "version": "1.6",
+        "purl": "pkg:maven/IBM/WSDL4J@1.6",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/wsdl4j-1.6.2.jar",
+        "digest": "sha1:dec1669fb6801b7328e01ad72fc9e10b69ea06c1"
+      },
+      {
+        "name": "JCP:StAX 1.0 API",
+        "version": "1.0.1",
+        "purl": "pkg:maven/JCP/StAX%201.0%20API@1.0.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/stax-api-1.0.1.jar",
+        "digest": "sha1:49c100caf72d658aca8e58bd74a4ba90fa2b0d70"
+      },
+      {
+        "name": "MetaStuff Ltd.:org.dom4j",
+        "version": "1.6.1",
+        "purl": "pkg:maven/MetaStuff%20Ltd./org.dom4j@1.6.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/dom4j-1.6.1.jar",
+        "digest": "sha1:5d3ccc056b6f056dbf0dddfdf43894b9065a8f94"
+      },
+      {
+        "name": "Sun Microsystems Inc.:javax.xml.transform",
+        "version": "1.1.2",
+        "purl": "pkg:maven/Sun%20Microsystems%20Inc./javax.xml.transform@1.1.2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xml-apis-1.0.b2.jar",
+        "digest": "sha1:3136ca936f64c9d68529f048c2618bd356bf85c9"
+      },
+      {
+        "name": "com.fasterxml:classmate",
+        "version": "1.3.0",
+        "purl": "pkg:maven/com.fasterxml/classmate@1.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/classmate-1.3.0.jar"
+      },
+      {
+        "name": "com.sun:JAXB Reference Implementation",
+        "version": "hudson-jaxb-ri-2.1-2",
+        "purl": "pkg:maven/com.sun/JAXB%20Reference%20Implementation@hudson-jaxb-ri-2.1-2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/jaxb-impl-2.1.13.jar",
+        "digest": "sha1:7c1ea3e298d0a32fafcebcb734e77990598f7720"
+      },
+      {
+        "name": "commons-codec:commons-codec",
+        "version": "1.10",
+        "purl": "pkg:maven/commons-codec/commons-codec@1.10",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-codec-1.10.jar"
+      },
+      {
+        "name": "commons-collections:commons-collections",
+        "version": "3.2.2",
+        "purl": "pkg:maven/commons-collections/commons-collections@3.2.2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-collections-3.2.2.jar"
+      },
+      {
+        "name": "commons-configuration:commons-configuration",
+        "version": "1.10",
+        "purl": "pkg:maven/commons-configuration/commons-configuration@1.10",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-configuration-1.10.jar"
+      },
+      {
+        "name": "commons-lang:commons-lang",
+        "version": "2.6",
+        "purl": "pkg:maven/commons-lang/commons-lang@2.6",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-lang-2.6.jar"
+      },
+      {
+        "name": "commons-logging:commons-logging",
+        "version": "1.2",
+        "purl": "pkg:maven/commons-logging/commons-logging@1.2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-logging-1.2.jar"
+      },
+      {
+        "name": "commons-pool:commons-pool",
+        "version": "1.5.4",
+        "purl": "pkg:maven/commons-pool/commons-pool@1.5.4",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-pool-1.5.4.jar"
+      },
+      {
+        "name": "javax.ws.rs:javax.ws.rs-api",
+        "version": "2.0-m10",
+        "purl": "pkg:maven/javax.ws.rs/javax.ws.rs-api@2.0-m10",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/javax.ws.rs-api-2.0-m10.jar"
+      },
+      {
+        "name": "log4j:log4j",
+        "version": "1.2.17",
+        "purl": "pkg:maven/log4j/log4j@1.2.17",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/log4j-1.2.17.jar"
+      },
+      {
+        "name": "net.sourceforge.serp:serp",
+        "version": "1.14.1",
+        "purl": "pkg:maven/net.sourceforge.serp/serp@1.14.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/serp-1.14.1.jar"
+      },
+      {
+        "name": "org.apache.commons:commons-lang3",
+        "version": "3.5",
+        "purl": "pkg:maven/org.apache.commons/commons-lang3@3.5",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-lang3-3.5.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-api",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-api@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-api-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-bindings-soap",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-bindings-soap@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-bindings-soap-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-bindings-xml",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-bindings-xml@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-bindings-xml-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-core",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-core@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-core-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-databinding-jaxb",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-databinding-jaxb@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-databinding-jaxb-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-frontend-jaxrs",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-frontend-jaxrs@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-frontend-jaxrs-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-frontend-jaxws",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-frontend-jaxws@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-frontend-jaxws-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-frontend-simple",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-frontend-simple@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-frontend-simple-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-rs-extension-providers",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-rs-extension-providers@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-rs-extension-providers-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-transports-http",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-transports-http@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-transports-http-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-ws-addr",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-ws-addr@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-ws-addr-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.cxf:cxf-rt-ws-policy",
+        "version": "2.7.18",
+        "purl": "pkg:maven/org.apache.cxf/cxf-rt-ws-policy@2.7.18",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/cxf-rt-ws-policy-2.7.18.jar"
+      },
+      {
+        "name": "org.apache.geronimo.javamail:geronimo-javamail_1.4_mail",
+        "version": "1.8.4",
+        "purl": "pkg:maven/org.apache.geronimo.javamail/geronimo-javamail_1.4_mail@1.8.4",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_mail-1.8.4.jar"
+      },
+      {
+        "name": "org.apache.geronimo.javamail:geronimo-javamail_1.4_provider",
+        "version": "1.8.4",
+        "purl": "pkg:maven/org.apache.geronimo.javamail/geronimo-javamail_1.4_provider@1.8.4",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_mail-1.8.4.jar"
+      },
+      {
+        "name": "org.apache.geronimo.specs:geronimo-javamail_1.4_spec",
+        "version": "1.7.1",
+        "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-javamail_1.4_spec@1.7.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_spec-1.7.1.jar"
+      },
+      {
+        "name": "org.apache.geronimo.specs:geronimo-javamail_1.4_spec",
+        "version": "1.7.1",
+        "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-javamail_1.4_spec@1.7.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_mail-1.8.4.jar"
+      },
+      {
+        "name": "org.apache.geronimo.specs:geronimo-jms_1.1_spec",
+        "version": "1.0",
+        "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-jms_1.1_spec@1.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-jms_1.1_spec-1.0.jar"
+      },
+      {
+        "name": "org.apache.geronimo.specs:geronimo-jpa_2.0_spec",
+        "version": "1.1",
+        "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-jpa_2.0_spec@1.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-jpa_2.0_spec-1.1.jar"
+      },
+      {
+        "name": "org.apache.geronimo.specs:geronimo-jta_1.1_spec",
+        "version": "1.1.1",
+        "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-jta_1.1_spec@1.1.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-jta_1.1_spec-1.1.1.jar"
+      },
+      {
+        "name": "org.apache.httpcomponents:httpclient",
+        "version": "4.5.2",
+        "purl": "pkg:maven/org.apache.httpcomponents/httpclient@4.5.2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/httpclient-4.5.2.jar"
+      },
+      {
+        "name": "org.apache.httpcomponents:httpcore",
+        "version": "4.4.4",
+        "purl": "pkg:maven/org.apache.httpcomponents/httpcore@4.4.4",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/httpcore-4.4.4.jar"
+      },
+      {
+        "name": "org.apache.juddi:juddi-client",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.apache.juddi/juddi-client@3.3.5",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/juddi-client-3.3.5.jar"
+      },
+      {
+        "name": "org.apache.juddi:juddi-core-openjpa",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.apache.juddi/juddi-core-openjpa@3.3.5",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/juddi-core-openjpa-3.3.5.jar"
+      },
+      {
+        "name": "org.apache.juddi:juddi-rest-cxf",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.apache.juddi/juddi-rest-cxf@3.3.5",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/juddi-rest-cxf-3.3.5.jar"
+      },
+      {
+        "name": "org.apache.juddi:juddiv3-war",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.apache.juddi/juddiv3-war@3.3.5",
+        "filePath": "juddiv3-war-3.3.5.war"
+      },
+      {
+        "name": "org.apache.juddi:uddi-ws",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.apache.juddi/uddi-ws@3.3.5",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/uddi-ws-3.3.5.jar"
+      },
+      {
+        "name": "org.apache.neethi:neethi",
+        "version": "3.0.3",
+        "purl": "pkg:maven/org.apache.neethi/neethi@3.0.3",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/neethi-3.0.3.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-jdbc",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-jdbc@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-jest",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-jest@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-kernel",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-kernel@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-lib",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-lib@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-persistence",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-persistence@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-persistence-jdbc",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-persistence-jdbc@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-slice",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-slice@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.openjpa:openjpa-xmlstore",
+        "version": "2.3.0",
+        "purl": "pkg:maven/org.apache.openjpa/openjpa-xmlstore@2.3.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/openjpa-2.3.0.jar"
+      },
+      {
+        "name": "org.apache.ws.xmlschema:xmlschema-core",
+        "version": "2.1.0",
+        "purl": "pkg:maven/org.apache.ws.xmlschema/xmlschema-core@2.1.0",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xmlschema-core-2.1.0.jar"
+      },
+      {
+        "name": "org.apache.xbean:xbean-asm-util",
+        "version": "3.14",
+        "purl": "pkg:maven/org.apache.xbean/xbean-asm-util@3.14",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xbean-asm4-shaded-3.14.jar"
+      },
+      {
+        "name": "org.apache.xbean:xbean-asm4-shaded",
+        "version": "3.14",
+        "purl": "pkg:maven/org.apache.xbean/xbean-asm4-shaded@3.14",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xbean-asm4-shaded-3.14.jar"
+      },
+      {
+        "name": "org.apache:Jakarta Commons Logging",
+        "version": "1.1",
+        "purl": "pkg:maven/org.apache/Jakarta%20Commons%20Logging@1.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/commons-logging-api-1.1.jar",
+        "digest": "sha1:7d4cf5231d46c8524f9b9ed75bb2d1c69ab93322"
+      },
+      {
+        "name": "org.codehaus.jettison:jettison",
+        "version": "1.3.4",
+        "purl": "pkg:maven/org.codehaus.jettison/jettison@1.3.4",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/jettison-1.3.4.jar"
+      },
+      {
+        "name": "org.codehaus.woodstox:stax2-api",
+        "version": "3.1.4",
+        "purl": "pkg:maven/org.codehaus.woodstox/stax2-api@3.1.4",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/stax2-api-3.1.4.jar"
+      },
+      {
+        "name": "org.hibernate.javax.persistence.hibernate-jpa-2:Java Persistence API",
+        "version": "1.0.0.Final",
+        "purl": "pkg:maven/org.hibernate.javax.persistence.hibernate-jpa-2/Java%20Persistence%20API@1.0.0.Final",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/hibernate-jpa-2.1-api-1.0.0.Final.jar",
+        "digest": "sha1:5e731d961297e5a07290bfaf3db1fbc8bbbf405a"
+      },
+      {
+        "name": "org.hibernate:hibernate-commons-annotations",
+        "version": "5.0.1.Final",
+        "purl": "pkg:maven/org.hibernate/hibernate-commons-annotations@5.0.1.Final",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/hibernate-commons-annotations-5.0.1.Final.jar",
+        "digest": "sha1:71e1cff3fcb20d3b3af4f3363c3ddb24d33c6879"
+      },
+      {
+        "name": "org.hibernate:hibernate-core",
+        "version": "5.1.10.Final",
+        "purl": "pkg:maven/org.hibernate/hibernate-core@5.1.10.Final",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/hibernate-core-5.1.10.Final.jar",
+        "digest": "sha1:dfee97623dc225e20d636e8c297a73e6a1ccc61b"
+      },
+      {
+        "name": "org.hibernate:hibernate-entitymanager",
+        "version": "5.1.10.Final",
+        "purl": "pkg:maven/org.hibernate/hibernate-entitymanager@5.1.10.Final",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/hibernate-entitymanager-5.1.10.Final.jar",
+        "digest": "sha1:4fa5295b87ca840dbe2cf67827d3bf235531c489"
+      },
+      {
+        "name": "org.javassist:javassist",
+        "version": "3.20.0-GA",
+        "purl": "pkg:maven/org.javassist/javassist@3.20.0-GA",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/javassist-3.20.0-GA.jar"
+      },
+      {
+        "name": "org.jboss.logging:jboss-logging",
+        "version": "3.3.0.Final",
+        "purl": "pkg:maven/org.jboss.logging/jboss-logging@3.3.0.Final",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/jboss-logging-3.3.0.Final.jar"
+      },
+      {
+        "name": "org.jboss:jandex",
+        "version": "2.0.3.Final",
+        "purl": "pkg:maven/org.jboss/jandex@2.0.3.Final",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/jandex-2.0.3.Final.jar"
+      },
+      {
+        "name": "woodstox-core-asl:Woodstox XML-processor",
+        "version": "4.4.1",
+        "purl": "pkg:maven/woodstox-core-asl/Woodstox%20XML-processor@4.4.1",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/woodstox-core-asl-4.4.1.jar",
+        "digest": "sha1:84fee5eb1a4a1cefe65b6883c73b3fa83be3c1a1"
+      }
+    ]
+  }
+]

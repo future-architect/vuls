@@ -1,0 +1,258 @@
+[
+  {
+    "type": "pub",
+    "lockfilePath": "pubspec.lock",
+    "libs": [
+      {
+        "name": "archive",
+        "version": "2.0.11",
+        "purl": "pkg:pub/archive@2.0.11"
+      },
+      {
+        "name": "args",
+        "version": "1.5.2",
+        "purl": "pkg:pub/args@1.5.2"
+      },
+      {
+        "name": "async",
+        "version": "2.4.0",
+        "purl": "pkg:pub/async@2.4.0"
+      },
+      {
+        "name": "boolean_selector",
+        "version": "1.0.5",
+        "purl": "pkg:pub/boolean_selector@1.0.5"
+      },
+      {
+        "name": "charcode",
+        "version": "1.1.2",
+        "purl": "pkg:pub/charcode@1.1.2"
+      },
+      {
+        "name": "collection",
+        "version": "1.14.11",
+        "purl": "pkg:pub/collection@1.14.11"
+      },
+      {
+        "name": "convert",
+        "version": "2.1.1",
+        "purl": "pkg:pub/convert@2.1.1"
+      },
+      {
+        "name": "crypto",
+        "version": "2.1.3",
+        "purl": "pkg:pub/crypto@2.1.3"
+      },
+      {
+        "name": "cupertino_icons",
+        "version": "0.1.3",
+        "purl": "pkg:pub/cupertino_icons@0.1.3"
+      },
+      {
+        "name": "fl_chart",
+        "version": "0.8.7",
+        "purl": "pkg:pub/fl_chart@0.8.7"
+      },
+      {
+        "name": "flutter",
+        "version": "0.0.0",
+        "purl": "pkg:pub/flutter@0.0.0"
+      },
+      {
+        "name": "flutter_keyboard_visibility",
+        "version": "0.7.0",
+        "purl": "pkg:pub/flutter_keyboard_visibility@0.7.0"
+      },
+      {
+        "name": "flutter_plugin_android_lifecycle",
+        "version": "1.0.6",
+        "purl": "pkg:pub/flutter_plugin_android_lifecycle@1.0.6"
+      },
+      {
+        "name": "flutter_test",
+        "version": "0.0.0",
+        "purl": "pkg:pub/flutter_test@0.0.0"
+      },
+      {
+        "name": "flutter_web_plugins",
+        "version": "0.0.0",
+        "purl": "pkg:pub/flutter_web_plugins@0.0.0"
+      },
+      {
+        "name": "font_awesome_flutter",
+        "version": "8.7.0",
+        "purl": "pkg:pub/font_awesome_flutter@8.7.0"
+      },
+      {
+        "name": "google_fonts",
+        "version": "0.3.10",
+        "purl": "pkg:pub/google_fonts@0.3.10"
+      },
+      {
+        "name": "google_maps_flutter",
+        "version": "0.5.25+3",
+        "purl": "pkg:pub/google_maps_flutter@0.5.25%2B3"
+      },
+      {
+        "name": "http",
+        "version": "0.12.0+4",
+        "purl": "pkg:pub/http@0.12.0%2B4"
+      },
+      {
+        "name": "http_parser",
+        "version": "3.1.3",
+        "purl": "pkg:pub/http_parser@3.1.3"
+      },
+      {
+        "name": "image",
+        "version": "2.1.4",
+        "purl": "pkg:pub/image@2.1.4"
+      },
+      {
+        "name": "intl",
+        "version": "0.16.1",
+        "purl": "pkg:pub/intl@0.16.1"
+      },
+      {
+        "name": "matcher",
+        "version": "0.12.6",
+        "purl": "pkg:pub/matcher@0.12.6"
+      },
+      {
+        "name": "meta",
+        "version": "1.1.8",
+        "purl": "pkg:pub/meta@1.1.8"
+      },
+      {
+        "name": "path",
+        "version": "1.6.4",
+        "purl": "pkg:pub/path@1.6.4"
+      },
+      {
+        "name": "path_drawing",
+        "version": "0.4.1",
+        "purl": "pkg:pub/path_drawing@0.4.1"
+      },
+      {
+        "name": "path_parsing",
+        "version": "0.1.4",
+        "purl": "pkg:pub/path_parsing@0.1.4"
+      },
+      {
+        "name": "path_provider",
+        "version": "1.6.5",
+        "purl": "pkg:pub/path_provider@1.6.5"
+      },
+      {
+        "name": "path_provider_macos",
+        "version": "0.0.4",
+        "purl": "pkg:pub/path_provider_macos@0.0.4"
+      },
+      {
+        "name": "path_provider_platform_interface",
+        "version": "1.0.1",
+        "purl": "pkg:pub/path_provider_platform_interface@1.0.1"
+      },
+      {
+        "name": "pedantic",
+        "version": "1.8.0+1",
+        "purl": "pkg:pub/pedantic@1.8.0%2B1"
+      },
+      {
+        "name": "petitparser",
+        "version": "2.4.0",
+        "purl": "pkg:pub/petitparser@2.4.0"
+      },
+      {
+        "name": "platform",
+        "version": "2.2.1",
+        "purl": "pkg:pub/platform@2.2.1"
+      },
+      {
+        "name": "plugin_platform_interface",
+        "version": "1.0.2",
+        "purl": "pkg:pub/plugin_platform_interface@1.0.2"
+      },
+      {
+        "name": "quiver",
+        "version": "2.0.5",
+        "purl": "pkg:pub/quiver@2.0.5"
+      },
+      {
+        "name": "search_widget",
+        "version": "1.0.2",
+        "purl": "pkg:pub/search_widget@1.0.2"
+      },
+      {
+        "name": "sky_engine",
+        "version": "0.0.99",
+        "purl": "pkg:pub/sky_engine@0.0.99"
+      },
+      {
+        "name": "source_span",
+        "version": "1.5.5",
+        "purl": "pkg:pub/source_span@1.5.5"
+      },
+      {
+        "name": "stack_trace",
+        "version": "1.9.3",
+        "purl": "pkg:pub/stack_trace@1.9.3"
+      },
+      {
+        "name": "stream_channel",
+        "version": "2.0.0",
+        "purl": "pkg:pub/stream_channel@2.0.0"
+      },
+      {
+        "name": "string_scanner",
+        "version": "1.0.5",
+        "purl": "pkg:pub/string_scanner@1.0.5"
+      },
+      {
+        "name": "term_glyph",
+        "version": "1.1.0",
+        "purl": "pkg:pub/term_glyph@1.1.0"
+      },
+      {
+        "name": "test_api",
+        "version": "0.2.11",
+        "purl": "pkg:pub/test_api@0.2.11"
+      },
+      {
+        "name": "typed_data",
+        "version": "1.1.6",
+        "purl": "pkg:pub/typed_data@1.1.6"
+      },
+      {
+        "name": "url_launcher",
+        "version": "5.4.2",
+        "purl": "pkg:pub/url_launcher@5.4.2"
+      },
+      {
+        "name": "url_launcher_macos",
+        "version": "0.0.1+4",
+        "purl": "pkg:pub/url_launcher_macos@0.0.1%2B4"
+      },
+      {
+        "name": "url_launcher_platform_interface",
+        "version": "1.0.6",
+        "purl": "pkg:pub/url_launcher_platform_interface@1.0.6"
+      },
+      {
+        "name": "url_launcher_web",
+        "version": "0.1.1+1",
+        "purl": "pkg:pub/url_launcher_web@0.1.1%2B1"
+      },
+      {
+        "name": "vector_math",
+        "version": "2.0.8",
+        "purl": "pkg:pub/vector_math@2.0.8"
+      },
+      {
+        "name": "xml",
+        "version": "3.5.0",
+        "purl": "pkg:pub/xml@3.5.0"
+      }
+    ]
+  }
+]

@@ -1,0 +1,43 @@
+[
+  {
+    "type": "conan",
+    "lockfilePath": "conan-v1/conan.lock",
+    "libs": [
+      {
+        "name": "bzip2",
+        "version": "1.0.8",
+        "purl": "pkg:conan/bzip2@1.0.8"
+      },
+      {
+        "name": "expat",
+        "version": "2.4.8",
+        "purl": "pkg:conan/expat@2.4.8"
+      },
+      {
+        "name": "openssl",
+        "version": "1.1.1q",
+        "purl": "pkg:conan/openssl@1.1.1q"
+      },
+      {
+        "name": "pcre",
+        "version": "8.43",
+        "purl": "pkg:conan/pcre@8.43"
+      },
+      {
+        "name": "poco",
+        "version": "1.9.4",
+        "purl": "pkg:conan/poco@1.9.4"
+      },
+      {
+        "name": "sqlite3",
+        "version": "3.39.2",
+        "purl": "pkg:conan/sqlite3@3.39.2"
+      },
+      {
+        "name": "zlib",
+        "version": "1.2.12",
+        "purl": "pkg:conan/zlib@1.2.12"
+      }
+    ]
+  }
+]

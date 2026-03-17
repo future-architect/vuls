@@ -1,0 +1,42 @@
+[
+  {
+    "type": "bun",
+    "lockfilePath": "bun.lock",
+    "libs": [
+      {
+        "name": "@types/bun",
+        "version": "1.2.14",
+        "purl": "pkg:npm/%40types/bun@1.2.14",
+        "dev": true
+      },
+      {
+        "name": "@types/node",
+        "version": "22.15.21",
+        "purl": "pkg:npm/%40types/node@22.15.21",
+        "dev": true
+      },
+      {
+        "name": "bun-types",
+        "version": "1.2.14",
+        "purl": "pkg:npm/bun-types@1.2.14",
+        "dev": true
+      },
+      {
+        "name": "jquery",
+        "version": "3.3.1",
+        "purl": "pkg:npm/jquery@3.3.1"
+      },
+      {
+        "name": "typescript",
+        "version": "5.8.3",
+        "purl": "pkg:npm/typescript@5.8.3"
+      },
+      {
+        "name": "undici-types",
+        "version": "6.21.0",
+        "purl": "pkg:npm/undici-types@6.21.0",
+        "dev": true
+      }
+    ]
+  }
+]
