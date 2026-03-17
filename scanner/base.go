@@ -25,18 +25,18 @@ import (
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/c/conan"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/dart/pub"
 	dotnetcoredeps "github.com/aquasecurity/trivy/pkg/dependency/parser/dotnet/core_deps"
-	nugetconfig "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/config"
-	nugetlock "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/lock"
-	nugetpackagesprops "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/packagesprops"
-	"github.com/aquasecurity/trivy/pkg/dependency/parser/hex/mix"
 	gobinary "github.com/aquasecurity/trivy/pkg/dependency/parser/golang/binary"
 	gomod "github.com/aquasecurity/trivy/pkg/dependency/parser/golang/mod"
 	gradlelock "github.com/aquasecurity/trivy/pkg/dependency/parser/gradle/lockfile"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/hex/mix"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/java/pom"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/bun"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/npm"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/pnpm"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/yarn"
+	nugetconfig "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/config"
+	nugetlock "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/lock"
+	nugetpackagesprops "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/packagesprops"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/php/composer"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pip"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pipenv"
@@ -912,7 +912,6 @@ func parseYarn(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftype
 		Packages: pkgs,
 	}, nil
 }
-
 
 func (l *base) buildWpCliCmd(wpCliArgs string, suppressStderr bool, shell string) string {
 	cmd := fmt.Sprintf("%s %s --path=%s", l.ServerInfo.WordPress.CmdPath, wpCliArgs, l.ServerInfo.WordPress.DocRoot)

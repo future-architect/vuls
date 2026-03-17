@@ -16,10 +16,10 @@ func TestDetectParserType(t *testing.T) {
 		{"app/package-lock.json", 0644, parserNpm},
 		{"node_modules/foo/package-lock.json", 0644, parserNone}, // excluded
 		{"yarn.lock", 0644, parserYarn},
-		{"node_modules/yarn.lock", 0644, parserNone},             // excluded
-		{".yarn/yarn.lock", 0644, parserNone},                    // excluded
+		{"node_modules/yarn.lock", 0644, parserNone}, // excluded
+		{".yarn/yarn.lock", 0644, parserNone},        // excluded
 		{"pnpm-lock.yaml", 0644, parserPnpm},
-		{"node_modules/pnpm-lock.yaml", 0644, parserNone},        // excluded
+		{"node_modules/pnpm-lock.yaml", 0644, parserNone}, // excluded
 		{"bun.lock", 0644, parserBun},
 
 		// === Python ===
@@ -49,7 +49,7 @@ func TestDetectParserType(t *testing.T) {
 		{"app.war", 0644, parserJar},
 		{"app.ear", 0644, parserJar},
 		{"app.par", 0644, parserJar},
-		{"APP.JAR", 0644, parserJar},    // case-insensitive extension
+		{"APP.JAR", 0644, parserJar}, // case-insensitive extension
 
 		// === .NET ===
 		{"packages.lock.json", 0644, parserNugetLock},
@@ -76,7 +76,7 @@ func TestDetectParserType(t *testing.T) {
 		{"gobinary", 0755, parserGoBinary},
 		{"hello-rust", 0755, parserGoBinary}, // detected as executable, type determined at parse time
 		{"myapp", 0755, parserGoBinary},
-		{"myapp", 0644, parserNone},          // not executable
+		{"myapp", 0644, parserNone}, // not executable
 
 		// === Not recognized ===
 		{"README.md", 0644, parserNone},
