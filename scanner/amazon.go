@@ -1,10 +1,9 @@
 package scanner
 
 import (
+	"errors"
 	"strings"
 	"time"
-
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -48,7 +47,7 @@ func (o *amazon) checkDeps() error {
 	if o.getServerInfo().Mode.IsDeep() {
 		return o.execCheckDeps(o.depsDeep())
 	}
-	return xerrors.New("Unknown scan mode")
+	return errors.New("Unknown scan mode")
 }
 
 func (o *amazon) depsFast() []string {

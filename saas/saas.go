@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -69,7 +68,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
+		return fmt.Errorf("Failed to Marshal to JSON: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), w.Timeout)
@@ -90,7 +89,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return xerrors.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
+		return fmt.Errorf("Failed to get Credential. Request JSON : %s,", string(body))
 	}
 
 	t, err := io.ReadAll(resp.Body)
@@ -99,7 +98,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 	}
 	var tempCredential TempCredential
 	if err := json.Unmarshal(t, &tempCredential); err != nil {
-		return xerrors.Errorf("Failed to unmarshal saas credential file. err : %s", err)
+		return fmt.Errorf("Failed to unmarshal saas credential file. err : %s", err)
 	}
 
 	cfg, err := awsConfig.LoadDefaultConfig(ctx,
@@ -107,11 +106,11 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(*tempCredential.Credential.AccessKeyId, *tempCredential.Credential.SecretAccessKey, *tempCredential.Credential.SessionToken)),
 	)
 	if err != nil {
-		return xerrors.Errorf("Failed to load config. err: %w", err)
+		return fmt.Errorf("Failed to load config. err: %w", err)
 	}
 	// For S3 upload of aws sdk
 	if err := os.Setenv("HTTPS_PROXY", w.Proxy); err != nil {
-		return xerrors.Errorf("Failed to set HTTP proxy: %s", err)
+		return fmt.Errorf("Failed to set HTTP proxy: %s", err)
 	}
 
 	svc := s3.NewFromConfig(cfg)
@@ -125,7 +124,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 
 		b, err := json.Marshal(r)
 		if err != nil {
-			return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
+			return fmt.Errorf("Failed to Marshal to JSON: %w", err)
 		}
 		logging.Log.Infof("Uploading... %s", r.FormatServerName())
 		s3Key := renameKeyName(r.ServerUUID, r.Container)
@@ -135,7 +134,7 @@ func (w Writer) Write(rs ...models.ScanResult) error {
 			Body:   bytes.NewReader(b),
 		}
 		if _, err := svc.PutObject(ctx, putObjectInput); err != nil {
-			return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
+			return fmt.Errorf("Failed to upload data to %s/%s, err: %w",
 				tempCredential.S3Bucket, path.Join(tempCredential.S3ResultsDir, s3Key), err)
 		}
 	}

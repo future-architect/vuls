@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
@@ -47,11 +45,11 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 
 		if err := DetectLibsCves(&r, config.Conf.TrivyOpts, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
+			return nil, fmt.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
 		if err := DetectPkgCves(&r, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+			return nil, fmt.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
 		cpeURIs, owaspDCXMLPath := []string{}, ""
@@ -70,7 +68,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		if owaspDCXMLPath != "" {
 			cpes, err := parser.Parse(owaspDCXMLPath)
 			if err != nil {
-				return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
+				return nil, fmt.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
 					r.ServerInfo(), owaspDCXMLPath, err)
 			}
 			cpeURIs = append(cpeURIs, cpes...)
@@ -188,44 +186,44 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 
 		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+			return nil, fmt.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
 		repos := config.Conf.Servers[r.ServerName].GitHubRepos
 		if err := DetectGitHubCves(&r, repos); err != nil {
-			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
+			return nil, fmt.Errorf("Failed to detect GitHub Cves: %w", err)
 		}
 
 		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
-			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
+			return nil, fmt.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
 		if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
+			return nil, fmt.Errorf("Failed to fill with gost: %w", err)
 		}
 
 		if err := FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
+			return nil, fmt.Errorf("Failed to fill with CVE: %w", err)
 		}
 
 		nExploitCve, err := FillWithExploit(&r, config.Conf.Exploit, config.Conf.LogOpts)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to fill with exploit: %w", err)
+			return nil, fmt.Errorf("Failed to fill with exploit: %w", err)
 		}
 		logging.Log.Infof("%s: %d PoC are detected", r.FormatServerName(), nExploitCve)
 
 		nMetasploitCve, err := FillWithMetasploit(&r, config.Conf.Metasploit, config.Conf.LogOpts)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
+			return nil, fmt.Errorf("Failed to fill with metasploit: %w", err)
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
 		if err := FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Known Exploited Vulnerabilities: %w", err)
+			return nil, fmt.Errorf("Failed to fill with Known Exploited Vulnerabilities: %w", err)
 		}
 
 		if err := FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
+			return nil, fmt.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
 		}
 
 		FillCweDict(&r)
@@ -249,14 +247,14 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 		//TODO don't call here
 		if err := reporter.OverwriteJSONFile(dir, r); err != nil {
-			return nil, xerrors.Errorf("Failed to write JSON: %w", err)
+			return nil, fmt.Errorf("Failed to write JSON: %w", err)
 		}
 	}
 
 	if config.Conf.DiffPlus || config.Conf.DiffMinus {
 		prevs, err := loadPrevious(rs, config.Conf.ResultsDir)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to load previous results. err: %w", err)
+			return nil, fmt.Errorf("Failed to load previous results. err: %w", err)
 		}
 		rs = diff(rs, prevs, config.Conf.DiffPlus, config.Conf.DiffMinus)
 	}
@@ -324,14 +322,14 @@ func DetectPkgCves(r *models.ScanResult, gostCnf config.GostConf, vuls2Conf conf
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
 			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine:
 			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
-				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
+				return fmt.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
 		case constant.Windows:
 			if err := detectPkgsCvesWithGost(gostCnf, r, logOpts); err != nil {
-				return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
+				return fmt.Errorf("Failed to detect CVE with gost: %w", err)
 			}
 		default:
-			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
+			return fmt.Errorf("Unsupported detection methods for %s", r.Family)
 		}
 	}
 
@@ -402,18 +400,18 @@ func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHub
 	for ownerRepo, setting := range githubConfs {
 		ss := strings.Split(ownerRepo, "/")
 		if len(ss) != 2 {
-			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
+			return fmt.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
 		}
 		owner, repo := ss[0], ss[1]
 		n, err := DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, setting.IgnoreGitHubDismissed)
 		if err != nil {
-			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
+			return fmt.Errorf("Failed to access GitHub Security Alerts: %w", err)
 		}
 		logging.Log.Infof("%s: %d CVEs detected with GHSA %s/%s",
 			r.FormatServerName(), n, owner, repo)
 
 		if err = DetectGitHubDependencyGraph(r, owner, repo, setting.Token); err != nil {
-			return xerrors.Errorf("Failed to access GitHub Dependency graph: %w", err)
+			return fmt.Errorf("Failed to access GitHub Dependency graph: %w", err)
 		}
 	}
 	return nil
@@ -427,7 +425,7 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	logging.Log.Infof("%s: Detect WordPress CVE. Number of pkgs: %d ", r.ServerInfo(), len(r.WordPressPackages))
 	n, err := detectWordPressCves(r, wpCnf)
 	if err != nil {
-		return xerrors.Errorf("Failed to detect WordPress CVE: %w", err)
+		return fmt.Errorf("Failed to detect WordPress CVE: %w", err)
 	}
 	logging.Log.Infof("%s: found %d WordPress CVEs", r.FormatServerName(), n)
 	return nil
@@ -442,7 +440,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
+		return fmt.Errorf("Failed to newGoCveDictClient. err: %w", err)
 	}
 	defer func() {
 		if err := client.closeDB(); err != nil {
@@ -452,7 +450,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 
 	ds, err := client.fetchCveDetails(cveIDs)
 	if err != nil {
-		return xerrors.Errorf("Failed to fetchCveDetails. err: %w", err)
+		return fmt.Errorf("Failed to fetchCveDetails. err: %w", err)
 	}
 
 	for _, d := range ds {
@@ -531,7 +529,7 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts logging.LogOpts) error {
 	client, err := gost.NewGostClient(cnf, r.Family, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new a gost client: %w", err)
+		return fmt.Errorf("Failed to new a gost client: %w", err)
 	}
 	defer func() {
 		if err := client.CloseDB(); err != nil {
@@ -541,7 +539,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 
 	nCVEs, err := client.DetectCVEs(r, true)
 	if err != nil {
-		return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
+		return fmt.Errorf("Failed to detect CVEs with gost: %w", err)
 	}
 
 	logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
@@ -553,7 +551,7 @@ func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts l
 func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
+		return fmt.Errorf("Failed to newGoCveDictClient. err: %w", err)
 	}
 	defer func() {
 		if err := client.closeDB(); err != nil {
@@ -565,7 +563,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 	for _, cpe := range cpes {
 		details, err := client.detectCveByCpeURI(cpe.CpeURI, cpe.UseJVN)
 		if err != nil {
-			return xerrors.Errorf("Failed to detectCveByCpeURI. err: %w", err)
+			return fmt.Errorf("Failed to detectCveByCpeURI. err: %w", err)
 		}
 
 		for _, detail := range details {

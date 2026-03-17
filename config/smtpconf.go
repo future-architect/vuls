@@ -1,8 +1,10 @@
 package config
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // SMTPConf is smtp config
@@ -26,7 +28,7 @@ func checkEmails(emails []string) (errs []error) {
 			return
 		}
 		if ok := govalidator.IsEmail(addr); !ok {
-			errs = append(errs, xerrors.Errorf("Invalid email address. email: %s", addr))
+			errs = append(errs, fmt.Errorf("Invalid email address. email: %s", addr))
 		}
 	}
 	return
@@ -47,21 +49,21 @@ func (c *SMTPConf) Validate() (errs []error) {
 	}
 
 	if c.SMTPAddr == "" {
-		errs = append(errs, xerrors.New("email.smtpAddr must not be empty"))
+		errs = append(errs, errors.New("email.smtpAddr must not be empty"))
 	}
 	if c.SMTPPort == "" {
-		errs = append(errs, xerrors.New("email.smtpPort must not be empty"))
+		errs = append(errs, errors.New("email.smtpPort must not be empty"))
 	}
 	switch c.TLSMode {
 	case "", "None", "STARTTLS", "SMTPS":
 	default:
-		errs = append(errs, xerrors.New(`email.tlsMode accepts ["", "None", "STARTTLS", "SMTPS"]`))
+		errs = append(errs, errors.New(`email.tlsMode accepts ["", "None", "STARTTLS", "SMTPS"]`))
 	}
 	if len(c.To) == 0 {
-		errs = append(errs, xerrors.New("email.To required at least one address"))
+		errs = append(errs, errors.New("email.To required at least one address"))
 	}
 	if len(c.From) == 0 {
-		errs = append(errs, xerrors.New("email.From required at least one address"))
+		errs = append(errs, errors.New("email.From required at least one address"))
 	}
 
 	_, err := govalidator.ValidateStruct(c)

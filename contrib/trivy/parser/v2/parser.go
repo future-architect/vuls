@@ -2,11 +2,11 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"time"
 
 	"github.com/aquasecurity/trivy/pkg/types"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/trivy/pkg"
@@ -39,7 +39,7 @@ var dockerTagPattern = regexp.MustCompile(`^(.*):(.*)$`)
 
 func setScanResultMeta(scanResult *models.ScanResult, report *types.Report) error {
 	if len(report.Results) == 0 {
-		return xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/docs/coverage/os/, https://aquasecurity.github.io/trivy/dev/docs/coverage/language/")
+		return fmt.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/docs/coverage/os/, https://aquasecurity.github.io/trivy/dev/docs/coverage/language/")
 	}
 
 	scanResult.ServerName = report.ArtifactName

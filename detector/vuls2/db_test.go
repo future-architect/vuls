@@ -1,12 +1,11 @@
 package vuls2_test
 
 import (
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
-
-	"golang.org/x/xerrors"
 
 	"github.com/MaineK00n/vuls2/pkg/db/session"
 	"github.com/MaineK00n/vuls2/pkg/db/session/types"
@@ -157,17 +156,17 @@ func putMetadata(metadata types.Metadata, path string) error {
 	}
 	sesh, err := c.New()
 	if err != nil {
-		return xerrors.Errorf("c.New(). err: %w", err)
+		return fmt.Errorf("c.New(). err: %w", err)
 	}
 	if err := sesh.Storage().Open(); err != nil {
-		return xerrors.Errorf("sesh.Storage().Open(). err: %w", err)
+		return fmt.Errorf("sesh.Storage().Open(). err: %w", err)
 	}
 	defer sesh.Storage().Close()
 	if err := sesh.Storage().Initialize(); err != nil {
-		return xerrors.Errorf("sesh.Storage().Initialize(). err: %w", err)
+		return fmt.Errorf("sesh.Storage().Initialize(). err: %w", err)
 	}
 	if err := sesh.Storage().PutMetadata(metadata); err != nil {
-		return xerrors.Errorf("sesh.Storage().PutMetadata(). err: %w", err)
+		return fmt.Errorf("sesh.Storage().PutMetadata(). err: %w", err)
 	}
 	return nil
 }

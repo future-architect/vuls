@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -44,7 +44,7 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 				s := newSUSE(c)
 				name, ver := s.parseOSRelease(r.Stdout)
 				if name == "" || ver == "" {
-					s.setErrs([]error{xerrors.Errorf("Failed to parse /etc/os-release: %s", r.Stdout)})
+					s.setErrs([]error{fmt.Errorf("Failed to parse /etc/os-release: %s", r.Stdout)})
 					return true, s
 				}
 				s.setDistro(name, ver)
@@ -73,7 +73,7 @@ func detectSUSE(c config.ServerInfo) (bool, osTypeInterface) {
 						return true, s
 					}
 				}
-				s.setErrs([]error{xerrors.Errorf("Failed to parse /etc/SuSE-release: %s", r.Stdout)})
+				s.setErrs([]error{fmt.Errorf("Failed to parse /etc/SuSE-release: %s", r.Stdout)})
 				return true, s
 			}
 		}
@@ -119,7 +119,7 @@ func (o *suse) checkDeps() error {
 	if o.getServerInfo().Mode.IsDeep() {
 		return o.execCheckDeps(o.depsDeep())
 	}
-	return xerrors.New("Unknown scan mode")
+	return errors.New("Unknown scan mode")
 }
 
 func (o *suse) depsFast() []string {
@@ -178,7 +178,7 @@ func (o *suse) scanPackages() (err error) {
 
 	o.Kernel.RebootRequired, err = o.rebootRequired()
 	if err != nil {
-		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
+		err = fmt.Errorf("Failed to detect the kernel reboot required: %w", err)
 		o.log.Warnf("err: %+v", err)
 		o.warns = append(o.warns, err)
 		// Only warning this error
@@ -190,7 +190,7 @@ func (o *suse) scanPackages() (err error) {
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
+		err = fmt.Errorf("Failed to scan updatable packages: %w", err)
 		o.log.Warnf("err: %+v", err)
 		o.warns = append(o.warns, err)
 		// Only warning this error
@@ -218,7 +218,7 @@ func (o *suse) scanUpdatablePackages() (models.Packages, error) {
 	}
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, xerrors.Errorf("Failed to scan updatable packages: %v", r)
+		return nil, fmt.Errorf("Failed to scan updatable packages: %v", r)
 	}
 	return o.parseZypperLULines(r.Stdout)
 }
@@ -261,11 +261,11 @@ func (o *suse) parseZypperLULines(stdout string) (models.Packages, error) {
 func (o *suse) parseZypperLUOneLine(line string) (*models.Package, error) {
 	ss := strings.Split(line, "|")
 	if len(ss) != 6 {
-		return nil, xerrors.Errorf("zypper -q lu Unknown format: %s", line)
+		return nil, fmt.Errorf("zypper -q lu Unknown format: %s", line)
 	}
 	available := strings.Split(strings.TrimSpace(ss[4]), "-")
 	if len(available) != 2 {
-		return nil, xerrors.Errorf("unexpected Available Version. expected: %q, actual: %q", "<major>-<release>", strings.TrimSpace(ss[4]))
+		return nil, fmt.Errorf("unexpected Available Version. expected: %q, actual: %q", "<major>-<release>", strings.TrimSpace(ss[4]))
 	}
 	return &models.Package{
 		Name:       strings.TrimSpace(ss[2]),
@@ -284,7 +284,7 @@ func (o *suse) hasZypperColorOption() bool {
 func (o *suse) postScan() error {
 	if o.isExecYumPS() {
 		if err := o.pkgPs(o.getOwnerPkgs); err != nil {
-			err = xerrors.Errorf("Failed to execute zypper-ps: %w", err)
+			err = fmt.Errorf("Failed to execute zypper-ps: %w", err)
 			o.log.Warnf("err: %+v", err)
 			o.warns = append(o.warns, err)
 			// Only warning this error
@@ -293,7 +293,7 @@ func (o *suse) postScan() error {
 
 	if o.isExecNeedsRestarting() {
 		if err := o.needsRestarting(); err != nil {
-			err = xerrors.Errorf("Failed to execute need-restarting: %w", err)
+			err = fmt.Errorf("Failed to execute need-restarting: %w", err)
 			o.log.Warnf("err: %+v", err)
 			o.warns = append(o.warns, err)
 			// Only warning this error
@@ -312,7 +312,7 @@ func (o *suse) needsRestarting() error {
 	cmd := "LANGUAGE=en_US.UTF-8 zypper ps -s"
 	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %w", r)
+		return fmt.Errorf("Failed to SSH: %v", r)
 	}
 	procs := o.parseNeedsRestarting(r.Stdout)
 	for _, proc := range procs {

@@ -18,7 +18,6 @@ import (
 	trivyjavadb "github.com/aquasecurity/trivy/pkg/javadb"
 	"github.com/aquasecurity/trivy/pkg/oci"
 	"github.com/google/go-containerregistry/pkg/name"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -35,11 +34,11 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 	meta, err := metac.Get()
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return xerrors.Errorf("Failed to get Java DB metadata. err: %w", err)
+			return fmt.Errorf("Failed to get Java DB metadata. err: %w", err)
 		}
 		if trivyOpts.TrivySkipJavaDBUpdate {
 			logging.Log.Error("Could not skip, the first run cannot skip downloading Java DB")
-			return xerrors.New("'--trivy-skip-java-db-update' cannot be specified on the first run")
+			return errors.New("'--trivy-skip-java-db-update' cannot be specified on the first run")
 		}
 	}
 
@@ -77,7 +76,7 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 			return ref, nil
 		}()
 		if err != nil {
-			return xerrors.Errorf("invalid javadb repository: %w", err)
+			return fmt.Errorf("invalid javadb repository: %w", err)
 		}
 		refs = append(refs, ref)
 	}
@@ -88,19 +87,19 @@ func UpdateJavaDB(trivyOpts config.TrivyOpts, noProgress bool) error {
 		MediaType: "application/vnd.aquasec.trivy.javadb.layer.v1.tar+gzip",
 		Quiet:     noProgress,
 	}); err != nil {
-		return xerrors.Errorf("Failed to download Trivy Java DB. err: %w", err)
+		return fmt.Errorf("Failed to download Trivy Java DB. err: %w", err)
 	}
 
 	// Parse the newly downloaded metadata.json
 	meta, err = metac.Get()
 	if err != nil {
-		return xerrors.Errorf("Failed to get Trivy Java DB metadata. err: %w", err)
+		return fmt.Errorf("Failed to get Trivy Java DB metadata. err: %w", err)
 	}
 
 	// Update DownloadedAt
 	meta.DownloadedAt = time.Now().UTC()
 	if err = metac.Update(meta); err != nil {
-		return xerrors.Errorf("Failed to update Trivy Java DB metadata. err: %w", err)
+		return fmt.Errorf("Failed to update Trivy Java DB metadata. err: %w", err)
 	}
 
 	return nil
@@ -129,7 +128,7 @@ type DBClient struct {
 func NewClient(cacheDBDir string) (*DBClient, error) {
 	driver, err := db.New(filepath.Join(cacheDBDir, "java-db"))
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to open Trivy Java DB. err: %w", err)
+		return nil, fmt.Errorf("Failed to open Trivy Java DB. err: %w", err)
 	}
 	return &DBClient{driver: driver}, nil
 }
@@ -147,10 +146,10 @@ func (client *DBClient) Close() error {
 func (client *DBClient) SearchBySHA1(sha1 string) (jar.Properties, error) {
 	index, err := client.driver.SelectIndexBySha1(sha1)
 	if err != nil {
-		return jar.Properties{}, xerrors.Errorf("Failed to select from Trivy Java DB. err: %w", err)
+		return jar.Properties{}, fmt.Errorf("Failed to select from Trivy Java DB. err: %w", err)
 	}
 	if index.ArtifactID == "" {
-		return jar.Properties{}, xerrors.Errorf("Failed to search ArtifactID by digest %s. err: %w", sha1, jar.ArtifactNotFoundErr)
+		return jar.Properties{}, fmt.Errorf("Failed to search ArtifactID by digest %s. err: %w", sha1, jar.ArtifactNotFoundErr)
 	}
 	return jar.Properties{
 		GroupID:    index.GroupID,

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
-	"golang.org/x/xerrors"
 
 	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
@@ -146,7 +146,7 @@ func (l *base) getPlatform() models.Platform {
 func (l *base) runningKernel() (release, version string, err error) {
 	r := l.exec("uname -r", noSudo)
 	if !r.isSuccess() {
-		return "", "", xerrors.Errorf("Failed to SSH: %s", r)
+		return "", "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	release = strings.TrimSpace(r.Stdout)
 
@@ -184,7 +184,7 @@ func (l *base) allContainers() (containers []config.Container, err error) {
 		}
 		return l.parseLxcPs(stdout)
 	default:
-		return containers, xerrors.Errorf(
+		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
@@ -210,7 +210,7 @@ func (l *base) runningContainers() (containers []config.Container, err error) {
 		}
 		return l.parseLxcPs(stdout)
 	default:
-		return containers, xerrors.Errorf(
+		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
@@ -236,7 +236,7 @@ func (l *base) exitedContainers() (containers []config.Container, err error) {
 		}
 		return l.parseLxcPs(stdout)
 	default:
-		return containers, xerrors.Errorf(
+		return containers, fmt.Errorf(
 			"Not supported yet: %s", l.ServerInfo.ContainerType)
 	}
 }
@@ -245,7 +245,7 @@ func (l *base) dockerPs(option string) (string, error) {
 	cmd := fmt.Sprintf("docker ps %s", option)
 	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
+		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -254,7 +254,7 @@ func (l *base) lxdPs(option string) (string, error) {
 	cmd := fmt.Sprintf("lxc list %s", option)
 	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("failed to SSH: %s", r)
+		return "", fmt.Errorf("failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -263,7 +263,7 @@ func (l *base) lxcPs(option string) (string, error) {
 	cmd := fmt.Sprintf("lxc-ls %s 2>/dev/null", option)
 	r := l.exec(cmd, sudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("failed to SSH: %s", r)
+		return "", fmt.Errorf("failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -276,7 +276,7 @@ func (l *base) parseDockerPs(stdout string) (containers []config.Container, err 
 			break
 		}
 		if len(fields) != 3 {
-			return containers, xerrors.Errorf("Unknown format: %s", line)
+			return containers, fmt.Errorf("Unknown format: %s", line)
 		}
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
@@ -298,7 +298,7 @@ func (l *base) parseLxdPs(stdout string) (containers []config.Container, err err
 			break
 		}
 		if len(fields) != 1 {
-			return containers, xerrors.Errorf("Unknown format: %s", line)
+			return containers, fmt.Errorf("Unknown format: %s", line)
 		}
 		containers = append(containers, config.Container{
 			ContainerID: fields[0],
@@ -331,7 +331,7 @@ func (l *base) ip() ([]string, []string, error) {
 	// 2: eth0    inet6 fe80::5054:ff:fe2a:864c/64 scope link \       valid_lft forever preferred_lft forever
 	r := l.exec("/sbin/ip -o addr", noSudo)
 	if !r.isSuccess() {
-		return nil, nil, xerrors.Errorf("Failed to detect IP address: %v", r)
+		return nil, nil, fmt.Errorf("Failed to detect IP address: %v", r)
 	}
 	ipv4Addrs, ipv6Addrs := l.parseIP(r.Stdout)
 	return ipv4Addrs, ipv6Addrs, nil
@@ -420,10 +420,10 @@ func (l *base) detectDeepSecurity() (string, error) {
 				line := strings.TrimSpace(r.Stdout)
 				return line[len(dsFingerPrintPrefix):], nil
 			}
-			l.warns = append(l.warns, xerrors.New("Fail to retrieve deepsecurity fingerprint"))
+			l.warns = append(l.warns, errors.New("Fail to retrieve deepsecurity fingerprint"))
 		}
 	}
-	return "", xerrors.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
+	return "", fmt.Errorf("Failed to detect deepsecurity %s", l.ServerInfo.ServerName)
 }
 
 func (l *base) detectIPS() {
@@ -490,7 +490,7 @@ func (l *base) detectRunningOnAws() (ok bool, instanceID string, err error) {
 			return false, "", nil
 		}
 	}
-	return false, "", xerrors.Errorf(
+	return false, "", fmt.Errorf(
 		"Failed to curl or wget to AWS instance metadata on %s. container: %s",
 		l.ServerInfo.ServerName, l.ServerInfo.Container.Name)
 }
@@ -579,7 +579,7 @@ func (l *base) detectInitSystem() (string, error) {
 	f = func(cmd string) (string, error) {
 		r := l.exec(cmd, sudo)
 		if !r.isSuccess() {
-			return "", xerrors.Errorf("Failed to stat %s: %s", cmd, r)
+			return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
 		}
 		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 		scanner.Scan()
@@ -601,7 +601,7 @@ func (l *base) detectInitSystem() (string, error) {
 			}
 			return sysVinit, nil
 		}
-		return "", xerrors.Errorf("Failed to detect a init system: %s", line)
+		return "", fmt.Errorf("Failed to detect a init system: %s", line)
 	}
 	return f("stat /proc/1/exe")
 }
@@ -610,7 +610,7 @@ func (l *base) detectServiceName(pid string) (string, error) {
 	cmd := fmt.Sprintf("systemctl status --quiet --no-pager %s", pid)
 	r := l.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to stat %s: %s", cmd, r)
+		return "", fmt.Errorf("Failed to stat %s: %s", cmd, r)
 	}
 	return l.parseSystemctlStatus(r.Stdout), nil
 }
@@ -672,7 +672,7 @@ func (l *base) scanLibraries() (err error) {
 		// find / -type f -and \( -name "package-lock.json" -o -name "yarn.lock" ... \) 2>&1 | grep -v "find: "
 		r := l.exec(fmt.Sprintf(`find %s -type f -and \( %s \) 2>&1 | grep -v "find: "`, dir, findopt), priv)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
-			return xerrors.Errorf("Failed to find lock files: %s", r)
+			return fmt.Errorf("Failed to find lock files: %s", r)
 		}
 
 		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
@@ -680,7 +680,7 @@ func (l *base) scanLibraries() (err error) {
 			detectFiles = append(detectFiles, scanner.Text())
 		}
 		if err := scanner.Err(); err != nil {
-			return xerrors.Errorf("Failed to reading find results. err: %w", err)
+			return fmt.Errorf("Failed to reading find results. err: %w", err)
 		}
 	}
 
@@ -697,13 +697,13 @@ func (l *base) scanLibraries() (err error) {
 
 			r := l.exec("pwd", noSudo)
 			if !r.isSuccess() {
-				return "", xerrors.Errorf("Failed to get current directory. err: %w", r.Error)
+				return "", fmt.Errorf("Failed to get current directory. err: %w", r.Error)
 			}
 
 			return ufilepath.Join(strings.TrimSuffix(r.Stdout, "\n"), path), nil
 		}()
 		if err != nil {
-			return xerrors.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
+			return fmt.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
 		}
 
 		if _, ok := found[abspath]; ok {
@@ -715,18 +715,18 @@ func (l *base) scanLibraries() (err error) {
 		filemode, contents, err := func() (os.FileMode, []byte, error) {
 			r := l.exec(fmt.Sprintf(`stat -c "%%a" %s`, abspath), priv)
 			if !r.isSuccess() {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file permission. filepath: %s, err: %w", abspath, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to get target file permission. filepath: %s, err: %w", abspath, err)
 			}
 			permStr := fmt.Sprintf("0%s", strings.TrimSuffix(r.Stdout, "\n"))
 			perm, err := strconv.ParseUint(permStr, 8, 32)
 			if err != nil {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to parse permission string. , permission string: %s, err: %s", permStr, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to parse permission string. , permission string: %s, err: %s", permStr, err)
 			}
 			filemode := os.FileMode(perm)
 
 			r = l.exec(fmt.Sprintf("cat %s", abspath), priv)
 			if !r.isSuccess() {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
 			}
 			contents := []byte(r.Stdout)
 
@@ -739,7 +739,7 @@ func (l *base) scanLibraries() (err error) {
 
 		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline())
 		if err != nil {
-			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, abspath)
+			return fmt.Errorf("Failed to analyze library. err: %w, filepath: %s", err, abspath)
 		}
 		for _, libscanner := range libraryScanners {
 			libscanner.LockfilePath = abspath
@@ -756,7 +756,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		DisabledAnalyzers: disabledAnalyzers,
 	})
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to new analyzer group. err: %w", err)
+		return nil, fmt.Errorf("Failed to new analyzer group. err: %w", err)
 	}
 
 	// `errgroup` cancels the context after Wait returns, so it can’t be use later.
@@ -778,17 +778,17 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		nil,
 		opts,
 	); err != nil {
-		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
+		return nil, fmt.Errorf("Failed to get libs. err: %w", err)
 	}
 
 	if err := eg.Wait(); err != nil {
-		return nil, xerrors.Errorf("analyze error: %w", err)
+		return nil, fmt.Errorf("analyze error: %w", err)
 	}
 
 	// Post-analysis
 	composite, err := ag.PostAnalyzerFS()
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to prepare filesystem for post-analysis. err: %w", err)
+		return nil, fmt.Errorf("Failed to prepare filesystem for post-analysis. err: %w", err)
 	}
 	defer func() {
 		_ = composite.Cleanup()
@@ -799,19 +799,19 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 		opener := func() (xio.ReadSeekCloserAt, error) { return xio.NopCloser(bytes.NewReader(contents)), nil }
 		tmpFilePath, err := composite.CopyFileToTemp(opener, info)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to copy file to temp. err: %w", err)
+			return nil, fmt.Errorf("Failed to copy file to temp. err: %w", err)
 		}
 		if err := composite.CreateLink(analyzerTypes, "", path, tmpFilePath); err != nil {
-			return nil, xerrors.Errorf("Failed to create link. err: %w", err)
+			return nil, fmt.Errorf("Failed to create link. err: %w", err)
 		}
 		if err = ag.PostAnalyze(ctx, composite, result, opts); err != nil {
-			return nil, xerrors.Errorf("Failed at post-analysis. err: %w", err)
+			return nil, fmt.Errorf("Failed at post-analysis. err: %w", err)
 		}
 	}
 
 	libscan, err := convertLibWithScanner(result.Applications)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
+		return nil, fmt.Errorf("Failed to convert libs. err: %w", err)
 	}
 	libraryScanners = append(libraryScanners, libscan...)
 	return libraryScanners, nil
@@ -943,24 +943,24 @@ func (l *base) scanWordPress() error {
 
 	shell, err := l.detectShell()
 	if err != nil {
-		return xerrors.Errorf("Failed to detect shell. err: %w", err)
+		return fmt.Errorf("Failed to detect shell. err: %w", err)
 	}
 
 	l.log.Info("Scanning WordPress...")
 	if l.ServerInfo.WordPress.NoSudo && l.ServerInfo.User != l.ServerInfo.WordPress.OSUser {
 		if r := l.exec(fmt.Sprintf("timeout 2 su %s -c exit", l.ServerInfo.WordPress.OSUser), noSudo); !r.isSuccess() {
-			return xerrors.New("Failed to switch user without password. err: please configure to switch users without password")
+			return errors.New("Failed to switch user without password. err: please configure to switch users without password")
 		}
 	}
 
 	cmd := l.buildWpCliCmd("core version", false, shell)
 	if r := exec(l.ServerInfo, cmd, noSudo); !r.isSuccess() {
-		return xerrors.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
+		return fmt.Errorf("Failed to exec `%s`. Check the OS user, command path of wp-cli, DocRoot and permission: %#v", cmd, l.ServerInfo.WordPress)
 	}
 
 	wp, err := l.detectWordPress(shell)
 	if err != nil {
-		return xerrors.Errorf("Failed to scan wordpress: %w", err)
+		return fmt.Errorf("Failed to scan wordpress: %w", err)
 	}
 	l.WordPress = *wp
 	return nil
@@ -989,7 +989,7 @@ func (l *base) detectShell() (string, error) {
 		}
 	}
 
-	return "", xerrors.New("shell cannot be determined")
+	return "", errors.New("shell cannot be determined")
 }
 
 func (l *base) detectWordPress(shell string) (*models.WordPressPackages, error) {
@@ -1025,7 +1025,7 @@ func (l *base) detectWpCore(shell string) (string, error) {
 
 	r := exec(l.ServerInfo, cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to get wp core version: %s", r)
+		return "", fmt.Errorf("Failed to get wp core version: %s", r)
 	}
 	return strings.TrimSpace(r.Stdout), nil
 }
@@ -1036,11 +1036,11 @@ func (l *base) detectWpThemes(shell string) ([]models.WpPackage, error) {
 	var themes []models.WpPackage
 	r := exec(l.ServerInfo, cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, xerrors.Errorf("Failed to get a list of WordPress plugins: %s", r)
+		return nil, fmt.Errorf("Failed to get a list of WordPress plugins: %s", r)
 	}
 	err := json.Unmarshal([]byte(r.Stdout), &themes)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to unmarshal wp theme list: %w", err)
+		return nil, fmt.Errorf("Failed to unmarshal wp theme list: %w", err)
 	}
 	for i := range themes {
 		themes[i].Type = models.WPTheme
@@ -1054,7 +1054,7 @@ func (l *base) detectWpPlugins(shell string) ([]models.WpPackage, error) {
 	var plugins []models.WpPackage
 	r := exec(l.ServerInfo, cmd, noSudo)
 	if !r.isSuccess() {
-		return nil, xerrors.Errorf("Failed to wp plugin list: %s", r)
+		return nil, fmt.Errorf("Failed to wp plugin list: %s", r)
 	}
 	if err := json.Unmarshal([]byte(r.Stdout), &plugins); err != nil {
 		return nil, err
@@ -1175,7 +1175,7 @@ func nativeScanPort(scanDest string) (bool, error) {
 		return false, err
 	}
 	if err := conn.Close(); err != nil {
-		return false, xerrors.Errorf("Failed to close connection. err: %w", err)
+		return false, fmt.Errorf("Failed to close connection. err: %w", err)
 	}
 
 	return true, nil
@@ -1200,7 +1200,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 
 		scanner, err := nmap.NewScanner(nmap.WithBinaryPath(portScanConf.ScannerBinPath))
 		if err != nil {
-			return []string{}, xerrors.Errorf("unable to create nmap scanner: %w", err)
+			return []string{}, fmt.Errorf("unable to create nmap scanner: %w", err)
 		}
 
 		scanTechnique, err := l.setScanTechniques()
@@ -1218,7 +1218,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 		if portScanConf.SourcePort != "" {
 			port, err := strconv.ParseUint(portScanConf.SourcePort, 10, 16)
 			if err != nil {
-				return []string{}, xerrors.Errorf("failed to strconv.ParseUint(%s, 10, 16) = %w", portScanConf.SourcePort, err)
+				return []string{}, fmt.Errorf("failed to strconv.ParseUint(%s, 10, 16) = %w", portScanConf.SourcePort, err)
 			}
 			scanner.AddOptions(nmap.WithSourcePort(uint16(port)))
 		}
@@ -1235,7 +1235,7 @@ func (l *base) execExternalPortScan(scanDestIPPorts map[string][]string) ([]stri
 		l.log.Debugf("Executing... %s", strings.ReplaceAll(strings.Join(cmd, " "), "\n", ""))
 		result, warnings, err := scanner.Run()
 		if err != nil {
-			return []string{}, xerrors.Errorf("unable to run nmap scan: %w", err)
+			return []string{}, fmt.Errorf("unable to run nmap scan: %w", err)
 		}
 
 		if warnings != nil {
@@ -1307,7 +1307,7 @@ func (l *base) setScanTechniques() (func(*nmap.Scanner), error) {
 		}
 	}
 
-	return nil, xerrors.Errorf("Failed to setScanTechniques. There is an unsupported option in ScanTechniques.")
+	return nil, fmt.Errorf("failed to setScanTechniques: there is an unsupported option in ScanTechniques")
 }
 
 func (l *base) updatePortStatus(listenIPPorts []string) {
@@ -1351,7 +1351,7 @@ func (l *base) ps() (string, error) {
 	cmd := `LANGUAGE=en_US.UTF-8 ps --no-headers --ppid 2 -p 2 --deselect -o pid,comm`
 	r := l.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
+		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -1374,7 +1374,7 @@ func (l *base) lsProcExe(pid string) (string, error) {
 	cmd := fmt.Sprintf("ls -l /proc/%s/exe", pid)
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
+		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -1382,7 +1382,7 @@ func (l *base) lsProcExe(pid string) (string, error) {
 func (l *base) parseLsProcExe(stdout string) (string, error) {
 	ss := strings.Fields(stdout)
 	if len(ss) < 11 {
-		return "", xerrors.Errorf("Unknown format: %s", stdout)
+		return "", fmt.Errorf("Unknown format: %s", stdout)
 	}
 	return ss[10], nil
 }
@@ -1391,7 +1391,7 @@ func (l *base) grepProcMap(pid string) (string, error) {
 	cmd := fmt.Sprintf(`cat /proc/%s/maps 2>/dev/null | grep -v " 00:00 " | awk '{print $6}' | sort -n | uniq`, pid)
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to SSH: %s", r)
+		return "", fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -1410,7 +1410,7 @@ func (l *base) lsOfListen() (string, error) {
 	cmd := `lsof -i -P -n`
 	r := l.exec(util.PrependProxyEnv(cmd), sudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to lsof: %s", r)
+		return "", fmt.Errorf("Failed to lsof: %s", r)
 	}
 	return r.Stdout, nil
 }
@@ -1436,7 +1436,7 @@ func (l *base) parseLsOf(stdout string) map[string][]string {
 func (l *base) pkgPs(getOwnerPkgs func([]string) ([]string, error)) error {
 	stdout, err := l.ps()
 	if err != nil {
-		return xerrors.Errorf("Failed to pkgPs: %w", err)
+		return fmt.Errorf("Failed to pkgPs: %w", err)
 	}
 	pidNames := l.parsePs(stdout)
 	pidLoadedFiles := map[string][]string{}

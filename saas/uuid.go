@@ -12,7 +12,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/hashicorp/go-uuid"
-	"golang.org/x/xerrors"
 )
 
 // EnsureUUIDs generate a new UUID of the scan target server if UUID is not assigned yet.
@@ -20,7 +19,7 @@ import (
 func EnsureUUIDs(servers map[string]config.ServerInfo, path string, scanResults models.ScanResults) (err error) {
 	needsOverwrite, err := ensure(servers, scanResults, uuid.GenerateUUID)
 	if err != nil {
-		return xerrors.Errorf("Failed to ensure UUIDs. err: %w", err)
+		return fmt.Errorf("Failed to ensure UUIDs. err: %w", err)
 	}
 
 	if !needsOverwrite {
@@ -122,21 +121,21 @@ func writeToFile(cnf config.Config, path string) error {
 	// rename the current config.toml to config.toml.bak
 	info, err := os.Lstat(path)
 	if err != nil {
-		return xerrors.Errorf("Failed to lstat %s: %w", path, err)
+		return fmt.Errorf("Failed to lstat %s: %w", path, err)
 	}
 	realPath := path
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		if realPath, err = os.Readlink(path); err != nil {
-			return xerrors.Errorf("Failed to Read link %s: %w", path, err)
+			return fmt.Errorf("Failed to Read link %s: %w", path, err)
 		}
 	}
 	if err := os.Rename(realPath, realPath+".bak"); err != nil {
-		return xerrors.Errorf("Failed to rename %s: %w", path, err)
+		return fmt.Errorf("Failed to rename %s: %w", path, err)
 	}
 
 	var buf bytes.Buffer
 	if err := toml.NewEncoder(&buf).Encode(c); err != nil {
-		return xerrors.Errorf("Failed to encode to toml: %w", err)
+		return fmt.Errorf("Failed to encode to toml: %w", err)
 	}
 	str := strings.ReplaceAll(buf.String(), "\n  [", "\n\n  [")
 	str = fmt.Sprintf("%s\n\n%s",

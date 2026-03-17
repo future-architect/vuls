@@ -1,11 +1,11 @@
 package v2
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/d4l3k/messagediff"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/models"
 )
@@ -3126,7 +3126,7 @@ func TestParseError(t *testing.T) {
 	}{
 		"image hello-world": {
 			vulnJSON: helloWorldTrivy,
-			expected: xerrors.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/docs/coverage/os/, https://aquasecurity.github.io/trivy/dev/docs/coverage/language/"),
+			expected: fmt.Errorf("scanned images or libraries are not supported by Trivy. see https://aquasecurity.github.io/trivy/dev/docs/coverage/os/, https://aquasecurity.github.io/trivy/dev/docs/coverage/language/"),
 		},
 	}
 

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/CycloneDX/cyclonedx-go"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter/sbom"
@@ -35,7 +34,7 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 		path := filepath.Join(w.CurrentDir, "summary.txt")
 		text := formatOneLineSummary(rs...)
 		if err := w.writeFile(path, []byte(text), 0600); err != nil {
-			return xerrors.Errorf(
+			return fmt.Errorf(
 				"Failed to write to file. path: %s, err: %w",
 				path, err)
 		}
@@ -52,10 +51,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 			var b []byte
 			if b, err = json.MarshalIndent(r, "", "    "); err != nil {
-				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
+				return fmt.Errorf("Failed to Marshal to JSON: %w", err)
 			}
 			if err := w.writeFile(p, b, 0600); err != nil {
-				return xerrors.Errorf("Failed to write JSON. path: %s, err: %w", p, err)
+				return fmt.Errorf("Failed to write JSON. path: %s, err: %w", p, err)
 			}
 		}
 
@@ -66,10 +65,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 			text, err := formatList(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format list: %w", err)
+				return fmt.Errorf("Failed to format list: %w", err)
 			}
 			if err := w.writeFile(p, []byte(text), 0600); err != nil {
-				return xerrors.Errorf("Failed to write text files. path: %s, err: %w", p, err)
+				return fmt.Errorf("Failed to write text files. path: %s, err: %w", p, err)
 			}
 		}
 
@@ -80,10 +79,10 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 			}
 			text, err := formatFullPlainText(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format full text: %w", err)
+				return fmt.Errorf("Failed to format full text: %w", err)
 			}
 			if err := w.writeFile(p, []byte(text), 0600); err != nil {
-				return xerrors.Errorf("Failed to write text files. path: %s, err: %w", p, err)
+				return fmt.Errorf("Failed to write text files. path: %s, err: %w", p, err)
 			}
 		}
 
@@ -93,40 +92,40 @@ func (w LocalFileWriter) Write(rs ...models.ScanResult) (err error) {
 				p = path + "_diff.csv"
 			}
 			if err := formatCsvList(r, p); err != nil {
-				return xerrors.Errorf("Failed to write CSV: %s, %w", p, err)
+				return fmt.Errorf("Failed to write CSV: %s, %w", p, err)
 			}
 		}
 
 		if w.FormatCycloneDXJSON {
 			bs, err := sbom.SerializeCycloneDX(sbom.ToCycloneDX(r), cyclonedx.BOMFileFormatJSON)
 			if err != nil {
-				return xerrors.Errorf("Failed to generate CycloneDX JSON. err: %w", err)
+				return fmt.Errorf("Failed to generate CycloneDX JSON. err: %w", err)
 			}
 			p := fmt.Sprintf("%s_cyclonedx.json", path)
 			if err := w.writeFile(p, bs, 0600); err != nil {
-				return xerrors.Errorf("Failed to write CycloneDX JSON. path: %s, err: %w", p, err)
+				return fmt.Errorf("Failed to write CycloneDX JSON. path: %s, err: %w", p, err)
 			}
 		}
 
 		if w.FormatCycloneDXXML {
 			bs, err := sbom.SerializeCycloneDX(sbom.ToCycloneDX(r), cyclonedx.BOMFileFormatXML)
 			if err != nil {
-				return xerrors.Errorf("Failed to generate CycloneDX XML. err: %w", err)
+				return fmt.Errorf("Failed to generate CycloneDX XML. err: %w", err)
 			}
 			p := fmt.Sprintf("%s_cyclonedx.xml", path)
 			if err := w.writeFile(p, bs, 0600); err != nil {
-				return xerrors.Errorf("Failed to write CycloneDX XML. path: %s, err: %w", p, err)
+				return fmt.Errorf("Failed to write CycloneDX XML. path: %s, err: %w", p, err)
 			}
 		}
 
 		if w.FormatSPDXJSON {
 			bs, err := sbom.SerializeSPDX(sbom.ToSPDX(r, ""))
 			if err != nil {
-				return xerrors.Errorf("Failed to generate SPDX JSON. err: %w", err)
+				return fmt.Errorf("Failed to generate SPDX JSON. err: %w", err)
 			}
 			p := fmt.Sprintf("%s_spdx.json", path)
 			if err := w.writeFile(p, bs, 0600); err != nil {
-				return xerrors.Errorf("Failed to write SPDX JSON. path: %s, err: %w", p, err)
+				return fmt.Errorf("Failed to write SPDX JSON. path: %s, err: %w", p, err)
 			}
 		}
 	}

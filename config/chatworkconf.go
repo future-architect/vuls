@@ -1,8 +1,9 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // ChatWorkConf is ChatWork config
@@ -18,11 +19,11 @@ func (c *ChatWorkConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.Room) == 0 {
-		errs = append(errs, xerrors.New("chatWorkConf.room must not be empty"))
+		errs = append(errs, errors.New("chatWorkConf.room must not be empty"))
 	}
 
 	if len(c.APIToken) == 0 {
-		errs = append(errs, xerrors.New("chatWorkConf.ApiToken must not be empty"))
+		errs = append(errs, errors.New("chatWorkConf.ApiToken must not be empty"))
 	}
 
 	_, err := govalidator.ValidateStruct(c)

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
 	"slices"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/knqyf263/go-cpe/naming"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/xerrors"
 )
 
 type analysis struct {
@@ -48,7 +48,7 @@ func Parse(path string) ([]string, error) {
 
 	var anal analysis
 	if err := xml.Unmarshal(b, &anal); err != nil {
-		return nil, xerrors.Errorf("Failed to unmarshal: %s", err)
+		return nil, fmt.Errorf("Failed to unmarshal: %s", err)
 	}
 
 	cpes := []string{}

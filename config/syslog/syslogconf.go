@@ -4,10 +4,10 @@ package syslog
 
 import (
 	"errors"
+	"fmt"
 	"log/syslog"
 
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // Validate validates configuration
@@ -63,7 +63,7 @@ func (c *Conf) GetSeverity() (syslog.Priority, error) {
 	case "debug":
 		return syslog.LOG_DEBUG, nil
 	default:
-		return -1, xerrors.Errorf("Invalid severity: %s", c.Severity)
+		return -1, fmt.Errorf("Invalid severity: %s", c.Severity)
 	}
 }
 
@@ -115,6 +115,6 @@ func (c *Conf) GetFacility() (syslog.Priority, error) {
 	case "local7":
 		return syslog.LOG_LOCAL7, nil
 	default:
-		return -1, xerrors.Errorf("Invalid facility: %s", c.Facility)
+		return -1, fmt.Errorf("Invalid facility: %s", c.Facility)
 	}
 }

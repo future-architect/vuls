@@ -1,8 +1,9 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // GoogleChatConf is GoogleChat config
@@ -19,10 +20,10 @@ func (c *GoogleChatConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.WebHookURL) == 0 {
-		errs = append(errs, xerrors.New("googleChatConf.webHookURL must not be empty"))
+		errs = append(errs, errors.New("googleChatConf.webHookURL must not be empty"))
 	}
 	if !govalidator.IsRegex(c.ServerNameRegexp) {
-		errs = append(errs, xerrors.New("googleChatConf.serverNameRegexp must be regex"))
+		errs = append(errs, errors.New("googleChatConf.serverNameRegexp must be regex"))
 	}
 	_, err := govalidator.ValidateStruct(c)
 	if err != nil {

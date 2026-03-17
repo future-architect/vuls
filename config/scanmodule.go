@@ -1,9 +1,9 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"strings"
-
-	"golang.org/x/xerrors"
 )
 
 // ScanModule has a type of scan module
@@ -66,7 +66,7 @@ func (s *ScanModule) ensure() error {
 		s.Set(Lockfile)
 		s.Set(Port)
 	} else if !s.IsScanOSPkg() && s.IsScanPort() {
-		return xerrors.New("When specifying the Port, Specify OSPkg as well")
+		return errors.New("When specifying the Port, Specify OSPkg as well")
 	}
 	return nil
 }
@@ -86,12 +86,12 @@ func setScanModules(server *ServerInfo, d ServerInfo) error {
 		case portStr:
 			server.Module.Set(Port)
 		default:
-			return xerrors.Errorf("scanMode: %s of %s is invalid. Specify %s",
+			return fmt.Errorf("scanMode: %s of %s is invalid. Specify %s",
 				m, server.ServerName, allModules)
 		}
 	}
 	if err := server.Module.ensure(); err != nil {
-		return xerrors.Errorf("%s in %s", err, server.ServerName)
+		return fmt.Errorf("%s in %s", err, server.ServerName)
 	}
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	apk "github.com/knqyf263/go-apk-version"
 	deb "github.com/knqyf263/go-deb-version"
 	rpm "github.com/knqyf263/go-rpm-version"
-	"golang.org/x/xerrors"
 
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
@@ -245,7 +244,7 @@ func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, c
 					var accepts []int
 					for _, index := range cn.Accepts.Version {
 						if len(scanned.OSPackages) <= index {
-							return criterionTypes.FilteredCriterion{}, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+							return criterionTypes.FilteredCriterion{}, fmt.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 						}
 
 						if slices.ContainsFunc(m[fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Debian, scanned.OSPackages[index].SrcName), func() int {
@@ -299,7 +298,7 @@ func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, c
 					var accepts []int
 					for _, index := range cn.Accepts.Version {
 						if len(scanned.OSPackages) <= index {
-							return criterionTypes.FilteredCriterion{}, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+							return criterionTypes.FilteredCriterion{}, fmt.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 						}
 
 						if slices.ContainsFunc(m[fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Ubuntu, scanned.OSPackages[index].SrcName), func() int {
@@ -411,11 +410,11 @@ func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) str
 
 func comparePackStatus(a, b packStatus) (int, error) {
 	if a.status.Name != b.status.Name {
-		return 0, xerrors.Errorf("Package names are different. a: %s, b: %s", a.status.Name, b.status.Name)
+		return 0, fmt.Errorf("Package names are different. a: %s, b: %s", a.status.Name, b.status.Name)
 	}
 
 	if a.rangeType != vcAffectedRangeTypes.RangeTypeUnknown && b.rangeType != vcAffectedRangeTypes.RangeTypeUnknown && a.rangeType != b.rangeType {
-		return 0, xerrors.Errorf("Range types are different. a: %s, b: %s", a.rangeType, b.rangeType)
+		return 0, fmt.Errorf("Range types are different. a: %s, b: %s", a.rangeType, b.rangeType)
 	}
 
 	return cmp.Or(
@@ -479,7 +478,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			ss := strings.Split(da.AdvisoryID, "-")
 			if len(ss) != 3 {
-				return models.Reference{}, xerrors.Errorf("unexpected JVNDB ID: %s", da.AdvisoryID)
+				return models.Reference{}, fmt.Errorf("unexpected JVNDB ID: %s", da.AdvisoryID)
 			}
 			return models.Reference{
 				Link:   fmt.Sprintf("https://jvndb.jvn.jp/ja/contents/%s/%s.html", ss[1], da.AdvisoryID),
@@ -510,7 +509,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 				RefID:  da.AdvisoryID,
 			}, nil
 		default:
-			return models.Reference{}, xerrors.Errorf("unsupported source: %s", s)
+			return models.Reference{}, fmt.Errorf("unsupported source: %s", s)
 		}
 	case ecosystemTypes.EcosystemTypeEPEL, ecosystemTypes.EcosystemTypeFedora:
 		return models.Reference{
@@ -578,7 +577,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			RefID:  da.AdvisoryID,
 		}, nil
 	default:
-		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
+		return models.Reference{}, fmt.Errorf("unsupported family: %s", et)
 	}
 }
 

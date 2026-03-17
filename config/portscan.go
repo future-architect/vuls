@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"slices"
@@ -8,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // PortScanConf is the setting for using an external port scanner
@@ -120,36 +121,36 @@ func (c *PortScanConf) Validate() (errs []error) {
 		if c.IsZero() {
 			return
 		}
-		errs = append(errs, xerrors.New("To enable the PortScan option, ScannerBinPath must be set."))
+		errs = append(errs, errors.New("to enable the PortScan option, ScannerBinPath must be set"))
 	}
 
 	if _, err := os.Stat(c.ScannerBinPath); err != nil {
-		errs = append(errs, xerrors.Errorf(
+		errs = append(errs, fmt.Errorf(
 			"scanner is not found. ScannerBinPath: %s not exists", c.ScannerBinPath))
 	}
 
 	scanTechniques := c.GetScanTechniques()
 	for _, scanTechnique := range scanTechniques {
 		if scanTechnique == NotSupportTechnique {
-			errs = append(errs, xerrors.New("There is an unsupported option in ScanTechniques."))
+			errs = append(errs, errors.New("there is an unsupported option in ScanTechniques"))
 		}
 	}
 
 	// It does not currently support multiple ScanTechniques.
 	// But if it supports UDP scanning, it will need to accept multiple ScanTechniques.
 	if len(scanTechniques) > 1 {
-		errs = append(errs, xerrors.New("Currently multiple ScanTechniques are not supported."))
+		errs = append(errs, errors.New("currently multiple ScanTechniques are not supported"))
 	}
 
 	if c.HasPrivileged {
 		if os.Geteuid() != 0 {
 			output, err := exec.Command("getcap", c.ScannerBinPath).Output()
 			if err != nil {
-				errs = append(errs, xerrors.Errorf("Failed to check capability of %s. error message: %w", c.ScannerBinPath, err))
+				errs = append(errs, fmt.Errorf("Failed to check capability of %s. error message: %w", c.ScannerBinPath, err))
 			} else {
 				parseOutput := strings.SplitN(string(output), "=", 2)
 				if len(parseOutput) != 2 {
-					errs = append(errs, xerrors.Errorf("Failed to parse getcap outputs. please execute this command: `$ getcap %s`. If the following string (`/usr/bin/nmap = ... `) is not displayed, you need to set the capability with the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", c.ScannerBinPath, c.ScannerBinPath))
+					errs = append(errs, fmt.Errorf("Failed to parse getcap outputs. please execute this command: `$ getcap %s`. If the following string (`/usr/bin/nmap = ... `) is not displayed, you need to set the capability with the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", c.ScannerBinPath, c.ScannerBinPath))
 				} else {
 					parseCapability := strings.Split(strings.TrimSpace(parseOutput[1]), "+")
 					capabilities := strings.Split(parseCapability[0], ",")
@@ -160,12 +161,12 @@ func (c *PortScanConf) Validate() (errs []error) {
 							continue
 						}
 
-						errs = append(errs, xerrors.Errorf("Not enough capability to execute. needs: ['cap_net_bind_service', 'cap_net_admin', 'cap_net_raw'], actual: %s. To fix this, run the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", capabilities, c.ScannerBinPath))
+						errs = append(errs, fmt.Errorf("Not enough capability to execute. needs: ['cap_net_bind_service', 'cap_net_admin', 'cap_net_raw'], actual: %s. To fix this, run the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", capabilities, c.ScannerBinPath))
 						break
 					}
 
 					if parseCapability[1] != "eip" {
-						errs = append(errs, xerrors.Errorf("Capability(`cap_net_bind_service,cap_net_admin,cap_net_raw`) must belong to the following capability set(need: eip, actual: %s). To fix this, run the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", parseCapability[1], c.ScannerBinPath))
+						errs = append(errs, fmt.Errorf("Capability(`cap_net_bind_service,cap_net_admin,cap_net_raw`) must belong to the following capability set(need: eip, actual: %s). To fix this, run the following command. `$ setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip %s`", parseCapability[1], c.ScannerBinPath))
 					}
 				}
 			}
@@ -175,7 +176,7 @@ func (c *PortScanConf) Validate() (errs []error) {
 	if !c.HasPrivileged {
 		for _, scanTechnique := range scanTechniques {
 			if scanTechnique != TCPConnect && scanTechnique != NotSupportTechnique {
-				errs = append(errs, xerrors.New("If not privileged, only TCPConnect Scan(-sT) can be used."))
+				errs = append(errs, errors.New("if not privileged, only TCPConnect Scan(-sT) can be used"))
 				break
 			}
 		}
@@ -183,19 +184,19 @@ func (c *PortScanConf) Validate() (errs []error) {
 
 	if c.SourcePort != "" {
 		if slices.Contains(scanTechniques, TCPConnect) {
-			errs = append(errs, xerrors.New("SourcePort Option(-g/--source-port) is incompatible with the default TCPConnect Scan(-sT)."))
+			errs = append(errs, errors.New("sourcePort option(-g/--source-port) is incompatible with the default TCPConnect Scan(-sT)"))
 		}
 
 		portNumber, err := strconv.Atoi(c.SourcePort)
 		if err != nil {
-			errs = append(errs, xerrors.Errorf("SourcePort conversion failed. %w", err))
+			errs = append(errs, fmt.Errorf("SourcePort conversion failed. %w", err))
 		} else {
 			if portNumber < 0 || 65535 < portNumber {
-				errs = append(errs, xerrors.Errorf("SourcePort(%s) must be between 0 and 65535.", c.SourcePort))
+				errs = append(errs, fmt.Errorf("sourcePort(%s) must be between 0 and 65535", c.SourcePort))
 			}
 
 			if portNumber == 0 {
-				errs = append(errs, xerrors.New("SourcePort(0) may not work on all systems."))
+				errs = append(errs, errors.New("sourcePort(0) may not work on all systems"))
 			}
 		}
 	}

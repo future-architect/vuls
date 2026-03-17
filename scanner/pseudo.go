@@ -2,12 +2,11 @@ package scanner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -92,7 +91,7 @@ func (o *pseudo) scanLibraries() (err error) {
 	detectFiles := o.getServerInfo().Lockfiles
 
 	if o.getServerInfo().FindLock {
-		return xerrors.New("FindLock is not supported in pseudo")
+		return errors.New("FindLock is not supported in pseudo")
 	}
 
 	found := make(map[string]bool)
@@ -103,7 +102,7 @@ func (o *pseudo) scanLibraries() (err error) {
 
 		abspath, err := filepath.Abs(path)
 		if err != nil {
-			return xerrors.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
+			return fmt.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
 		}
 
 		if _, ok := found[abspath]; ok {
@@ -114,13 +113,13 @@ func (o *pseudo) scanLibraries() (err error) {
 		filemode, contents, err := func() (os.FileMode, []byte, error) {
 			fileinfo, err := os.Stat(abspath)
 			if err != nil {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to get target file info. filepath: %s, err: %w", abspath, err)
 			}
 			filemode := fileinfo.Mode().Perm()
 
 			contents, err := os.ReadFile(abspath)
 			if err != nil {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
 			}
 
 			return filemode, contents, nil
@@ -133,7 +132,7 @@ func (o *pseudo) scanLibraries() (err error) {
 		trivypath := o.cleanPath(abspath)
 		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, o.getServerInfo().Mode.IsOffline())
 		if err != nil {
-			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
+			return fmt.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
 		}
 		for _, libscanner := range libraryScanners {
 			libscanner.LockfilePath = abspath

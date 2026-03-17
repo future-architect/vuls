@@ -14,7 +14,6 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -44,11 +43,11 @@ func (w S3Writer) getS3() (*s3.Client, error) {
 	case config.CredentialProviderAnonymous:
 		optFns = append(optFns, awsConfig.WithCredentialsProvider(aws.AnonymousCredentials{}))
 	default:
-		return nil, xerrors.Errorf("CredentialProvider: %s is not supported", w.CredentialProvider)
+		return nil, fmt.Errorf("CredentialProvider: %s is not supported", w.CredentialProvider)
 	}
 	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(), optFns...)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to load config. err: %w", err)
+		return nil, fmt.Errorf("Failed to load config. err: %w", err)
 	}
 	return s3.NewFromConfig(cfg,
 		func(o *s3.Options) {
@@ -69,7 +68,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 
 	svc, err := w.getS3()
 	if err != nil {
-		return xerrors.Errorf("Failed to get s3 client. err: %w", err)
+		return fmt.Errorf("Failed to get s3 client. err: %w", err)
 	}
 
 	if w.FormatOneLineText {
@@ -85,7 +84,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatJSON {
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {
-				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
+				return fmt.Errorf("Failed to Marshal to JSON: %w", err)
 			}
 			if err := w.putObject(svc, key+".json", b, w.Gzip); err != nil {
 				return err
@@ -95,7 +94,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatList {
 			text, err := formatList(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format list. err: %w", err)
+				return fmt.Errorf("Failed to format list. err: %w", err)
 			}
 			if err := w.putObject(svc, key+"_short.txt", []byte(text), w.Gzip); err != nil {
 				return err
@@ -105,7 +104,7 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatFullText {
 			text, err := formatFullPlainText(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format full text. err: %w", err)
+				return fmt.Errorf("Failed to format full text. err: %w", err)
 			}
 			if err := w.putObject(svc, key+"_full.txt", []byte(text), w.Gzip); err != nil {
 				return err
@@ -116,13 +115,13 @@ func (w S3Writer) Write(rs ...models.ScanResult) (err error) {
 }
 
 // ErrBucketExistCheck : bucket existence cannot be checked because s3:ListBucket or s3:ListAllMyBuckets is not allowed
-var ErrBucketExistCheck = xerrors.New("bucket existence cannot be checked because s3:ListBucket or s3:ListAllMyBuckets is not allowed")
+var ErrBucketExistCheck = errors.New("bucket existence cannot be checked because s3:ListBucket or s3:ListAllMyBuckets is not allowed")
 
 // Validate check the existence of S3 bucket
 func (w S3Writer) Validate() error {
 	svc, err := w.getS3()
 	if err != nil {
-		return xerrors.Errorf("Failed to get s3 client. err: %w", err)
+		return fmt.Errorf("Failed to get s3 client. err: %w", err)
 	}
 
 	// s3:ListBucket
@@ -132,7 +131,7 @@ func (w S3Writer) Validate() error {
 	}
 	var nsb *types.NoSuchBucket
 	if errors.As(err, &nsb) {
-		return xerrors.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s", w.Profile, w.Region, w.S3Bucket)
+		return fmt.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s", w.Profile, w.Region, w.S3Bucket)
 	}
 
 	// s3:ListAllMyBuckets
@@ -143,7 +142,7 @@ func (w S3Writer) Validate() error {
 		}) {
 			return nil
 		}
-		return xerrors.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s", w.Profile, w.Region, w.S3Bucket)
+		return fmt.Errorf("Failed to find the buckets. profile: %s, region: %s, bucket: %s", w.Profile, w.Region, w.S3Bucket)
 	}
 
 	return ErrBucketExistCheck
@@ -166,7 +165,7 @@ func (w S3Writer) putObject(svc *s3.Client, k string, b []byte, gzip bool) error
 	}
 
 	if _, err := svc.PutObject(context.TODO(), putObjectInput); err != nil {
-		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w",
+		return fmt.Errorf("Failed to upload data to %s/%s, err: %w",
 			w.S3Bucket, path.Join(w.S3ResultsDir, k), err)
 	}
 	return nil

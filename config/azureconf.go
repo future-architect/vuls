@@ -3,8 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-
-	"golang.org/x/xerrors"
 )
 
 // AzureConf is azure config
@@ -40,13 +38,13 @@ func (c *AzureConf) Validate() (errs []error) {
 		c.AccountName = os.Getenv(azureAccount)
 	}
 	if c.AccountName == "" {
-		errs = append(errs, xerrors.Errorf("Azure account name is required"))
+		errs = append(errs, fmt.Errorf("Azure account name is required"))
 	}
 	if os.Getenv(azureKey) != "" {
 		c.AccountKey = os.Getenv(azureKey)
 	}
 	if c.AccountKey == "" {
-		errs = append(errs, xerrors.Errorf("Azure account key is required"))
+		errs = append(errs, fmt.Errorf("Azure account key is required"))
 	}
 
 	if c.Endpoint == "" {
@@ -54,7 +52,7 @@ func (c *AzureConf) Validate() (errs []error) {
 	}
 
 	if c.ContainerName == "" {
-		errs = append(errs, xerrors.Errorf("Azure storage container name is required"))
+		errs = append(errs, fmt.Errorf("Azure storage container name is required"))
 	}
 	return
 }

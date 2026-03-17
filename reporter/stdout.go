@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/future-architect/vuls/models"
-	"golang.org/x/xerrors"
 )
 
 // StdoutWriter write to stdout
@@ -38,7 +37,7 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		for _, r := range rs {
 			text, err := formatList(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format list. err: %w", err)
+				return fmt.Errorf("Failed to format list. err: %w", err)
 			}
 			fmt.Println(text)
 		}
@@ -48,7 +47,7 @@ func (w StdoutWriter) Write(rs ...models.ScanResult) error {
 		for _, r := range rs {
 			text, err := formatFullPlainText(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format full text. err: %w", err)
+				return fmt.Errorf("Failed to format full text. err: %w", err)
 			}
 			fmt.Println(text)
 		}

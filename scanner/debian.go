@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -18,7 +19,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/knqyf263/go-deb-version"
-	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -146,7 +146,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 		r := o.exec(cmd, sudo)
 		if !r.isSuccess() {
 			o.log.Errorf("sudo error on %s", r)
-			return xerrors.Errorf("Failed to sudo: %s", r)
+			return fmt.Errorf("Failed to sudo: %s", r)
 		}
 	}
 
@@ -157,7 +157,7 @@ func (o *debian) checkIfSudoNoPasswd() error {
 		r := o.exec(cmd, sudo)
 		if !r.isSuccess() {
 			o.log.Errorf("sudo error on %s", r)
-			return xerrors.Errorf("Failed to sudo: %s", r)
+			return fmt.Errorf("Failed to sudo: %s", r)
 		}
 	}
 
@@ -216,7 +216,7 @@ func (o *debian) checkDeps() error {
 			}
 			dep.logFunc(msg)
 			if dep.required {
-				return xerrors.New(msg)
+				return errors.New(msg)
 			}
 			continue
 		}
@@ -228,7 +228,7 @@ func (o *debian) checkDeps() error {
 			}
 			dep.logFunc(msg)
 			if dep.required {
-				return xerrors.New(msg)
+				return errors.New(msg)
 			}
 		}
 
@@ -249,14 +249,14 @@ func (o *debian) preCure() error {
 func (o *debian) postScan() error {
 	if o.getServerInfo().Mode.IsDeep() || o.getServerInfo().Mode.IsFastRoot() {
 		if err := o.pkgPs(o.getOwnerPkgs); err != nil {
-			err = xerrors.Errorf("Failed to dpkg-ps: %w", err)
+			err = fmt.Errorf("Failed to dpkg-ps: %w", err)
 			o.log.Warnf("err: %+v", err)
 			o.warns = append(o.warns, err)
 			// Only warning this error
 		}
 
 		if err := o.checkrestart(); err != nil {
-			err = xerrors.Errorf("Failed to scan need-restarting processes: %w", err)
+			err = fmt.Errorf("Failed to scan need-restarting processes: %w", err)
 			o.log.Warnf("err: %+v", err)
 			o.warns = append(o.warns, err)
 			// Only warning this error
@@ -335,7 +335,7 @@ func (o *debian) rebootRequired() (bool, error) {
 	case 1:
 		return false, nil
 	default:
-		return false, xerrors.Errorf("Failed to check reboot required: %s", r)
+		return false, fmt.Errorf("Failed to check reboot required: %s", r)
 	}
 }
 
@@ -345,7 +345,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 	updatable := models.Packages{}
 	r := o.exec(dpkgQuery, noSudo)
 	if !r.isSuccess() {
-		return nil, nil, nil, xerrors.Errorf("Failed to SSH: %s", r)
+		return nil, nil, nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 
 	installed, srcPacks, err := o.parseInstalledPackages(r.Stdout)
@@ -376,7 +376,7 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 	// Fill the candidate versions of upgradable packages
 	err = o.fillCandidateVersion(updatable)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("Failed to fill candidate versions. err: %w", err)
+		return nil, nil, nil, fmt.Errorf("Failed to fill candidate versions. err: %w", err)
 	}
 	installed.MergeNewVersion(updatable)
 
@@ -396,7 +396,7 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
 			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil || len(status) < 2 {
-				return nil, nil, xerrors.Errorf(
+				return nil, nil, fmt.Errorf(
 					"Debian: Failed to parse package line: %s", line)
 			}
 
@@ -454,7 +454,7 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 						}
 					}
 				default:
-					return nil, nil, xerrors.Errorf("unknown distro: %s", o.getDistro().Family)
+					return nil, nil, fmt.Errorf("unknown distro: %s", o.getDistro().Family)
 				}
 			}
 		}
@@ -514,14 +514,14 @@ func (o *debian) parseScannedPackagesLine(line string) (name, status, version, s
 		return
 	}
 
-	return "", "", "", "", "", xerrors.Errorf("Unknown format: %s", line)
+	return "", "", "", "", "", fmt.Errorf("Unknown format: %s", line)
 }
 
 func (o *debian) aptGetUpdate() error {
 	o.log.Infof("apt-get update...")
 	cmd := util.PrependProxyEnv("apt-get update")
 	if r := o.exec(cmd, sudo); !r.isSuccess() {
-		return xerrors.Errorf("Failed to apt-get update: %s", r)
+		return fmt.Errorf("Failed to apt-get update: %s", r)
 	}
 	return nil
 }
@@ -563,14 +563,14 @@ func (o *debian) scanUnsecurePackages(updatable models.Packages) (models.VulnInf
 	// Collect CVE information of upgradable packages
 	vulnInfos, err := o.scanChangelogs(updatable, meta, tmpClogPath)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to scan unsecure packages. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan unsecure packages. err: %w", err)
 	}
 
 	// Delete a directory for saving changelog to get changelog in Raspbian
 	if o.Distro.Family == constant.Raspbian {
 		err := o.deleteTempChangelogDir(tmpClogPath)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. err: %w", err)
+			return nil, fmt.Errorf("Failed to delete directory to save changelog for Raspbian. err: %w", err)
 		}
 	}
 
@@ -581,7 +581,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	// Search from cache
 	cached, found, err := cache.DB.GetMeta(current.Name)
 	if err != nil {
-		return nil, xerrors.Errorf(
+		return nil, fmt.Errorf(
 			"Failed to get meta. Please remove cache.db and then try again. err: %w", err)
 	}
 
@@ -589,7 +589,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 		o.log.Debugf("Not found in meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to ensure buckets. err: %w", err)
+			return nil, fmt.Errorf("Failed to ensure buckets. err: %w", err)
 		}
 		return &current, nil
 	}
@@ -599,7 +599,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 		o.log.Debugf("Need to refresh meta: %s", current.Name)
 		err = cache.DB.EnsureBuckets(current)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to ensure buckets. err: %w", err)
+			return nil, fmt.Errorf("Failed to ensure buckets. err: %w", err)
 		}
 		return &current, nil
 
@@ -608,7 +608,7 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 	o.log.Debugf("Reuse meta: %s", current.Name)
 	if config.Conf.Debug {
 		if err := cache.DB.PrettyPrint(current); err != nil {
-			return nil, xerrors.Errorf("Failed to pretty print: %w", err)
+			return nil, fmt.Errorf("Failed to pretty print: %w", err)
 		}
 	}
 	return &cached, nil
@@ -622,17 +622,17 @@ func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
 	packAptPolicy := o.splitAptCachePolicy(r.Stdout)
 	for k, v := range packAptPolicy {
 		ver, err := o.parseAptCachePolicy(v, k)
 		if err != nil {
-			return xerrors.Errorf("Failed to parse %w", err)
+			return fmt.Errorf("Failed to parse %w", err)
 		}
 		pack, ok := updatables[k]
 		if !ok {
-			return xerrors.Errorf("Not found: %s", k)
+			return fmt.Errorf("Not found: %s", k)
 		}
 		pack.NewVersion = ver.Candidate
 		pack.Repository = ver.Repo
@@ -647,7 +647,7 @@ func (o *debian) getUpdatablePackNames() (packNames []string, err error) {
 	if r.isSuccess(0, 1) {
 		return o.parseAptGetUpgrade(r.Stdout)
 	}
-	return packNames, xerrors.Errorf(
+	return packNames, fmt.Errorf(
 		"Failed to %s. status: %d, stdout: %s, stderr: %s",
 		cmd, r.ExitStatus, r.Stdout, r.Stderr)
 }
@@ -669,11 +669,11 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 		if len(result) == 2 {
 			nUpdatable, err := strconv.Atoi(result[1])
 			if err != nil {
-				return nil, xerrors.Errorf(
+				return nil, fmt.Errorf(
 					"Failed to scan upgradable packages number. line: %s", line)
 			}
 			if nUpdatable != len(updatableNames) {
-				return nil, xerrors.Errorf(
+				return nil, fmt.Errorf(
 					"Failed to scan upgradable packages, expected: %s, detected: %d",
 					result[1], len(updatableNames))
 			}
@@ -688,7 +688,7 @@ func (o *debian) parseAptGetUpgrade(stdout string) (updatableNames []string, err
 	}
 	if !stopLineFound {
 		// There are upgrades, but not found the stop line.
-		return nil, xerrors.New("Failed to scan upgradable packages")
+		return nil, errors.New("Failed to scan upgradable packages")
 	}
 	return
 }
@@ -703,7 +703,7 @@ func (o *debian) makeTempChangelogDir() (string, error) {
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to create directory to save changelog for Raspbian. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", fmt.Errorf("Failed to create directory to save changelog for Raspbian. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 	return path, nil
 }
@@ -711,7 +711,7 @@ func (o *debian) makeTempChangelogDir() (string, error) {
 func generateSuffix() (string, error) {
 	var n uint64
 	if err := binary.Read(rand.Reader, binary.LittleEndian, &n); err != nil {
-		return "", xerrors.Errorf("Failed to generate Suffix. err: %w", err)
+		return "", fmt.Errorf("Failed to generate Suffix. err: %w", err)
 	}
 	return strconv.FormatUint(n, 36), nil
 }
@@ -721,7 +721,7 @@ func (o *debian) deleteTempChangelogDir(tmpClogPath string) error {
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to delete directory to save changelog for Raspbian. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return fmt.Errorf("Failed to delete directory to save changelog for Raspbian. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 	return nil
 }
@@ -802,11 +802,11 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			errs = append(errs, xerrors.New("Timeout scanPackageCveIDs"))
+			errs = append(errs, errors.New("Timeout scanPackageCveIDs"))
 		}
 	}
 	if 0 < len(errs) {
-		return nil, xerrors.Errorf("errs: %w", errs)
+		return nil, fmt.Errorf("errs: %w", errors.Join(errs...))
 	}
 
 	cveIDs := []DetectedCveID{}
@@ -899,7 +899,7 @@ func (o *debian) fetchParseChangelog(pack models.Package, tmpClogPath string) ([
 		err := cache.DB.PutChangelog(
 			o.getServerInfo().GetServerName(), pack.Name, stdout)
 		if err != nil {
-			return nil, nil, xerrors.New("Failed to put changelog into cache")
+			return nil, nil, errors.New("Failed to put changelog into cache")
 		}
 	}
 
@@ -913,14 +913,14 @@ func (o *debian) getChangelogPath(packName, tmpClogPath string) (string, error) 
 	cmd = util.PrependProxyEnv(cmd)
 	r := o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to Fetch deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", fmt.Errorf("Failed to Fetch deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	cmd = fmt.Sprintf(`find %s -name "%s_*.deb"`, tmpClogPath, packName)
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() || r.Stdout == "" {
-		return "", xerrors.Errorf("Failed to find deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", fmt.Errorf("Failed to find deb package. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	// e.g. <tmpPath>/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf.deb\n => <tmpPath>/ffmpeg_7%3a4.1.6-1~deb10u1+rpt1_armhf
@@ -929,7 +929,7 @@ func (o *debian) getChangelogPath(packName, tmpClogPath string) (string, error) 
 	cmd = util.PrependProxyEnv(cmd)
 	r = o.exec(cmd, noSudo)
 	if !r.isSuccess() {
-		return "", xerrors.Errorf("Failed to dpkg-deb. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
+		return "", fmt.Errorf("Failed to dpkg-deb. cmd: %s, status: %d, stdout: %s, stderr: %s", cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
 
 	// recurse if doc/packName is symbolic link
@@ -960,7 +960,7 @@ func (o *debian) getChangelogPath(packName, tmpClogPath string) (string, error) 
 	}
 	results["changelog.gz"] = r
 
-	return "", xerrors.Errorf(
+	return "", fmt.Errorf(
 		"Failed to get changelog.\nresult(changelog.Debian.gz):%v\nresult(changelog.Debian.gz):%v",
 		results["changelog.Debian.gz"], results["changelog.gz"])
 }
@@ -1031,7 +1031,7 @@ var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, *models.Package, error) {
 	installedVer, err := version.NewVersion(ver)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to parse installed version: %s, err: %w", ver, err)
+		return nil, nil, fmt.Errorf("Failed to parse installed version: %s, err: %w", ver, err)
 	}
 	buf, cveIDs := []string{}, []string{}
 	scanner := bufio.NewScanner(strings.NewReader(changelog))
@@ -1084,7 +1084,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 			Contents: "",
 			Method:   models.FailedToFindVersionInChangelog,
 		}
-		return nil, &pack, xerrors.Errorf(
+		return nil, &pack, fmt.Errorf(
 			"Failed to scan CVE IDs. The version is not in changelog. name: %s, version: %s",
 			name, ver)
 	}
@@ -1166,7 +1166,7 @@ func (o *debian) parseAptCachePolicy(stdout, name string) (packCandidateVer, err
 		}
 	nextline:
 	}
-	return ver, xerrors.Errorf("Unknown Format: %s", stdout)
+	return ver, fmt.Errorf("Unknown Format: %s", stdout)
 }
 
 func (o *debian) checkrestart() error {
@@ -1179,7 +1179,7 @@ func (o *debian) checkrestart() error {
 	cmd := "LANGUAGE=en_US.UTF-8 checkrestart"
 	r := o.exec(cmd, sudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf(
+		return fmt.Errorf(
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
@@ -1310,7 +1310,7 @@ func (o *debian) getOwnerPkgs(paths []string) (pkgNames []string, err error) {
 	cmd := "dpkg -S " + strings.Join(paths, " ")
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess(0, 1) {
-		return nil, xerrors.Errorf("Failed to SSH: %s", r)
+		return nil, fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return o.parseGetPkgName(r.Stdout), nil
 }

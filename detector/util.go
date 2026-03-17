@@ -17,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
-	"golang.org/x/xerrors"
 )
 
 func reuseScannedCves(r *models.ScanResult) bool {
@@ -221,7 +220,7 @@ func isCveInfoUpdated(cveID string, previous, current models.ScanResult) bool {
 func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 	dirInfo, err := os.ReadDir(resultsDir)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", config.Conf.ResultsDir, err)
+		return nil, fmt.Errorf("Failed to read %s: %w", config.Conf.ResultsDir, err)
 	}
 	for _, d := range dirInfo {
 		if !d.IsDir() {
@@ -246,11 +245,11 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		err  error
 	)
 	if data, err = os.ReadFile(jsonFile); err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
+		return nil, fmt.Errorf("Failed to read %s: %w", jsonFile, err)
 	}
 	result := &models.ScanResult{}
 	if err := json.Unmarshal(data, result); err != nil {
-		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
+		return nil, fmt.Errorf("Failed to parse %s: %w", jsonFile, err)
 	}
 
 	for k, v := range result.ScannedCves {
@@ -266,50 +265,50 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, exploitConf config.ExploitConf, metasploitConf config.MetasploitConf, kevulnConf config.KEVulnConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
 	cvec, err := newGoCveDictClient(&cveConf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new CVE client. err: %w", err)
+		return fmt.Errorf("Failed to new CVE client. err: %w", err)
 	}
 	if err := cvec.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close CVE DB. err: %w", err)
+		return fmt.Errorf("Failed to close CVE DB. err: %w", err)
 	}
 
 	gostc, err := gost.NewGostClient(gostConf, constant.ServerTypePseudo, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new gost client. err: %w", err)
+		return fmt.Errorf("Failed to new gost client. err: %w", err)
 	}
 	if err := gostc.CloseDB(); err != nil {
-		return xerrors.Errorf("Failed to close gost DB. err: %w", err)
+		return fmt.Errorf("Failed to close gost DB. err: %w", err)
 	}
 
 	exploitc, err := newGoExploitDBClient(&exploitConf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new exploit client. err: %w", err)
+		return fmt.Errorf("Failed to new exploit client. err: %w", err)
 	}
 	if err := exploitc.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close exploit DB. err: %w", err)
+		return fmt.Errorf("Failed to close exploit DB. err: %w", err)
 	}
 
 	metasploitc, err := newGoMetasploitDBClient(&metasploitConf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new metasploit client. err: %w", err)
+		return fmt.Errorf("Failed to new metasploit client. err: %w", err)
 	}
 	if err := metasploitc.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close metasploit DB. err: %w", err)
+		return fmt.Errorf("Failed to close metasploit DB. err: %w", err)
 	}
 
 	kevulnc, err := newGoKEVulnDBClient(&kevulnConf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new KEVuln client. err: %w", err)
+		return fmt.Errorf("Failed to new KEVuln client. err: %w", err)
 	}
 	if err := kevulnc.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close KEVuln DB. err: %w", err)
+		return fmt.Errorf("Failed to close KEVuln DB. err: %w", err)
 	}
 
 	ctic, err := newGoCTIDBClient(&ctiConf, logOpts)
 	if err != nil {
-		return xerrors.Errorf("Failed to new CTI client. err: %w", err)
+		return fmt.Errorf("Failed to new CTI client. err: %w", err)
 	}
 	if err := ctic.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close CTI DB. err: %w", err)
+		return fmt.Errorf("Failed to close CTI DB. err: %w", err)
 	}
 
 	return nil

@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
@@ -48,7 +46,7 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 	if vuls2Conf.Repository == "" {
 		sv, err := session.SchemaVersion("boltdb")
 		if err != nil {
-			return xerrors.Errorf("Failed to get schema version. err: %w", err)
+			return fmt.Errorf("Failed to get schema version. err: %w", err)
 		}
 
 		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
@@ -59,24 +57,24 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 
 	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
 	if err != nil {
-		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
+		return fmt.Errorf("Failed to get new db connection. err: %w", err)
 	}
 
 	sesh, err := dbConfig.New()
 	if err != nil {
-		return xerrors.Errorf("Failed to new db session. err: %w", err)
+		return fmt.Errorf("Failed to new db session. err: %w", err)
 	}
 
 	defer sesh.Cache().Close()
 
 	if err := sesh.Storage().Open(); err != nil {
-		return xerrors.Errorf("Failed to open db. err: %w", err)
+		return fmt.Errorf("Failed to open db. err: %w", err)
 	}
 	defer sesh.Storage().Close()
 
 	metadata, err := sesh.Storage().GetMetadata()
 	if err != nil {
-		return xerrors.Errorf("Failed to get metadata. err: %w", err)
+		return fmt.Errorf("Failed to get metadata. err: %w", err)
 	}
 	config.Conf.Vuls2.Digest = metadata.Digest
 
@@ -84,12 +82,12 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
-		return xerrors.Errorf("Failed to detect. err: %w", err)
+		return fmt.Errorf("Failed to detect. err: %w", err)
 	}
 
 	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected)
 	if err != nil {
-		return xerrors.Errorf("Failed to post convert. err: %w", err)
+		return fmt.Errorf("Failed to post convert. err: %w", err)
 	}
 
 	for cveID, vi := range vulnInfos {
@@ -169,7 +167,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 	if len(sr.OSPackages) > 0 {
 		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
 		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+			return detectTypes.DetectResult{}, fmt.Errorf("Failed to detect os packages. err: %w", err)
 		}
 		for rootID, d := range m {
 			base := detectTypes.VulnerabilityData{
@@ -187,7 +185,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 				DataSources: slices.Collect(maps.Keys(d.Contents)),
 			})
 			if err != nil {
-				return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+				return detectTypes.DetectResult{}, fmt.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
 			}
 
 			base.Advisories = avs.Advisories
@@ -225,7 +223,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 	for _, sourceID := range sourceIDs {
 		s, err := sesh.Storage().GetDataSource(sourceID)
 		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get datasource. sourceID: %s, err: %w", sourceID, err)
+			return detectTypes.DetectResult{}, fmt.Errorf("Failed to get datasource. sourceID: %s, err: %w", sourceID, err)
 		}
 		datasources = append(datasources, s)
 	}
@@ -278,11 +276,11 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	m := make(map[source]sourceData)
 
 	if err := walkVulnerabilityDetections(m, scanned, detected.Detected); err != nil {
-		return nil, xerrors.Errorf("Failed to walk detections. err: %w", err)
+		return nil, fmt.Errorf("Failed to walk detections. err: %w", err)
 	}
 
 	if err := walkVulnerabilityDatas(m, detected.Detected); err != nil {
-		return nil, xerrors.Errorf("Failed to walk vulnerability data. err: %w", err)
+		return nil, fmt.Errorf("Failed to walk vulnerability data. err: %w", err)
 	}
 
 	type affected struct {
@@ -315,7 +313,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 							},
 						})
 						if err != nil {
-							return nil, xerrors.Errorf("Failed to compare pack. err: %w", err)
+							return nil, fmt.Errorf("Failed to compare pack. err: %w", err)
 						}
 						switch result {
 						case 0:
@@ -403,7 +401,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 			if ok {
 				merged, err := mergeVulnInfo(base, vi)
 				if err != nil {
-					return nil, xerrors.Errorf("Failed to merge vuln info. err: %w", err)
+					return nil, fmt.Errorf("Failed to merge vuln info. err: %w", err)
 				}
 				base = merged
 			} else {
@@ -433,12 +431,12 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 				for _, fcond := range fconds {
 					ca, err := pruneCriteria(fcond.Criteria)
 					if err != nil {
-						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
+						return fmt.Errorf("Failed to prune criteria. err: %w", err)
 					}
 
 					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
 					if err != nil {
-						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
+						return fmt.Errorf("Failed to walk criteria. err: %w", err)
 					}
 					if len(statuses) == 0 && len(cpes) == 0 {
 						continue
@@ -483,7 +481,7 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	for _, child := range c.Criterias {
 		child, err := pruneCriteria(child)
 		if err != nil {
-			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("prune criteria: %w", err)
+			return criteriaTypes.FilteredCriteria{}, fmt.Errorf("prune criteria: %w", err)
 		}
 
 		if len(child.Criterias) == 0 && len(child.Criterions) == 0 {
@@ -493,7 +491,7 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+				return criteriaTypes.FilteredCriteria{}, fmt.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
 			}
 		}
 
@@ -503,7 +501,7 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	for _, cn := range c.Criterions {
 		isAffected, err := cn.Affected()
 		if err != nil {
-			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("criterion affected: %w", err)
+			return criteriaTypes.FilteredCriteria{}, fmt.Errorf("criterion affected: %w", err)
 		}
 
 		if !isAffected {
@@ -513,7 +511,7 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+				return criteriaTypes.FilteredCriteria{}, fmt.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
 			}
 		}
 
@@ -531,7 +529,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 	for _, child := range ca.Criterias {
 		ss, cs, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+			return nil, nil, false, fmt.Errorf("Failed to walk criteria. err: %w", err)
 		}
 		if ignore {
 			switch ca.Operator {
@@ -540,7 +538,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+				return nil, nil, false, fmt.Errorf("unexpected operator: %s", ca.Operator)
 			}
 		}
 		statuses = append(statuses, ss...)
@@ -562,7 +560,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 		fcn, err := filterCriterion(e, scanned, cn)
 		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+			return nil, nil, false, fmt.Errorf("Failed to filter criterion. err: %w", err)
 		}
 
 		switch fcn.Criterion.Version.Package.Type {
@@ -580,7 +578,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 			for _, index := range fcn.Accepts.Version {
 				if len(scanned.OSPackages) <= index {
-					return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+					return nil, nil, false, fmt.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 				}
 				statuses = append(statuses, packStatus{
 					rangeType: rangeType,
@@ -600,7 +598,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 		case vcPackageTypes.PackageTypeCPE:
 			for _, index := range fcn.Accepts.Version {
 				if len(scanned.CPE) <= index {
-					return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+					return nil, nil, false, fmt.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 				}
 			}
 			cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
@@ -616,7 +614,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 		for _, vda := range vd.Advisories {
 			for sid, rm := range vda.Contents {
 				if rm == nil {
-					return xerrors.Errorf("advisories map is nil, root id: %q -> advisories[source id: %q]", vd.ID, sid)
+					return fmt.Errorf("advisories map is nil, root id: %q -> advisories[source id: %q]", vd.ID, sid)
 				}
 				for _, a := range rm[vd.ID] {
 					for _, segment := range a.Segments {
@@ -662,7 +660,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 		for _, vdv := range vd.Vulnerabilities {
 			for sid, rm := range vdv.Contents {
 				if rm == nil {
-					return xerrors.Errorf("vulnerabilities map is nil, root id: %q -> vulnerabilities[source id: %q]", vd.ID, sid)
+					return fmt.Errorf("vulnerabilities map is nil, root id: %q -> vulnerabilities[source id: %q]", vd.ID, sid)
 				}
 				for _, v := range rm[vd.ID] {
 					for _, segment := range v.Segments {
@@ -683,7 +681,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 						vinfo, err := func() (models.VulnInfo, error) {
 							bs, err := json.Marshal([]source{src})
 							if err != nil {
-								return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
+								return models.VulnInfo{}, fmt.Errorf("Failed to marshal sources. err: %w", err)
 							}
 
 							fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
@@ -697,7 +695,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							for _, da := range fdas {
 								ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
 								if err != nil {
-									return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+									return models.VulnInfo{}, fmt.Errorf("Failed to get advisory reference. err: %w", err)
 								}
 								if !slices.ContainsFunc(rs, func(r models.Reference) bool {
 									return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
@@ -750,7 +748,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							}, nil
 						}()
 						if err != nil {
-							return xerrors.Errorf("Failed to create vuln info. err: %w", err)
+							return fmt.Errorf("Failed to create vuln info. err: %w", err)
 						}
 
 						base := m[src]
@@ -773,14 +771,14 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 			for _, da := range fdas {
 				bs, err := json.Marshal([]source{src})
 				if err != nil {
-					return xerrors.Errorf("Failed to marshal sources. err: %w", err)
+					return fmt.Errorf("Failed to marshal sources. err: %w", err)
 				}
 
 				cctype := toCveContentType(src.Segment.Ecosystem, src.SourceID)
 
 				ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
 				if err != nil {
-					return xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+					return fmt.Errorf("Failed to get advisory reference. err: %w", err)
 				}
 
 				vinfo := models.VulnInfo{
@@ -831,7 +829,7 @@ func comparePack(a, b pack) (int, error) {
 
 	r, err := comparePackStatus(a.packStatus, b.packStatus)
 	if err != nil {
-		return 0, xerrors.Errorf("Failed to compare pack status. err: %w", err)
+		return 0, fmt.Errorf("Failed to compare pack status. err: %w", err)
 	}
 
 	return r, nil
@@ -839,7 +837,7 @@ func comparePack(a, b pack) (int, error) {
 
 func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	if a.CveID != b.CveID {
-		return models.VulnInfo{}, xerrors.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
+		return models.VulnInfo{}, fmt.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
 	}
 
 	info := models.VulnInfo{
@@ -881,11 +879,11 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 				if ok {
 					var src1 []source
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
-						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
+						return models.VulnInfo{}, fmt.Errorf("Failed to unmarshal sources. err: %w", err)
 					}
 					var src2 []source
 					if err := json.Unmarshal([]byte(c.Optional["vuls2-sources"]), &src2); err != nil {
-						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
+						return models.VulnInfo{}, fmt.Errorf("Failed to unmarshal sources. err: %w", err)
 					}
 
 					merged := models.CveContent{
@@ -980,7 +978,7 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 					slices.SortFunc(srcs, compareSource)
 					bs, err := json.Marshal(srcs)
 					if err != nil {
-						return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
+						return models.VulnInfo{}, fmt.Errorf("Failed to marshal sources. err: %w", err)
 					}
 					merged.Optional["vuls2-sources"] = string(bs)
 

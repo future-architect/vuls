@@ -3,14 +3,13 @@ package tui
 import (
 	"bytes"
 	"cmp"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
 	"strings"
 	"text/template"
 	"time"
-
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/cti"
@@ -564,7 +563,7 @@ func setSideLayout(g *gocui.Gui) error {
 			}
 		}
 		if len(scanResults) == 0 {
-			return xerrors.New("No scan results")
+			return errors.New("No scan results")
 		}
 		currentScanResult = scanResults[0]
 		vinfos = scanResults[0].ScannedCves.ToSortedSlice()

@@ -1,8 +1,9 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // SaasConf is FutureVuls config
@@ -15,15 +16,15 @@ type SaasConf struct {
 // Validate validates configuration
 func (c *SaasConf) Validate() (errs []error) {
 	if c.GroupID == 0 {
-		errs = append(errs, xerrors.New("GroupID must not be empty"))
+		errs = append(errs, errors.New("GroupID must not be empty"))
 	}
 
 	if len(c.Token) == 0 {
-		errs = append(errs, xerrors.New("Token must not be empty"))
+		errs = append(errs, errors.New("Token must not be empty"))
 	}
 
 	if len(c.URL) == 0 {
-		errs = append(errs, xerrors.New("URL must not be empty"))
+		errs = append(errs, errors.New("URL must not be empty"))
 	}
 
 	_, err := govalidator.ValidateStruct(c)

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"net"
@@ -12,7 +13,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/c-robinson/iplib"
 	"github.com/knqyf263/go-cpe/naming"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
@@ -31,7 +31,7 @@ func (c TOMLLoader) Load(pathToToml string) error {
 	if ConfV1.Version != "v2" && runtime.GOOS == "windows" {
 		logging.Log.Infof("An outdated version of config.toml was detected. Converting to newer version...")
 		if err := convertToLatestConfig(pathToToml); err != nil {
-			return xerrors.Errorf("Failed to convert to latest config. err: %w", err)
+			return fmt.Errorf("Failed to convert to latest config. err: %w", err)
 		}
 	} else if _, err := toml.DecodeFile(pathToToml, &Conf); err != nil {
 		return err
@@ -54,26 +54,26 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		server.BaseName = name
 
 		if server.Type != constant.ServerTypePseudo && server.Host == "" {
-			return xerrors.New("Failed to find hosts. err: server.host is empty")
+			return errors.New("Failed to find hosts. err: server.host is empty")
 		}
 		serverHosts, err := hosts(server.Host, server.IgnoreIPAddresses)
 		if err != nil {
-			return xerrors.Errorf("Failed to find hosts. err: %w", err)
+			return fmt.Errorf("Failed to find hosts. err: %w", err)
 		}
 		if len(serverHosts) == 0 {
-			return xerrors.New("Failed to find hosts. err: zero enumerated hosts")
+			return errors.New("Failed to find hosts. err: zero enumerated hosts")
 		}
 
 		if err := setDefaultIfEmpty(&server); err != nil {
-			return xerrors.Errorf("Failed to set default value to config. server: %s, err: %w", name, err)
+			return fmt.Errorf("Failed to set default value to config. server: %s, err: %w", name, err)
 		}
 
 		if err := setScanMode(&server); err != nil {
-			return xerrors.Errorf("Failed to set ScanMode: %w", err)
+			return fmt.Errorf("Failed to set ScanMode: %w", err)
 		}
 
 		if err := setScanModules(&server, Conf.Default); err != nil {
-			return xerrors.Errorf("Failed to set ScanModule: %w", err)
+			return fmt.Errorf("Failed to set ScanModule: %w", err)
 		}
 
 		if len(server.CpeNames) == 0 {
@@ -82,7 +82,7 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		for i, n := range server.CpeNames {
 			uri, err := toCpeURI(n)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse CPENames %s in %s, err: %w", n, name, err)
+				return fmt.Errorf("Failed to parse CPENames %s in %s, err: %w", n, name, err)
 			}
 			server.CpeNames[i] = uri
 		}
@@ -103,24 +103,24 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		for _, reg := range server.IgnorePkgsRegexp {
 			_, err := regexp.Compile(reg)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse %s in %s. err: %w", reg, name, err)
+				return fmt.Errorf("Failed to parse %s in %s. err: %w", reg, name, err)
 			}
 		}
 		for contName, cont := range server.Containers {
 			for _, reg := range cont.IgnorePkgsRegexp {
 				_, err := regexp.Compile(reg)
 				if err != nil {
-					return xerrors.Errorf("Failed to parse %s in %s@%s. err: %w", reg, contName, name, err)
+					return fmt.Errorf("Failed to parse %s in %s@%s. err: %w", reg, contName, name, err)
 				}
 			}
 		}
 
 		for ownerRepo, githubSetting := range server.GitHubRepos {
 			if ss := strings.Split(ownerRepo, "/"); len(ss) != 2 {
-				return xerrors.Errorf("Failed to parse GitHub owner/repo: %s in %s", ownerRepo, name)
+				return fmt.Errorf("Failed to parse GitHub owner/repo: %s in %s", ownerRepo, name)
 			}
 			if githubSetting.Token == "" {
-				return xerrors.Errorf("GitHub owner/repo: %s in %s token is empty", ownerRepo, name)
+				return fmt.Errorf("GitHub owner/repo: %s in %s token is empty", ownerRepo, name)
 			}
 		}
 
@@ -132,7 +132,7 @@ func (c TOMLLoader) Load(pathToToml string) error {
 			case "base", "updates":
 				// nop
 			default:
-				return xerrors.Errorf("For now, enablerepo have to be base or updates: %s", server.Enablerepo)
+				return fmt.Errorf("For now, enablerepo have to be base or updates: %s", server.Enablerepo)
 			}
 		}
 
@@ -162,7 +162,7 @@ func hosts(host string, ignores []string) ([]string, error) {
 	hostMap := map[string]struct{}{}
 	hosts, err := enumerateHosts(host)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to enumarate hosts. err: %w", err)
+		return nil, fmt.Errorf("Failed to enumarate hosts. err: %w", err)
 	}
 	for _, host := range hosts {
 		hostMap[host] = struct{}{}
@@ -171,10 +171,10 @@ func hosts(host string, ignores []string) ([]string, error) {
 	for _, ignore := range ignores {
 		hosts, err := enumerateHosts(ignore)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to enumarate hosts. err: %w", err)
+			return nil, fmt.Errorf("Failed to enumarate hosts. err: %w", err)
 		}
 		if len(hosts) == 1 && net.ParseIP(hosts[0]) == nil {
-			return nil, xerrors.Errorf("Failed to ignore hosts. err: a non-IP address has been entered in ignoreIPAddress")
+			return nil, fmt.Errorf("Failed to ignore hosts. err: a non-IP address has been entered in ignoreIPAddress")
 		}
 		for _, host := range hosts {
 			delete(hostMap, host)
@@ -195,7 +195,7 @@ func enumerateHosts(host string) ([]string, error) {
 
 	ipAddr, ipNet, err := net.ParseCIDR(host)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to parse CIDR. err: %w", err)
+		return nil, fmt.Errorf("Failed to parse CIDR. err: %w", err)
 	}
 	maskLen, _ := ipNet.Mask.Size()
 
@@ -208,7 +208,7 @@ func enumerateHosts(host string) ([]string, error) {
 	} else if net.ParseIP(ipAddr.String()).To16() != nil {
 		n := iplib.NewNet6(ipAddr, int(maskLen), 0)
 		if !n.Count().IsInt64() {
-			return nil, xerrors.Errorf("Failed to enumerate IP address. err: mask bitsize too big")
+			return nil, fmt.Errorf("Failed to enumerate IP address. err: mask bitsize too big")
 		}
 		for _, addr := range n.Enumerate(int(n.Count().Int64()), 0) {
 			addrs = append(addrs, addr.String())
@@ -324,5 +324,5 @@ func toCpeURI(cpename string) (string, error) {
 		}
 		return naming.BindToURI(wfn), nil
 	}
-	return "", xerrors.Errorf("Unknown CPE format: %s", cpename)
+	return "", fmt.Errorf("Unknown CPE format: %s", cpename)
 }

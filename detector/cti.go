@@ -5,12 +5,12 @@ package detector
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -36,12 +36,12 @@ func (client goCTIDBClient) closeDB() error {
 
 func newGoCTIDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCTIDBClient, error) {
 	if err := ctilog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, xerrors.Errorf("Failed to set go-cti logger. err: %w", err)
+		return nil, fmt.Errorf("Failed to set go-cti logger. err: %w", err)
 	}
 
 	db, err := newCTIDB(cnf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to newCTIDB. err: %w", err)
+		return nil, fmt.Errorf("Failed to newCTIDB. err: %w", err)
 	}
 	return &goCTIDBClient{driver: db, baseURL: cnf.GetURL()}, nil
 }
@@ -91,7 +91,7 @@ func FillWithCTI(r *models.ScanResult, cnf config.CtiConf, logOpts logging.LogOp
 			}
 			techniqueIDs, err := client.driver.GetTechniqueIDsByCveID(cveID)
 			if err != nil {
-				return xerrors.Errorf("Failed to get CTIs by CVE-ID. err: %w", err)
+				return fmt.Errorf("Failed to get CTIs by CVE-ID. err: %w", err)
 			}
 			if len(techniqueIDs) == 0 {
 				continue
@@ -158,11 +158,11 @@ func getCTIsViaHTTP(cveIDs []string, urlPrefix string) (responses []ctiResponse,
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching CTI")
+			return nil, errors.New("Timeout Fetching CTI")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch CTI. err: %w", errs)
+		return nil, fmt.Errorf("Failed to fetch CTI. err: %w", errors.Join(errs...))
 	}
 	return
 }
@@ -187,7 +187,7 @@ func httpGetCTI(url string, req ctiRequest, resChan chan<- ctiResponse, errChan 
 			if count == retryMax {
 				return nil
 			}
-			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
+			return fmt.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 		return nil
 	}
@@ -195,11 +195,11 @@ func httpGetCTI(url string, req ctiRequest, resChan chan<- ctiResponse, errChan 
 		logging.Log.Warnf("Failed to HTTP GET. retrying in %f seconds. err: %+v", t.Seconds(), err)
 	}
 	if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
-		errChan <- xerrors.Errorf("HTTP Error %w", err)
+		errChan <- fmt.Errorf("HTTP Error %w", err)
 		return
 	}
 	if count == retryMax {
-		errChan <- xerrors.New("Retry count exceeded")
+		errChan <- errors.New("Retry count exceeded")
 		return
 	}
 
@@ -220,9 +220,9 @@ func newCTIDB(cnf config.VulnDictInterface) (ctidb.DB, error) {
 	driver, err := ctidb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), ctidb.Option{})
 	if err != nil {
 		if errors.Is(err, ctidb.ErrDBLocked) {
-			return nil, xerrors.Errorf("Failed to init cti DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+			return nil, fmt.Errorf("Failed to init cti DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, xerrors.Errorf("Failed to init cti DB. DB Path: %s, err: %w", path, err)
+		return nil, fmt.Errorf("Failed to init cti DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
 }
