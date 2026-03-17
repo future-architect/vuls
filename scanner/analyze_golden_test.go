@@ -43,70 +43,73 @@ var update = flag.Bool("update", false, "update golden files")
 
 // lockfileEntry defines a test fixture for AnalyzeLibrary golden testing.
 type lockfileEntry struct {
-	// path is the relative path from the integration data directory.
+	// path is the relative path from the fixtures directory.
 	path string
 	// filemode to pass to AnalyzeLibrary (0755 for executables, 0644 otherwise).
 	filemode os.FileMode
+	// binary indicates the fixture is a binary file only available in the
+	// integration submodule (not copied to testdata/fixtures/).
+	binary bool
 }
 
 var lockfiles = []lockfileEntry{
 	// Node.js
-	{"npm-v1/package-lock.json", 0644},
-	{"npm-v2/package-lock.json", 0644},
-	{"npm-v3/package-lock.json", 0644},
-	{"yarn.lock", 0644},
-	{"pnpm/pnpm-lock.yaml", 0644},
-	{"pnpm-v9/pnpm-lock.yaml", 0644},
-	{"bun.lock", 0644},
+	{"npm-v1/package-lock.json", 0644, false},
+	{"npm-v2/package-lock.json", 0644, false},
+	{"npm-v3/package-lock.json", 0644, false},
+	{"yarn.lock", 0644, false},
+	{"pnpm/pnpm-lock.yaml", 0644, false},
+	{"pnpm-v9/pnpm-lock.yaml", 0644, false},
+	{"bun.lock", 0644, false},
 
 	// Python
-	{"requirements.txt", 0644},
-	{"Pipfile.lock", 0644},
-	{"poetry-v1/poetry.lock", 0644},
-	{"poetry-v2/poetry.lock", 0644},
-	{"uv.lock", 0644},
+	{"requirements.txt", 0644, false},
+	{"Pipfile.lock", 0644, false},
+	{"poetry-v1/poetry.lock", 0644, false},
+	{"poetry-v2/poetry.lock", 0644, false},
+	{"uv.lock", 0644, false},
 
 	// Ruby
-	{"Gemfile.lock", 0644},
+	{"Gemfile.lock", 0644, false},
 
 	// Rust
-	{"Cargo.lock", 0644},
-	{"hello-rust", 0755},
+	{"Cargo.lock", 0644, false},
+	{"hello-rust", 0755, true},
 
 	// PHP
-	{"composer.lock", 0644},
+	{"composer.lock", 0644, false},
 
 	// Go
-	{"go.mod", 0644},
-	{"go.sum", 0644},
-	{"gobinary", 0755},
+	{"go.mod", 0644, false},
+	{"go.sum", 0644, false},
+	{"gobinary", 0755, true},
 
 	// Java
-	{"pom.xml", 0644},
-	{"gradle.lockfile", 0644},
-	{"log4j-core-2.13.0.jar", 0644},
-	{"wrong-name-log4j-core.jar", 0644},
-	{"juddiv3-war-3.3.5.war", 0644},
+	{"pom.xml", 0644, false},
+	{"gradle.lockfile", 0644, false},
+	{"log4j-core-2.13.0.jar", 0644, true},
+	{"wrong-name-log4j-core.jar", 0644, true},
+	{"juddiv3-war-3.3.5.war", 0644, true},
 
 	// .NET
-	{"packages.lock.json", 0644},
-	{"packages.config", 0644},
-	{"datacollector.deps.json", 0644},
-	{"Directory.Packages.props", 0644},
+	{"packages.lock.json", 0644, false},
+	{"packages.config", 0644, false},
+	{"datacollector.deps.json", 0644, false},
+	{"Directory.Packages.props", 0644, false},
 
 	// C/C++
-	{"conan-v1/conan.lock", 0644},
-	{"conan-v2/conan.lock", 0644},
+	{"conan-v1/conan.lock", 0644, false},
+	{"conan-v2/conan.lock", 0644, false},
 
 	// Dart
-	{"pubspec.lock", 0644},
+	{"pubspec.lock", 0644, false},
 
 	// Elixir
-	{"mix.lock", 0644},
+	{"mix.lock", 0644, false},
 
 	// Swift
-	{"Podfile.lock", 0644},
-	{"Package.resolved", 0644},
+	{"Podfile.lock", 0644, false},
+	{"Package.resolved", 0644, false},
 }
 
 // goldenFileName converts a lockfile path to a golden file name.
@@ -117,20 +120,25 @@ func goldenFileName(lockfilePath string) string {
 }
 
 func TestAnalyzeLibrary_Golden(t *testing.T) {
+	fixturesDir := filepath.Join("testdata", "fixtures")
 	integrationDir := filepath.Join("..", "integration", "data", "lockfile")
 	goldenDir := filepath.Join("testdata", "golden")
 
-	// integration/ is a git submodule. Skip if not checked out.
-	if _, err := os.Stat(integrationDir); os.IsNotExist(err) {
-		t.Skip("integration/data/lockfile not found (git submodule not initialized). Run: git submodule update --init")
-	}
-
 	for _, lf := range lockfiles {
 		t.Run(lf.path, func(t *testing.T) {
-			srcPath := filepath.Join(integrationDir, lf.path)
+			// Text fixtures are in testdata/fixtures/ (committed to repo).
+			// Binary fixtures (JAR, WAR, Go/Rust binaries) are only in the
+			// integration submodule — skip if not available.
+			srcPath := filepath.Join(fixturesDir, lf.path)
+			if lf.binary {
+				srcPath = filepath.Join(integrationDir, lf.path)
+			}
 			contents, err := os.ReadFile(srcPath)
 			if err != nil {
-				t.Skipf("Fixture not found: %s (git submodule may not be initialized)", srcPath)
+				if lf.binary {
+					t.Skipf("Binary fixture not found: %s (requires: git submodule update --init)", srcPath)
+				}
+				t.Fatalf("Failed to read %s: %v", srcPath, err)
 			}
 
 			got, err := AnalyzeLibrary(context.Background(), lf.path, contents, lf.filemode, true)

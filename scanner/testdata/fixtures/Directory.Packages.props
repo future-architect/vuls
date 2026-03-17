@@ -1,0 +1,12 @@
+<Project>
+  <ItemDefinitionGroup>
+    <PackageReference>
+      <!-- Do not share compile-time dependencies transitively.  This requires that all projects reference all packages -->
+      <PrivateAssets>Compile</PrivateAssets>
+    </PackageReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <PackageVersion Include="Snowflake.Data" Version="2.1.2" />
+    <PackageVersion Include="CommandLineParser" Version="2.9.1" />
+  </ItemGroup>
+</Project>
