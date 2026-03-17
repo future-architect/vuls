@@ -94,7 +94,9 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 	case ftypes.GoMod: // go.mod
 		return parserGoMod
 	case ftypes.GoSum: // go.sum
-		return parserGoMod
+		// go.sum is processed as a supplement to go.mod in Trivy's fanal framework.
+		// When passed standalone, it returns no results. Match that behavior.
+		return parserNone
 
 	// Java
 	case ftypes.MavenPom: // pom.xml

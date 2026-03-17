@@ -39,7 +39,7 @@ func TestDetectParserType(t *testing.T) {
 
 		// === Go ===
 		{"go.mod", 0644, parserGoMod},
-		{"go.sum", 0644, parserGoMod},
+		{"go.sum", 0644, parserNone}, // go.sum alone returns nothing; processed with go.mod
 
 		// === Java ===
 		{"pom.xml", 0644, parserPom},

@@ -15,67 +15,49 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
+	"errors"
+
 	"golang.org/x/xerrors"
 
-	fanal "github.com/aquasecurity/trivy/pkg/fanal/analyzer"
+	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	tlog "github.com/aquasecurity/trivy/pkg/log"
-	"github.com/aquasecurity/trivy/pkg/semaphore"
+
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/c/conan"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/dart/pub"
+	dotnetcoredeps "github.com/aquasecurity/trivy/pkg/dependency/parser/dotnet/core_deps"
+	nugetconfig "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/config"
+	nugetlock "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/lock"
+	nugetpackagesprops "github.com/aquasecurity/trivy/pkg/dependency/parser/nuget/packagesprops"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/hex/mix"
+	gobinary "github.com/aquasecurity/trivy/pkg/dependency/parser/golang/binary"
+	gomod "github.com/aquasecurity/trivy/pkg/dependency/parser/golang/mod"
+	gradlelock "github.com/aquasecurity/trivy/pkg/dependency/parser/gradle/lockfile"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/java/pom"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/bun"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/npm"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/pnpm"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/nodejs/yarn"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/php/composer"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pip"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pipenv"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/poetry"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/uv"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/ruby/bundler"
+	rustbinary "github.com/aquasecurity/trivy/pkg/dependency/parser/rust/binary"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/rust/cargo"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/swift/cocoapods"
+	swiftresolved "github.com/aquasecurity/trivy/pkg/dependency/parser/swift/swift"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
+
+	nmap "github.com/Ullaakut/nmap/v2"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
+	vulsjar "github.com/future-architect/vuls/scanner/trivy/jar"
 	ufilepath "github.com/future-architect/vuls/scanner/utils/filepath/unix"
 	"github.com/future-architect/vuls/util"
-
-	// Import library scanner
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/c/conan"
-	// Conda package is supported for SBOM, not for vulnerability scanning
-	// https://github.com/aquasecurity/trivy/blob/v0.49.1/pkg/detector/library/driver.go#L75-L77
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/conda/meta"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dart/pub"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/deps"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/nuget"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/dotnet/packagesprops"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/elixir/mix"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/binary"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/golang/mod"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/gradle"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/pom"
-
-	// Julia is supported for SBOM, not for vulnerability scanning
-	// https://github.com/aquasecurity/trivy/blob/v0.52.0/pkg/detector/library/driver.go#L84-L86
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/julia/pkg"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/bun"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/npm"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pnpm"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/yarn"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/php/composer"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pip"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/pipenv"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/poetry"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/uv"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/bundler"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/binary"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/rust/cargo"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/cocoapods"
-	_ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/swift/swift"
-
-	// Excleded ones:
-	// Trivy can parse package.json but doesn't use dependencies info. Not use here
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/nodejs/pkg"
-	// No dependency information included
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/ruby/gemspec"
-	// No dependency information included
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/python/packaging"
-
-	nmap "github.com/Ullaakut/nmap/v2"
-
-	// To avoid downloading Java DB at scan phase, use custom one for JAR files
-	_ "github.com/future-architect/vuls/scanner/trivy/jar"
-	// _ "github.com/aquasecurity/trivy/pkg/fanal/analyzer/language/java/jar"
 )
 
 type base struct {
@@ -749,173 +731,188 @@ func (l *base) scanLibraries() (err error) {
 	return nil
 }
 
-// AnalyzeLibrary : detects library defined in artifact such as lockfile or jar
-func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline bool) (libraryScanners []models.LibraryScanner, err error) {
-	ag, err := fanal.NewAnalyzerGroup(fanal.AnalyzerOptions{
-		Group:             fanal.GroupBuiltin,
-		DisabledAnalyzers: disabledAnalyzers,
-	})
+// AnalyzeLibrary detects libraries defined in lockfiles or artifacts such as JAR files.
+// It calls Trivy’s dependency parsers directly, bypassing the fanal analyzer framework
+// to avoid pulling in unnecessary IaC/misconf dependencies.
+func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode os.FileMode, isOffline bool) ([]models.LibraryScanner, error) {
+	pt := detectParserType(path, filemode)
+	if pt == parserNone {
+		return nil, nil
+	}
+
+	r := xio.NopCloser(bytes.NewReader(contents))
+
+	app, err := parseByType(ctx, pt, path, r, isOffline)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to new analyzer group. err: %w", err)
+		logging.Log.Debugf("Failed to parse %s (type=%s): %+v", path, pt, err)
+		return nil, nil
+	}
+	if app == nil {
+		return nil, nil
 	}
 
-	// `errgroup` cancels the context after Wait returns, so it can’t be use later.
-	// We need a separate context specifically for Analyze.
-	eg, egCtx := errgroup.WithContext(ctx)
-	result := fanal.NewAnalysisResult()
-
-	info := &DummyFileInfo{name: ufilepath.Base(path), size: int64(len(contents)), filemode: filemode}
-	opts := fanal.AnalysisOptions{Offline: isOffline}
-	if err := ag.AnalyzeFile(
-		egCtx,
-		eg,
-		semaphore.New(1),
-		result,
-		"",
-		path,
-		info,
-		func() (xio.ReadSeekCloserAt, error) { return xio.NopCloser(bytes.NewReader(contents)), nil },
-		nil,
-		opts,
-	); err != nil {
-		return nil, xerrors.Errorf("Failed to get libs. err: %w", err)
-	}
-
-	if err := eg.Wait(); err != nil {
-		return nil, xerrors.Errorf("analyze error: %w", err)
-	}
-
-	// Post-analysis
-	composite, err := ag.PostAnalyzerFS()
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to prepare filesystem for post-analysis. err: %w", err)
-	}
-	defer func() {
-		_ = composite.Cleanup()
-	}()
-
-	analyzerTypes := ag.RequiredPostAnalyzers(path, info)
-	if len(analyzerTypes) != 0 {
-		opener := func() (xio.ReadSeekCloserAt, error) { return xio.NopCloser(bytes.NewReader(contents)), nil }
-		tmpFilePath, err := composite.CopyFileToTemp(opener, info)
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to copy file to temp. err: %w", err)
-		}
-		if err := composite.CreateLink(analyzerTypes, "", path, tmpFilePath); err != nil {
-			return nil, xerrors.Errorf("Failed to create link. err: %w", err)
-		}
-		if err = ag.PostAnalyze(ctx, composite, result, opts); err != nil {
-			return nil, xerrors.Errorf("Failed at post-analysis. err: %w", err)
-		}
-	}
-
-	libscan, err := convertLibWithScanner(result.Applications)
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to convert libs. err: %w", err)
-	}
-	libraryScanners = append(libraryScanners, libscan...)
-	return libraryScanners, nil
+	return convertLibWithScanner([]ftypes.Application{*app})
 }
 
-// https://github.com/aquasecurity/trivy/blob/v0.49.1/pkg/fanal/analyzer/const.go
-var disabledAnalyzers = []fanal.Type{
-	// ======
-	//   OS
-	// ======
-	fanal.TypeOSRelease,
-	fanal.TypeAlpine,
-	fanal.TypeAmazon,
-	fanal.TypeAzure,
-	fanal.TypeCBLMariner,
-	fanal.TypeDebian,
-	fanal.TypePhoton,
-	fanal.TypeCentOS,
-	fanal.TypeRocky,
-	fanal.TypeAlma,
-	fanal.TypeFedora,
-	fanal.TypeOracle,
-	fanal.TypeRedHatBase,
-	fanal.TypeSUSE,
-	fanal.TypeUbuntu,
-	fanal.TypeUbuntuESM,
-	fanal.TypeCoreOS,
+// parseByType calls the appropriate Trivy dependency parser based on the detected parser type.
+func parseByType(ctx context.Context, pt parserType, filePath string, r xio.ReadSeekCloserAt, isOffline bool) (*ftypes.Application, error) {
+	switch pt {
+	// Node.js
+	case parserNpm:
+		return parseLockfile(ctx, ftypes.Npm, filePath, r, npm.NewParser())
+	case parserYarn:
+		return parseYarn(ctx, filePath, r)
+	case parserPnpm:
+		return parseLockfile(ctx, ftypes.Pnpm, filePath, r, pnpm.NewParser())
+	case parserBun:
+		return parseLockfile(ctx, ftypes.Bun, filePath, r, bun.NewParser())
 
-	// OS Package
-	fanal.TypeApk,
-	fanal.TypeDpkg,
-	fanal.TypeDpkgLicense,
-	fanal.TypeRpm,
-	fanal.TypeRpmqa,
+	// Python
+	case parserPip:
+		return parseLockfile(ctx, ftypes.Pip, filePath, r, pip.NewParser(false))
+	case parserPipenv:
+		return parseLockfile(ctx, ftypes.Pipenv, filePath, r, pipenv.NewParser())
+	case parserPoetry:
+		return parseLockfile(ctx, ftypes.Poetry, filePath, r, poetry.NewParser())
+	case parserUv:
+		return parseLockfile(ctx, ftypes.Uv, filePath, r, uv.NewParser())
 
-	// OS Package Repository
-	fanal.TypeApkRepo,
+	// Ruby
+	case parserBundler:
+		return parseLockfile(ctx, ftypes.Bundler, filePath, r, bundler.NewParser())
 
-	// ============
-	// Non-packaged
-	// ============
-	fanal.TypeExecutable,
-	fanal.TypeSBOM,
+	// Rust
+	case parserCargo:
+		return parseLockfile(ctx, ftypes.Cargo, filePath, r, cargo.NewParser())
 
-	// ============
-	// Image Config
-	// ============
-	fanal.TypeApkCommand,
-	fanal.TypeHistoryDockerfile,
-	fanal.TypeImageConfigSecret,
+	// PHP
+	case parserComposer:
+		return parseLockfile(ctx, ftypes.Composer, filePath, r, composer.NewParser())
 
-	// =================
-	// Structured Config
-	// =================
-	fanal.TypeAzureARM,
-	fanal.TypeCloudFormation,
-	fanal.TypeDockerfile,
-	fanal.TypeHelm,
-	fanal.TypeKubernetes,
-	fanal.TypeTerraform,
-	fanal.TypeTerraformPlanJSON,
-	fanal.TypeTerraformPlanSnapshot,
+	// Go
+	case parserGoMod:
+		return parseLockfile(ctx, ftypes.GoModule, filePath, r, gomod.NewParser(true, false))
+	case parserGoBinary:
+		return parseExecutableBinary(ctx, filePath, r)
 
-	// ========
-	// License
-	// ========
-	fanal.TypeLicenseFile,
+	// Java
+	case parserPom:
+		return parseLockfile(ctx, ftypes.Pom, filePath, r, pom.NewParser(filePath, pom.WithOffline(isOffline)))
+	case parserGradle:
+		return parseLockfile(ctx, ftypes.Gradle, filePath, r, gradlelock.Parser{})
+	case parserJar:
+		return vulsjar.ParseJAR(filePath, r)
 
-	// ========
-	// Secrets
-	// ========
-	fanal.TypeSecret,
+	// .NET
+	case parserNugetLock:
+		return parseLockfile(ctx, ftypes.NuGet, filePath, r, nugetlock.NewParser())
+	case parserNugetConfig:
+		return parseLockfile(ctx, ftypes.NuGet, filePath, r, nugetconfig.NewParser())
+	case parserDotnetDeps:
+		return parseLockfile(ctx, ftypes.DotNetCore, filePath, r, dotnetcoredeps.NewParser())
+	case parserPackagesProps:
+		return parseLockfile(ctx, ftypes.PackagesProps, filePath, r, nugetpackagesprops.NewParser())
 
-	// =======
-	// Red Hat
-	// =======
-	fanal.TypeRedHatContentManifestType,
-	fanal.TypeRedHatDockerfileType,
+	// C/C++
+	case parserConan:
+		return parseLockfile(ctx, ftypes.Conan, filePath, r, conan.NewParser())
+
+	// Dart
+	case parserPub:
+		return parseLockfile(ctx, ftypes.Pub, filePath, r, pub.NewParser(false))
+
+	// Elixir
+	case parserMix:
+		return parseLockfile(ctx, ftypes.Hex, filePath, r, mix.NewParser())
+
+	// Swift
+	case parserCocoapods:
+		return parseLockfile(ctx, ftypes.Cocoapods, filePath, r, cocoapods.NewParser())
+	case parserSwift:
+		return parseLockfile(ctx, ftypes.Swift, filePath, r, swiftresolved.NewParser())
+
+	default:
+		return nil, nil
+	}
 }
 
-// DummyFileInfo is a dummy struct for libscan
-type DummyFileInfo struct {
-	name     string
-	size     int64
-	filemode os.FileMode
+// lockfileParser is the common interface for Trivy dependency parsers.
+type lockfileParser interface {
+	Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error)
 }
 
-// Name is
-func (d *DummyFileInfo) Name() string { return d.name }
+// parseLockfile calls a standard Trivy parser and wraps the result as an Application.
+func parseLockfile(ctx context.Context, langType ftypes.LangType, filePath string, r xio.ReadSeekerAt, parser lockfileParser) (*ftypes.Application, error) {
+	pkgs, _, err := parser.Parse(ctx, r)
+	if err != nil {
+		return nil, xerrors.Errorf("parse error: %w", err)
+	}
+	if len(pkgs) == 0 {
+		return nil, nil
+	}
+	return &ftypes.Application{
+		Type:     langType,
+		FilePath: filePath,
+		Packages: pkgs,
+	}, nil
+}
 
-// Size is
-func (d *DummyFileInfo) Size() int64 { return d.size }
+// parseBinary calls a binary parser (Go/Rust), returning nil for non-matching binaries.
+func parseBinary(ctx context.Context, langType ftypes.LangType, filePath string, r xio.ReadSeekerAt, parser lockfileParser) (*ftypes.Application, error) {
+	pkgs, _, err := parser.Parse(ctx, r)
+	if err != nil {
+		// Go and Rust binary parsers return specific errors for non-matching executables
+		if errors.Is(err, gobinary.ErrUnrecognizedExe) || errors.Is(err, gobinary.ErrNonGoBinary) {
+			return nil, nil
+		}
+		return nil, xerrors.Errorf("parse error: %w", err)
+	}
+	if len(pkgs) == 0 {
+		return nil, nil
+	}
+	return &ftypes.Application{
+		Type:     langType,
+		FilePath: filePath,
+		Packages: pkgs,
+	}, nil
+}
 
-// Mode is
-func (d *DummyFileInfo) Mode() os.FileMode { return d.filemode }
+// parseExecutableBinary tries Go binary parser first, then Rust binary parser.
+// Executable binaries are detected by filemode, and the actual language is determined by trying each parser.
+func parseExecutableBinary(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftypes.Application, error) {
+	// Try Go binary first
+	app, err := parseBinary(ctx, ftypes.GoBinary, filePath, r, gobinary.NewParser())
+	if err != nil {
+		return nil, err
+	}
+	if app != nil {
+		return app, nil
+	}
 
-// ModTime is
-func (d *DummyFileInfo) ModTime() time.Time { return time.Now() }
+	// Reset reader and try Rust binary
+	if _, err := r.Seek(0, 0); err != nil {
+		return nil, xerrors.Errorf("seek error: %w", err)
+	}
+	return parseBinary(ctx, ftypes.RustBinary, filePath, r, rustbinary.NewParser())
+}
 
-// IsDir is
-func (d *DummyFileInfo) IsDir() bool { return false }
+// parseYarn handles yarn.lock which has a different parser signature (4 return values including licenses).
+func parseYarn(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftypes.Application, error) {
+	p := yarn.NewParser()
+	pkgs, _, _, err := p.Parse(ctx, r)
+	if err != nil {
+		return nil, xerrors.Errorf("parse error: %w", err)
+	}
+	if len(pkgs) == 0 {
+		return nil, nil
+	}
+	return &ftypes.Application{
+		Type:     ftypes.Yarn,
+		FilePath: filePath,
+		Packages: pkgs,
+	}, nil
+}
 
-// Sys is
-func (d *DummyFileInfo) Sys() any { return nil }
 
 func (l *base) buildWpCliCmd(wpCliArgs string, suppressStderr bool, shell string) string {
 	cmd := fmt.Sprintf("%s %s --path=%s", l.ServerInfo.WordPress.CmdPath, wpCliArgs, l.ServerInfo.WordPress.DocRoot)
