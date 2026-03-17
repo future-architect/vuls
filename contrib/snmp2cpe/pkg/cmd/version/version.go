@@ -6,8 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+)
 
-	"github.com/future-architect/vuls/config"
+// Version and Revision are set via ldflags at build time.
+var (
+	Version  = "unknown"
+	Revision = "unknown"
 )
 
 // NewCmdVersion ...
@@ -17,7 +21,7 @@ func NewCmdVersion() *cobra.Command {
 		Short: "Print the version",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if _, err := fmt.Fprintf(os.Stdout, "snmp2cpe %s %s\n", config.Version, config.Revision); err != nil {
+			if _, err := fmt.Fprintf(os.Stdout, "snmp2cpe %s %s\n", Version, Revision); err != nil {
 				return errors.Wrap(err, "failed to print version")
 			}
 			return nil
