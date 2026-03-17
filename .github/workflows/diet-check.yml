@@ -25,6 +25,8 @@ jobs:
           echo "AFTER_TOTAL=$(grep -cP $'^\t' go.mod || echo 0)" >> "$GITHUB_ENV"
           CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -trimpath -o /tmp/vuls-after ./cmd/vuls
           echo "AFTER_SIZE=$(stat -c%s /tmp/vuls-after)" >> "$GITHUB_ENV"
+          CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -tags=scanner -trimpath -o /tmp/scanner-after ./cmd/scanner
+          echo "AFTER_SCANNER_SIZE=$(stat -c%s /tmp/scanner-after)" >> "$GITHUB_ENV"
 
       - name: Metrics (base branch)
         run: |
@@ -34,6 +36,8 @@ jobs:
           echo "BEFORE_TOTAL=$(grep -cP $'^\t' go.mod || echo 0)" >> "$GITHUB_ENV"
           CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -trimpath -o /tmp/vuls-before ./cmd/vuls
           echo "BEFORE_SIZE=$(stat -c%s /tmp/vuls-before)" >> "$GITHUB_ENV"
+          CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -tags=scanner -trimpath -o /tmp/scanner-before ./cmd/scanner
+          echo "BEFORE_SCANNER_SIZE=$(stat -c%s /tmp/scanner-before)" >> "$GITHUB_ENV"
 
       - name: Report
         run: |
@@ -43,8 +47,11 @@ jobs:
           delta_direct=$((after_direct - before_direct))
           delta_indirect=$((AFTER_DEPS - BEFORE_DEPS))
           delta_kb=$(( (AFTER_SIZE - BEFORE_SIZE) / 1024 ))
+          delta_scanner_kb=$(( (AFTER_SCANNER_SIZE - BEFORE_SCANNER_SIZE) / 1024 ))
           before_mb=$(awk "BEGIN{printf \"%.1f\", $BEFORE_SIZE/1048576}")
           after_mb=$(awk "BEGIN{printf \"%.1f\", $AFTER_SIZE/1048576}")
+          before_scanner_mb=$(awk "BEGIN{printf \"%.1f\", $BEFORE_SCANNER_SIZE/1048576}")
+          after_scanner_mb=$(awk "BEGIN{printf \"%.1f\", $AFTER_SCANNER_SIZE/1048576}")
           cat <<EOF >> "$GITHUB_STEP_SUMMARY"
 ## Diet Metrics
 | Metric | Before | After | Delta |
@@ -52,5 +59,6 @@ jobs:
 | go.sum lines | $BEFORE_GOSUM | $AFTER_GOSUM | ${delta_gosum} |
 | Direct deps | ${before_direct} | ${after_direct} | ${delta_direct} |
 | Indirect deps | $BEFORE_DEPS | $AFTER_DEPS | ${delta_indirect} |
-| Binary size | ${before_mb}MB | ${after_mb}MB | ${delta_kb}KB |
+| Binary size (full) | ${before_mb}MB | ${after_mb}MB | ${delta_kb}KB |
+| Binary size (scanner) | ${before_scanner_mb}MB | ${after_scanner_mb}MB | ${delta_scanner_kb}KB |
 EOF
