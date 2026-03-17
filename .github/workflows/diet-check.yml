@@ -1,0 +1,50 @@
+name: Diet PR Check
+on:
+  pull_request:
+    paths: ['go.mod', 'go.sum']
+
+permissions:
+  contents: read
+
+jobs:
+  diet-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Metrics (PR branch)
+        run: |
+          echo "AFTER_GOSUM=$(wc -l < go.sum)" >> "$GITHUB_ENV"
+          echo "AFTER_DEPS=$(grep -c $'^\t' go.mod)" >> "$GITHUB_ENV"
+          CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -trimpath -o /tmp/vuls-after ./cmd/vuls
+          echo "AFTER_SIZE=$(stat -c%s /tmp/vuls-after)" >> "$GITHUB_ENV"
+
+      - name: Metrics (base branch)
+        run: |
+          git checkout "${{ github.event.pull_request.base.sha }}"
+          echo "BEFORE_GOSUM=$(wc -l < go.sum)" >> "$GITHUB_ENV"
+          echo "BEFORE_DEPS=$(grep -c $'^\t' go.mod)" >> "$GITHUB_ENV"
+          CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go build -trimpath -o /tmp/vuls-before ./cmd/vuls
+          echo "BEFORE_SIZE=$(stat -c%s /tmp/vuls-before)" >> "$GITHUB_ENV"
+
+      - name: Report
+        run: |
+          delta_gosum=$((AFTER_GOSUM - BEFORE_GOSUM))
+          delta_deps=$((AFTER_DEPS - BEFORE_DEPS))
+          delta_kb=$(( (AFTER_SIZE - BEFORE_SIZE) / 1024 ))
+          before_mb=$(awk "BEGIN{printf \"%.1f\", $BEFORE_SIZE/1048576}")
+          after_mb=$(awk "BEGIN{printf \"%.1f\", $AFTER_SIZE/1048576}")
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## Diet Metrics
+          | Metric | Before | After | Delta |
+          |--------|--------|-------|-------|
+          | go.sum lines | $BEFORE_GOSUM | $AFTER_GOSUM | ${delta_gosum} |
+          | Direct deps | $BEFORE_DEPS | $AFTER_DEPS | ${delta_deps} |
+          | Binary size | ${before_mb}MB | ${after_mb}MB | ${delta_kb}KB |
+          EOF
