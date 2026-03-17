@@ -111,20 +111,26 @@ var lockfiles = []lockfileEntry{
 
 // goldenFileName converts a lockfile path to a golden file name.
 // e.g. "npm-v3/package-lock.json" -> "npm-v3_package-lock.json"
+// Uses filepath.ToSlash to normalize path separators across platforms.
 func goldenFileName(lockfilePath string) string {
-	return strings.ReplaceAll(lockfilePath, string(os.PathSeparator), "_") + ".golden.json"
+	return strings.ReplaceAll(filepath.ToSlash(lockfilePath), "/", "_") + ".golden.json"
 }
 
 func TestAnalyzeLibrary_Golden(t *testing.T) {
 	integrationDir := filepath.Join("..", "integration", "data", "lockfile")
 	goldenDir := filepath.Join("testdata", "golden")
 
+	// integration/ is a git submodule. Skip if not checked out.
+	if _, err := os.Stat(integrationDir); os.IsNotExist(err) {
+		t.Skip("integration/data/lockfile not found (git submodule not initialized). Run: git submodule update --init")
+	}
+
 	for _, lf := range lockfiles {
 		t.Run(lf.path, func(t *testing.T) {
 			srcPath := filepath.Join(integrationDir, lf.path)
 			contents, err := os.ReadFile(srcPath)
 			if err != nil {
-				t.Fatalf("Failed to read %s: %v", srcPath, err)
+				t.Skipf("Fixture not found: %s (git submodule may not be initialized)", srcPath)
 			}
 
 			got, err := AnalyzeLibrary(context.Background(), lf.path, contents, lf.filemode, true)
