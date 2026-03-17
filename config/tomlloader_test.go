@@ -97,6 +97,36 @@ func TestHosts(t *testing.T) {
 	}
 }
 
+func TestEnumerateHosts(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		in       string
+		expected []string
+		err      bool
+	}{
+		{in: "192.168.1.1", expected: []string{"192.168.1.1"}},
+		{in: "ssh/host", expected: []string{"ssh/host"}},
+		{in: "192.168.1.0/30", expected: []string{"192.168.1.1", "192.168.1.2"}},
+		{in: "192.168.1.0/31", expected: []string{"192.168.1.0", "192.168.1.1"}},
+		{in: "192.168.1.1/32", expected: []string{"192.168.1.1"}},
+		{in: "2001:db8::1/126", expected: []string{"2001:db8::", "2001:db8::1", "2001:db8::2", "2001:db8::3"}},
+		{in: "2001:db8::1/127", expected: []string{"2001:db8::", "2001:db8::1"}},
+		{in: "2001:db8::1/128", expected: []string{"2001:db8::1"}},
+		{in: "2001:db8::1/32", err: true},
+	}
+	for i, tt := range tests {
+		actual, err := enumerateHosts(tt.in)
+		if err != nil && !tt.err {
+			t.Errorf("[%d] unexpected error: %v", i, err)
+		} else if err == nil && tt.err {
+			t.Errorf("[%d] expected error but got none", i)
+		}
+		if !reflect.DeepEqual(actual, tt.expected) {
+			t.Errorf("[%d] in: %s, got: %q, want: %q", i, tt.in, actual, tt.expected)
+		}
+	}
+}
+
 func TestToCpeURI(t *testing.T) {
 	var tests = []struct {
 		in       string

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"net/netip"
 	"regexp"
 	"runtime"
 	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/c-robinson/iplib"
 	"github.com/knqyf263/go-cpe/naming"
 	"golang.org/x/xerrors"
 
@@ -193,27 +193,29 @@ func enumerateHosts(host string) ([]string, error) {
 		return []string{host}, nil
 	}
 
-	ipAddr, ipNet, err := net.ParseCIDR(host)
+	prefix, err := netip.ParsePrefix(host)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to parse CIDR. err: %w", err)
 	}
-	maskLen, _ := ipNet.Mask.Size()
 
-	addrs := []string{}
-	if net.ParseIP(ipAddr.String()).To4() != nil {
-		n := iplib.NewNet4(ipAddr, int(maskLen))
-		for _, addr := range n.Enumerate(int(n.Count()), 0) {
-			addrs = append(addrs, addr.String())
-		}
-	} else if net.ParseIP(ipAddr.String()).To16() != nil {
-		n := iplib.NewNet6(ipAddr, int(maskLen), 0)
-		if !n.Count().IsInt64() {
-			return nil, xerrors.Errorf("Failed to enumerate IP address. err: mask bitsize too big")
-		}
-		for _, addr := range n.Enumerate(int(n.Count().Int64()), 0) {
-			addrs = append(addrs, addr.String())
-		}
+	hostBits := prefix.Addr().BitLen() - prefix.Bits()
+	if hostBits > 63 {
+		return nil, xerrors.Errorf("Failed to enumerate IP address. err: mask bitsize too big")
 	}
+
+	count := uint64(1) << hostBits
+	addrs := make([]string, 0, count)
+	addr := prefix.Masked().Addr()
+	for range count {
+		addrs = append(addrs, addr.String())
+		addr = addr.Next()
+	}
+
+	// IPv4 with prefix < 31: strip network (first) and broadcast (last) addresses
+	if prefix.Addr().Is4() && prefix.Bits() < 31 && len(addrs) > 2 {
+		addrs = addrs[1 : len(addrs)-1]
+	}
+
 	return addrs, nil
 }
 
