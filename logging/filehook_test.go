@@ -29,7 +29,9 @@ func TestFileHookFire(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
 
 	h := &fileHook{
 		path:      tmpFile.Name(),
@@ -61,7 +63,9 @@ func TestFileHookFireAppends(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
 
 	h := &fileHook{
 		path:      tmpFile.Name(),
@@ -97,7 +101,9 @@ func TestFileHookIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
 
 	logger := logrus.New()
 	logger.Out = os.Stderr
