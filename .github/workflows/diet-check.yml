@@ -52,13 +52,13 @@ jobs:
           after_mb=$(awk "BEGIN{printf \"%.1f\", $AFTER_SIZE/1048576}")
           before_scanner_mb=$(awk "BEGIN{printf \"%.1f\", $BEFORE_SCANNER_SIZE/1048576}")
           after_scanner_mb=$(awk "BEGIN{printf \"%.1f\", $AFTER_SCANNER_SIZE/1048576}")
-          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
-## Diet Metrics
-| Metric | Before | After | Delta |
-|--------|--------|-------|-------|
-| go.sum lines | $BEFORE_GOSUM | $AFTER_GOSUM | ${delta_gosum} |
-| Direct deps | ${before_direct} | ${after_direct} | ${delta_direct} |
-| Indirect deps | $BEFORE_DEPS | $AFTER_DEPS | ${delta_indirect} |
-| Binary size (full) | ${before_mb}MB | ${after_mb}MB | ${delta_kb}KB |
-| Binary size (scanner) | ${before_scanner_mb}MB | ${after_scanner_mb}MB | ${delta_scanner_kb}KB |
-EOF
+          {
+            echo "## Diet Metrics"
+            echo "| Metric | Before | After | Delta |"
+            echo "|--------|--------|-------|-------|"
+            echo "| go.sum lines | $BEFORE_GOSUM | $AFTER_GOSUM | ${delta_gosum} |"
+            echo "| Direct deps | ${before_direct} | ${after_direct} | ${delta_direct} |"
+            echo "| Indirect deps | $BEFORE_DEPS | $AFTER_DEPS | ${delta_indirect} |"
+            echo "| Binary size (full) | ${before_mb}MB | ${after_mb}MB | ${delta_kb}KB |"
+            echo "| Binary size (scanner) | ${before_scanner_mb}MB | ${after_scanner_mb}MB | ${delta_scanner_kb}KB |"
+          } >> "$GITHUB_STEP_SUMMARY"
