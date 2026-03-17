@@ -1825,7 +1825,7 @@ func TestVulnInfo_PatchStatus(t *testing.T) {
 			fields: fields{
 				CpeURIs: []string{"cpe:/a:microsoft:internet_explorer:10"},
 			},
-			want: "",
+			want: "unknown",
 		},
 		{
 			name: "package unfixed",
@@ -2078,6 +2078,93 @@ func TestVulnInfo_MaxCvss40Score(t *testing.T) {
 				CveContents: tt.fields.CveContents,
 			}).MaxCvss40Score(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("VulnInfo.MaxsCvss40Score() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVulnInfos_FormatFixedStatus(t *testing.T) {
+	type args struct {
+		packs Packages
+	}
+	tests := []struct {
+		name string
+		v    VulnInfos
+		args args
+		want string
+	}{
+		{
+			name: "empty",
+			v:    VulnInfos{},
+			want: "0/0 Fixed",
+		},
+		{
+			name: "package fixed",
+			v: VulnInfos{
+				"CVE-2024-0001": {
+					CveID: "CVE-2024-0001",
+					AffectedPackages: PackageFixStatuses{
+						{Name: "bash", NotFixedYet: false},
+					},
+				},
+			},
+			args: args{
+				packs: Packages{"bash": {Name: "bash", Version: "5.0-4", NewVersion: "5.1-1"}},
+			},
+			want: "1/1 Fixed",
+		},
+		{
+			name: "package unfixed",
+			v: VulnInfos{
+				"CVE-2024-0001": {
+					CveID: "CVE-2024-0001",
+					AffectedPackages: PackageFixStatuses{
+						{Name: "bash", NotFixedYet: true},
+					},
+				},
+			},
+			want: "0/1 Fixed",
+		},
+		{
+			name: "cpe counted as unknown",
+			v: VulnInfos{
+				"CVE-2024-0001": {
+					CveID:   "CVE-2024-0001",
+					CpeURIs: []string{"cpe:/a:vendor:product:1.0"},
+				},
+			},
+			want: "0/1 Fixed",
+		},
+		{
+			name: "mixed: package fixed + package unfixed + cpe",
+			v: VulnInfos{
+				"CVE-2024-0001": {
+					CveID: "CVE-2024-0001",
+					AffectedPackages: PackageFixStatuses{
+						{Name: "bash", NotFixedYet: false},
+					},
+				},
+				"CVE-2024-0002": {
+					CveID: "CVE-2024-0002",
+					AffectedPackages: PackageFixStatuses{
+						{Name: "vim", NotFixedYet: true},
+					},
+				},
+				"CVE-2024-0003": {
+					CveID:   "CVE-2024-0003",
+					CpeURIs: []string{"cpe:/a:vendor:product:1.0"},
+				},
+			},
+			args: args{
+				packs: Packages{"bash": {Name: "bash", Version: "5.0-4", NewVersion: "5.1-1"}},
+			},
+			want: "1/3 Fixed",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.v.FormatFixedStatus(tt.args.packs); got != tt.want {
+				t.Errorf("VulnInfos.FormatFixedStatus() = %v, want %v", got, tt.want)
 			}
 		})
 	}
