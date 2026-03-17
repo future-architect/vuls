@@ -1,0 +1,103 @@
+[
+  {
+    "type": "pipenv",
+    "lockfilePath": "Pipfile.lock",
+    "libs": [
+      {
+        "name": "babel",
+        "version": "0.9.0",
+        "purl": "pkg:pypi/babel@0.9.0"
+      },
+      {
+        "name": "certifi",
+        "version": "2020.12.5",
+        "purl": "pkg:pypi/certifi@2020.12.5"
+      },
+      {
+        "name": "chardet",
+        "version": "4.0.0",
+        "purl": "pkg:pypi/chardet@4.0.0"
+      },
+      {
+        "name": "click",
+        "version": "7.1.2",
+        "purl": "pkg:pypi/click@7.1.2"
+      },
+      {
+        "name": "flask",
+        "version": "0.1.2",
+        "purl": "pkg:pypi/flask@0.1.2"
+      },
+      {
+        "name": "flask-talisman",
+        "version": "0.7.0",
+        "purl": "pkg:pypi/flask-talisman@0.7.0"
+      },
+      {
+        "name": "gunicorn",
+        "version": "20.0.4",
+        "purl": "pkg:pypi/gunicorn@20.0.4"
+      },
+      {
+        "name": "idna",
+        "version": "2.10",
+        "purl": "pkg:pypi/idna@2.10"
+      },
+      {
+        "name": "itsdangerous",
+        "version": "1.1.0",
+        "purl": "pkg:pypi/itsdangerous@1.1.0"
+      },
+      {
+        "name": "jinja2",
+        "version": "0.11.3",
+        "purl": "pkg:pypi/jinja2@0.11.3"
+      },
+      {
+        "name": "markupsafe",
+        "version": "1.1.1",
+        "purl": "pkg:pypi/markupsafe@1.1.1"
+      },
+      {
+        "name": "omise",
+        "version": "0.11.0",
+        "purl": "pkg:pypi/omise@0.11.0"
+      },
+      {
+        "name": "py-money",
+        "version": "0.5.0",
+        "purl": "pkg:pypi/py-money@0.5.0"
+      },
+      {
+        "name": "python-dotenv",
+        "version": "0.15.0",
+        "purl": "pkg:pypi/python-dotenv@0.15.0"
+      },
+      {
+        "name": "pytz",
+        "version": "2021.1",
+        "purl": "pkg:pypi/pytz@2021.1"
+      },
+      {
+        "name": "requests",
+        "version": "2.25.1",
+        "purl": "pkg:pypi/requests@2.25.1"
+      },
+      {
+        "name": "six",
+        "version": "1.15.0",
+        "purl": "pkg:pypi/six@1.15.0"
+      },
+      {
+        "name": "urllib3",
+        "version": "0.26.3",
+        "purl": "pkg:pypi/urllib3@0.26.3"
+      },
+      {
+        "name": "werkzeug",
+        "version": "1.0.1",
+        "purl": "pkg:pypi/werkzeug@1.0.1"
+      }
+    ]
+  }
+]

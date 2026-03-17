@@ -1,0 +1,18 @@
+[
+  {
+    "type": "dotnet-core",
+    "lockfilePath": "datacollector.deps.json",
+    "libs": [
+      {
+        "name": "Microsoft.VisualStudio.TestPlatform.Common",
+        "version": "17.2.0-release-20220408-11",
+        "purl": "pkg:nuget/Microsoft.VisualStudio.TestPlatform.Common@17.2.0-release-20220408-11"
+      },
+      {
+        "name": "Newtonsoft.Json",
+        "version": "9.0.1",
+        "purl": "pkg:nuget/Newtonsoft.Json@9.0.1"
+      }
+    ]
+  }
+]

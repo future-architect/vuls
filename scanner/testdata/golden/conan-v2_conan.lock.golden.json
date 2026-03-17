@@ -1,0 +1,18 @@
+[
+  {
+    "type": "conan",
+    "lockfilePath": "conan-v2/conan.lock",
+    "libs": [
+      {
+        "name": "matrix",
+        "version": "1.3",
+        "purl": "pkg:conan/matrix@1.3"
+      },
+      {
+        "name": "sound32",
+        "version": "1.0",
+        "purl": "pkg:conan/sound32@1.0"
+      }
+    ]
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "type": "gobinary",
+    "lockfilePath": "gobinary",
+    "libs": [
+      {
+        "name": "example",
+        "version": "",
+        "purl": "pkg:golang/example"
+      },
+      {
+        "name": "golang.org/x/text",
+        "version": "v0.3.2",
+        "purl": "pkg:golang/golang.org/x/text@v0.3.2"
+      },
+      {
+        "name": "stdlib",
+        "version": "v1.17",
+        "purl": "pkg:golang/stdlib@v1.17"
+      }
+    ]
+  }
+]

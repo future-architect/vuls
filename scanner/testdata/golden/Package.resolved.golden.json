@@ -1,0 +1,28 @@
+[
+  {
+    "type": "swift",
+    "lockfilePath": "Package.resolved",
+    "libs": [
+      {
+        "name": "github.com/Quick/Nimble",
+        "version": "9.2.1",
+        "purl": "pkg:swift/github.com/Quick/Nimble@9.2.1"
+      },
+      {
+        "name": "github.com/Quick/Quick",
+        "version": "7.0.0",
+        "purl": "pkg:swift/github.com/Quick/Quick@7.0.0"
+      },
+      {
+        "name": "github.com/ReactiveCocoa/ReactiveSwift",
+        "version": "7.1.1",
+        "purl": "pkg:swift/github.com/ReactiveCocoa/ReactiveSwift@7.1.1"
+      },
+      {
+        "name": "github.com/apple/swift-nio",
+        "version": "2.41.0",
+        "purl": "pkg:swift/github.com/apple/swift-nio@2.41.0"
+      }
+    ]
+  }
+]
