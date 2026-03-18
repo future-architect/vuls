@@ -27,11 +27,11 @@
 package main
 
 import (
+	"archive/tar"
 	"cmp"
+	"compress/gzip"
 	"context"
 	"encoding/json"
-	"archive/tar"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
@@ -400,8 +400,9 @@ func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) m
 }
 
 func runOnBase(baseRef string, fixtures []fixture, fixtureDir, outputDir, fixturesPath, workdir string, log *logger) map[string]int {
-	// Create worktree
-	worktreeDir := filepath.Join(workdir, "worktree-"+baseRef)
+	// Create worktree (sanitize baseRef for filesystem safety: feature/foo → feature_foo)
+	safeRef := strings.NewReplacer("/", "_", "..", "_", "\\", "_").Replace(baseRef)
+	worktreeDir := filepath.Join(workdir, "worktree-"+safeRef)
 	os.RemoveAll(worktreeDir)
 
 	cmd := exec.Command("git", "worktree", "add", worktreeDir, baseRef)
