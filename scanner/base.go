@@ -726,7 +726,7 @@ func (l *base) scanLibraries() (err error) {
 			// 2. Errors are included in ScanResult.Errors in the JSON output
 			// 3. Unattended scans are not aborted by a single parse failure
 			l.log.Errorf("Failed to analyze library %s: %+v", abspath, err)
-			l.errs = append(l.errs, err)
+			l.errs = append(l.errs, xerrors.Errorf("Failed to analyze library %s: %w", abspath, err))
 			continue
 		}
 		for _, libscanner := range libraryScanners {
@@ -866,8 +866,10 @@ func parseLockfile(ctx context.Context, langType ftypes.LangType, filePath strin
 func parseBinary(ctx context.Context, langType ftypes.LangType, filePath string, r xio.ReadSeekerAt, parser lockfileParser) (*ftypes.Application, error) {
 	pkgs, _, err := parser.Parse(ctx, r)
 	if err != nil {
-		// Go and Rust binary parsers return specific errors for non-matching executables
-		if errors.Is(err, gobinary.ErrUnrecognizedExe) || errors.Is(err, gobinary.ErrNonGoBinary) {
+		// Go binary parser: ErrUnrecognizedExe, ErrNonGoBinary
+		// Rust binary parser: ErrUnrecognizedExe, ErrNonRustBinary
+		if errors.Is(err, gobinary.ErrUnrecognizedExe) || errors.Is(err, gobinary.ErrNonGoBinary) ||
+			errors.Is(err, rustbinary.ErrUnrecognizedExe) || errors.Is(err, rustbinary.ErrNonRustBinary) {
 			return nil, nil
 		}
 		return nil, xerrors.Errorf("parse error: %w", err)

@@ -1,10 +1,10 @@
 //go:build ignore
 
-// compare-analyze.go compares AnalyzeLibrary output between two Git refs.
+// compare-lockfile.go compares AnalyzeLibrary output between two Git refs.
 //
 // Usage:
 //
-//	go run scripts/compare-analyze.go [flags]
+//	go run scripts/compare-lockfile.go [flags]
 //
 // Flags:
 //
@@ -266,8 +266,10 @@ func (f fixture) safeFilename() string {
 	return strings.ReplaceAll(f.Project, "/", "_") + "__" + f.Filename
 }
 
+var httpClient = &http.Client{Timeout: 5 * time.Minute}
+
 func fetchFixture(f fixture, dir string) error {
-	resp, err := http.Get(f.URL)
+	resp, err := httpClient.Get(f.URL)
 	if err != nil {
 		return err
 	}
@@ -447,11 +449,7 @@ func main() {
 	json.Unmarshal(data, &fixtures)
 
 	for _, f := range fixtures {
-		safe := fmt.Sprintf("%s__%s", filepath.Base(filepath.Dir("x/"+f.Project)+"/"+filepath.Base(f.Project)), f.Filename)
-		// Replicate safeFilename logic
-		safe = f.Project
-		for _, c := range []string{"/"} { safe = replaceAll(safe, c, "_") }
-		safe = safe + "__" + f.Filename
+		safe := replaceAll(f.Project, "/", "_") + "__" + f.Filename
 
 		srcPath := filepath.Join(fixtureDir, safe)
 		contents, err := os.ReadFile(srcPath)
