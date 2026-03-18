@@ -721,8 +721,12 @@ func (l *base) scanLibraries() (err error) {
 
 		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline())
 		if err != nil {
-			l.log.Warnf("Failed to analyze library %s: %+v", abspath, err)
-			l.warns = append(l.warns, err)
+			// Collect errors in l.errs instead of aborting so that:
+			// 1. All lockfiles are scanned even if one fails (e.g. unsupported format version)
+			// 2. Errors are included in ScanResult.Errors in the JSON output
+			// 3. Unattended scans are not aborted by a single parse failure
+			l.log.Errorf("Failed to analyze library %s: %+v", abspath, err)
+			l.errs = append(l.errs, err)
 			continue
 		}
 		for _, libscanner := range libraryScanners {
@@ -793,7 +797,7 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 	// Go
 	case parserGoMod:
 		return parseLockfile(ctx, ftypes.GoModule, filePath, r, gomod.NewParser(true, false))
-	case parserGoBinary:
+	case parserExecutable:
 		return parseExecutableBinary(ctx, filePath, r)
 
 	// Java

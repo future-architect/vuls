@@ -25,66 +25,69 @@ type lockfileEntry struct {
 	// binary indicates the fixture is a binary file only available in the
 	// integration submodule (not copied to testdata/fixtures/).
 	binary bool
+	// expectParseError indicates this fixture is known to produce a parse error
+	// (e.g. unsupported lockfile version). The test treats errors as empty result.
+	expectParseError bool
 }
 
 var lockfiles = []lockfileEntry{
 	// Node.js
-	{"npm-v1/package-lock.json", 0644, false},
-	{"npm-v2/package-lock.json", 0644, false},
-	{"npm-v3/package-lock.json", 0644, false},
-	{"yarn.lock", 0644, false},
-	{"pnpm/pnpm-lock.yaml", 0644, false},
-	{"pnpm-v9/pnpm-lock.yaml", 0644, false},
-	{"bun.lock", 0644, false},
+	{"npm-v1/package-lock.json", 0644, false, false},
+	{"npm-v2/package-lock.json", 0644, false, false},
+	{"npm-v3/package-lock.json", 0644, false, false},
+	{"yarn.lock", 0644, false, false},
+	{"pnpm/pnpm-lock.yaml", 0644, false, true}, // pnpm v8: known parse error
+	{"pnpm-v9/pnpm-lock.yaml", 0644, false, false},
+	{"bun.lock", 0644, false, false},
 
 	// Python
-	{"requirements.txt", 0644, false},
-	{"Pipfile.lock", 0644, false},
-	{"poetry-v1/poetry.lock", 0644, false},
-	{"poetry-v2/poetry.lock", 0644, false},
-	{"uv.lock", 0644, false},
+	{"requirements.txt", 0644, false, false},
+	{"Pipfile.lock", 0644, false, false},
+	{"poetry-v1/poetry.lock", 0644, false, false},
+	{"poetry-v2/poetry.lock", 0644, false, false},
+	{"uv.lock", 0644, false, false},
 
 	// Ruby
-	{"Gemfile.lock", 0644, false},
+	{"Gemfile.lock", 0644, false, false},
 
 	// Rust
-	{"Cargo.lock", 0644, false},
-	{"hello-rust", 0755, true},
+	{"Cargo.lock", 0644, false, false},
+	{"hello-rust", 0755, true, false},
 
 	// PHP
-	{"composer.lock", 0644, false},
+	{"composer.lock", 0644, false, false},
 
 	// Go
-	{"go.mod", 0644, false},
-	{"go.sum", 0644, false},
-	{"gobinary", 0755, true},
+	{"go.mod", 0644, false, false},
+	{"go.sum", 0644, false, false},
+	{"gobinary", 0755, true, false},
 
 	// Java
-	{"pom.xml", 0644, false},
-	{"gradle.lockfile", 0644, false},
-	{"log4j-core-2.13.0.jar", 0644, true},
-	{"wrong-name-log4j-core.jar", 0644, true},
-	{"juddiv3-war-3.3.5.war", 0644, true},
+	{"pom.xml", 0644, false, false},
+	{"gradle.lockfile", 0644, false, false},
+	{"log4j-core-2.13.0.jar", 0644, true, false},
+	{"wrong-name-log4j-core.jar", 0644, true, false},
+	{"juddiv3-war-3.3.5.war", 0644, true, false},
 
 	// .NET
-	{"packages.lock.json", 0644, false},
-	{"packages.config", 0644, false},
-	{"datacollector.deps.json", 0644, false},
-	{"Directory.Packages.props", 0644, false},
+	{"packages.lock.json", 0644, false, false},
+	{"packages.config", 0644, false, false},
+	{"datacollector.deps.json", 0644, false, false},
+	{"Directory.Packages.props", 0644, false, false},
 
 	// C/C++
-	{"conan-v1/conan.lock", 0644, false},
-	{"conan-v2/conan.lock", 0644, false},
+	{"conan-v1/conan.lock", 0644, false, false},
+	{"conan-v2/conan.lock", 0644, false, false},
 
 	// Dart
-	{"pubspec.lock", 0644, false},
+	{"pubspec.lock", 0644, false, false},
 
 	// Elixir
-	{"mix.lock", 0644, false},
+	{"mix.lock", 0644, false, false},
 
 	// Swift
-	{"Podfile.lock", 0644, false},
-	{"Package.resolved", 0644, false},
+	{"Podfile.lock", 0644, false, false},
+	{"Package.resolved", 0644, false, false},
 }
 
 // goldenFileName converts a lockfile path to a golden file name.
@@ -118,11 +121,12 @@ func TestAnalyzeLibrary_Golden(t *testing.T) {
 
 			got, err := AnalyzeLibrary(context.Background(), lf.path, contents, lf.filemode, true)
 			if err != nil {
-				// Some fixtures (e.g. pnpm v8) produce parse errors.
-				// In production, scanLibraries logs a warning and continues.
-				// Treat parse errors as empty result for golden comparison.
-				t.Logf("AnalyzeLibrary(%s) returned error (treated as empty): %v", lf.path, err)
-				got = nil
+				if lf.expectParseError {
+					t.Logf("AnalyzeLibrary(%s) returned expected parse error: %v", lf.path, err)
+					got = nil
+				} else {
+					t.Fatalf("AnalyzeLibrary(%s) unexpected error: %v", lf.path, err)
+				}
 			}
 
 			gotJSON, err := json.MarshalIndent(normalizeResult(got), "", "  ")

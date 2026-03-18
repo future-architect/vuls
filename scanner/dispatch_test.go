@@ -73,9 +73,9 @@ func TestDetectParserType(t *testing.T) {
 		{"Package.resolved", 0644, parserSwift},
 
 		// === Executable binaries ===
-		{"gobinary", 0755, parserGoBinary},
-		{"hello-rust", 0755, parserGoBinary}, // detected as executable, type determined at parse time
-		{"myapp", 0755, parserGoBinary},
+		{"gobinary", 0755, parserExecutable},
+		{"hello-rust", 0755, parserExecutable}, // detected as executable, type determined at parse time
+		{"myapp", 0755, parserExecutable},
 		{"myapp", 0644, parserNone}, // not executable
 
 		// === Not recognized ===

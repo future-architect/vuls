@@ -26,7 +26,7 @@ const (
 	parserCargo         parserType = "cargo"
 	parserComposer      parserType = "composer"
 	parserGoMod         parserType = "gomod"
-	parserGoBinary      parserType = "gobinary"
+	parserExecutable    parserType = "executable"
 	parserPom           parserType = "pom"
 	parserGradle        parserType = "gradle"
 	parserJar           parserType = "jar"
@@ -149,7 +149,7 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 	if isExecutable(filemode) {
 		// Both Go and Rust binaries are detected by executable filemode.
 		// The actual distinction happens during parsing, not dispatch.
-		return parserGoBinary
+		return parserExecutable
 	}
 
 	return parserNone
