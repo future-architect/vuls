@@ -17,13 +17,13 @@
 // Examples:
 //
 //	# Full comparison: fetch fixtures and compare against master
-//	go run scripts/compare-analyze.go -fetch -base master
+//	go run scripts/compare-lockfile.go -fetch -base master
 //
 //	# Re-run comparison with previously fetched fixtures
-//	go run scripts/compare-analyze.go -base master
+//	go run scripts/compare-lockfile.go -base master
 //
 //	# Compare against a specific commit
-//	go run scripts/compare-analyze.go -fetch -base abc1234
+//	go run scripts/compare-lockfile.go -fetch -base abc1234
 package main
 
 import (
@@ -161,7 +161,7 @@ func main() {
 	}
 	defer log.close()
 
-	log.log("=== compare-analyze.go ===")
+	log.log("=== compare-lockfile.go ===")
 	log.log("Date: %s", time.Now().Format(time.RFC3339))
 	log.log("Base ref: %s", *baseRef)
 	log.log("Workdir: %s", *workdir)
@@ -183,8 +183,9 @@ func main() {
 			log.log("# curl -sL -o %s/%s %q", fixtureDir, f.safeFilename(), f.URL)
 			if err := fetchFixture(f, fixtureDir); err != nil {
 				log.log("FETCH ERROR  %-12s %-40s %v", f.Type, f.Project, err)
+			} else if info, err := os.Stat(filepath.Join(fixtureDir, f.safeFilename())); err != nil {
+				log.log("FETCH ERROR  %-12s %-40s file not found after download: %v", f.Type, f.Project, err)
 			} else {
-				info, _ := os.Stat(filepath.Join(fixtureDir, f.safeFilename()))
 				log.log("FETCH OK     %-12s %-40s %dB", f.Type, f.Project, info.Size())
 			}
 		}
@@ -245,7 +246,13 @@ func main() {
 
 	_ = baseResults // used via file comparison
 
-	if different > 0 {
+	if different > 0 || skipped > 0 || identical == 0 {
+		if skipped > 0 {
+			log.log("ERROR: %d fixtures skipped (base-side analysis may have failed)", skipped)
+		}
+		if identical == 0 {
+			log.log("ERROR: no successful comparisons were made")
+		}
 		os.Exit(1)
 	}
 }
@@ -339,9 +346,16 @@ func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) m
 			got = nil
 		}
 
-		j, _ := json.MarshalIndent(normalize(got), "", "  ")
+		j, err := json.MarshalIndent(normalize(got), "", "  ")
+		if err != nil {
+			log.log("JSON ERROR  %-12s %-40s %v", f.Type, f.Project, err)
+			continue
+		}
 		outFile := filepath.Join(outputDir, f.safeFilename()+".result.json")
-		os.WriteFile(outFile, j, 0644)
+		if err := os.WriteFile(outFile, j, 0644); err != nil {
+			log.log("WRITE ERROR %-12s %-40s %v", f.Type, f.Project, err)
+			continue
+		}
 
 		libs := countLibs(got)
 		results[f.safeFilename()] = libs
@@ -367,7 +381,10 @@ func runOnBase(baseRef string, fixtures []fixture, fixtureDir, outputDir, fixtur
 	log.log("Created worktree at %s for %s", worktreeDir, baseRef)
 
 	// Copy this script and fixtures to worktree
-	copyFile(fixturesPath, filepath.Join(worktreeDir, "scripts", "lockfile-fixtures.json"))
+	if err := copyFile(fixturesPath, filepath.Join(worktreeDir, "scripts", "lockfile-fixtures.json")); err != nil {
+		log.log("ERROR: Failed to copy fixtures to worktree: %v", err)
+		return nil
+	}
 
 	// Write a minimal runner that uses the base's scanner package
 	runnerCode := `//go:build ignore
@@ -444,9 +461,16 @@ func main() {
 	fixturesJSON := os.Args[3]
 	os.MkdirAll(outputDir, 0755)
 
-	data, _ := os.ReadFile(fixturesJSON)
+	data, err := os.ReadFile(fixturesJSON)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to read fixtures: %v\n", err)
+		os.Exit(1)
+	}
 	var fixtures []fixture
-	json.Unmarshal(data, &fixtures)
+	if err := json.Unmarshal(data, &fixtures); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse fixtures: %v\n", err)
+		os.Exit(1)
+	}
 
 	for _, f := range fixtures {
 		safe := replaceAll(f.Project, "/", "_") + "__" + f.Filename
@@ -464,9 +488,16 @@ func main() {
 			got = nil
 		}
 
-		j, _ := json.MarshalIndent(normalize(got), "", "  ")
+		j, jerr := json.MarshalIndent(normalize(got), "", "  ")
+		if jerr != nil {
+			fmt.Fprintf(os.Stderr, "JSON ERROR  %-12s %-40s %v\n", f.Type, f.Project, jerr)
+			continue
+		}
 		outFile := filepath.Join(outputDir, safe+".result.json")
-		os.WriteFile(outFile, j, 0644)
+		if werr := os.WriteFile(outFile, j, 0644); werr != nil {
+			fmt.Fprintf(os.Stderr, "WRITE ERROR %-12s %-40s %v\n", f.Type, f.Project, werr)
+			continue
+		}
 		libs := 0
 		for _, s := range got { libs += len(s.Libs) }
 		fmt.Printf("OK  %-12s %-40s %d libs\n", f.Type, f.Project, libs)
@@ -488,8 +519,14 @@ func indexOf(s, sub string) int {
 	return -1
 }
 `
-	os.MkdirAll(filepath.Join(worktreeDir, "scripts"), 0755)
-	os.WriteFile(filepath.Join(worktreeDir, "base_runner.go"), []byte(runnerCode), 0644)
+	if err := os.MkdirAll(filepath.Join(worktreeDir, "scripts"), 0755); err != nil {
+		log.log("ERROR: Failed to create scripts dir in worktree: %v", err)
+		return nil
+	}
+	if err := os.WriteFile(filepath.Join(worktreeDir, "base_runner.go"), []byte(runnerCode), 0644); err != nil {
+		log.log("ERROR: Failed to write base_runner.go: %v", err)
+		return nil
+	}
 
 	// Run the base runner in worktree
 	cmd = exec.Command("go", "run", "base_runner.go", fixtureDir, outputDir,
@@ -519,7 +556,9 @@ func indexOf(s, sub string) int {
 }
 
 func copyFile(src, dst string) error {
-	os.MkdirAll(filepath.Dir(dst), 0755)
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", filepath.Dir(dst), err)
+	}
 	data, err := os.ReadFile(src)
 	if err != nil {
 		return err

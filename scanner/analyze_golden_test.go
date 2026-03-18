@@ -122,6 +122,11 @@ func TestAnalyzeLibrary_Golden(t *testing.T) {
 			got, err := AnalyzeLibrary(context.Background(), lf.path, contents, lf.filemode, true)
 			if err != nil {
 				if lf.expectParseError {
+					// Verify the error is actually a parse error (contains "parse error" or the parser type)
+					errMsg := err.Error()
+					if !strings.Contains(errMsg, "parse error") && !strings.Contains(errMsg, "Failed to parse") {
+						t.Fatalf("AnalyzeLibrary(%s) expected parse error but got: %v", lf.path, err)
+					}
 					t.Logf("AnalyzeLibrary(%s) returned expected parse error: %v", lf.path, err)
 					got = nil
 				} else {
