@@ -1,6 +1,8 @@
 package jar
 
 import (
+	"io"
+
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
 	"golang.org/x/xerrors"
@@ -8,11 +10,11 @@ import (
 
 // ParseJAR parses a JAR/WAR/EAR/PAR file and returns the detected libraries.
 func ParseJAR(filePath string, r xio.ReadSeekerAt) (*types.Application, error) {
-	size, err := r.Seek(0, 2) // seek to end to get size
+	size, err := r.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to get size of %s: %w", filePath, err)
 	}
-	if _, err := r.Seek(0, 0); err != nil { // seek back to start
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, xerrors.Errorf("Failed to seek %s: %w", filePath, err)
 	}
 

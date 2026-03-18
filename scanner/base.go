@@ -721,7 +721,8 @@ func (l *base) scanLibraries() (err error) {
 
 		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline())
 		if err != nil {
-			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, abspath)
+			l.log.Warnf("Failed to analyze library %s: %+v", abspath, err)
+			continue
 		}
 		for _, libscanner := range libraryScanners {
 			libscanner.LockfilePath = abspath
@@ -744,8 +745,7 @@ func AnalyzeLibrary(ctx context.Context, path string, contents []byte, filemode 
 
 	app, err := parseByType(ctx, pt, path, r, isOffline)
 	if err != nil {
-		logging.Log.Debugf("Failed to parse %s (type=%s): %+v", path, pt, err)
-		return nil, nil
+		return nil, xerrors.Errorf("Failed to parse %s (type=%s): %w", path, pt, err)
 	}
 	if app == nil {
 		return nil, nil
