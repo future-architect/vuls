@@ -39,7 +39,6 @@ const (
 	parserMix           parserType = "mix"
 	parserCocoapods     parserType = "cocoapods"
 	parserSwift         parserType = "swift"
-	parserRustBinary    parserType = "rust-binary"
 )
 
 // detectParserType determines which parser should handle a given file,
@@ -127,14 +126,15 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 		return parserSwift
 	}
 
-	// Suffix-based matches
-	if strings.HasSuffix(filePath, ".deps.json") {
+	// Suffix-based matches (case-insensitive for cross-platform compatibility)
+	lowerPath := strings.ToLower(filePath)
+	if strings.HasSuffix(lowerPath, ".deps.json") {
 		return parserDotnetDeps
 	}
-	if strings.HasSuffix(strings.ToLower(filePath), "packages.props") {
+	if strings.HasSuffix(lowerPath, "packages.props") {
 		return parserPackagesProps
 	}
-	if strings.HasSuffix(filePath, "gradle.lockfile") {
+	if strings.HasSuffix(lowerPath, "gradle.lockfile") {
 		return parserGradle
 	}
 

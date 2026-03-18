@@ -722,6 +722,7 @@ func (l *base) scanLibraries() (err error) {
 		libraryScanners, err := AnalyzeLibrary(context.Background(), abspath, contents, filemode, l.ServerInfo.Mode.IsOffline())
 		if err != nil {
 			l.log.Warnf("Failed to analyze library %s: %+v", abspath, err)
+			l.warns = append(l.warns, err)
 			continue
 		}
 		for _, libscanner := range libraryScanners {
