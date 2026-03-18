@@ -93,7 +93,19 @@ func normalize(scanners []models.LibraryScanner) []result {
 			if c := cmp.Compare(a.Name, b.Name); c != 0 {
 				return c
 			}
-			return cmp.Compare(a.Version, b.Version)
+			if c := cmp.Compare(a.Version, b.Version); c != 0 {
+				return c
+			}
+			if c := cmp.Compare(a.PURL, b.PURL); c != 0 {
+				return c
+			}
+			if c := cmp.Compare(a.FilePath, b.FilePath); c != 0 {
+				return c
+			}
+			if c := cmp.Compare(a.Digest, b.Digest); c != 0 {
+				return c
+			}
+			return cmp.Compare(boolToInt(a.Dev), boolToInt(b.Dev))
 		})
 		out = append(out, r)
 	}
@@ -104,6 +116,13 @@ func normalize(scanners []models.LibraryScanner) []result {
 		return cmp.Compare(a.LockfilePath, b.LockfilePath)
 	})
 	return out
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func countLibs(scanners []models.LibraryScanner) int {
@@ -146,13 +165,20 @@ func main() {
 		*logPath = filepath.Join(*workdir, "comparison.log")
 	}
 
-	os.MkdirAll(*workdir, 0755)
+	for _, dir := range []string{
+		*workdir,
+		filepath.Join(*workdir, "fixtures"),
+		filepath.Join(*workdir, "result-current"),
+		filepath.Join(*workdir, "result-base"),
+	} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create directory %s: %v\n", dir, err)
+			os.Exit(1)
+		}
+	}
 	fixtureDir := filepath.Join(*workdir, "fixtures")
 	resultCurrentDir := filepath.Join(*workdir, "result-current")
 	resultBaseDir := filepath.Join(*workdir, "result-base")
-	os.MkdirAll(fixtureDir, 0755)
-	os.MkdirAll(resultCurrentDir, 0755)
-	os.MkdirAll(resultBaseDir, 0755)
 
 	log, err := newLogger(*logPath)
 	if err != nil {
@@ -225,9 +251,18 @@ func main() {
 			identical++
 		} else {
 			log.log("DIFFERENT  %-12s %-40s", f.Type, f.Project)
-			// Show diff
+			// Show diff (diff exits 1 when files differ, which is expected)
 			cmd := exec.Command("diff", "-u", baseFile, currentFile)
-			out, _ := cmd.Output()
+			out, err := cmd.Output()
+			if err != nil {
+				// ExitError with exit code 1 is normal for diff (files differ).
+				// Only log if the command itself failed to run.
+				if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+					// expected: files differ
+				} else {
+					log.log("WARNING: diff command failed: %v", err)
+				}
+			}
 			log.log("%s", string(out))
 			different++
 		}
@@ -399,6 +434,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/scanner"
@@ -432,6 +468,8 @@ type result struct {
 	Libs         []lib  ` + "`json:\"libs\"`" + `
 }
 
+func btoi(b bool) int { if b { return 1 }; return 0 }
+
 func normalize(scanners []models.LibraryScanner) []result {
 	out := make([]result, 0, len(scanners))
 	for _, s := range scanners {
@@ -444,7 +482,11 @@ func normalize(scanners []models.LibraryScanner) []result {
 		}
 		slices.SortFunc(r.Libs, func(a, b lib) int {
 			if c := cmp.Compare(a.Name, b.Name); c != 0 { return c }
-			return cmp.Compare(a.Version, b.Version)
+			if c := cmp.Compare(a.Version, b.Version); c != 0 { return c }
+			if c := cmp.Compare(a.PURL, b.PURL); c != 0 { return c }
+			if c := cmp.Compare(a.FilePath, b.FilePath); c != 0 { return c }
+			if c := cmp.Compare(a.Digest, b.Digest); c != 0 { return c }
+			return cmp.Compare(btoi(a.Dev), btoi(b.Dev))
 		})
 		out = append(out, r)
 	}
@@ -459,7 +501,10 @@ func main() {
 	fixtureDir := os.Args[1]
 	outputDir := os.Args[2]
 	fixturesJSON := os.Args[3]
-	os.MkdirAll(outputDir, 0755)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create output dir: %v\n", err)
+		os.Exit(1)
+	}
 
 	data, err := os.ReadFile(fixturesJSON)
 	if err != nil {
@@ -473,7 +518,7 @@ func main() {
 	}
 
 	for _, f := range fixtures {
-		safe := replaceAll(f.Project, "/", "_") + "__" + f.Filename
+		safe := strings.ReplaceAll(f.Project, "/", "_") + "__" + f.Filename
 
 		srcPath := filepath.Join(fixtureDir, safe)
 		contents, err := os.ReadFile(srcPath)
@@ -502,21 +547,6 @@ func main() {
 		for _, s := range got { libs += len(s.Libs) }
 		fmt.Printf("OK  %-12s %-40s %d libs\n", f.Type, f.Project, libs)
 	}
-}
-
-func replaceAll(s, old, new string) string {
-	for {
-		i := indexOf(s, old)
-		if i < 0 { return s }
-		s = s[:i] + new + s[i+len(old):]
-	}
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub { return i }
-	}
-	return -1
 }
 `
 	if err := os.MkdirAll(filepath.Join(worktreeDir, "scripts"), 0755); err != nil {

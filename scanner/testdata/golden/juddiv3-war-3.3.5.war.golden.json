@@ -283,13 +283,13 @@
         "name": "org.apache.geronimo.specs:geronimo-javamail_1.4_spec",
         "version": "1.7.1",
         "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-javamail_1.4_spec@1.7.1",
-        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_spec-1.7.1.jar"
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_mail-1.8.4.jar"
       },
       {
         "name": "org.apache.geronimo.specs:geronimo-javamail_1.4_spec",
         "version": "1.7.1",
         "purl": "pkg:maven/org.apache.geronimo.specs/geronimo-javamail_1.4_spec@1.7.1",
-        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_mail-1.8.4.jar"
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/geronimo-javamail_1.4_spec-1.7.1.jar"
       },
       {
         "name": "org.apache.geronimo.specs:geronimo-jms_1.1_spec",

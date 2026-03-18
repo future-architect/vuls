@@ -182,6 +182,13 @@ type goldenLibrary struct {
 	Dev      bool   `json:"dev,omitempty"`
 }
 
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
 	result := make([]goldenLibraryScanner, 0, len(scanners))
 	for _, s := range scanners {
@@ -204,7 +211,19 @@ func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
 			if c := cmp.Compare(a.Name, b.Name); c != 0 {
 				return c
 			}
-			return cmp.Compare(a.Version, b.Version)
+			if c := cmp.Compare(a.Version, b.Version); c != 0 {
+				return c
+			}
+			if c := cmp.Compare(a.PURL, b.PURL); c != 0 {
+				return c
+			}
+			if c := cmp.Compare(a.FilePath, b.FilePath); c != 0 {
+				return c
+			}
+			if c := cmp.Compare(a.Digest, b.Digest); c != 0 {
+				return c
+			}
+			return cmp.Compare(boolToInt(a.Dev), boolToInt(b.Dev))
 		})
 		result = append(result, gs)
 	}
