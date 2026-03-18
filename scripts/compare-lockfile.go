@@ -281,7 +281,7 @@ func fetchFixture(f fixture, dir string) error {
 	outPath := filepath.Join(dir, f.safeFilename())
 
 	// Handle tar.gz archives: extract a specific file
-	if f.ArchivePath != "" && strings.HasSuffix(f.URL, ".tar.gz") {
+	if f.ArchivePath != "" && (strings.HasSuffix(f.URL, ".tar.gz") || strings.HasSuffix(f.URL, ".tgz")) {
 		return extractFromTarGz(resp.Body, f.ArchivePath, outPath)
 	}
 

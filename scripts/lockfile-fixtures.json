@@ -22,10 +22,10 @@
   },
   {
     "type": "pip",
-    "project": "django/django",
-    "tag": "5.1.5",
+    "project": "home-assistant/core",
+    "tag": "2025.1.0",
     "filename": "requirements.txt",
-    "url": "https://raw.githubusercontent.com/django/django/5.1.5/tests/requirements/py3.txt"
+    "url": "https://raw.githubusercontent.com/home-assistant/core/2025.1.0/requirements.txt"
   },
   {
     "type": "pipenv",
@@ -71,10 +71,10 @@
   },
   {
     "type": "pom",
-    "project": "apache/maven",
-    "tag": "maven-4.0.0-rc-3",
+    "project": "apache/spark",
+    "tag": "v3.5.4",
     "filename": "pom.xml",
-    "url": "https://raw.githubusercontent.com/apache/maven/maven-4.0.0-rc-3/pom.xml"
+    "url": "https://raw.githubusercontent.com/apache/spark/v3.5.4/pom.xml"
   },
   {
     "type": "mix",
@@ -114,11 +114,11 @@
   },
   {
     "type": "rustbinary",
-    "project": "BurntSushi/ripgrep",
-    "tag": "14.1.1",
-    "filename": "rg",
+    "project": "cargo-bins/cargo-binstall",
+    "tag": "v1.10.20",
+    "filename": "cargo-binstall",
     "filemode": 493,
-    "url": "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz",
-    "archivePath": "ripgrep-14.1.1-x86_64-unknown-linux-musl/rg"
+    "url": "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.10.20/cargo-binstall-x86_64-unknown-linux-gnu.tgz",
+    "archivePath": "cargo-binstall"
   }
 ]

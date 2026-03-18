@@ -42,19 +42,19 @@ Defined in `scripts/lockfile-fixtures.json`. All URLs use pinned tags for reprod
 | npm | nestjs/nest | GitHub |
 | yarn | facebook/react | GitHub |
 | pnpm | vitejs/vite | GitHub |
-| pip | django/django | GitHub |
+| pip | home-assistant/core | GitHub |
 | pipenv | pypa/pipenv | GitHub |
 | poetry | python-poetry/poetry | GitHub |
 | bundler | rails/rails | GitHub |
 | cargo | BurntSushi/ripgrep | GitHub |
 | composer | matomo-org/matomo | GitHub |
 | go.mod | kubernetes/kubernetes | GitHub |
-| pom.xml | apache/maven | GitHub |
+| pom.xml | apache/spark | GitHub |
 | mix | phoenixframework/phoenix | GitHub |
 | swift | swift-composable-architecture | GitHub |
 | jar (x2) | log4j-core, commons-lang3 | Maven Central |
 | gobinary | mikefarah/yq | GitHub Releases |
-| rustbinary | BurntSushi/ripgrep | GitHub Releases |
+| rustbinary | cargo-bins/cargo-binstall | GitHub Releases |
 
 ### Adding fixtures
 
