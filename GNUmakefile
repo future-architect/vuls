@@ -10,7 +10,8 @@
 	pretest \
 	test \
 	cov \
-	clean
+	clean \
+	diff-lockfile
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
@@ -240,6 +241,15 @@ define sed-d
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
 endef
+
+# Compare AnalyzeLibrary output between current branch and BASE ref.
+# Fetches real-world lockfiles from popular OSS projects and compares results.
+# Usage:
+#   make diff-lockfile              # compare against master
+#   make diff-lockfile BASE=commit  # compare against specific ref
+BASE ?= master
+diff-lockfile:
+	$(GO) run scripts/compare-lockfile.go -fetch -base $(BASE)
 
 define count-cve
 	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \
