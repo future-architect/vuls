@@ -400,10 +400,14 @@ func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) m
 }
 
 func runOnBase(baseRef string, fixtures []fixture, fixtureDir, outputDir, fixturesPath, workdir string, log *logger) map[string]int {
-	// Create worktree (sanitize baseRef for filesystem safety: feature/foo → feature_foo)
-	safeRef := strings.NewReplacer("/", "_", "..", "_", "\\", "_").Replace(baseRef)
-	worktreeDir := filepath.Join(workdir, "worktree-"+safeRef)
-	os.RemoveAll(worktreeDir)
+	// Create worktree in a temp directory under workdir to avoid path traversal risks
+	worktreeDir, err := os.MkdirTemp(workdir, "worktree-")
+	if err != nil {
+		log.log("ERROR: Failed to create temp dir for worktree: %v", err)
+		return nil
+	}
+	// MkdirTemp creates the directory, but git worktree add requires it not to exist
+	os.Remove(worktreeDir)
 
 	cmd := exec.Command("git", "worktree", "add", worktreeDir, baseRef)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -572,11 +576,22 @@ func main() {
 
 	// Count results
 	results := make(map[string]int)
-	entries, _ := os.ReadDir(outputDir)
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		log.log("ERROR: Failed to read output dir %s: %v", outputDir, err)
+		return results
+	}
 	for _, e := range entries {
-		data, _ := os.ReadFile(filepath.Join(outputDir, e.Name()))
+		data, err := os.ReadFile(filepath.Join(outputDir, e.Name()))
+		if err != nil {
+			log.log("WARNING: Failed to read result file %s: %v", e.Name(), err)
+			continue
+		}
 		var res []result
-		json.Unmarshal(data, &res)
+		if err := json.Unmarshal(data, &res); err != nil {
+			log.log("WARNING: Failed to parse result file %s: %v", e.Name(), err)
+			continue
+		}
 		libs := 0
 		for _, r := range res {
 			libs += len(r.Libs)
