@@ -54,10 +54,6 @@ func (p properties) valid() bool {
 	return p.groupID != "" && p.artifactID != "" && p.version != ""
 }
 
-func (p properties) string() string {
-	return fmt.Sprintf("%s:%s:%s", p.groupID, p.artifactID, p.version)
-}
-
 type parser struct {
 	rootFilePath string
 	size         int64

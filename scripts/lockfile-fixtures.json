@@ -7,11 +7,137 @@
     "url": "https://raw.githubusercontent.com/nestjs/nest/v10.4.15/package-lock.json"
   },
   {
+    "type": "npm",
+    "project": "axios/axios",
+    "tag": "v1.7.0",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/axios/axios/v1.7.0/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "mochajs/mocha",
+    "tag": "v10.8.0",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/mochajs/mocha/v10.8.0/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "npm/cli",
+    "tag": "v10.9.0",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/npm/cli/v10.9.0/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "tj/commander.js",
+    "tag": "v12.1.0",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/tj/commander.js/v12.1.0/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "lodash/lodash",
+    "tag": "4.17.21",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/lodash/lodash/4.17.21/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "koajs/koa",
+    "tag": "2.15.3",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/koajs/koa/2.15.3/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "date-fns/date-fns",
+    "tag": "v4.1.0",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/date-fns/date-fns/v4.1.0/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "isaacs/node-glob",
+    "tag": "v11.0.0",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/isaacs/node-glob/v11.0.0/package-lock.json"
+  },
+  {
+    "type": "npm",
+    "project": "highlightjs/highlight.js",
+    "tag": "11.11.1",
+    "filename": "package-lock.json",
+    "url": "https://raw.githubusercontent.com/highlightjs/highlight.js/11.11.1/package-lock.json"
+  },
+  {
     "type": "yarn",
     "project": "facebook/react",
     "tag": "v19.1.0",
     "filename": "yarn.lock",
     "url": "https://raw.githubusercontent.com/facebook/react/v19.1.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "angular/angular",
+    "tag": "19.0.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/angular/angular/19.0.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "facebook/react",
+    "tag": "v18.2.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/facebook/react/v18.2.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "babel/babel",
+    "tag": "v7.26.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/babel/babel/v7.26.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "jestjs/jest",
+    "tag": "v29.7.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/jestjs/jest/v29.7.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "gatsbyjs/gatsby",
+    "tag": "gatsby@5.14.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/gatsbyjs/gatsby/gatsby%405.14.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "webpack/webpack",
+    "tag": "v5.97.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/webpack/webpack/v5.97.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "reduxjs/redux",
+    "tag": "v5.0.1",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/reduxjs/redux/v5.0.1/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "prettier/prettier",
+    "tag": "3.4.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/prettier/prettier/3.4.0/yarn.lock"
+  },
+  {
+    "type": "yarn",
+    "project": "cypress-io/cypress",
+    "tag": "v13.17.0",
+    "filename": "yarn.lock",
+    "url": "https://raw.githubusercontent.com/cypress-io/cypress/v13.17.0/yarn.lock"
   },
   {
     "type": "pnpm",
@@ -21,11 +147,137 @@
     "url": "https://raw.githubusercontent.com/vitejs/vite/v6.3.5/pnpm-lock.yaml"
   },
   {
+    "type": "pnpm",
+    "project": "nuxt/nuxt",
+    "tag": "v3.15.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/nuxt/nuxt/v3.15.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "sveltejs/svelte",
+    "tag": "svelte@5.0.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/sveltejs/svelte/svelte%405.0.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "solidjs/solid",
+    "tag": "v1.9.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/solidjs/solid/v1.9.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "withastro/astro",
+    "tag": "astro@5.0.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/withastro/astro/astro%405.0.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "biomejs/biome",
+    "tag": "cli/v1.9.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/biomejs/biome/cli/v1.9.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "pnpm/pnpm",
+    "tag": "v9.15.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/pnpm/pnpm/v9.15.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "TanStack/query",
+    "tag": "v5.62.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/TanStack/query/v5.62.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "t3-oss/create-t3-app",
+    "tag": "create-t3-app@7.38.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/t3-oss/create-t3-app/create-t3-app%407.38.0/pnpm-lock.yaml"
+  },
+  {
+    "type": "pnpm",
+    "project": "drizzle-team/drizzle-orm",
+    "tag": "0.38.0",
+    "filename": "pnpm-lock.yaml",
+    "url": "https://raw.githubusercontent.com/drizzle-team/drizzle-orm/0.38.0/pnpm-lock.yaml"
+  },
+  {
     "type": "pip",
     "project": "home-assistant/core",
     "tag": "2025.1.0",
     "filename": "requirements.txt",
     "url": "https://raw.githubusercontent.com/home-assistant/core/2025.1.0/requirements.txt"
+  },
+  {
+    "type": "pip",
+    "project": "pallets/flask",
+    "tag": "3.0.0",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/pallets/flask/3.0.0/requirements/tests.txt"
+  },
+  {
+    "type": "pip",
+    "project": "home-assistant/core",
+    "tag": "2024.1.0",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/home-assistant/core/2024.1.0/requirements_test.txt"
+  },
+  {
+    "type": "pip",
+    "project": "aio-libs/aiohttp",
+    "tag": "v3.9.1",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/aio-libs/aiohttp/v3.9.1/requirements/test.txt"
+  },
+  {
+    "type": "pip",
+    "project": "netbox-community/netbox",
+    "tag": "v3.7.0",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/netbox-community/netbox/v3.7.0/requirements.txt"
+  },
+  {
+    "type": "pip",
+    "project": "ansible/awx",
+    "tag": "24.0.0",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/ansible/awx/24.0.0/requirements/requirements.txt"
+  },
+  {
+    "type": "pip",
+    "project": "openedx/edx-platform",
+    "tag": "open-release/quince.1",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/openedx/edx-platform/open-release/quince.1/requirements/edx/base.txt"
+  },
+  {
+    "type": "pip",
+    "project": "odoo/odoo",
+    "tag": "18.0",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/odoo/odoo/18.0/requirements.txt"
+  },
+  {
+    "type": "pip",
+    "project": "tornadoweb/tornado",
+    "tag": "v6.4.2",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/tornadoweb/tornado/v6.4.2/requirements.txt"
+  },
+  {
+    "type": "pip",
+    "project": "getsentry/sentry",
+    "tag": "24.12.0",
+    "filename": "requirements.txt",
+    "url": "https://raw.githubusercontent.com/getsentry/sentry/24.12.0/requirements-base.txt"
   },
   {
     "type": "pipenv",
@@ -35,11 +287,102 @@
     "url": "https://raw.githubusercontent.com/pypa/pipenv/v2024.4.1/Pipfile.lock"
   },
   {
+    "type": "pipenv",
+    "project": "kennethreitz/records",
+    "tag": "v0.5.3",
+    "filename": "Pipfile.lock",
+    "url": "https://raw.githubusercontent.com/kennethreitz/records/v0.5.3/Pipfile.lock"
+  },
+  {
+    "type": "pipenv",
+    "project": "sarugaku/passa",
+    "tag": "0.3.0",
+    "filename": "Pipfile.lock",
+    "url": "https://raw.githubusercontent.com/sarugaku/passa/0.3.0/Pipfile.lock"
+  },
+  {
+    "type": "pipenv",
+    "project": "ExpDev07/coronavirus-tracker-api",
+    "tag": "v2.0",
+    "filename": "Pipfile.lock",
+    "url": "https://raw.githubusercontent.com/ExpDev07/coronavirus-tracker-api/v2.0/Pipfile.lock"
+  },
+  {
+    "type": "pipenv",
+    "project": "gtalarico/pipenv-pipes",
+    "tag": "v0.7.1",
+    "filename": "Pipfile.lock",
+    "url": "https://raw.githubusercontent.com/gtalarico/pipenv-pipes/v0.7.1/Pipfile.lock"
+  },
+  {
     "type": "poetry",
     "project": "python-poetry/poetry",
     "tag": "2.1.3",
     "filename": "poetry.lock",
     "url": "https://raw.githubusercontent.com/python-poetry/poetry/2.1.3/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "Textualize/textual",
+    "tag": "v1.0.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/Textualize/textual/v1.0.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "Textualize/rich",
+    "tag": "v13.9.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/Textualize/rich/v13.9.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "sdispater/pendulum",
+    "tag": "3.0.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/sdispater/pendulum/3.0.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "strawberry-graphql/strawberry",
+    "tag": "0.254.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/strawberry-graphql/strawberry/0.254.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "meltano/meltano",
+    "tag": "v3.5.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/meltano/meltano/v3.5.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "commitizen-tools/commitizen",
+    "tag": "v4.1.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/commitizen-tools/commitizen/v4.1.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "nonebot/nonebot2",
+    "tag": "v2.4.1",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/nonebot/nonebot2/v2.4.1/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "locustio/locust",
+    "tag": "2.32.0",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/locustio/locust/2.32.0/poetry.lock"
+  },
+  {
+    "type": "poetry",
+    "project": "reflex-dev/reflex",
+    "tag": "v0.6.6",
+    "filename": "poetry.lock",
+    "url": "https://raw.githubusercontent.com/reflex-dev/reflex/v0.6.6/poetry.lock"
   },
   {
     "type": "bundler",
@@ -49,11 +392,137 @@
     "url": "https://raw.githubusercontent.com/rails/rails/v8.0.2/Gemfile.lock"
   },
   {
+    "type": "bundler",
+    "project": "discourse/discourse",
+    "tag": "v3.4.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/discourse/discourse/v3.4.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "mastodon/mastodon",
+    "tag": "v4.3.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/mastodon/mastodon/v4.3.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "gitlabhq/gitlabhq",
+    "tag": "v17.6.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/gitlabhq/gitlabhq/v17.6.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "heartcombo/devise",
+    "tag": "v4.9.4",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/heartcombo/devise/v4.9.4/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "fastlane/fastlane",
+    "tag": "2.226.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/fastlane/fastlane/2.226.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "chatwoot/chatwoot",
+    "tag": "v3.15.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/chatwoot/chatwoot/v3.15.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "dependabot/dependabot-core",
+    "tag": "v0.287.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/dependabot/dependabot-core/v0.287.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "opf/openproject",
+    "tag": "v15.1.0",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/opf/openproject/v15.1.0/Gemfile.lock"
+  },
+  {
+    "type": "bundler",
+    "project": "CocoaPods/CocoaPods",
+    "tag": "1.16.2",
+    "filename": "Gemfile.lock",
+    "url": "https://raw.githubusercontent.com/CocoaPods/CocoaPods/1.16.2/Gemfile.lock"
+  },
+  {
     "type": "cargo",
     "project": "BurntSushi/ripgrep",
     "tag": "14.1.1",
     "filename": "Cargo.lock",
     "url": "https://raw.githubusercontent.com/BurntSushi/ripgrep/14.1.1/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "alacritty/alacritty",
+    "tag": "v0.14.0",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/alacritty/alacritty/v0.14.0/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "starship/starship",
+    "tag": "v1.21.1",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/starship/starship/v1.21.1/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "sharkdp/bat",
+    "tag": "v0.24.0",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/sharkdp/bat/v0.24.0/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "sharkdp/fd",
+    "tag": "v10.2.0",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/sharkdp/fd/v10.2.0/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "denoland/deno",
+    "tag": "v2.1.0",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/denoland/deno/v2.1.0/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "rust-lang/rust",
+    "tag": "1.83.0",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/rust-lang/rust/1.83.0/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "nushell/nushell",
+    "tag": "0.101.0",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/nushell/nushell/0.101.0/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "zellij-org/zellij",
+    "tag": "v0.41.2",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/zellij-org/zellij/v0.41.2/Cargo.lock"
+  },
+  {
+    "type": "cargo",
+    "project": "helix-editor/helix",
+    "tag": "24.07",
+    "filename": "Cargo.lock",
+    "url": "https://raw.githubusercontent.com/helix-editor/helix/24.07/Cargo.lock"
   },
   {
     "type": "composer",
@@ -63,11 +532,137 @@
     "url": "https://raw.githubusercontent.com/matomo-org/matomo/5.2.1/composer.lock"
   },
   {
+    "type": "composer",
+    "project": "nextcloud/server",
+    "tag": "v30.0.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/nextcloud/server/v30.0.0/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "drupal/drupal",
+    "tag": "11.1.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/drupal/drupal/11.1.0/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "PrestaShop/PrestaShop",
+    "tag": "8.2.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/PrestaShop/PrestaShop/8.2.0/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "bagisto/bagisto",
+    "tag": "v2.2.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/bagisto/bagisto/v2.2.0/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "monicahq/monica",
+    "tag": "v4.1.2",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/monicahq/monica/v4.1.2/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "magento/magento2",
+    "tag": "2.4.7-p3",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/magento/magento2/2.4.7-p3/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "filamentphp/filament",
+    "tag": "v3.2.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/filamentphp/filament/v3.2.0/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "firefly-iii/firefly-iii",
+    "tag": "v6.2.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/firefly-iii/firefly-iii/v6.2.0/composer.lock"
+  },
+  {
+    "type": "composer",
+    "project": "invoiceninja/invoiceninja",
+    "tag": "v5.10.0",
+    "filename": "composer.lock",
+    "url": "https://raw.githubusercontent.com/invoiceninja/invoiceninja/v5.10.0/composer.lock"
+  },
+  {
     "type": "gomod",
     "project": "kubernetes/kubernetes",
     "tag": "v1.32.0",
     "filename": "go.mod",
     "url": "https://raw.githubusercontent.com/kubernetes/kubernetes/v1.32.0/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "hashicorp/terraform",
+    "tag": "v1.10.0",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/hashicorp/terraform/v1.10.0/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "prometheus/prometheus",
+    "tag": "v3.0.0",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/prometheus/prometheus/v3.0.0/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "etcd-io/etcd",
+    "tag": "v3.5.17",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/etcd-io/etcd/v3.5.17/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "grafana/grafana",
+    "tag": "v11.4.0",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/grafana/grafana/v11.4.0/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "gin-gonic/gin",
+    "tag": "v1.10.0",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/gin-gonic/gin/v1.10.0/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "containerd/containerd",
+    "tag": "v1.7.24",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/containerd/containerd/v1.7.24/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "cilium/cilium",
+    "tag": "v1.16.5",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/cilium/cilium/v1.16.5/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "cockroachdb/cockroach",
+    "tag": "v24.3.1",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/cockroachdb/cockroach/v24.3.1/go.mod"
+  },
+  {
+    "type": "gomod",
+    "project": "istio/istio",
+    "tag": "1.24.2",
+    "filename": "go.mod",
+    "url": "https://raw.githubusercontent.com/istio/istio/1.24.2/go.mod"
   },
   {
     "type": "pom",
@@ -77,6 +672,69 @@
     "url": "https://raw.githubusercontent.com/apache/spark/v3.5.4/pom.xml"
   },
   {
+    "type": "pom",
+    "project": "mybatis/mybatis-3",
+    "tag": "mybatis-3.5.15",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/mybatis/mybatis-3/mybatis-3.5.15/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "apache/hadoop",
+    "tag": "rel/release-3.4.1",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/apache/hadoop/rel/release-3.4.1/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "eclipse-vertx/vert.x",
+    "tag": "4.5.11",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/eclipse-vertx/vert.x/4.5.11/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "apache/camel",
+    "tag": "camel-4.9.0",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/apache/camel/camel-4.9.0/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "netty/netty",
+    "tag": "netty-4.1.116.Final",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/netty/netty/netty-4.1.116.Final/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "google/guava",
+    "tag": "v33.4.0",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/google/guava/v33.4.0/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "apache/dubbo",
+    "tag": "dubbo-3.3.2",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/apache/dubbo/dubbo-3.3.2/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "apache/zookeeper",
+    "tag": "release-3.9.2",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/apache/zookeeper/release-3.9.2/pom.xml"
+  },
+  {
+    "type": "pom",
+    "project": "apache/logging-log4j2",
+    "tag": "rel/2.24.3",
+    "filename": "pom.xml",
+    "url": "https://raw.githubusercontent.com/apache/logging-log4j2/rel/2.24.3/pom.xml"
+  },
+  {
     "type": "mix",
     "project": "phoenixframework/phoenix",
     "tag": "v1.7.21",
@@ -84,11 +742,137 @@
     "url": "https://raw.githubusercontent.com/phoenixframework/phoenix/v1.7.21/mix.lock"
   },
   {
+    "type": "mix",
+    "project": "elixir-ecto/ecto",
+    "tag": "v3.12.5",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/elixir-ecto/ecto/v3.12.5/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "absinthe-graphql/absinthe",
+    "tag": "v1.7.8",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/absinthe-graphql/absinthe/v1.7.8/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "livebook-dev/livebook",
+    "tag": "v0.14.5",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/livebook-dev/livebook/v0.14.5/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "nerves-project/nerves",
+    "tag": "v1.11.2",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/nerves-project/nerves/v1.11.2/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "plausible/analytics",
+    "tag": "v2.1.4",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/plausible/analytics/v2.1.4/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "supabase/realtime",
+    "tag": "v2.34.0",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/supabase/realtime/v2.34.0/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "elixir-plug/plug",
+    "tag": "v1.16.1",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/elixir-plug/plug/v1.16.1/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "membraneframework/membrane_core",
+    "tag": "v1.1.2",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/membraneframework/membrane_core/v1.1.2/mix.lock"
+  },
+  {
+    "type": "mix",
+    "project": "ash-project/ash",
+    "tag": "v3.4.0",
+    "filename": "mix.lock",
+    "url": "https://raw.githubusercontent.com/ash-project/ash/v3.4.0/mix.lock"
+  },
+  {
     "type": "swift",
     "project": "pointfreeco/swift-composable-architecture",
     "tag": "1.17.1",
     "filename": "Package.resolved",
     "url": "https://raw.githubusercontent.com/pointfreeco/swift-composable-architecture/1.17.1/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "realm/SwiftLint",
+    "tag": "0.57.1",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/realm/SwiftLint/0.57.1/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "Moya/Moya",
+    "tag": "15.0.3",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/Moya/Moya/15.0.3/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "Quick/Quick",
+    "tag": "v7.6.2",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/Quick/Quick/v7.6.2/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "airbnb/lottie-ios",
+    "tag": "4.5.0",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/airbnb/lottie-ios/4.5.0/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "socketio/socket.io-client-swift",
+    "tag": "v16.1.1",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/socketio/socket.io-client-swift/v16.1.1/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "SwiftGen/SwiftGen",
+    "tag": "6.6.3",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/SwiftGen/SwiftGen/6.6.3/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "mac-cain13/R.swift",
+    "tag": "7.5.0",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/mac-cain13/R.swift/7.5.0/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "peripheryapp/periphery",
+    "tag": "2.21.0",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/peripheryapp/periphery/2.21.0/Package.resolved"
+  },
+  {
+    "type": "swift",
+    "project": "RevenueCat/purchases-ios",
+    "tag": "5.12.0",
+    "filename": "Package.resolved",
+    "url": "https://raw.githubusercontent.com/RevenueCat/purchases-ios/5.12.0/Package.resolved"
   },
   {
     "type": "jar",
