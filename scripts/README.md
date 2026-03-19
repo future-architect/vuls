@@ -31,7 +31,7 @@ make diff-lockfile BASE=v0.27.0
 2. Creates a `git worktree` for the base ref and builds the comparison tool there
 3. Runs `AnalyzeLibrary()` on both refs for all fixtures
 4. Compares JSON output (sorted by name+version for deterministic comparison)
-5. Prints results and writes detailed log to `/tmp/diet-compare/comparison.log`
+5. Prints results and writes detailed log to `<workdir>/comparison.log` (default workdir: `/tmp/diet-compare`)
 
 ### Fixtures
 
@@ -95,4 +95,4 @@ Skipped: 0
 
 Exit code 0 = all identical, 1 = differences found.
 
-Detailed log: `/tmp/diet-compare/comparison.log`
+Detailed log: `<workdir>/comparison.log` (use `-workdir` to change, default: `/tmp/diet-compare`)
