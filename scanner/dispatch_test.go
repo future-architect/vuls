@@ -80,6 +80,16 @@ func TestDetectParserType(t *testing.T) {
 		{"myapp", 0755, parserExecutable},
 		{"myapp", 0644, parserNone}, // not executable
 
+		// Windows .exe (no execute bits, simulating Windows filemode)
+		{"trivy.exe", 0, parserExecutable},
+		{"C:\\Users\\user\\app.exe", 0, parserExecutable},
+		{"APP.EXE", 0, parserExecutable}, // case-insensitive
+
+		// Non-regular files should be excluded even with execute bits
+		{"bin", os.ModeDir | 0755, parserNone},          // directory
+		{"link", os.ModeSymlink | 0755, parserNone},     // symlink
+		{"pipe", os.ModeNamedPipe | 0755, parserNone},   // named pipe
+
 		// === Not recognized ===
 		{"README.md", 0644, parserNone},
 		{"Dockerfile", 0644, parserNone},

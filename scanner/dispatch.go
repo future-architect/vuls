@@ -149,9 +149,8 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 	}
 
 	// Executable binary detection (Go binary, Rust binary)
-	if isExecutable(filemode) {
-		// Both Go and Rust binaries are detected by executable filemode.
-		// The actual distinction happens during parsing, not dispatch.
+	// Mimics Trivy's utils.IsExecutable: .exe for Windows, executable bit for Unix.
+	if isExecutable(filePath, filemode) {
 		return parserExecutable
 	}
 
@@ -168,7 +167,16 @@ func containsDir(filePath, dir string) bool {
 	return false
 }
 
-// isExecutable checks if the file mode indicates an executable file.
-func isExecutable(mode os.FileMode) bool {
-	return mode&0111 != 0
+// isExecutable checks if the file is an executable binary.
+// On Windows, executables have the .exe extension (no permission bits).
+// On Unix, regular files with any execute bit set are considered executable.
+// Non-regular files (directories, symlinks, etc.) are always excluded.
+func isExecutable(filePath string, mode os.FileMode) bool {
+	if strings.ToLower(filepath.Ext(filePath)) == ".exe" {
+		return true
+	}
+	if !mode.IsRegular() {
+		return false
+	}
+	return mode.Perm()&0111 != 0
 }
