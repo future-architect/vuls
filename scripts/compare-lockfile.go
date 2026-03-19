@@ -254,19 +254,7 @@ func main() {
 			identical++
 		} else {
 			log.log("DIFFERENT  %-12s %-40s", f.Type, f.Project)
-			// Show diff (diff exits 1 when files differ, which is expected)
-			cmd := exec.Command("diff", "-u", baseFile, currentFile)
-			out, err := cmd.Output()
-			if err != nil {
-				// ExitError with exit code 1 is normal for diff (files differ).
-				// Only log if the command itself failed to run.
-				if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-					// expected: files differ
-				} else {
-					log.log("WARNING: diff command failed: %v", err)
-				}
-			}
-			log.log("%s", string(out))
+			showDiff(log, baseFile, currentFile)
 			different++
 		}
 	}
@@ -607,7 +595,7 @@ func main() {
 		for _, r := range res {
 			libs += len(r.Libs)
 		}
-		results[strings.TrimSuffix(e.Name(), ".json")] = libs
+		results[strings.TrimSuffix(e.Name(), ".result.json")] = libs
 	}
 	return results
 }
@@ -621,4 +609,27 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.WriteFile(dst, data, 0644)
+}
+
+// showDiff prints a unified-style diff between two files using the external
+// diff command if available, falling back to printing file paths.
+func showDiff(log *logger, baseFile, currentFile string) {
+	diffPath, err := exec.LookPath("diff")
+	if err != nil {
+		log.log("  (diff command not available; compare manually)")
+		log.log("  base:    %s", baseFile)
+		log.log("  current: %s", currentFile)
+		return
+	}
+	cmd := exec.Command(diffPath, "-u", baseFile, currentFile)
+	out, err := cmd.Output()
+	if err != nil {
+		// ExitError with exit code 1 is normal for diff (files differ).
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			// expected: files differ
+		} else {
+			log.log("WARNING: diff command failed: %v", err)
+		}
+	}
+	log.log("%s", string(out))
 }
