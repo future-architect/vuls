@@ -407,7 +407,10 @@ func runOnBase(baseRef string, fixtures []fixture, fixtureDir, outputDir, fixtur
 		return nil
 	}
 	// MkdirTemp creates the directory, but git worktree add requires it not to exist
-	os.Remove(worktreeDir)
+	if err := os.Remove(worktreeDir); err != nil {
+		log.log("ERROR: Failed to remove temp dir for worktree: %v", err)
+		return nil
+	}
 
 	cmd := exec.Command("git", "worktree", "add", worktreeDir, baseRef)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -415,7 +418,9 @@ func runOnBase(baseRef string, fixtures []fixture, fixtureDir, outputDir, fixtur
 		return nil
 	}
 	defer func() {
-		exec.Command("git", "worktree", "remove", "--force", worktreeDir).Run()
+		if err := exec.Command("git", "worktree", "remove", "--force", worktreeDir).Run(); err != nil {
+			log.log("WARNING: Failed to remove worktree %s: %v", worktreeDir, err)
+		}
 	}()
 
 	log.log("Created worktree at %s for %s", worktreeDir, baseRef)
