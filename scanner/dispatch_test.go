@@ -36,6 +36,8 @@ func TestDetectParserType(t *testing.T) {
 
 		// === PHP ===
 		{"composer.lock", 0644, parserComposer},
+		{"installed.json", 0644, parserComposerVendor},
+		{"vendor/composer/installed.json", 0644, parserComposerVendor},
 
 		// === Go ===
 		{"go.mod", 0644, parserGoMod},

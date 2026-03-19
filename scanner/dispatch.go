@@ -25,6 +25,7 @@ const (
 	parserBundler       parserType = "bundler"
 	parserCargo         parserType = "cargo"
 	parserComposer      parserType = "composer"
+	parserComposerVendor parserType = "composer-vendor"
 	parserGoMod         parserType = "gomod"
 	parserExecutable    parserType = "executable"
 	parserPom           parserType = "pom"
@@ -88,6 +89,8 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 	// PHP
 	case ftypes.ComposerLock: // composer.lock
 		return parserComposer
+	case ftypes.ComposerInstalledJson: // installed.json
+		return parserComposerVendor
 
 	// Go
 	case ftypes.GoMod: // go.mod

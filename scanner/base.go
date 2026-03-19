@@ -793,6 +793,8 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 	// PHP
 	case parserComposer:
 		return parseLockfile(ctx, ftypes.Composer, filePath, r, composer.NewParser())
+	case parserComposerVendor:
+		return parseLockfile(ctx, ftypes.ComposerVendor, filePath, r, composer.NewParser())
 
 	// Go
 	case parserGoMod:
