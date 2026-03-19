@@ -86,9 +86,9 @@ func TestDetectParserType(t *testing.T) {
 		{"APP.EXE", 0, parserExecutable}, // case-insensitive
 
 		// Non-regular files should be excluded even with execute bits
-		{"bin", os.ModeDir | 0755, parserNone},          // directory
-		{"link", os.ModeSymlink | 0755, parserNone},     // symlink
-		{"pipe", os.ModeNamedPipe | 0755, parserNone},   // named pipe
+		{"bin", os.ModeDir | 0755, parserNone},        // directory
+		{"link", os.ModeSymlink | 0755, parserNone},   // symlink
+		{"pipe", os.ModeNamedPipe | 0755, parserNone}, // named pipe
 
 		// === Not recognized ===
 		{"README.md", 0644, parserNone},
