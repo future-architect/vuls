@@ -214,7 +214,7 @@ func main() {
 		log.log("=== Fetching fixtures ===")
 		for _, f := range fixtures {
 			log.log("# curl -sL -o %s/%s %q", fixtureDir, f.safeFilename(), f.URL)
-			if err := fetchFixture(f, fixtureDir); err != nil {
+			if err := fetchFixture(context.Background(), f, fixtureDir); err != nil {
 				log.log("FETCH ERROR  %-12s %-40s %v", f.Type, f.Project, err)
 			} else if info, err := os.Stat(filepath.Join(fixtureDir, f.safeFilename())); err != nil {
 				log.log("FETCH ERROR  %-12s %-40s file not found after download: %v", f.Type, f.Project, err)
@@ -307,8 +307,12 @@ func (f fixture) safeFilename() string {
 
 var httpClient = &http.Client{Timeout: 5 * time.Minute}
 
-func fetchFixture(f fixture, dir string) error {
-	resp, err := httpClient.Get(f.URL)
+func fetchFixture(ctx context.Context, f fixture, dir string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f.URL, nil)
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
