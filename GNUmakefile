@@ -11,7 +11,7 @@
 	test \
 	cov \
 	clean \
-	diff-lockfile
+	compare-lockfile
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
@@ -245,12 +245,12 @@ endef
 # Compare AnalyzeLibrary output between current branch and BASE ref.
 # Fetches real-world lockfiles from popular OSS projects and compares results.
 # Usage:
-#   make diff-lockfile              # fetch fixtures and compare against master
-#   make diff-lockfile BASE=commit  # compare against specific ref
-#   make diff-lockfile FETCH=0      # re-run with cached fixtures (skip download)
+#   make compare-lockfile              # fetch fixtures and compare against master
+#   make compare-lockfile BASE=commit  # compare against specific ref
+#   make compare-lockfile FETCH=0      # re-run with cached fixtures (skip download)
 BASE ?= master
 FETCH ?= 1
-diff-lockfile:
+compare-lockfile:
 	$(GO) run scripts/compare-lockfile.go $(if $(filter 1,$(FETCH)),-fetch) -base $(BASE)
 
 define count-cve

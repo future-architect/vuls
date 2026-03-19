@@ -232,7 +232,7 @@ func main() {
 	// Run on base ref using worktree
 	log.log("")
 	log.log("=== Running AnalyzeLibrary on %s (via worktree subprocess) ===", *baseRef)
-	baseResults := runOnBase(*baseRef, fixtures, fixtureDir, resultBaseDir, *fixturesPath, *workdir, log)
+	baseResults := runOnBase(*baseRef, fixtureDir, resultBaseDir, *fixturesPath, *workdir, log)
 
 	// Compare
 	log.log("")
@@ -410,7 +410,7 @@ func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) m
 	return results
 }
 
-func runOnBase(baseRef string, fixtures []fixture, fixtureDir, outputDir, fixturesPath, workdir string, log *logger) map[string]int {
+func runOnBase(baseRef, fixtureDir, outputDir, fixturesPath, workdir string, log *logger) map[string]int {
 	// Create worktree in a temp directory under workdir to avoid path traversal risks
 	worktreeDir, err := os.MkdirTemp(workdir, "worktree-")
 	if err != nil {

@@ -843,7 +843,10 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 	}
 }
 
-// lockfileParser is the common interface for Trivy dependency parsers.
+// lockfileParser is a local copy of the Trivy parser interface
+// (trivy/pkg/fanal/analyzer/language/analyze.go). Defined here to avoid
+// importing the fanal/analyzer package, which pulls in heavy dependencies
+// and increases the scanner-only binary size.
 type lockfileParser interface {
 	Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error)
 }

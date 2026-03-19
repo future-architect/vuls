@@ -105,7 +105,7 @@ func TestAnalyzeLibrary_Golden(t *testing.T) {
 
 	for _, lf := range lockfiles {
 		t.Run(lf.path, func(t *testing.T) {
-			// Text fixtures are in testdata/fixtures/ (committed to repo).
+			// Test fixtures are in testdata/fixtures/ (committed to repo).
 			// Binary fixtures (JAR, WAR, Go/Rust binaries) are only in the
 			// integration submodule — skip if not available.
 			srcPath := filepath.Join(fixturesDir, lf.path)
@@ -163,6 +163,68 @@ func TestAnalyzeLibrary_Golden(t *testing.T) {
 					lf.path, string(gotJSON), string(wantJSON))
 			}
 		})
+	}
+}
+
+// TestAnalyzeLibrary_PomOnline verifies that pom.xml parsing in online mode
+// (resolving transitive dependencies from Maven Central) works correctly.
+// Skipped with -short since it requires network access.
+func TestAnalyzeLibrary_PomOnline(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping online pom.xml test (requires network access)")
+	}
+
+	fixturesDir := filepath.Join("testdata", "fixtures")
+	goldenDir := filepath.Join("testdata", "golden")
+
+	contents, err := os.ReadFile(filepath.Join(fixturesDir, "pom.xml"))
+	if err != nil {
+		t.Fatalf("Failed to read pom.xml: %v", err)
+	}
+
+	got, err := AnalyzeLibrary(context.Background(), "pom.xml", contents, 0644, false)
+	if err != nil {
+		t.Fatalf("AnalyzeLibrary(pom.xml, online) unexpected error: %v", err)
+	}
+
+	gotJSON, err := json.MarshalIndent(normalizeResult(got), "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal result: %v", err)
+	}
+
+	goldenPath := filepath.Join(goldenDir, "pom.xml.online.golden.json")
+
+	if *update {
+		if err := os.MkdirAll(goldenDir, 0755); err != nil {
+			t.Fatalf("Failed to create golden dir: %v", err)
+		}
+		if err := os.WriteFile(goldenPath, gotJSON, 0644); err != nil {
+			t.Fatalf("Failed to write golden file: %v", err)
+		}
+		t.Logf("Updated golden file: %s", goldenPath)
+		return
+	}
+
+	wantJSON, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatalf("Golden file not found: %s (run with -update to generate)", goldenPath)
+	}
+
+	if string(gotJSON) != string(wantJSON) {
+		t.Errorf("AnalyzeLibrary(pom.xml, online) output differs from golden file.\nGot:\n%s\nWant:\n%s",
+			string(gotJSON), string(wantJSON))
+	}
+
+	// Online mode should resolve transitive dependencies, producing more results than offline.
+	offlineGoldenPath := filepath.Join(goldenDir, "pom.xml.golden.json")
+	offlineJSON, err := os.ReadFile(offlineGoldenPath)
+	if err != nil {
+		t.Logf("Offline golden file not found, skipping comparison: %s", offlineGoldenPath)
+		return
+	}
+	if len(gotJSON) <= len(offlineJSON) {
+		t.Errorf("Online mode should resolve more dependencies than offline mode.\nOnline: %d bytes\nOffline: %d bytes",
+			len(gotJSON), len(offlineJSON))
 	}
 }
 

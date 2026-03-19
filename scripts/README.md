@@ -2,7 +2,7 @@
 
 Development scripts for testing and validation.
 
-## diff-lockfile: Lockfile parsing regression test
+## compare-lockfile: Lockfile parsing regression test
 
 Compares `AnalyzeLibrary()` output between two Git refs using real-world lockfiles from popular OSS projects. Use this to verify that changes to the library scanning code (scanner package, Trivy parser integration) do not introduce regressions.
 
@@ -18,11 +18,11 @@ Compares `AnalyzeLibrary()` output between two Git refs using real-world lockfil
 
 ```bash
 # Compare current branch against master
-make diff-lockfile
+make compare-lockfile
 
 # Compare against a specific commit or tag
-make diff-lockfile BASE=abc1234
-make diff-lockfile BASE=v0.27.0
+make compare-lockfile BASE=abc1234
+make compare-lockfile BASE=v0.27.0
 ```
 
 ### What it does
