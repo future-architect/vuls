@@ -24,3 +24,4 @@ vuls
 snmp2cpe
 !snmp2cpe/
 /scripts/compare-lockfile
+/compare-lockfile
