@@ -135,8 +135,8 @@ func (o *pseudo) scanLibraries() (err error) {
 		if err != nil {
 			// Collect errors and continue scanning remaining lockfiles.
 			// Errors are included in ScanResult.Errors in the JSON output.
-			o.log.Errorf("Failed to analyze library %s: %+v", trivypath, err)
-			o.errs = append(o.errs, xerrors.Errorf("Failed to analyze library %s: %w", trivypath, err))
+			o.log.Errorf("Failed to analyze library %s: %+v", abspath, err)
+			o.errs = append(o.errs, xerrors.Errorf("Failed to analyze library %s: %w", abspath, err))
 			continue
 		}
 		for _, libscanner := range libraryScanners {
