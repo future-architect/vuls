@@ -28,7 +28,7 @@ make diff-lockfile BASE=v0.27.0
 ### What it does
 
 1. Downloads 17 lockfiles/binaries from the internet (GitHub, Maven Central)
-2. Creates a `git worktree` for the base ref and builds the comparison tool there
+2. Creates a `git worktree` for the base ref and generates a minimal runner executed via `go run`
 3. Runs `AnalyzeLibrary()` on both refs for all fixtures
 4. Compares JSON output (sorted by name+version for deterministic comparison)
 5. Prints results and writes detailed log to `<workdir>/comparison.log` (default workdir: `$TMPDIR/diet-compare`)
