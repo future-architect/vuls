@@ -108,6 +108,13 @@ func TestAnalyzeLibrary_Golden(t *testing.T) {
 			// Test fixtures are in testdata/fixtures/ (committed to repo).
 			// Binary fixtures (JAR, WAR, Go/Rust binaries) are only in the
 			// integration submodule — skip if not available.
+			// NOTE: We intentionally do NOT add submodules: true to CI checkout.
+			// Attack scenario: an attacker forks this repo, edits .gitmodules to
+			// replace the integration submodule URL with their own repo containing
+			// a malicious go.mod or _test.go, then opens a PR. If CI checks out
+			// submodules, `go test` executes attacker-controlled code with access
+			// to the CI environment (secrets, GITHUB_TOKEN, network).
+			// Binary fixture tests therefore run locally only.
 			srcPath := filepath.Join(fixturesDir, lf.path)
 			if lf.binary {
 				srcPath = filepath.Join(integrationDir, lf.path)
