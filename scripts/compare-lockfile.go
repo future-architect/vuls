@@ -188,7 +188,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to create log: %v\n", err)
 		os.Exit(1)
 	}
-	defer log.close()
+	defer func() {
+		if err := log.close(); err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: Failed to close log file: %v\n", err)
+		}
+	}()
 
 	log.log("=== compare-lockfile.go ===")
 	log.log("Date: %s", time.Now().Format(time.RFC3339))
@@ -295,10 +299,10 @@ func loadFixtures(path string) ([]fixture, error) {
 	return fixtures, nil
 }
 
+var pathSanitizer = strings.NewReplacer("/", "_", "\\", "_", "..", "_")
+
 func (f fixture) safeFilename() string {
-	safe := strings.NewReplacer("/", "_", "\\", "_", "..", "_").Replace(f.Project)
-	name := strings.NewReplacer("/", "_", "\\", "_", "..", "_").Replace(f.Filename)
-	return safe + "__" + name
+	return pathSanitizer.Replace(f.Project) + "__" + pathSanitizer.Replace(f.Filename)
 }
 
 var httpClient = &http.Client{Timeout: 5 * time.Minute}
@@ -324,9 +328,11 @@ func fetchFixture(f fixture, dir string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-	_, err = io.Copy(out, resp.Body)
-	return err
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func extractFromTarGz(r io.Reader, targetPath, outPath string) error {
@@ -350,9 +356,11 @@ func extractFromTarGz(r io.Reader, targetPath, outPath string) error {
 			if err != nil {
 				return err
 			}
-			defer out.Close()
-			_, err = io.Copy(out, tr)
-			return err
+			if _, err := io.Copy(out, tr); err != nil {
+				out.Close()
+				return err
+			}
+			return out.Close()
 		}
 	}
 }
@@ -367,11 +375,13 @@ func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) m
 			continue
 		}
 
+		parseErr := false
 		got, err := scanner.AnalyzeLibrary(context.Background(), f.Filename, contents, f.effectiveFilemode(), true)
 		if err != nil {
 			log.log("PARSE ERROR %-12s %-40s %v", f.Type, f.Project, err)
-			// Still write empty result for comparison
+			// Write empty result so comparison can still detect the difference
 			got = nil
+			parseErr = true
 		}
 
 		j, err := json.MarshalIndent(normalize(got), "", "  ")
@@ -387,7 +397,11 @@ func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) m
 
 		libs := countLibs(got)
 		results[f.safeFilename()] = libs
-		log.log("OK  %-12s %-40s %d libs", f.Type, f.Project, libs)
+		if parseErr {
+			log.log("PARSE ERROR %-12s %-40s (wrote empty result)", f.Type, f.Project)
+		} else {
+			log.log("OK  %-12s %-40s %d libs", f.Type, f.Project, libs)
+		}
 	}
 	return results
 }
@@ -501,6 +515,10 @@ func normalize(scanners []models.LibraryScanner) []result {
 }
 
 func main() {
+	if len(os.Args) < 4 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <fixtureDir> <outputDir> <fixturesJSON>\n", os.Args[0])
+		os.Exit(1)
+	}
 	fixtureDir := os.Args[1]
 	outputDir := os.Args[2]
 	fixturesJSON := os.Args[3]
@@ -520,8 +538,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	replacer := strings.NewReplacer("/", "_", "\\", "_", "..", "_")
 	for _, f := range fixtures {
-		replacer := strings.NewReplacer("/", "_", "\\", "_", "..", "_")
 		safe := replacer.Replace(f.Project) + "__" + replacer.Replace(f.Filename)
 
 		srcPath := filepath.Join(fixtureDir, safe)
@@ -531,10 +549,12 @@ func main() {
 			continue
 		}
 
+		parseErr := false
 		got, err := scanner.AnalyzeLibrary(context.Background(), f.Filename, contents, f.effectiveFilemode(), true)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "PARSE ERROR %-12s %-40s %v\n", f.Type, f.Project, err)
 			got = nil
+			parseErr = true
 		}
 
 		j, jerr := json.MarshalIndent(normalize(got), "", "  ")
@@ -549,7 +569,11 @@ func main() {
 		}
 		libs := 0
 		for _, s := range got { libs += len(s.Libs) }
-		fmt.Printf("OK  %-12s %-40s %d libs\n", f.Type, f.Project, libs)
+		if parseErr {
+			fmt.Fprintf(os.Stderr, "PARSE ERROR %-12s %-40s (wrote empty result)\n", f.Type, f.Project)
+		} else {
+			fmt.Printf("OK  %-12s %-40s %d libs\n", f.Type, f.Project, libs)
+		}
 	}
 }
 `
