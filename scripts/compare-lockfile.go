@@ -11,7 +11,7 @@
 //	-base string    Base Git ref to compare against (default "master")
 //	-fetch          Download lockfile fixtures from the internet
 //	-fixtures string Path to lockfile-fixtures.json (default "scripts/lockfile-fixtures.json")
-//	-workdir string Working directory for temporary files (default "/tmp/diet-compare")
+//	-workdir string Working directory for temporary files (default: os.TempDir()/diet-compare)
 //	-log string     Path to write detailed log (default "<workdir>/comparison.log")
 //
 // Examples:
@@ -138,6 +138,9 @@ type logger struct {
 }
 
 func newLogger(path string) (*logger, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return nil, fmt.Errorf("create log directory: %w", err)
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return nil, err
@@ -151,13 +154,13 @@ func (l *logger) log(format string, args ...any) {
 	fmt.Fprintln(l.file, msg)
 }
 
-func (l *logger) close() { l.file.Close() }
+func (l *logger) close() error { return l.file.Close() }
 
 func main() {
 	baseRef := flag.String("base", "master", "Base Git ref to compare against")
 	fetch := flag.Bool("fetch", false, "Download lockfile fixtures from the internet")
 	fixturesPath := flag.String("fixtures", "scripts/lockfile-fixtures.json", "Path to lockfile-fixtures.json")
-	workdir := flag.String("workdir", "/tmp/diet-compare", "Working directory for temporary files")
+	workdir := flag.String("workdir", filepath.Join(os.TempDir(), "diet-compare"), "Working directory for temporary files")
 	logPath := flag.String("log", "", "Path to write detailed log (default: <workdir>/comparison.log)")
 	flag.Parse()
 
@@ -305,7 +308,9 @@ func loadFixtures(path string) ([]fixture, error) {
 }
 
 func (f fixture) safeFilename() string {
-	return strings.ReplaceAll(f.Project, "/", "_") + "__" + f.Filename
+	safe := strings.NewReplacer("/", "_", "\\", "_", "..", "_").Replace(f.Project)
+	name := strings.NewReplacer("/", "_", "\\", "_", "..", "_").Replace(f.Filename)
+	return safe + "__" + name
 }
 
 var httpClient = &http.Client{Timeout: 5 * time.Minute}
@@ -316,8 +321,8 @@ func fetchFixture(f fixture, dir string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d %s", resp.StatusCode, resp.Status)
 	}
 
 	outPath := filepath.Join(dir, f.safeFilename())
@@ -528,7 +533,8 @@ func main() {
 	}
 
 	for _, f := range fixtures {
-		safe := strings.ReplaceAll(f.Project, "/", "_") + "__" + f.Filename
+		replacer := strings.NewReplacer("/", "_", "\\", "_", "..", "_")
+		safe := replacer.Replace(f.Project) + "__" + replacer.Replace(f.Filename)
 
 		srcPath := filepath.Join(fixtureDir, safe)
 		contents, err := os.ReadFile(srcPath)

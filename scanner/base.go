@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -896,7 +897,7 @@ func parseExecutableBinary(ctx context.Context, filePath string, r xio.ReadSeeke
 	}
 
 	// Reset reader and try Rust binary
-	if _, err := r.Seek(0, 0); err != nil {
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, xerrors.Errorf("seek error: %w", err)
 	}
 	return parseBinary(ctx, ftypes.RustBinary, filePath, r, rustbinary.NewParser())
