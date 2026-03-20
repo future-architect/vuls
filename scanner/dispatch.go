@@ -172,11 +172,14 @@ func containsDir(filePath, dir string) bool {
 // On Unix, regular files with any execute bit set are considered executable.
 // Non-regular files (directories, symlinks, etc.) are always excluded.
 func isExecutable(filePath string, mode os.FileMode) bool {
+	// Exclude non-regular files (directories, symlinks, etc.)
+	// mode == 0 is allowed: on Windows, Vuls receives 0 from stat since
+	// permission bits are not meaningful, so we fall through to .exe check.
+	if mode != 0 && !mode.IsRegular() {
+		return false
+	}
 	if strings.ToLower(filepath.Ext(filePath)) == ".exe" {
 		return true
 	}
-	if !mode.IsRegular() {
-		return false
-	}
-	return mode.Perm()&0111 != 0
+	return mode.IsRegular() && mode.Perm()&0111 != 0
 }
