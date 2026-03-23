@@ -27,7 +27,7 @@ make compare-lockfile BASE=v0.27.0
 
 ### What it does
 
-1. Downloads 17 lockfiles/binaries from the internet (GitHub, Maven Central)
+1. Downloads lockfiles/binaries from the internet (GitHub, Maven Central) — currently 129 fixtures defined in `lockfile-fixtures.json`
 2. Creates a `git worktree` for the base ref and generates a minimal runner executed via `go run`
 3. Runs `AnalyzeLibrary()` on both refs for all fixtures
 4. Compares JSON output (sorted by name+version for deterministic comparison)
@@ -39,22 +39,22 @@ Defined in `scripts/lockfile-fixtures.json`. All URLs use pinned tags for reprod
 
 | Type | Project | Source |
 |------|---------|--------|
-| npm | nestjs/nest | GitHub |
-| yarn | facebook/react | GitHub |
-| pnpm | vitejs/vite | GitHub |
-| pip | home-assistant/core | GitHub |
-| pipenv | pypa/pipenv | GitHub |
-| poetry | python-poetry/poetry | GitHub |
-| bundler | rails/rails | GitHub |
-| cargo | BurntSushi/ripgrep | GitHub |
-| composer | matomo-org/matomo | GitHub |
-| go.mod | kubernetes/kubernetes | GitHub |
-| pom.xml | apache/spark | GitHub |
-| mix | phoenixframework/phoenix | GitHub |
-| swift | swift-composable-architecture | GitHub |
-| jar (x2) | log4j-core, commons-lang3 | Maven Central |
-| gobinary | mikefarah/yq | GitHub Releases |
-| rustbinary | cargo-bins/cargo-binstall | GitHub Releases |
+| npm (10) | nestjs/nest, etc. | GitHub |
+| yarn (10) | facebook/react, etc. | GitHub |
+| pnpm (10) | vitejs/vite, etc. | GitHub |
+| pip (10) | home-assistant/core, etc. | GitHub |
+| pipenv (5) | pypa/pipenv, etc. | GitHub |
+| poetry (10) | python-poetry/poetry, etc. | GitHub |
+| bundler (10) | rails/rails, etc. | GitHub |
+| cargo (10) | BurntSushi/ripgrep, etc. | GitHub |
+| composer (10) | matomo-org/matomo, etc. | GitHub |
+| gomod (10) | kubernetes/kubernetes, etc. | GitHub |
+| pom (10) | apache/spark, etc. | GitHub |
+| mix (10) | phoenixframework/phoenix, etc. | GitHub |
+| swift (10) | swift-composable-architecture, etc. | GitHub |
+| jar (2) | log4j-core, commons-lang3 | Maven Central |
+| gobinary (1) | mikefarah/yq | GitHub Releases |
+| rustbinary (1) | cargo-bins/cargo-binstall | GitHub Releases |
 
 ### Adding fixtures
 
@@ -87,8 +87,8 @@ For binaries, add `filemode` (493 = 0755) and optionally `archivePath` for tar.g
 
 ```
 === Summary ===
-Total: 17 fixtures
-Identical: 16
+Total: 129 fixtures
+Identical: 128
 Different: 1
 Skipped: 0
 ```
