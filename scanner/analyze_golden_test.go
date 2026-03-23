@@ -230,17 +230,24 @@ func TestAnalyzeLibrary_PomOnline(t *testing.T) {
 		return
 	}
 
-	var onlineRes goldenLibraryScanner
+	var onlineRes []goldenLibraryScanner
 	if err := json.Unmarshal(gotJSON, &onlineRes); err != nil {
 		t.Fatalf("Failed to unmarshal online JSON result: %v", err)
 	}
-	var offlineRes goldenLibraryScanner
+	var offlineRes []goldenLibraryScanner
 	if err := json.Unmarshal(offlineJSON, &offlineRes); err != nil {
 		t.Fatalf("Failed to unmarshal offline golden JSON: %v", err)
 	}
-	if len(onlineRes.Libs) <= len(offlineRes.Libs) {
+	var onlineLibs, offlineLibs int
+	for _, s := range onlineRes {
+		onlineLibs += len(s.Libs)
+	}
+	for _, s := range offlineRes {
+		offlineLibs += len(s.Libs)
+	}
+	if onlineLibs <= offlineLibs {
 		t.Errorf("Online mode should resolve more dependencies than offline mode.\nOnline libs: %d\nOffline libs: %d",
-			len(onlineRes.Libs), len(offlineRes.Libs))
+			onlineLibs, offlineLibs)
 	}
 }
 
