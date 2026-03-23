@@ -229,9 +229,18 @@ func TestAnalyzeLibrary_PomOnline(t *testing.T) {
 		t.Logf("Offline golden file not found, skipping comparison: %s", offlineGoldenPath)
 		return
 	}
-	if len(gotJSON) <= len(offlineJSON) {
-		t.Errorf("Online mode should resolve more dependencies than offline mode.\nOnline: %d bytes\nOffline: %d bytes",
-			len(gotJSON), len(offlineJSON))
+
+	var onlineRes goldenLibraryScanner
+	if err := json.Unmarshal(gotJSON, &onlineRes); err != nil {
+		t.Fatalf("Failed to unmarshal online JSON result: %v", err)
+	}
+	var offlineRes goldenLibraryScanner
+	if err := json.Unmarshal(offlineJSON, &offlineRes); err != nil {
+		t.Fatalf("Failed to unmarshal offline golden JSON: %v", err)
+	}
+	if len(onlineRes.Libs) <= len(offlineRes.Libs) {
+		t.Errorf("Online mode should resolve more dependencies than offline mode.\nOnline libs: %d\nOffline libs: %d",
+			len(onlineRes.Libs), len(offlineRes.Libs))
 	}
 }
 
