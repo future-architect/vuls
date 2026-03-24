@@ -15,6 +15,37 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
+// plainAuth implements smtp.Auth for the PLAIN mechanism without
+// stdlib's TLS enforcement, preserving behavioral parity with the
+// previously used go-smtp library for TLSMode "None" configurations.
+type plainAuth struct {
+	identity, username, password, host string
+}
+
+func (a *plainAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	if !server.TLS {
+		advertised := false
+		for _, mech := range server.Auth {
+			if strings.EqualFold(mech, "PLAIN") {
+				advertised = true
+				break
+			}
+		}
+		if !advertised {
+			return "", nil, xerrors.New("unencrypted connection: PLAIN auth requires TLS or explicit server advertisement")
+		}
+	}
+	resp := []byte(a.identity + "\x00" + a.username + "\x00" + a.password)
+	return "PLAIN", resp, nil
+}
+
+func (a *plainAuth) Next(_ []byte, more bool) ([]byte, error) {
+	if more {
+		return nil, xerrors.New("unexpected server challenge")
+	}
+	return nil, nil
+}
+
 // loginAuth implements smtp.Auth for the LOGIN mechanism.
 type loginAuth struct {
 	username, password string
@@ -24,7 +55,7 @@ func (a *loginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
 	if !server.TLS {
 		advertised := false
 		for _, mech := range server.Auth {
-			if mech == "LOGIN" {
+			if strings.EqualFold(mech, "LOGIN") {
 				advertised = true
 				break
 			}
@@ -213,7 +244,7 @@ func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 	defer c.Close()
 
 	if ok, param := c.Extension("AUTH"); ok {
-		authList := strings.Split(param, " ")
+		authList := strings.Fields(param)
 		auth := e.newAuth(authList)
 		if auth != nil {
 			if err = c.Auth(auth); err != nil {
@@ -284,9 +315,9 @@ func NewEMailSender(cnf config.SMTPConf) EMailSender {
 
 func (e *emailSender) newAuth(authList []string) smtp.Auth {
 	for _, v := range authList {
-		switch v {
+		switch strings.ToUpper(v) {
 		case "PLAIN":
-			return smtp.PlainAuth("", e.conf.User, e.conf.Password, e.conf.SMTPAddr)
+			return &plainAuth{identity: "", username: e.conf.User, password: e.conf.Password, host: e.conf.SMTPAddr}
 		case "LOGIN":
 			return &loginAuth{username: e.conf.User, password: e.conf.Password}
 		}
