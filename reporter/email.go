@@ -2,7 +2,6 @@ package reporter
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net"
 	"net/mail"
@@ -21,7 +20,19 @@ type loginAuth struct {
 	username, password string
 }
 
-func (a *loginAuth) Start(_ *smtp.ServerInfo) (string, []byte, error) {
+func (a *loginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	if !server.TLS {
+		advertised := false
+		for _, mech := range server.Auth {
+			if mech == "LOGIN" {
+				advertised = true
+				break
+			}
+		}
+		if !advertised {
+			return "", nil, xerrors.New("unencrypted connection: LOGIN auth requires TLS or explicit server advertisement")
+		}
+	}
 	return "LOGIN", nil, nil
 }
 
@@ -128,7 +139,11 @@ func (e *emailSender) dialTLS(addr string, tlsConfig *tls.Config) (*smtp.Client,
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to create TLS connection to SMTP server: %w", err)
 	}
-	host, _, _ := net.SplitHostPort(addr)
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		_ = conn.Close()
+		return nil, xerrors.Errorf("Failed to parse SMTP server address: %w", err)
+	}
 	c, err := smtp.NewClient(conn, host)
 	if err != nil {
 		_ = conn.Close()
@@ -193,7 +208,7 @@ func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 			return err
 		}
 	default:
-		return errors.New(`invalid TLS mode. accepts: ["", "None", "STARTTLS", "SMTPS"]`)
+		return xerrors.New(`invalid TLS mode. accepts: ["", "None", "STARTTLS", "SMTPS"]`)
 	}
 	defer c.Close()
 

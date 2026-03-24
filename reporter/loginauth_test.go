@@ -7,22 +7,46 @@ import (
 
 func TestLoginAuthStart(t *testing.T) {
 	t.Parallel()
-	auth := &loginAuth{username: "user@example.com", password: "secret"}
-	mech, resp, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: true})
-	if err != nil {
-		t.Fatalf("Start() returned error: %v", err)
-	}
-	if mech != "LOGIN" {
-		t.Errorf("Start() mechanism = %q, want %q", mech, "LOGIN")
-	}
-	if resp != nil {
-		t.Errorf("Start() resp = %v, want nil", resp)
-	}
+
+	t.Run("TLS connection succeeds", func(t *testing.T) {
+		t.Parallel()
+		auth := &loginAuth{username: "user@example.com", password: "secret"}
+		mech, resp, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: true})
+		if err != nil {
+			t.Fatalf("Start() returned error: %v", err)
+		}
+		if mech != "LOGIN" {
+			t.Errorf("Start() mechanism = %q, want %q", mech, "LOGIN")
+		}
+		if resp != nil {
+			t.Errorf("Start() resp = %v, want nil", resp)
+		}
+	})
+
+	t.Run("non-TLS with LOGIN advertised succeeds", func(t *testing.T) {
+		t.Parallel()
+		auth := &loginAuth{username: "user@example.com", password: "secret"}
+		mech, _, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: false, Auth: []string{"LOGIN"}})
+		if err != nil {
+			t.Fatalf("Start() returned error: %v", err)
+		}
+		if mech != "LOGIN" {
+			t.Errorf("Start() mechanism = %q, want %q", mech, "LOGIN")
+		}
+	})
+
+	t.Run("non-TLS without LOGIN advertised fails", func(t *testing.T) {
+		t.Parallel()
+		auth := &loginAuth{username: "user@example.com", password: "secret"}
+		_, _, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: false})
+		if err == nil {
+			t.Fatal("Start() should return error for non-TLS connection without LOGIN advertised")
+		}
+	})
 }
 
 func TestLoginAuthNext(t *testing.T) {
 	t.Parallel()
-	auth := &loginAuth{username: "user@example.com", password: "s3cret"}
 
 	tests := []struct {
 		name       string
@@ -39,6 +63,8 @@ func TestLoginAuthNext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			auth := &loginAuth{username: "user@example.com", password: "s3cret"}
 			got, err := auth.Next([]byte(tt.fromServer), tt.more)
 			if err != nil {
 				t.Fatalf("Next() returned error: %v", err)
