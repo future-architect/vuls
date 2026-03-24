@@ -11,6 +11,8 @@ import (
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 
+	xos "github.com/aquasecurity/trivy/pkg/x/os"
+
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
 	detectorJavaDB "github.com/future-architect/vuls/detector/javadb"
@@ -193,6 +195,11 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 
 // Execute execute
 func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...any) subcommands.ExitStatus {
+	defer func() {
+		if err := xos.Cleanup(); err != nil {
+			logging.Log.Warnf("Failed to cleanup trivy temp directory: %+v", err)
+		}
+	}()
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
