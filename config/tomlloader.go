@@ -199,11 +199,14 @@ func enumerateHosts(host string) ([]string, error) {
 	}
 
 	hostBits := prefix.Addr().BitLen() - prefix.Bits()
-	if hostBits > 63 {
-		return nil, xerrors.Errorf("Failed to enumerate IP address. err: mask bitsize too big")
+
+	// Cap at 2^16 = 65536 addresses (a /16 for IPv4, /112 for IPv6) to prevent OOM.
+	const maxHostBits = 16
+	if hostBits > maxHostBits {
+		return nil, xerrors.Errorf("Failed to enumerate IP address: prefix /%d too large (max host bits %d)", prefix.Bits(), maxHostBits)
 	}
 
-	count := uint64(1) << hostBits
+	count := int(1) << hostBits
 	addrs := make([]string, 0, count)
 	addr := prefix.Masked().Addr()
 	for range count {

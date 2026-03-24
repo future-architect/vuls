@@ -113,6 +113,8 @@ func TestEnumerateHosts(t *testing.T) {
 		{in: "2001:db8::1/127", expected: []string{"2001:db8::", "2001:db8::1"}},
 		{in: "2001:db8::1/128", expected: []string{"2001:db8::1"}},
 		{in: "2001:db8::1/32", err: true},
+		{in: "10.0.0.0/0", err: true},
+		{in: "192.168.0.0/8", err: true},
 	}
 	for i, tt := range tests {
 		actual, err := enumerateHosts(tt.in)
