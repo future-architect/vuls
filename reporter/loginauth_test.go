@@ -82,6 +82,84 @@ func TestLoginAuthNext(t *testing.T) {
 	}
 }
 
+func TestPlainAuthStart(t *testing.T) {
+	t.Parallel()
+
+	t.Run("TLS connection succeeds", func(t *testing.T) {
+		t.Parallel()
+		auth := &plainAuth{identity: "", username: "user@example.com", password: "secret"}
+		mech, resp, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: true})
+		if err != nil {
+			t.Fatalf("Start() returned error: %v", err)
+		}
+		if mech != "PLAIN" {
+			t.Errorf("Start() mechanism = %q, want %q", mech, "PLAIN")
+		}
+		want := "\x00user@example.com\x00secret"
+		if string(resp) != want {
+			t.Errorf("Start() resp = %q, want %q", resp, want)
+		}
+	})
+
+	t.Run("non-TLS with PLAIN advertised succeeds", func(t *testing.T) {
+		t.Parallel()
+		auth := &plainAuth{identity: "", username: "user@example.com", password: "secret"}
+		mech, _, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: false, Auth: []string{"PLAIN"}})
+		if err != nil {
+			t.Fatalf("Start() returned error: %v", err)
+		}
+		if mech != "PLAIN" {
+			t.Errorf("Start() mechanism = %q, want %q", mech, "PLAIN")
+		}
+	})
+
+	t.Run("non-TLS without PLAIN advertised fails", func(t *testing.T) {
+		t.Parallel()
+		auth := &plainAuth{identity: "", username: "user@example.com", password: "secret"}
+		_, _, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: false})
+		if err == nil {
+			t.Fatal("Start() should return error for non-TLS connection without PLAIN advertised")
+		}
+	})
+
+	t.Run("identity is included in response", func(t *testing.T) {
+		t.Parallel()
+		auth := &plainAuth{identity: "admin", username: "user@example.com", password: "secret"}
+		_, resp, err := auth.Start(&smtp.ServerInfo{Name: "smtp.example.com", TLS: true})
+		if err != nil {
+			t.Fatalf("Start() returned error: %v", err)
+		}
+		want := "admin\x00user@example.com\x00secret"
+		if string(resp) != want {
+			t.Errorf("Start() resp = %q, want %q", resp, want)
+		}
+	})
+}
+
+func TestPlainAuthNext(t *testing.T) {
+	t.Parallel()
+	auth := &plainAuth{identity: "", username: "user@example.com", password: "secret"}
+
+	t.Run("no more data returns nil", func(t *testing.T) {
+		t.Parallel()
+		got, err := auth.Next(nil, false)
+		if err != nil {
+			t.Fatalf("Next() returned error: %v", err)
+		}
+		if got != nil {
+			t.Errorf("Next() = %q, want nil", got)
+		}
+	})
+
+	t.Run("more data returns error", func(t *testing.T) {
+		t.Parallel()
+		_, err := auth.Next([]byte("challenge"), true)
+		if err == nil {
+			t.Fatal("Next() should return error when server sends unexpected challenge")
+		}
+	})
+}
+
 func TestLoginAuthNextUnexpectedChallenge(t *testing.T) {
 	t.Parallel()
 	auth := &loginAuth{username: "user", password: "pass"}

@@ -19,7 +19,7 @@ import (
 // stdlib's TLS enforcement, preserving behavioral parity with the
 // previously used go-smtp library for TLSMode "None" configurations.
 type plainAuth struct {
-	identity, username, password, host string
+	identity, username, password string
 }
 
 func (a *plainAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
@@ -78,7 +78,7 @@ func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 	case strings.Contains(prompt, "password"):
 		return []byte(a.password), nil
 	default:
-		return nil, fmt.Errorf("unexpected server challenge: %q", fromServer)
+		return nil, xerrors.Errorf("unexpected server challenge: %q", fromServer)
 	}
 }
 
@@ -317,7 +317,7 @@ func (e *emailSender) newAuth(authList []string) smtp.Auth {
 	for _, v := range authList {
 		switch strings.ToUpper(v) {
 		case "PLAIN":
-			return &plainAuth{identity: "", username: e.conf.User, password: e.conf.Password, host: e.conf.SMTPAddr}
+			return &plainAuth{identity: "", username: e.conf.User, password: e.conf.Password}
 		case "LOGIN":
 			return &loginAuth{username: e.conf.User, password: e.conf.Password}
 		}
