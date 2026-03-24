@@ -18,3 +18,14 @@ func mkdirDotVuls() error {
 	}
 	return nil
 }
+
+// defaultTrivyCacheDir returns the default Trivy cache directory.
+// This replaces trivy/pkg/cache.DefaultDir() to avoid importing the heavy
+// cache package, which pulls in DB and OCI dependencies.
+func defaultTrivyCacheDir() string {
+	tmpDir, err := os.UserCacheDir()
+	if err != nil {
+		tmpDir = os.TempDir()
+	}
+	return filepath.Join(tmpDir, "trivy")
+}
