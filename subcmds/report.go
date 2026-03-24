@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/aquasecurity/trivy/pkg/cache"
 	"github.com/google/subcommands"
 	"github.com/k0kubun/pp"
 
@@ -182,7 +181,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use args passed via PIPE")
 
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
-		cache.DefaultDir(), "/path/to/dir")
+		defaultTrivyCacheDir(), "/path/to/dir")
 
 	config.Conf.TrivyDBRepositories = detector.DefaultTrivyDBRepositories
 	dbRepos := stringArrayFlag{target: &config.Conf.TrivyDBRepositories}
