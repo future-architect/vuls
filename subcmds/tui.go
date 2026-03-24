@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/aquasecurity/trivy/pkg/cache"
 	"github.com/google/subcommands"
 
 	"github.com/future-architect/vuls/config"
@@ -107,7 +106,7 @@ func (p *TuiCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&config.Conf.Pipe, "pipe", false, "Use stdin via PIPE")
 
 	f.StringVar(&config.Conf.TrivyCacheDBDir, "trivy-cachedb-dir",
-		cache.DefaultDir(), "/path/to/dir")
+		defaultTrivyCacheDir(), "/path/to/dir")
 
 	config.Conf.TrivyDBRepositories = detector.DefaultTrivyDBRepositories
 	dbRepos := stringArrayFlag{target: &config.Conf.TrivyDBRepositories}
