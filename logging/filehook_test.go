@@ -10,7 +10,7 @@ import (
 
 func TestFileHookLevels(t *testing.T) {
 	h := &fileHook{
-		path:      "/dev/null",
+		path:      os.DevNull,
 		formatter: &logrus.TextFormatter{},
 	}
 	got := h.Levels()

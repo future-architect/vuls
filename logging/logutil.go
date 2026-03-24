@@ -24,7 +24,7 @@ func (h *fileHook) Levels() []logrus.Level {
 }
 
 func (h *fileHook) Fire(entry *logrus.Entry) error {
-	f, err := os.OpenFile(h.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(h.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serv
 		}
 
 		logFile := dir + "/vuls.log"
-		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+		if file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
 			log.Out = io.MultiWriter(os.Stderr, file)
 		} else {
 			log.Out = os.Stderr
@@ -116,7 +116,8 @@ func NewCustomLogger(debug, quiet, logToFile bool, logDir, logMsgAnsiColor, serv
 
 		if _, err := os.Stat(dir); err == nil {
 			path := filepath.Join(dir, fmt.Sprintf("%s.log", whereami))
-			if _, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+			if checkFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600); err == nil {
+				checkFile.Close()
 				log.Hooks.Add(&fileHook{
 					path:      path,
 					formatter: &logrus.TextFormatter{DisableColors: true},
