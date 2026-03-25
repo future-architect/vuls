@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/nlopes/slack"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 )
 
 // SlackWriter send report to slack
@@ -147,7 +147,7 @@ func (w SlackWriter) send(msg message) error {
 			if count == retryMax {
 				return nil
 			}
-			return xerrors.Errorf(
+			return fmt.Errorf(
 				"HTTP POST error. url: %s, resp: %v, body: %s, err: %+v",
 				w.Cnf.HookURL, resp, body, errs)
 		}
@@ -159,10 +159,10 @@ func (w SlackWriter) send(msg message) error {
 	}
 	boff := backoff.NewExponentialBackOff()
 	if err := backoff.RetryNotify(f, boff, notify); err != nil {
-		return xerrors.Errorf("HTTP error: %w", err)
+		return fmt.Errorf("HTTP error: %w", err)
 	}
 	if count == retryMax {
-		return xerrors.New("Retry count exceeded")
+		return errors.New("Retry count exceeded")
 	}
 	return nil
 }

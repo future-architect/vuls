@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -101,7 +99,7 @@ func EnsureResultDir(resultsDir string, scannedAt time.Time) (currentDir string,
 	}
 	jsonDir := filepath.Join(resultsDir, jsonDirName)
 	if err := os.MkdirAll(jsonDir, 0700); err != nil {
-		return "", xerrors.Errorf("Failed to create dir: %w", err)
+		return "", fmt.Errorf("Failed to create dir: %w", err)
 	}
 	return jsonDir, nil
 }
@@ -113,7 +111,7 @@ func writeScanResults(jsonDir string, results models.ScanResults) error {
 	}}
 	for _, w := range ws {
 		if err := w.Write(results...); err != nil {
-			return xerrors.Errorf("Failed to write summary: %s", err)
+			return fmt.Errorf("Failed to write summary: %s", err)
 		}
 	}
 

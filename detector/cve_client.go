@@ -11,7 +11,6 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -28,12 +27,12 @@ type goCveDictClient struct {
 
 func newGoCveDictClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goCveDictClient, error) {
 	if err := cvelog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, xerrors.Errorf("Failed to set go-cve-dictionary logger. err: %w", err)
+		return nil, fmt.Errorf("Failed to set go-cve-dictionary logger. err: %w", err)
 	}
 
 	driver, err := newCveDB(cnf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to newCveDB. err: %w", err)
+		return nil, fmt.Errorf("Failed to newCveDB. err: %w", err)
 	}
 	return &goCveDictClient{driver: driver, baseURL: cnf.GetURL()}, nil
 }
@@ -92,17 +91,17 @@ func (client goCveDictClient) fetchCveDetails(cveIDs []string) (cveDetails []cve
 			case err := <-errChan:
 				errs = append(errs, err)
 			case <-timeout:
-				return nil, xerrors.New("Timeout Fetching CVE")
+				return nil, errors.New("Timeout Fetching CVE")
 			}
 		}
 		if len(errs) != 0 {
 			return nil,
-				xerrors.Errorf("Failed to fetch CVE. err: %w", errs)
+				fmt.Errorf("Failed to fetch CVE. err: %w", errors.Join(errs...))
 		}
 	} else {
 		m, err := client.driver.GetMulti(cveIDs)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to GetMulti. err: %w", err)
+			return nil, fmt.Errorf("Failed to GetMulti. err: %w", err)
 		}
 		for _, v := range m {
 			cveDetails = append(cveDetails, v)
@@ -122,7 +121,7 @@ func httpGet(key, url string, resChan chan<- response, errChan chan<- error) {
 		}
 		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return xerrors.Errorf("HTTP GET Error, url: %s, resp: %v, err: %+v",
+			return fmt.Errorf("HTTP GET Error, url: %s, resp: %v, err: %+v",
 				url, resp, errs)
 		}
 		return nil
@@ -132,12 +131,12 @@ func httpGet(key, url string, resChan chan<- response, errChan chan<- error) {
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		errChan <- xerrors.Errorf("HTTP Error: %w", err)
+		errChan <- fmt.Errorf("HTTP Error: %w", err)
 		return
 	}
 	cveDetail := cvemodels.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetail); err != nil {
-		errChan <- xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+		errChan <- fmt.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 		return
 	}
 	resChan <- response{
@@ -150,17 +149,17 @@ func (client goCveDictClient) detectCveByCpeURI(cpeURI string, useJVN bool) (cve
 	if client.driver == nil {
 		url, err := util.URLPathJoin(client.baseURL, "cpes")
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+			return nil, fmt.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
 		query := map[string]string{"name": cpeURI}
 		logging.Log.Debugf("HTTP Request to %s, query: %#v", url, query)
 		if cves, err = httpPost(url, query); err != nil {
-			return nil, xerrors.Errorf("Failed to post HTTP Request. err: %w", err)
+			return nil, fmt.Errorf("Failed to post HTTP Request. err: %w", err)
 		}
 	} else {
 		if cves, err = client.driver.GetByCpeURI(cpeURI); err != nil {
-			return nil, xerrors.Errorf("Failed to get CVEs by CPEURI. err: %w", err)
+			return nil, fmt.Errorf("Failed to get CVEs by CPEURI. err: %w", err)
 		}
 	}
 
@@ -193,7 +192,7 @@ func httpPost(url string, query map[string]string) ([]cvemodels.CveDetail, error
 		}
 		resp, body, errs = req.End()
 		if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-			return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", url, resp, errs)
+			return fmt.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 		return nil
 	}
@@ -202,13 +201,13 @@ func httpPost(url string, query map[string]string) ([]cvemodels.CveDetail, error
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		return nil, xerrors.Errorf("HTTP Error: %w", err)
+		return nil, fmt.Errorf("HTTP Error: %w", err)
 	}
 
 	cveDetails := []cvemodels.CveDetail{}
 	if err := json.Unmarshal([]byte(body), &cveDetails); err != nil {
 		return nil,
-			xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+			fmt.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 	}
 	return cveDetails, nil
 }
@@ -224,9 +223,9 @@ func newCveDB(cnf config.VulnDictInterface) (cvedb.DB, error) {
 	driver, err := cvedb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), cvedb.Option{})
 	if err != nil {
 		if errors.Is(err, cvedb.ErrDBLocked) {
-			return nil, xerrors.Errorf("Failed to init CVE DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+			return nil, fmt.Errorf("Failed to init CVE DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, xerrors.Errorf("Failed to init CVE DB. DB Path: %s, err: %w", path, err)
+		return nil, fmt.Errorf("Failed to init CVE DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
 }

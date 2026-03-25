@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/xerrors"
-
 	"github.com/future-architect/vuls/constant"
 )
 
@@ -70,7 +68,7 @@ func (ps Packages) FindByFQPN(nameVerRel string) (*Package, error) {
 			return &p, nil
 		}
 	}
-	return nil, xerrors.Errorf("Failed to find the package: %s", nameVerRel)
+	return nil, fmt.Errorf("Failed to find the package: %s", nameVerRel)
 }
 
 // Package has installed binary packages.
@@ -192,7 +190,7 @@ func NewPortStat(ipPort string) (*PortStat, error) {
 	}
 	sep := strings.LastIndex(ipPort, ":")
 	if sep == -1 {
-		return nil, xerrors.Errorf("Failed to parse IP:Port: %s", ipPort)
+		return nil, fmt.Errorf("Failed to parse IP:Port: %s", ipPort)
 	}
 	return &PortStat{
 		BindAddress: ipPort[:sep],

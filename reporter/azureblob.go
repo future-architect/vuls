@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
@@ -50,7 +49,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 			k := key + ".json"
 			var b []byte
 			if b, err = json.Marshal(r); err != nil {
-				return xerrors.Errorf("Failed to Marshal to JSON: %w", err)
+				return fmt.Errorf("Failed to Marshal to JSON: %w", err)
 			}
 			if err := w.createBlockBlob(cli, k, b, w.Gzip); err != nil {
 				return err
@@ -60,7 +59,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatList {
 			text, err := formatList(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format list. err: %w", err)
+				return fmt.Errorf("Failed to format list. err: %w", err)
 			}
 			if err := w.createBlockBlob(cli, key+"_short.txt", []byte(text), w.Gzip); err != nil {
 				return err
@@ -70,7 +69,7 @@ func (w AzureBlobWriter) Write(rs ...models.ScanResult) (err error) {
 		if w.FormatFullText {
 			text, err := formatFullPlainText(r)
 			if err != nil {
-				return xerrors.Errorf("Failed to format full text. err: %w", err)
+				return fmt.Errorf("Failed to format full text. err: %w", err)
 			}
 			if err := w.createBlockBlob(cli, key+"_full.txt", []byte(text), w.Gzip); err != nil {
 				return err
@@ -91,7 +90,7 @@ func (w AzureBlobWriter) Validate() error {
 	for pager.More() {
 		page, err := pager.NextPage(context.TODO())
 		if err != nil {
-			return xerrors.Errorf("Failed to next page. err: %w", err)
+			return fmt.Errorf("Failed to next page. err: %w", err)
 		}
 		for _, con := range page.ContainerItems {
 			if *con.Name == w.ContainerName {
@@ -99,18 +98,18 @@ func (w AzureBlobWriter) Validate() error {
 			}
 		}
 	}
-	return xerrors.Errorf("Container not found. Container: %s", w.ContainerName)
+	return fmt.Errorf("Container not found. Container: %s", w.ContainerName)
 }
 
 func (w AzureBlobWriter) getBlobClient() (*azblob.Client, error) {
 	cred, err := azblob.NewSharedKeyCredential(w.AccountName, w.AccountKey)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to create SharedKeyCredential. err: %w", err)
+		return nil, fmt.Errorf("Failed to create SharedKeyCredential. err: %w", err)
 	}
 
 	client, err := azblob.NewClientWithSharedKeyCredential(w.Endpoint, cred, nil)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to create Client. err: %w", err)
+		return nil, fmt.Errorf("Failed to create Client. err: %w", err)
 	}
 
 	return client, nil
@@ -126,7 +125,7 @@ func (w AzureBlobWriter) createBlockBlob(cli *azblob.Client, k string, b []byte,
 	}
 
 	if _, err := cli.UploadBuffer(context.TODO(), w.ContainerName, k, b, nil); err != nil {
-		return xerrors.Errorf("Failed to upload data to %s/%s, err: %w", w.ContainerName, k, err)
+		return fmt.Errorf("Failed to upload data to %s/%s, err: %w", w.ContainerName, k, err)
 	}
 	return nil
 }

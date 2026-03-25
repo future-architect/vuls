@@ -12,7 +12,6 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"golang.org/x/xerrors"
 )
 
 // TelegramWriter sends report to Telegram
@@ -86,5 +85,5 @@ func (w TelegramWriter) checkResponse(r *http.Response) error {
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}
-	return xerrors.Errorf("API call to %s failed: %s", r.Request.URL.String(), r.Status)
+	return fmt.Errorf("API call to %s failed: %s", r.Request.URL.String(), r.Status)
 }

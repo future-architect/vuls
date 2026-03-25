@@ -26,7 +26,6 @@ import (
 	"github.com/olekukonko/tablewriter/renderer"
 	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/term"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -40,7 +39,7 @@ func OverwriteJSONFile(dir string, r models.ScanResult) error {
 		FormatJSON: true,
 	}
 	if err := w.Write(r); err != nil {
-		return xerrors.Errorf("Failed to write summary report: %w", err)
+		return fmt.Errorf("Failed to write summary report: %w", err)
 	}
 	return nil
 }
@@ -49,7 +48,7 @@ func OverwriteJSONFile(dir string, r models.ScanResult) error {
 func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 	var files []fs.DirEntry
 	if files, err = os.ReadDir(jsonDir); err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", jsonDir, err)
+		return nil, fmt.Errorf("Failed to read %s: %w", jsonDir, err)
 	}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) != ".json" || strings.HasSuffix(f.Name(), "_diff.json") {
@@ -64,7 +63,7 @@ func LoadScanResults(jsonDir string) (results models.ScanResults, err error) {
 		results = append(results, *r)
 	}
 	if len(results) == 0 {
-		return nil, xerrors.Errorf("There is no json file under %s", jsonDir)
+		return nil, fmt.Errorf("There is no json file under %s", jsonDir)
 	}
 	return
 }
@@ -76,11 +75,11 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 		err  error
 	)
 	if data, err = os.ReadFile(jsonFile); err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", jsonFile, err)
+		return nil, fmt.Errorf("Failed to read %s: %w", jsonFile, err)
 	}
 	result := &models.ScanResult{}
 	if err := json.Unmarshal(data, result); err != nil {
-		return nil, xerrors.Errorf("Failed to parse %s: %w", jsonFile, err)
+		return nil, fmt.Errorf("Failed to parse %s: %w", jsonFile, err)
 	}
 
 	for k, v := range result.ScannedCves {
@@ -97,7 +96,7 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 	dirInfo, err := os.ReadDir(resultsDir)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to read %s: %w", resultsDir, err)
+		return nil, fmt.Errorf("Failed to read %s: %w", resultsDir, err)
 	}
 	for _, d := range dirInfo {
 		if !d.IsDir() {
@@ -136,20 +135,20 @@ func JSONDir(resultsDir string, args []string) (path string, err error) {
 				return path, nil
 			}
 		}
-		return "", xerrors.Errorf("Invalid path: %s", path)
+		return "", fmt.Errorf("Invalid path: %s", path)
 	}
 
 	// TODO remove Pipe flag
 	if config.Conf.Pipe {
 		bytes, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			return "", xerrors.Errorf("Failed to read stdin: %w", err)
+			return "", fmt.Errorf("Failed to read stdin: %w", err)
 		}
 		fields := strings.Fields(string(bytes))
 		if 0 < len(fields) {
 			return filepath.Join(resultsDir, fields[0]), nil
 		}
-		return "", xerrors.Errorf("Stdin is invalid: %s", string(bytes))
+		return "", fmt.Errorf("Stdin is invalid: %s", string(bytes))
 	}
 
 	// returns latest dir when no args or no PIPE
@@ -157,7 +156,7 @@ func JSONDir(resultsDir string, args []string) (path string, err error) {
 		return "", err
 	}
 	if len(dirs) == 0 {
-		return "", xerrors.Errorf("No results under %s", resultsDir)
+		return "", fmt.Errorf("No results under %s", resultsDir)
 	}
 	return dirs[0], nil
 }
@@ -338,10 +337,10 @@ No CVE-IDs are found in updatable packages.
 		"Packages",
 	})
 	if err := table.Bulk(data); err != nil {
-		return "", xerrors.Errorf("Failed to bulk to table. err: %w", err)
+		return "", fmt.Errorf("Failed to bulk to table. err: %w", err)
 	}
 	if err := table.Render(); err != nil {
-		return "", xerrors.Errorf("Failed to render table. err: %w", err)
+		return "", fmt.Errorf("Failed to render table. err: %w", err)
 	}
 	return fmt.Sprintf("%s\n%s", header, b.String()), nil
 }
@@ -647,10 +646,10 @@ No CVE-IDs are found in updatable packages.
 			vuln.PatchStatus(r.Packages),
 		})
 		if err := table.Bulk(data); err != nil {
-			return "", xerrors.Errorf("Failed to bulk to table. err: %w", err)
+			return "", fmt.Errorf("Failed to bulk to table. err: %w", err)
 		}
 		if err := table.Render(); err != nil {
-			return "", xerrors.Errorf("Failed to render table. err: %w", err)
+			return "", fmt.Errorf("Failed to render table. err: %w", err)
 		}
 
 		lines.WriteString(b.String() + "\n")
@@ -716,11 +715,11 @@ func formatCsvList(r models.ScanResult, path string) error {
 
 	file, err := os.Create(path)
 	if err != nil {
-		return xerrors.Errorf("Failed to create a file: %s, err: %w", path, err)
+		return fmt.Errorf("Failed to create a file: %s, err: %w", path, err)
 	}
 	defer file.Close()
 	if err := csv.NewWriter(file).WriteAll(data); err != nil {
-		return xerrors.Errorf("Failed to write to file: %s, err: %w", path, err)
+		return fmt.Errorf("Failed to write to file: %s, err: %w", path, err)
 	}
 	return nil
 }

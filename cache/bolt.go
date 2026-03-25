@@ -2,10 +2,10 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/util"
@@ -53,7 +53,7 @@ func (b *Bolt) createBucketIfNotExists(name string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(name))
 		if err != nil {
-			return xerrors.Errorf("Failed to create bucket: %w", err)
+			return fmt.Errorf("Failed to create bucket: %w", err)
 		}
 		return nil
 	})
@@ -82,7 +82,7 @@ func (b Bolt) RefreshMeta(meta Meta) error {
 	meta.CreatedAt = time.Now()
 	jsonBytes, err := json.Marshal(meta)
 	if err != nil {
-		return xerrors.Errorf("Failed to marshal to JSON: %w", err)
+		return fmt.Errorf("Failed to marshal to JSON: %w", err)
 	}
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(metabucket))
@@ -98,7 +98,7 @@ func (b Bolt) RefreshMeta(meta Meta) error {
 func (b Bolt) EnsureBuckets(meta Meta) error {
 	jsonBytes, err := json.Marshal(meta)
 	if err != nil {
-		return xerrors.Errorf("Failed to marshal to JSON: %w", err)
+		return fmt.Errorf("Failed to marshal to JSON: %w", err)
 	}
 	return b.db.Update(func(tx *bolt.Tx) error {
 		b.Log.Debugf("Put to meta: %s", meta.Name)
@@ -147,7 +147,7 @@ func (b Bolt) GetChangelog(servername, packName string) (changelog string, err e
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
-			return xerrors.Errorf("Failed to get Bucket: %s", servername)
+			return fmt.Errorf("Failed to get Bucket: %s", servername)
 		}
 		v := bkt.Get([]byte(packName))
 		if v == nil {
@@ -165,7 +165,7 @@ func (b Bolt) PutChangelog(servername, packName, changelog string) error {
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket([]byte(servername))
 		if bkt == nil {
-			return xerrors.Errorf("Failed to get Bucket: %s", servername)
+			return fmt.Errorf("Failed to get Bucket: %s", servername)
 		}
 		return bkt.Put([]byte(packName), []byte(changelog))
 	})

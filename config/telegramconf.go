@@ -1,8 +1,9 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 )
 
 // TelegramConf is Telegram config
@@ -18,11 +19,11 @@ func (c *TelegramConf) Validate() (errs []error) {
 		return
 	}
 	if len(c.ChatID) == 0 {
-		errs = append(errs, xerrors.New("TelegramConf.ChatID must not be empty"))
+		errs = append(errs, errors.New("TelegramConf.ChatID must not be empty"))
 	}
 
 	if len(c.Token) == 0 {
-		errs = append(errs, xerrors.New("TelegramConf.Token must not be empty"))
+		errs = append(errs, errors.New("TelegramConf.Token must not be empty"))
 	}
 
 	_, err := govalidator.ValidateStruct(c)

@@ -9,7 +9,6 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/future-architect/vuls/logging"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 )
 
 // VulnDictInterface is an interface of vulnsrc
@@ -80,11 +79,11 @@ func (cnf VulnDict) Validate() error {
 	switch cnf.Type {
 	case "sqlite3":
 		if cnf.URL != "" {
-			return xerrors.Errorf("To use SQLite3, specify %s.type=sqlite3 and %s.SQLite3Path. To use as HTTP server mode, specify %s.type=http and %s.url",
+			return fmt.Errorf("To use SQLite3, specify %s.type=sqlite3 and %s.SQLite3Path. To use as HTTP server mode, specify %s.type=http and %s.url",
 				cnf.Name, cnf.Name, cnf.Name, cnf.Name)
 		}
 		if ok, _ := govalidator.IsFilePath(cnf.SQLite3Path); !ok {
-			return xerrors.Errorf("SQLite3 path must be a *Absolute* file path. %s.SQLite3Path: %s",
+			return fmt.Errorf("SQLite3 path must be a *Absolute* file path. %s.SQLite3Path: %s",
 				cnf.Name, cnf.SQLite3Path)
 		}
 		if _, err := os.Stat(cnf.SQLite3Path); os.IsNotExist(err) {
@@ -92,22 +91,22 @@ func (cnf VulnDict) Validate() error {
 		}
 	case "mysql":
 		if cnf.URL == "" {
-			return xerrors.Errorf(`MySQL connection string is needed. %s.url="user:pass@tcp(localhost:3306)/dbname"`, cnf.Name)
+			return fmt.Errorf(`MySQL connection string is needed. %s.url="user:pass@tcp(localhost:3306)/dbname"`, cnf.Name)
 		}
 	case "postgres":
 		if cnf.URL == "" {
-			return xerrors.Errorf(`PostgreSQL connection string is needed. %s.url="host=myhost user=user dbname=dbname sslmode=disable password=password"`, cnf.Name)
+			return fmt.Errorf(`PostgreSQL connection string is needed. %s.url="host=myhost user=user dbname=dbname sslmode=disable password=password"`, cnf.Name)
 		}
 	case "redis":
 		if cnf.URL == "" {
-			return xerrors.Errorf(`Redis connection string is needed. %s.url="redis://localhost/0"`, cnf.Name)
+			return fmt.Errorf(`Redis connection string is needed. %s.url="redis://localhost/0"`, cnf.Name)
 		}
 	case "http":
 		if cnf.URL == "" {
-			return xerrors.Errorf(`URL is needed. -%s-url="http://localhost:1323"`, cnf.Name)
+			return fmt.Errorf(`URL is needed. -%s-url="http://localhost:1323"`, cnf.Name)
 		}
 	default:
-		return xerrors.Errorf("%s.type must be either 'sqlite3', 'mysql', 'postgres', 'redis' or 'http'.  %s.type: %s", cnf.Name, cnf.Name, cnf.Type)
+		return fmt.Errorf("%s.type must be either 'sqlite3', 'mysql', 'postgres', 'redis' or 'http'.  %s.type: %s", cnf.Name, cnf.Name, cnf.Type)
 	}
 	return nil
 }
@@ -140,7 +139,7 @@ func (cnf VulnDict) CheckHTTPHealth() error {
 	resp, _, errs := gorequest.New().Timeout(10 * time.Second).SetDebug(Conf.Debug).Get(url).End()
 	//  resp, _, errs = gorequest.New().Proxy(api.httpProxy).Get(url).End()
 	if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-		return xerrors.Errorf("Failed to request to CVE server. url: %s, errs: %s",
+		return fmt.Errorf("Failed to request to CVE server. url: %s, errs: %s",
 			url, errs)
 	}
 	return nil

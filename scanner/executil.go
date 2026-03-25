@@ -18,7 +18,6 @@ import (
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -127,7 +126,7 @@ func parallelExec(fn func(osTypeInterface) error, timeoutSec ...int) {
 				}
 			}
 			if !found {
-				err := xerrors.Errorf("Timed out: %s", s.getServerInfo().GetServerName())
+				err := fmt.Errorf("Timed out: %s", s.getServerInfo().GetServerName())
 				logging.Log.Errorf("%+v", err)
 				s.setErrs([]error{err})
 				errServers = append(errServers, s)

@@ -22,7 +22,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/samber/lo"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector/javadb"
@@ -51,10 +50,10 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 
 	logging.Log.Info("Updating library db...")
 	if err := downloadDB("", trivyOpts, noProgress, false); err != nil {
-		return xerrors.Errorf("Failed to download trivy DB. err: %w", err)
+		return fmt.Errorf("Failed to download trivy DB. err: %w", err)
 	}
 	if err := trivydb.Init(filepath.Join(trivyOpts.TrivyCacheDBDir, "db")); err != nil {
-		return xerrors.Errorf("Failed to init trivy DB. err: %w", err)
+		return fmt.Errorf("Failed to init trivy DB. err: %w", err)
 	}
 	defer trivydb.Close()
 
@@ -68,12 +67,12 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 		if lib.Type == ftypes.Jar {
 			if javaDBClient == nil {
 				if err := javadb.UpdateJavaDB(trivyOpts, noProgress); err != nil {
-					return xerrors.Errorf("Failed to update Trivy Java DB. err: %w", err)
+					return fmt.Errorf("Failed to update Trivy Java DB. err: %w", err)
 				}
 
 				javaDBClient, err = javadb.NewClient(trivyOpts.TrivyCacheDBDir)
 				if err != nil {
-					return xerrors.Errorf("Failed to open Trivy Java DB. err: %w", err)
+					return fmt.Errorf("Failed to open Trivy Java DB. err: %w", err)
 				}
 			}
 			d.javaDBClient = javaDBClient
@@ -81,7 +80,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 
 		vinfos, err := d.scan()
 		if err != nil {
-			return xerrors.Errorf("Failed to scan library. err: %w", err)
+			return fmt.Errorf("Failed to scan library. err: %w", err)
 		}
 		r.LibraryScanners[i] = d.scanner
 		for _, vinfo := range vinfos {
@@ -126,7 +125,7 @@ func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipU
 			return ref, nil
 		}()
 		if err != nil {
-			return xerrors.Errorf("invalid db repository: %w", err)
+			return fmt.Errorf("invalid db repository: %w", err)
 		}
 		refs = append(refs, ref)
 	}
@@ -134,20 +133,20 @@ func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipU
 	ctx := context.Background()
 	needsUpdate, err := client.NeedsUpdate(ctx, appVersion, skipUpdate)
 	if err != nil {
-		return xerrors.Errorf("Failed to check NeedsUpdate. err: %w", err)
+		return fmt.Errorf("Failed to check NeedsUpdate. err: %w", err)
 	}
 
 	if needsUpdate {
 		logging.Log.Info("Need to update DB")
 		logging.Log.Infof("Downloading DB from %s...", strings.Join(trivyOpts.TrivyDBRepositories, ", "))
 		if err := client.Download(ctx, filepath.Join(trivyOpts.TrivyCacheDBDir, "db"), ftypes.RegistryOptions{}); err != nil {
-			return xerrors.Errorf("Failed to download vulnerability DB. err: %w", err)
+			return fmt.Errorf("Failed to download vulnerability DB. err: %w", err)
 		}
 	}
 
 	// for debug
 	if err := showDBInfo(trivyOpts.TrivyCacheDBDir); err != nil {
-		return xerrors.Errorf("Failed to show database info. err: %w", err)
+		return fmt.Errorf("Failed to show database info. err: %w", err)
 	}
 	return nil
 }
@@ -156,7 +155,7 @@ func showDBInfo(cacheDir string) error {
 	m := metadata.NewClient(filepath.Join(cacheDir, "db"))
 	meta, err := m.Get()
 	if err != nil {
-		return xerrors.Errorf("Failed to get DB metadata. err: %w", err)
+		return fmt.Errorf("Failed to get DB metadata. err: %w", err)
 	}
 	logging.Log.Debugf("DB Schema: %d, UpdatedAt: %s, NextUpdate: %s, DownloadedAt: %s",
 		meta.Version, meta.UpdatedAt, meta.NextUpdate, meta.DownloadedAt)
@@ -167,12 +166,12 @@ func showDBInfo(cacheDir string) error {
 func (d *libraryDetector) scan() ([]models.VulnInfo, error) {
 	if d.scanner.Type == ftypes.Jar {
 		if err := d.improveJARInfo(); err != nil {
-			return nil, xerrors.Errorf("Failed to improve JAR information by trivy Java DB. err: %w", err)
+			return nil, fmt.Errorf("Failed to improve JAR information by trivy Java DB. err: %w", err)
 		}
 	}
 	scanner, ok := library.NewDriver(d.scanner.Type)
 	if !ok {
-		return nil, xerrors.Errorf("Failed to new a library driver for %s", d.scanner.Type)
+		return nil, fmt.Errorf("Failed to new a library driver for %s", d.scanner.Type)
 	}
 	var vulnerabilities = []models.VulnInfo{}
 	for _, pkg := range d.scanner.Libs {
@@ -182,7 +181,7 @@ func (d *libraryDetector) scan() ([]models.VulnInfo, error) {
 
 		tvulns, err := scanner.DetectVulnerabilities("", pkg.Name, pkg.Version)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to detect %s vulnerabilities. err: %w", scanner.Type(), err)
+			return nil, fmt.Errorf("Failed to detect %s vulnerabilities. err: %w", scanner.Type(), err)
 		}
 		if len(tvulns) == 0 {
 			continue
@@ -214,7 +213,7 @@ func (d *libraryDetector) improveJARInfo() error {
 		foundProps, err := d.javaDBClient.SearchBySHA1(sha1)
 		if err != nil {
 			if !errors.Is(err, jar.ArtifactNotFoundErr) {
-				return xerrors.Errorf("Failed to search trivy Java DB. err: %w", err)
+				return fmt.Errorf("Failed to search trivy Java DB. err: %w", err)
 			}
 
 			logging.Log.Debugf("No record in Java DB for %s by SHA1: %s", l.FilePath, sha1)

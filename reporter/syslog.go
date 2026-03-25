@@ -7,8 +7,6 @@ import (
 	"log/syslog"
 	"strings"
 
-	"golang.org/x/xerrors"
-
 	syslogConf "github.com/future-architect/vuls/config/syslog"
 	"github.com/future-architect/vuls/models"
 )
@@ -26,7 +24,7 @@ func (w SyslogWriter) Write(rs ...models.ScanResult) (err error) {
 
 	sysLog, err := syslog.Dial(w.Cnf.Protocol, raddr, severity|facility, w.Cnf.Tag)
 	if err != nil {
-		return xerrors.Errorf("Failed to initialize syslog client: %w", err)
+		return fmt.Errorf("Failed to initialize syslog client: %w", err)
 	}
 
 	for _, r := range rs {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -13,8 +14,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -79,14 +78,14 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := w.exec(w.translateCmd(`Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion" | Format-List -Property ProductName, CurrentVersion, CurrentMajorVersionNumber, CurrentMinorVersionNumber, CurrentBuildNumber, UBR, CSDVersion, EditionID, InstallationType; Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment" | Format-List -Property PROCESSOR_ARCHITECTURE`), noSudo); r.isSuccess() {
 		osInfo, err := parseRegistry(r.Stdout)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to parse Registry. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to parse Registry. err: %w", err)})
 			return true, w
 		}
 
 		logging.Log.Debugf("osInfo(Registry): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to detect os name. err: %w", err)})
 			return true, w
 		}
 		w.setDistro(constant.Windows, release)
@@ -97,14 +96,14 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := w.exec(w.translateCmd(`$ProgressPreference = "SilentlyContinue"; Get-ComputerInfo -Property WindowsProductName, OsVersion, WindowsEditionId, OsCSDVersion, CsSystemType, WindowsInstallationType`), noSudo); r.isSuccess() {
 		osInfo, err := parseGetComputerInfo(r.Stdout)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to parse Get-ComputerInfo. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to parse Get-ComputerInfo. err: %w", err)})
 			return true, w
 		}
 
 		logging.Log.Debugf("osInfo(Get-ComputerInfo): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to detect os name. err: %w", err)})
 			return true, w
 		}
 		w.setDistro(constant.Windows, release)
@@ -115,14 +114,14 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := w.exec(w.translateCmd("Get-WmiObject Win32_OperatingSystem | Format-List -Property Caption, Version, OperatingSystemSKU, CSDVersion; Get-WmiObject Win32_ComputerSystem | Format-List -Property SystemType, DomainRole"), noSudo); r.isSuccess() {
 		osInfo, err := parseWmiObject(r.Stdout)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to parse Get-WmiObject. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to parse Get-WmiObject. err: %w", err)})
 			return true, w
 		}
 
 		logging.Log.Debugf("osInfo(Get-WmiObject): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to detect os name. err: %w", err)})
 			return true, w
 		}
 		w.setDistro(constant.Windows, release)
@@ -133,14 +132,14 @@ func detectWindows(c config.ServerInfo) (bool, osTypeInterface) {
 	if r := w.exec("systeminfo.exe", noSudo); r.isSuccess() {
 		osInfo, _, err := parseSystemInfo(r.Stdout)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to parse systeminfo.exe. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to parse systeminfo.exe. err: %w", err)})
 			return true, w
 		}
 
 		logging.Log.Debugf("osInfo(systeminfo.exe): %+v", osInfo)
 		release, err := detectOSName(osInfo)
 		if err != nil {
-			w.setErrs([]error{xerrors.Errorf("Failed to detect os name. err: %w", err)})
+			w.setErrs([]error{fmt.Errorf("Failed to detect os name. err: %w", err)})
 			return true, w
 		}
 		w.setDistro(constant.Windows, release)
@@ -208,12 +207,12 @@ func parseSystemInfo(stdout string) (osInfo, []string, error) {
 			case strings.Contains(line, "Domain Controller"):
 				o.installationType = "Domain Controller"
 			default:
-				return osInfo{}, nil, xerrors.Errorf("Failed to detect installation type. line: %s", line)
+				return osInfo{}, nil, fmt.Errorf("Failed to detect installation type. line: %s", line)
 			}
 		case strings.HasPrefix(line, "Hotfix(s):"):
 			nKB, err := strconv.Atoi(strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, "Hotfix(s):"), "Hotfix(s) Installed.")))
 			if err != nil {
-				return osInfo{}, nil, xerrors.Errorf("Failed to detect number of installed hotfix from %s", line)
+				return osInfo{}, nil, fmt.Errorf("Failed to detect number of installed hotfix from %s", line)
 			}
 			for range nKB {
 				scanner.Scan()
@@ -231,7 +230,7 @@ func parseSystemInfo(stdout string) (osInfo, []string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return osInfo{}, nil, xerrors.Errorf("Failed to scan systeminfo stdout. err: %w", err)
+		return osInfo{}, nil, fmt.Errorf("Failed to scan systeminfo stdout. err: %w", err)
 	}
 	return o, kbs, nil
 }
@@ -247,13 +246,13 @@ func parseGetComputerInfo(stdout string) (osInfo, error) {
 		case strings.HasPrefix(line, "WindowsProductName"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect ProductName. expected: "WindowsProductName : <ProductName>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect ProductName. expected: "WindowsProductName : <ProductName>", line: "%s"`, line)
 			}
 			o.productName = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "OsVersion"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect OsVersion. expected: "OsVersion : <Version>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect OsVersion. expected: "OsVersion : <Version>", line: "%s"`, line)
 			}
 			ss := strings.Split(strings.TrimSpace(rhs), ".")
 			o.version = strings.Join(ss[0:len(ss)-1], ".")
@@ -261,32 +260,32 @@ func parseGetComputerInfo(stdout string) (osInfo, error) {
 		case strings.HasPrefix(line, "WindowsEditionId"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect WindowsEditionId. expected: "WindowsEditionId : <EditionId>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect WindowsEditionId. expected: "WindowsEditionId : <EditionId>", line: "%s"`, line)
 			}
 			o.edition = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "OsCSDVersion"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect OsCSDVersion. expected: "OsCSDVersion : <CSDVersion>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect OsCSDVersion. expected: "OsCSDVersion : <CSDVersion>", line: "%s"`, line)
 			}
 			o.servicePack = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "CsSystemType"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CsSystemType. expected: "CsSystemType : <SystemType>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CsSystemType. expected: "CsSystemType : <SystemType>", line: "%s"`, line)
 			}
 			o.arch = strings.TrimSpace(strings.TrimSuffix(rhs, "PC"))
 		case strings.HasPrefix(line, "WindowsInstallationType"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect WindowsInstallationType. expected: "WindowsInstallationType : <InstallationType>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect WindowsInstallationType. expected: "WindowsInstallationType : <InstallationType>", line: "%s"`, line)
 			}
 			o.installationType = strings.TrimSpace(rhs)
 		default:
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to scan Get-ComputerInfo stdout. err: %w", err)
+		return osInfo{}, fmt.Errorf("Failed to scan Get-ComputerInfo stdout. err: %w", err)
 	}
 	return o, nil
 }
@@ -302,13 +301,13 @@ func parseWmiObject(stdout string) (osInfo, error) {
 		case strings.HasPrefix(line, "Caption"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect Caption. expected: "Caption : <Caption>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect Caption. expected: "Caption : <Caption>", line: "%s"`, line)
 			}
 			o.productName = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "Version"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect Version. expected: "Version : <Version>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect Version. expected: "Version : <Version>", line: "%s"`, line)
 			}
 			ss := strings.Split(strings.TrimSpace(rhs), ".")
 			o.version = strings.Join(ss[0:len(ss)-1], ".")
@@ -316,7 +315,7 @@ func parseWmiObject(stdout string) (osInfo, error) {
 		case strings.HasPrefix(line, "OperatingSystemSKU"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect OperatingSystemSKU. expected: "OperatingSystemSKU : <OperatingSystemSKU>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect OperatingSystemSKU. expected: "OperatingSystemSKU : <OperatingSystemSKU>", line: "%s"`, line)
 			}
 			switch n := strings.TrimSpace(rhs); n {
 			case "0":
@@ -473,13 +472,13 @@ func parseWmiObject(stdout string) (osInfo, error) {
 		case strings.HasPrefix(line, "CSDVersion"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CSDVersion. expected: "CSDVersion : <CSDVersion>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CSDVersion. expected: "CSDVersion : <CSDVersion>", line: "%s"`, line)
 			}
 			o.servicePack = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "SystemType"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect SystemType. expected: "SystemType : <SystemType>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect SystemType. expected: "SystemType : <SystemType>", line: "%s"`, line)
 			}
 			o.arch = strings.TrimSpace(strings.TrimSuffix(rhs, "PC"))
 		case strings.HasPrefix(line, "DomainRole"):
@@ -489,7 +488,7 @@ func parseWmiObject(stdout string) (osInfo, error) {
 
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect DomainRole. expected: "DomainRole : <DomainRole>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect DomainRole. expected: "DomainRole : <DomainRole>", line: "%s"`, line)
 			}
 			switch domainRole := strings.TrimSpace(rhs); domainRole { // https://learn.microsoft.com/en-us/windows/win32/api/dsrole/ne-dsrole-dsrole_machine_role
 			case "0", "1":
@@ -499,13 +498,13 @@ func parseWmiObject(stdout string) (osInfo, error) {
 			case "4", "5":
 				o.installationType = "Domain Controller"
 			default:
-				return osInfo{}, xerrors.Errorf("Failed to detect Installation Type from DomainRole. err: %s is invalid DomainRole", domainRole)
+				return osInfo{}, fmt.Errorf("Failed to detect Installation Type from DomainRole. err: %s is invalid DomainRole", domainRole)
 			}
 		default:
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to scan Get-WmiObject stdout. err: %w", err)
+		return osInfo{}, fmt.Errorf("Failed to scan Get-WmiObject stdout. err: %w", err)
 	}
 	return o, nil
 }
@@ -526,68 +525,68 @@ func parseRegistry(stdout string) (osInfo, error) {
 		case strings.HasPrefix(line, "ProductName"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect ProductName. expected: "ProductName : <ProductName>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect ProductName. expected: "ProductName : <ProductName>", line: "%s"`, line)
 			}
 			o.productName = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "CurrentVersion"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CurrentVersion. expected: "CurrentVersion : <Version>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CurrentVersion. expected: "CurrentVersion : <Version>", line: "%s"`, line)
 			}
 			o.version = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "CurrentMajorVersionNumber"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CurrentMajorVersionNumber. expected: "CurrentMajorVersionNumber : <Version>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CurrentMajorVersionNumber. expected: "CurrentMajorVersionNumber : <Version>", line: "%s"`, line)
 			}
 			major = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "CurrentMinorVersionNumber"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CurrentMinorVersionNumber. expected: "CurrentMinorVersionNumber : <Version>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CurrentMinorVersionNumber. expected: "CurrentMinorVersionNumber : <Version>", line: "%s"`, line)
 			}
 			minor = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "CurrentBuildNumber"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CurrentBuildNumber. expected: "CurrentBuildNumber : <Build>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CurrentBuildNumber. expected: "CurrentBuildNumber : <Build>", line: "%s"`, line)
 			}
 			o.build = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "UBR"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect UBR. expected: "UBR : <Revision>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect UBR. expected: "UBR : <Revision>", line: "%s"`, line)
 			}
 			o.revision = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "EditionID"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect EditionID. expected: "EditionID : <EditionID>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect EditionID. expected: "EditionID : <EditionID>", line: "%s"`, line)
 			}
 			o.edition = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "CSDVersion"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect CSDVersion. expected: "CSDVersion : <CSDVersion>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect CSDVersion. expected: "CSDVersion : <CSDVersion>", line: "%s"`, line)
 			}
 			o.servicePack = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "InstallationType"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect InstallationType. expected: "InstallationType : <InstallationType>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect InstallationType. expected: "InstallationType : <InstallationType>", line: "%s"`, line)
 			}
 			o.installationType = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "PROCESSOR_ARCHITECTURE"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return osInfo{}, xerrors.Errorf(`Failed to detect PROCESSOR_ARCHITECTURE. expected: "PROCESSOR_ARCHITECTURE : <PROCESSOR_ARCHITECTURE>", line: "%s"`, line)
+				return osInfo{}, fmt.Errorf(`Failed to detect PROCESSOR_ARCHITECTURE. expected: "PROCESSOR_ARCHITECTURE : <PROCESSOR_ARCHITECTURE>", line: "%s"`, line)
 			}
 			o.arch = strings.TrimSpace(rhs)
 		default:
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return osInfo{}, xerrors.Errorf("Failed to scan registry stdout. err: %w", err)
+		return osInfo{}, fmt.Errorf("Failed to scan registry stdout. err: %w", err)
 	}
 
 	if major != "" && minor != "" {
@@ -599,7 +598,7 @@ func parseRegistry(stdout string) (osInfo, error) {
 func detectOSName(osInfo osInfo) (string, error) {
 	osName, err := detectOSNameFromOSInfo(osInfo)
 	if err != nil {
-		return "", xerrors.Errorf("Failed to detect OS Name from OSInfo: %+v, err: %w", osInfo, err)
+		return "", fmt.Errorf("Failed to detect OS Name from OSInfo: %+v, err: %w", osInfo, err)
 	}
 	return osName, nil
 }
@@ -635,7 +634,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			}
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 
 			switch arch {
@@ -663,7 +662,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			}
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			switch arch {
 			case "x64-based":
@@ -680,7 +679,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			}
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			switch arch {
 			case "x64-based":
@@ -703,7 +702,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			var n string
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			switch arch {
 			case "x64-based":
@@ -718,7 +717,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server", "Domain Controller":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 for %s Systems %s", arch, osInfo.servicePack), nil
@@ -727,7 +726,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server Core":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 for %s Systems %s (Server Core installation)", arch, osInfo.servicePack), nil
@@ -739,7 +738,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Client":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows 7 for %s Systems %s", arch, osInfo.servicePack), nil
@@ -748,7 +747,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server", "Domain Controller":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 R2 for %s Systems %s", arch, osInfo.servicePack), nil
@@ -757,7 +756,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server Core":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			if osInfo.servicePack != "" {
 				return fmt.Sprintf("Windows Server 2008 R2 for %s Systems %s (Server Core installation)", arch, osInfo.servicePack), nil
@@ -769,7 +768,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Client":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			return fmt.Sprintf("Windows 8 for %s Systems", arch), nil
 		case "Server", "Domain Controller":
@@ -782,7 +781,7 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Client":
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			return fmt.Sprintf("Windows 8.1 for %s Systems", arch), nil
 		case "Server", "Domain Controller":
@@ -796,22 +795,22 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 			if strings.Contains(osInfo.productName, "Windows 11") {
 				arch, err := formatArch(osInfo.arch)
 				if err != nil {
-					return "", xerrors.Errorf("Failed to format architecture: %w", err)
+					return "", fmt.Errorf("Failed to format architecture: %w", err)
 				}
 				name, err := formatNamebyBuild("11", osInfo.build)
 				if err != nil {
-					return "", xerrors.Errorf("Failed to format name by build: %w", err)
+					return "", fmt.Errorf("Failed to format name by build: %w", err)
 				}
 				return fmt.Sprintf("%s for %s Systems", name, arch), nil
 			}
 
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format architecture: %w", err)
+				return "", fmt.Errorf("Failed to format architecture: %w", err)
 			}
 			name, err := formatNamebyBuild("10", osInfo.build)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format name by build: %w", err)
+				return "", fmt.Errorf("Failed to format name by build: %w", err)
 			}
 			return fmt.Sprintf("%s for %s Systems", name, arch), nil
 		case "Server", "Nano Server", "Domain Controller":
@@ -819,12 +818,12 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 		case "Server Core":
 			name, err := formatNamebyBuild("Server", osInfo.build)
 			if err != nil {
-				return "", xerrors.Errorf("Failed to format name by build: %w", err)
+				return "", fmt.Errorf("Failed to format name by build: %w", err)
 			}
 			return fmt.Sprintf("%s (Server Core installation)", name), nil
 		}
 	}
-	return "", xerrors.New("OS Name not found")
+	return "", errors.New("OS Name not found")
 }
 
 func formatArch(arch string) (string, error) {
@@ -838,7 +837,7 @@ func formatArch(arch string) (string, error) {
 	case "x86", "X86-based":
 		return "32-bit", nil
 	default:
-		return "", xerrors.Errorf("CPU Architecture not found. expected: %q, actual: %q", []string{"AMD64", "x64-based", "ARM64", "ARM64-based", "IA64", "Itanium-based", "x86", "X86-based"}, arch)
+		return "", fmt.Errorf("CPU Architecture not found. expected: %q, actual: %q", []string{"AMD64", "x64-based", "ARM64", "ARM64-based", "IA64", "Itanium-based", "x86", "X86-based"}, arch)
 	}
 }
 
@@ -1007,19 +1006,19 @@ var (
 func formatNamebyBuild(osType string, mybuild string) (string, error) {
 	builds, ok := winBuilds[osType]
 	if !ok {
-		return "", xerrors.New("OS Type not found")
+		return "", errors.New("OS Type not found")
 	}
 
 	nMybuild, err := strconv.Atoi(mybuild)
 	if err != nil {
-		return "", xerrors.Errorf("Failed to parse build number. err: %w", err)
+		return "", fmt.Errorf("Failed to parse build number. err: %w", err)
 	}
 
 	v := builds[0].name
 	for _, b := range builds {
 		nBuild, err := strconv.Atoi(b.build)
 		if err != nil {
-			return "", xerrors.Errorf("Failed to parse build number. err: %w", err)
+			return "", fmt.Errorf("Failed to parse build number. err: %w", err)
 		}
 		if nMybuild < nBuild {
 			break
@@ -1070,11 +1069,11 @@ func (w *windows) detectIPAddr() error {
 func (w *windows) ip() ([]string, []string, error) {
 	r := w.exec("ipconfig.exe", noSudo)
 	if !r.isSuccess() {
-		return nil, nil, xerrors.Errorf("Failed to detect IP address: %v", r)
+		return nil, nil, fmt.Errorf("Failed to detect IP address: %v", r)
 	}
 	ipv4Addrs, ipv6Addrs, err := w.parseIP(r.Stdout)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to parse IP address: %w", err)
+		return nil, nil, fmt.Errorf("Failed to parse IP address: %w", err)
 	}
 	return ipv4Addrs, ipv6Addrs, nil
 }
@@ -1111,7 +1110,7 @@ func (w *windows) parseIP(stdout string) ([]string, []string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, xerrors.Errorf("Failed to scan ipconfig output. err: %w", err)
+		return nil, nil, fmt.Errorf("Failed to scan ipconfig output. err: %w", err)
 	}
 
 	return ipv4Addrs, ipv6Addrs, nil
@@ -1121,7 +1120,7 @@ func (w *windows) scanPackages() error {
 	if r := w.exec(w.translateCmd("Get-Package | Select-Object Name, Version, ProviderName, @{Name='Publisher';Expression={$_.Metadata['Publisher']}} | Format-List | Out-String -Width 1024"), noSudo); r.isSuccess() {
 		installed, _, err := w.parseInstalledPackages(r.Stdout)
 		if err != nil {
-			return xerrors.Errorf("Failed to parse installed packages. err: %w", err)
+			return fmt.Errorf("Failed to parse installed packages. err: %w", err)
 		}
 
 		// Fill in missing vendor info from registry for packages where Get-Package Metadata['Publisher'] is empty (e.g. msi provider)
@@ -1135,7 +1134,7 @@ func (w *windows) scanPackages() error {
 			if r := w.exec(w.translateCmd("Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Select-Object DisplayName, Publisher | Format-List"), noSudo); r.isSuccess() {
 				regVendors, err := w.parseRegistryPublishers(r.Stdout)
 				if err != nil {
-					return xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
+					return fmt.Errorf("Failed to parse registry publishers. err: %w", err)
 				}
 				for _, name := range missingVendorPkgs {
 					if vendor, ok := regVendors[name]; ok && vendor != "" {
@@ -1152,7 +1151,7 @@ func (w *windows) scanPackages() error {
 
 	kbs, err := w.scanKBs()
 	if err != nil {
-		return xerrors.Errorf("Failed to scan KB. err: %w", err)
+		return fmt.Errorf("Failed to scan KB. err: %w", err)
 	}
 	w.windowsKB = kbs
 
@@ -1175,25 +1174,25 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 		case strings.HasPrefix(line, "Name"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, nil, xerrors.Errorf(`Failed to detect PackageName. expected: "Name : <PackageName>", line: "%s"`, line)
+				return nil, nil, fmt.Errorf(`Failed to detect PackageName. expected: "Name : <PackageName>", line: "%s"`, line)
 			}
 			name = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "Version"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, nil, xerrors.Errorf(`Failed to detect Version. expected: "Version : <Version>", line: "%s"`, line)
+				return nil, nil, fmt.Errorf(`Failed to detect Version. expected: "Version : <Version>", line: "%s"`, line)
 			}
 			version = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "ProviderName"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, nil, xerrors.Errorf(`Failed to detect ProviderName. expected: "ProviderName : <ProviderName>", line: "%s"`, line)
+				return nil, nil, fmt.Errorf(`Failed to detect ProviderName. expected: "ProviderName : <ProviderName>", line: "%s"`, line)
 			}
 			providerName = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "Publisher"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, nil, xerrors.Errorf(`Failed to detect Publisher. expected: "Publisher : <Publisher>", line: "%s"`, line)
+				return nil, nil, fmt.Errorf(`Failed to detect Publisher. expected: "Publisher : <Publisher>", line: "%s"`, line)
 			}
 			vendor = strings.TrimSpace(rhs)
 		default:
@@ -1201,7 +1200,7 @@ func (w *windows) parseInstalledPackages(stdout string) (models.Packages, models
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, nil, xerrors.Errorf("Failed to scan installed packages stdout: %w", err)
+		return nil, nil, fmt.Errorf("Failed to scan installed packages stdout: %w", err)
 	}
 
 	// Handle the last entry if stdout does not end with an empty line
@@ -1240,7 +1239,7 @@ func (w *windows) parseRegistryPublishers(stdout string) (map[string]string, err
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan registry publishers stdout: %w", err)
+		return nil, fmt.Errorf("Failed to scan registry publishers stdout: %w", err)
 	}
 
 	// Handle last entry
@@ -1257,7 +1256,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 	if r := w.exec(w.translateCmd("Get-Hotfix | Format-List -Property HotFixID"), noSudo); r.isSuccess() {
 		kbs, err := w.parseGetHotfix(r.Stdout)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to parse Get-Hotifx. err: %w", err)
+			return nil, fmt.Errorf("Failed to parse Get-Hotifx. err: %w", err)
 		}
 		for _, kb := range kbs {
 			applied[kb] = struct{}{}
@@ -1267,7 +1266,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 	if r := w.exec(w.translateCmd("Get-Package -ProviderName msu | Format-List -Property Name | Out-String -Width 1024"), noSudo); r.isSuccess() {
 		kbs, err := w.parseGetPackageMSU(r.Stdout)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to parse Get-Package. err: %w", err)
+			return nil, fmt.Errorf("Failed to parse Get-Package. err: %w", err)
 		}
 		for _, kb := range kbs {
 			applied[kb] = struct{}{}
@@ -1288,7 +1287,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 		if r := w.exec(w.translateCmd(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 1 and RebootRequired = 0 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher)), noSudo); r.isSuccess() {
 			kbs, err := w.parseWindowsUpdaterSearch(r.Stdout)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
+				return fmt.Errorf("Failed to parse Windows Update Search. err: %w", err)
 			}
 			for _, kb := range kbs {
 				applied[kb] = struct{}{}
@@ -1298,7 +1297,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 		if r := w.exec(w.translateCmd(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 0 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher)), noSudo); r.isSuccess() {
 			kbs, err := w.parseWindowsUpdaterSearch(r.Stdout)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
+				return fmt.Errorf("Failed to parse Windows Update Search. err: %w", err)
 			}
 			for _, kb := range kbs {
 				unapplied[kb] = struct{}{}
@@ -1308,7 +1307,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 		if r := w.exec(w.translateCmd(fmt.Sprintf(`%s $UpdateSearcher.search("IsInstalled = 1 and RebootRequired = 1 and Type='Software'").Updates | ForEach-Object -MemberName KBArticleIDs`, searcher)), noSudo); r.isSuccess() {
 			kbs, err := w.parseWindowsUpdaterSearch(r.Stdout)
 			if err != nil {
-				return xerrors.Errorf("Failed to parse Windows Update Search. err: %w", err)
+				return fmt.Errorf("Failed to parse Windows Update Search. err: %w", err)
 			}
 			for _, kb := range kbs {
 				unapplied[kb] = struct{}{}
@@ -1317,19 +1316,19 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 
 		if w.getServerInfo().Windows.ServerSelection == 3 {
 			if r := w.exec(w.translateCmd(`$UpdateServiceManager = (New-Object -ComObject Microsoft.Update.ServiceManager); $UpdateServiceManager.Services | Where-Object {$_.Name -eq "Offline Sync Service"} | ForEach-Object { $UpdateServiceManager.RemoveService($_.ServiceID) };`), noSudo); !r.isSuccess() {
-				return xerrors.Errorf("Failed to remove Windows Update Offline Sync Service: %v", r)
+				return fmt.Errorf("Failed to remove Windows Update Offline Sync Service: %v", r)
 			}
 		}
 
 		return nil
 	}(); err != nil {
-		return nil, xerrors.Errorf("Failed to check Windows Update Serach. err: %w", err)
+		return nil, fmt.Errorf("Failed to check Windows Update Serach. err: %w", err)
 	}
 
 	if r := w.exec(w.translateCmd("$UpdateSearcher = (New-Object -ComObject Microsoft.Update.Session).CreateUpdateSearcher(); $HistoryCount = $UpdateSearcher.GetTotalHistoryCount(); $UpdateSearcher.QueryHistory(0, $HistoryCount) | Sort-Object -Property Date | Format-List -Property Title, Operation, ResultCode | Out-String -Width 1024"), noSudo); r.isSuccess() {
 		kbs, err := w.parseWindowsUpdateHistory(r.Stdout)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to parse Windows Update History. err: %w", err)
+			return nil, fmt.Errorf("Failed to parse Windows Update History. err: %w", err)
 		}
 		for _, kb := range kbs {
 			applied[kb] = struct{}{}
@@ -1338,7 +1337,7 @@ func (w *windows) scanKBs() (*models.WindowsKB, error) {
 
 	kbs, err := DetectKBsFromKernelVersion(w.getDistro().Release, w.Kernel.Version)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to detect KBs from kernel version. err: %w", err)
+		return nil, fmt.Errorf("Failed to detect KBs from kernel version. err: %w", err)
 	}
 	for _, kb := range kbs.Applied {
 		applied[kb] = struct{}{}
@@ -1361,14 +1360,14 @@ func (w *windows) parseGetHotfix(stdout string) ([]string, error) {
 		case strings.HasPrefix(line, "HotFixID"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, xerrors.Errorf(`Failed to detect HotFixID. expected: "HotFixID : <KBID>", line: "%s"`, line)
+				return nil, fmt.Errorf(`Failed to detect HotFixID. expected: "HotFixID : <KBID>", line: "%s"`, line)
 			}
 			kbs = append(kbs, strings.TrimPrefix(strings.TrimSpace(rhs), "KB"))
 		default:
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Get-Hotfix stdout. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan Get-Hotfix stdout. err: %w", err)
 	}
 
 	return kbs, nil
@@ -1386,7 +1385,7 @@ func (w *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 		case strings.HasPrefix(line, "Name"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, xerrors.Errorf(`Failed to detect PackageName. expected: "Name : <PackageName>", line: "%s"`, line)
+				return nil, fmt.Errorf(`Failed to detect PackageName. expected: "Name : <PackageName>", line: "%s"`, line)
 			}
 
 			for _, m := range kbIDPattern.FindAllStringSubmatch(strings.TrimSpace(rhs), -1) {
@@ -1396,7 +1395,7 @@ func (w *windows) parseGetPackageMSU(stdout string) ([]string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Get-PackageMSU stdout. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan Get-PackageMSU stdout. err: %w", err)
 	}
 
 	return kbs, nil
@@ -1415,7 +1414,7 @@ func (w *windows) parseWindowsUpdaterSearch(stdout string) ([]string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Windows Update Search stdout. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan Windows Update Search stdout. err: %w", err)
 	}
 
 	return kbs, nil
@@ -1435,19 +1434,19 @@ func (w *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
 		case strings.HasPrefix(line, "Title"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, xerrors.Errorf(`Failed to detect Title. expected: "Title : <Title>", line: "%s"`, line)
+				return nil, fmt.Errorf(`Failed to detect Title. expected: "Title : <Title>", line: "%s"`, line)
 			}
 			title = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "Operation"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, xerrors.Errorf(`Failed to detect Operation. expected: "Operation : <Operation>", line: "%s"`, line)
+				return nil, fmt.Errorf(`Failed to detect Operation. expected: "Operation : <Operation>", line: "%s"`, line)
 			}
 			operation = strings.TrimSpace(rhs)
 		case strings.HasPrefix(line, "ResultCode"):
 			_, rhs, found := strings.Cut(line, ":")
 			if !found {
-				return nil, xerrors.Errorf(`Failed to detect ResultCode. expected: "ResultCode : <ResultCode>", line: "%s"`, line)
+				return nil, fmt.Errorf(`Failed to detect ResultCode. expected: "ResultCode : <ResultCode>", line: "%s"`, line)
 			}
 
 			// https://learn.microsoft.com/en-us/windows/win32/api/wuapi/ne-wuapi-operationresultcode
@@ -1467,7 +1466,7 @@ func (w *windows) parseWindowsUpdateHistory(stdout string) ([]string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan Windows Update History stdout. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan Windows Update History stdout. err: %w", err)
 	}
 
 	return slices.Collect(maps.Keys(kbs)), nil
@@ -5240,14 +5239,14 @@ func DetectKBsFromKernelVersion(release, kernelVersion string) (models.WindowsKB
 
 		nMyRevision, err := strconv.Atoi(ss[3])
 		if err != nil {
-			return models.WindowsKB{}, xerrors.Errorf("Failed to parse revision number. err: %w", err)
+			return models.WindowsKB{}, fmt.Errorf("Failed to parse revision number. err: %w", err)
 		}
 
 		var index int
 		for i, r := range rels.rollup {
 			nRevision, err := strconv.Atoi(r.revision)
 			if err != nil {
-				return models.WindowsKB{}, xerrors.Errorf("Failed to parse revision number. err: %w", err)
+				return models.WindowsKB{}, fmt.Errorf("Failed to parse revision number. err: %w", err)
 			}
 			if nMyRevision < nRevision {
 				break
@@ -5269,7 +5268,7 @@ func DetectKBsFromKernelVersion(release, kernelVersion string) (models.WindowsKB
 
 		return kbs, nil
 	default:
-		return models.WindowsKB{}, xerrors.Errorf("unexpected kernel version. expected: <major version>.<minor version>.<build>(.<revision>), actual: %s", kernelVersion)
+		return models.WindowsKB{}, fmt.Errorf("unexpected kernel version. expected: <major version>.<minor version>.<build>(.<revision>), actual: %s", kernelVersion)
 	}
 }
 
@@ -5334,7 +5333,7 @@ func (w *windows) detectRunningOnAws() (bool, string, error) {
 		}
 	}
 
-	return false, "", xerrors.Errorf("Failed to Invoke-WebRequest or curl.exe to AWS instance metadata on %s. container: %s", w.ServerInfo.ServerName, w.ServerInfo.Container.Name)
+	return false, "", fmt.Errorf("Failed to Invoke-WebRequest or curl.exe to AWS instance metadata on %s. container: %s", w.ServerInfo.ServerName, w.ServerInfo.Container.Name)
 }
 
 func (w *windows) scanLibraries() (err error) {
@@ -5421,7 +5420,7 @@ func (w *windows) scanLibraries() (err error) {
 		}()
 		r := w.exec(cmd, priv)
 		if r.ExitStatus != 0 && r.ExitStatus != 1 {
-			return xerrors.Errorf("Failed to find lock files: %s", r)
+			return fmt.Errorf("Failed to find lock files: %s", r)
 		}
 
 		scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
@@ -5429,7 +5428,7 @@ func (w *windows) scanLibraries() (err error) {
 			detectFiles = append(detectFiles, scanner.Text())
 		}
 		if err := scanner.Err(); err != nil {
-			return xerrors.Errorf("Failed to reading find results. err: %w", err)
+			return fmt.Errorf("Failed to reading find results. err: %w", err)
 		}
 	}
 
@@ -5446,13 +5445,13 @@ func (w *windows) scanLibraries() (err error) {
 
 			r := w.exec(w.translateCmd("Get-Location | Select-object -ExpandProperty Path"), noSudo)
 			if !r.isSuccess() {
-				return "", xerrors.Errorf("Failed to get current directory. err: %w", err)
+				return "", fmt.Errorf("Failed to get current directory. err: %w", err)
 			}
 
 			return ufilepath.Join(strings.TrimSuffix(strings.TrimSuffix(r.Stdout, "\n"), "\r"), path), nil
 		}()
 		if err != nil {
-			return xerrors.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
+			return fmt.Errorf("Failed to abs the lockfile. filepath: %s, err: %w", path, err)
 		}
 
 		if _, ok := found[abspath]; ok {
@@ -5467,18 +5466,18 @@ func (w *windows) scanLibraries() (err error) {
 
 			r := w.exec(w.translateCmd(fmt.Sprintf("[Convert]::ToBase64String([System.IO.File]::ReadAllBytes('%s'))", abspath)), priv)
 			if !r.isSuccess() {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to read target file contents. filepath: %s, err: %w", abspath, err)
 			}
 
 			contents, err := func() ([]byte, error) {
 				bs, err := io.ReadAll(base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.Stdout)))
 				if err != nil {
-					return nil, xerrors.Errorf("Failed to decode base64 contents. err: %w", err)
+					return nil, fmt.Errorf("Failed to decode base64 contents. err: %w", err)
 				}
 				return bs, nil
 			}()
 			if err != nil {
-				return os.FileMode(0000), nil, xerrors.Errorf("Failed to read file contents from stdout. filepath: %s, err: %w", abspath, err)
+				return os.FileMode(0000), nil, fmt.Errorf("Failed to read file contents from stdout. filepath: %s, err: %w", abspath, err)
 			}
 
 			return filemode, contents, nil
@@ -5491,7 +5490,7 @@ func (w *windows) scanLibraries() (err error) {
 		trivypath := w.cleanPath(abspath)
 		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, w.ServerInfo.Mode.IsOffline())
 		if err != nil {
-			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
+			return fmt.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
 		}
 		for _, libscanner := range libraryScanners {
 			libscanner.LockfilePath = abspath

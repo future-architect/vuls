@@ -3,6 +3,8 @@
 package gost
 
 import (
+	"errors"
+	"fmt"
 	"maps"
 	"net/http"
 	"slices"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -72,11 +73,11 @@ func getCvesViaHTTP(cveIDs []string, urlPrefix string) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching Gost")
+			return nil, errors.New("Timeout Fetching Gost")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch Gost. err: %w", errs)
+		return nil, fmt.Errorf("Failed to fetch Gost. err: %w", errors.Join(errs...))
 	}
 	return
 }
@@ -140,11 +141,11 @@ func getCvesWithFixStateViaHTTP(r *models.ScanResult, urlPrefix, fixState string
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching Gost")
+			return nil, errors.New("Timeout Fetching Gost")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch Gost. err: %w", errs)
+		return nil, fmt.Errorf("Failed to fetch Gost. err: %w", errors.Join(errs...))
 	}
 	return
 }
@@ -165,7 +166,7 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 			if count == retryMax {
 				return nil
 			}
-			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
+			return fmt.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 		return nil
 	}
@@ -174,11 +175,11 @@ func httpGet(url string, req request, resChan chan<- response, errChan chan<- er
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		errChan <- xerrors.Errorf("HTTP Error %w", err)
+		errChan <- fmt.Errorf("HTTP Error %w", err)
 		return
 	}
 	if count == retryMax {
-		errChan <- xerrors.New("Retry count exceeded")
+		errChan <- errors.New("Retry count exceeded")
 		return
 	}
 

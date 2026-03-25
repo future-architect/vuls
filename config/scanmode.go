@@ -1,9 +1,9 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"strings"
-
-	"golang.org/x/xerrors"
 )
 
 // ScanMode has a type of scan mode. fast, fast-root, deep and offline
@@ -62,9 +62,9 @@ func (s *ScanMode) ensure() error {
 	if numTrue == 0 {
 		s.Set(Fast)
 	} else if s.IsDeep() && s.IsOffline() {
-		return xerrors.New("Don't specify both of deep and offline")
+		return errors.New("Don't specify both of deep and offline")
 	} else if numTrue != 1 {
-		return xerrors.New("Specify only one of offline, fast, fast-root or deep")
+		return errors.New("Specify only one of offline, fast, fast-root or deep")
 	}
 	return nil
 }
@@ -99,12 +99,12 @@ func setScanMode(server *ServerInfo) error {
 		case offlineStr:
 			server.Mode.Set(Offline)
 		default:
-			return xerrors.Errorf("scanMode: %s of %s is invalid. Specify -fast, -fast-root, -deep or offline",
+			return fmt.Errorf("scanMode: %s of %s is invalid. Specify -fast, -fast-root, -deep or offline",
 				m, server.ServerName)
 		}
 	}
 	if err := server.Mode.ensure(); err != nil {
-		return xerrors.Errorf("%s in %s", err, server.ServerName)
+		return fmt.Errorf("%s in %s", err, server.ServerName)
 	}
 	return nil
 }

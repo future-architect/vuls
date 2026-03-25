@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"bufio"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
-	"golang.org/x/xerrors"
 )
 
 // inherit OsTypeInterface
@@ -67,7 +67,7 @@ func (o *alpine) apkUpdate() error {
 	}
 	r := o.exec("apk update", noSudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to SSH: %s", r)
+		return fmt.Errorf("Failed to SSH: %s", r)
 	}
 	return nil
 }
@@ -114,7 +114,7 @@ func (o *alpine) scanPackages() error {
 
 	updatable, err := o.scanUpdatablePackages()
 	if err != nil {
-		err = xerrors.Errorf("Failed to scan updatable packages: %w", err)
+		err = fmt.Errorf("Failed to scan updatable packages: %w", err)
 		o.log.Warnf("err: %+v", err)
 		o.warns = append(o.warns, err)
 		// Only warning this error
@@ -138,7 +138,7 @@ func (o *alpine) scanInstalledPackages() (models.Packages, models.SrcPackages, e
 		return o.parseApkIndex(rr.Stdout)
 	}
 
-	return nil, nil, xerrors.Errorf("Failed to SSH: apk list --installed: %s, cat /lib/apk/db/installed: %s", r, rr)
+	return nil, nil, fmt.Errorf("Failed to SSH: apk list --installed: %s, cat /lib/apk/db/installed: %s", r, rr)
 }
 
 func (o *alpine) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
@@ -153,17 +153,17 @@ func (o *alpine) parseApkInstalledList(stdout string) (models.Packages, models.S
 
 	re, err := regexp.Compile(apkListPattern)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to compile pattern for apk list. err: %w", err)
+		return nil, nil, fmt.Errorf("Failed to compile pattern for apk list. err: %w", err)
 	}
 
 	for _, match := range re.FindAllStringSubmatch(stdout, -1) {
 		if match[re.SubexpIndex("status")] != "installed" {
-			return nil, nil, xerrors.Errorf("Failed to parse `apk list --installed`. err: unexpected status section. expected: %q, actual: %q, stdout: %q", "installed", match[re.SubexpIndex("status")], stdout)
+			return nil, nil, fmt.Errorf("Failed to parse `apk list --installed`. err: unexpected status section. expected: %q, actual: %q, stdout: %q", "installed", match[re.SubexpIndex("status")], stdout)
 		}
 
 		ss := strings.Split(match[re.SubexpIndex("pkgver")], "-")
 		if len(ss) < 3 {
-			return nil, nil, xerrors.Errorf("Failed to parse `apk list --installed`. err: unexpected package name and version section. expected: %q, actual: %q, stdout: %q", "<name>-<version>-<release>", match[re.SubexpIndex("pkgver")], stdout)
+			return nil, nil, fmt.Errorf("Failed to parse `apk list --installed`. err: unexpected package name and version section. expected: %q, actual: %q, stdout: %q", "<name>-<version>-<release>", match[re.SubexpIndex("pkgver")], stdout)
 		}
 		bn := strings.Join(ss[:len(ss)-2], "-")
 		version := strings.Join(ss[len(ss)-2:], "-")
@@ -201,7 +201,7 @@ func (o *alpine) parseApkIndex(stdout string) (models.Packages, models.SrcPackag
 			t := scanner.Text()
 			lhs, rhs, found := strings.Cut(t, ":")
 			if !found {
-				return nil, nil, xerrors.Errorf("Failed to parse APKINDEX line. err: unexpected APKINDEX format. expected: %q, actual: %q", "<Section>:<Content>", t)
+				return nil, nil, fmt.Errorf("Failed to parse APKINDEX line. err: unexpected APKINDEX format. expected: %q, actual: %q", "<Section>:<Content>", t)
 			}
 			switch lhs {
 			case "P":
@@ -216,11 +216,11 @@ func (o *alpine) parseApkIndex(stdout string) (models.Packages, models.SrcPackag
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			return nil, nil, xerrors.Errorf("Failed to scan by the scanner. err: %w", err)
+			return nil, nil, fmt.Errorf("Failed to scan by the scanner. err: %w", err)
 		}
 
 		if bn == "" || version == "" {
-			return nil, nil, xerrors.Errorf("Failed to parse APKINDEX record. err: package name(P:) and package version(V:) are required fields in APKINDEX Record: %q", s)
+			return nil, nil, fmt.Errorf("Failed to parse APKINDEX record. err: package name(P:) and package version(V:) are required fields in APKINDEX Record: %q", s)
 		}
 
 		// https://gitlab.alpinelinux.org/alpine/apk-tools/-/blob/74de0e9bd73d1af8720df40aa68d472943909804/src/app_list.c#L92-95
@@ -259,7 +259,7 @@ func (o *alpine) scanUpdatablePackages() (models.Packages, error) {
 		return o.parseApkVersion(rr.Stdout)
 	}
 
-	return nil, xerrors.Errorf("Failed to SSH: apk list --upgradable: %s, apk version: %s", r, rr)
+	return nil, fmt.Errorf("Failed to SSH: apk list --upgradable: %s, apk version: %s", r, rr)
 }
 
 func (o *alpine) parseApkUpgradableList(stdout string) (models.Packages, error) {
@@ -267,17 +267,17 @@ func (o *alpine) parseApkUpgradableList(stdout string) (models.Packages, error) 
 
 	re, err := regexp.Compile(apkListPattern)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to compile pattern for apk list. err: %w", err)
+		return nil, fmt.Errorf("Failed to compile pattern for apk list. err: %w", err)
 	}
 
 	for _, match := range re.FindAllStringSubmatch(stdout, -1) {
 		if !strings.HasPrefix(match[re.SubexpIndex("status")], "upgradable from: ") {
-			return nil, xerrors.Errorf("Failed to parse `apk list --upgradable`. err: unexpected status section. expected: %q, actual: %q, stdout: %q", "upgradable from: <name>-<old version>", match[re.SubexpIndex("status")], stdout)
+			return nil, fmt.Errorf("Failed to parse `apk list --upgradable`. err: unexpected status section. expected: %q, actual: %q, stdout: %q", "upgradable from: <name>-<old version>", match[re.SubexpIndex("status")], stdout)
 		}
 
 		ss := strings.Split(match[re.SubexpIndex("pkgver")], "-")
 		if len(ss) < 3 {
-			return nil, xerrors.Errorf("Failed to parse package name and version in `apk list --upgradable`. err: unexpected package name and version section. expected: %q, actual: %q, stdout: %q", "<name>-<version>-<release>", match[re.SubexpIndex("pkgver")], stdout)
+			return nil, fmt.Errorf("Failed to parse package name and version in `apk list --upgradable`. err: unexpected package name and version section. expected: %q, actual: %q, stdout: %q", "<name>-<version>-<release>", match[re.SubexpIndex("pkgver")], stdout)
 		}
 		bn := strings.Join(ss[:len(ss)-2], "-")
 		version := strings.Join(ss[len(ss)-2:], "-")
@@ -308,7 +308,7 @@ func (o *alpine) parseApkVersion(stdout string) (models.Packages, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan by the scanner. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan by the scanner. err: %w", err)
 	}
 
 	return packs, nil

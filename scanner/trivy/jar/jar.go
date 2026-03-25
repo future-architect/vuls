@@ -2,12 +2,11 @@ package jar
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/xerrors"
 
 	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
@@ -45,7 +44,7 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 		p := newParser(withSize(info.Size()), withFilePath(path))
 		parsedLibs, err := p.parse(r)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to parse %s. err: %w", path, err)
+			return nil, fmt.Errorf("Failed to parse %s. err: %w", path, err)
 		}
 
 		return toApplication(path, parsedLibs), nil
@@ -61,7 +60,7 @@ func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.Po
 	}
 
 	if err := parallel.WalkDir(ctx, input.FS, ".", a.parallel, onFile, onResult); err != nil {
-		return nil, xerrors.Errorf("Failed to walk dir. err: %w", err)
+		return nil, fmt.Errorf("Failed to walk dir. err: %w", err)
 	}
 
 	return &analyzer.AnalysisResult{

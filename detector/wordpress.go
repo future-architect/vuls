@@ -18,7 +18,6 @@ import (
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
 	version "github.com/hashicorp/go-version"
-	"golang.org/x/xerrors"
 )
 
 // wpCveInfos is for wpscan json
@@ -188,7 +187,7 @@ func convertToVinfos(pkgName, body string) (vinfos []models.VulnInfo, err error)
 	// "pkgName" : CVE Detailed data
 	pkgnameCves := map[string]wpCveInfos{}
 	if err = json.Unmarshal([]byte(body), &pkgnameCves); err != nil {
-		return nil, xerrors.Errorf("Failed to unmarshal %s. err: %w", body, err)
+		return nil, fmt.Errorf("Failed to unmarshal %s. err: %w", body, err)
 	}
 
 	for _, v := range pkgnameCves {

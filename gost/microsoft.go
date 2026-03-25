@@ -5,6 +5,7 @@ package gost
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/hashicorp/go-version"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -40,7 +40,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	if ms.driver == nil {
 		u, err := util.URLPathJoin(ms.baseURL, "microsoft", "kbs")
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+			return 0, fmt.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
 		content := map[string]any{"applied": applied, "unapplied": unapplied}
@@ -54,7 +54,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			}
 			resp, body, errs = req.EndBytes()
 			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-				return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
+				return fmt.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
 			}
 			return nil
 		}
@@ -62,7 +62,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			logging.Log.Warnf("Failed to HTTP POST. retrying in %f seconds. err: %+v", t.Seconds(), err)
 		}
 		if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
-			return 0, xerrors.Errorf("HTTP Error: %w", err)
+			return 0, fmt.Errorf("HTTP Error: %w", err)
 		}
 
 		var r struct {
@@ -70,14 +70,14 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			Unapplied []string `json:"unapplied"`
 		}
 		if err := json.Unmarshal(body, &r); err != nil {
-			return 0, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+			return 0, fmt.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 		}
 		applied = r.Applied
 		unapplied = r.Unapplied
 	} else {
 		applied, unapplied, err = ms.driver.GetExpandKB(applied, unapplied)
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to detect CVEs. err: %w", err)
+			return 0, fmt.Errorf("Failed to detect CVEs. err: %w", err)
 		}
 	}
 
@@ -85,7 +85,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	if ms.driver == nil {
 		u, err := util.URLPathJoin(ms.baseURL, "microsoft", "products")
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+			return 0, fmt.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
 		content := map[string]any{"release": r.Release, "kbs": append(applied, unapplied...)}
@@ -99,7 +99,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			}
 			resp, body, errs = req.EndBytes()
 			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-				return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
+				return fmt.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
 			}
 			return nil
 		}
@@ -107,16 +107,16 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			logging.Log.Warnf("Failed to HTTP POST. retrying in %f seconds. err: %+v", t.Seconds(), err)
 		}
 		if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
-			return 0, xerrors.Errorf("HTTP Error: %w", err)
+			return 0, fmt.Errorf("HTTP Error: %w", err)
 		}
 
 		if err := json.Unmarshal(body, &products); err != nil {
-			return 0, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+			return 0, fmt.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 		}
 	} else {
 		ps, err := ms.driver.GetRelatedProducts(r.Release, append(applied, unapplied...))
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to detect CVEs. err: %w", err)
+			return 0, fmt.Errorf("Failed to detect CVEs. err: %w", err)
 		}
 		products = ps
 	}
@@ -152,7 +152,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 	if ms.driver == nil {
 		u, err := util.URLPathJoin(ms.baseURL, "microsoft", "filtered-cves")
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to join URLPath. err: %w", err)
+			return 0, fmt.Errorf("Failed to join URLPath. err: %w", err)
 		}
 
 		content := map[string]any{"products": filtered, "kbs": append(applied, unapplied...)}
@@ -166,7 +166,7 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			}
 			resp, body, errs = req.EndBytes()
 			if 0 < len(errs) || resp == nil || resp.StatusCode != 200 {
-				return xerrors.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
+				return fmt.Errorf("HTTP POST error. url: %s, resp: %v, err: %+v", u, resp, errs)
 			}
 			return nil
 		}
@@ -174,23 +174,23 @@ func (ms Microsoft) DetectCVEs(r *models.ScanResult, _ bool) (nCVEs int, err err
 			logging.Log.Warnf("Failed to HTTP POST. retrying in %f seconds. err: %+v", t.Seconds(), err)
 		}
 		if err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify); err != nil {
-			return 0, xerrors.Errorf("HTTP Error: %w", err)
+			return 0, fmt.Errorf("HTTP Error: %w", err)
 		}
 
 		if err := json.Unmarshal(body, &cves); err != nil {
-			return 0, xerrors.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
+			return 0, fmt.Errorf("Failed to Unmarshal. body: %s, err: %w", body, err)
 		}
 	} else {
 		cves, err = ms.driver.GetFilteredCvesMicrosoft(filtered, append(applied, unapplied...))
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to detect CVEs. err: %w", err)
+			return 0, fmt.Errorf("Failed to detect CVEs. err: %w", err)
 		}
 	}
 
 	for cveID, cve := range cves {
 		v, err := ms.detect(r, cve, applied, unapplied)
 		if err != nil {
-			return 0, xerrors.Errorf("Failed to detect. err: %w", err)
+			return 0, fmt.Errorf("Failed to detect. err: %w", err)
 		}
 		if v == nil {
 			continue
@@ -289,7 +289,7 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 					FixState: "unknown",
 				})
 			default:
-				return nil, xerrors.Errorf("unexpected product. expected: %q, actual: %q", []string{r.Release, "Microsoft Edge"}, p.Name)
+				return nil, fmt.Errorf("unexpected product. expected: %q, actual: %q", []string{r.Release, "Microsoft Edge"}, p.Name)
 			}
 			continue
 		}
@@ -323,7 +323,7 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 						FixedIn: kb.FixedBuild,
 					})
 				default:
-					return nil, xerrors.Errorf("unexpected product. supported: %q, actual: %q", []string{"Microsoft Edge"}, p.Name)
+					return nil, fmt.Errorf("unexpected product. supported: %q, actual: %q", []string{"Microsoft Edge"}, p.Name)
 				}
 			} else {
 				kbid := fmt.Sprintf("KB%s", kb.Article)
@@ -352,17 +352,17 @@ func (ms Microsoft) detect(r *models.ScanResult, cve gostmodels.MicrosoftCVE, ap
 			case "unknown":
 				cs.AppendIfMissing(models.WindowsRoughMatch)
 			default:
-				return nil, xerrors.Errorf("unexpected fix state. expected: %q, actual: %q", []string{"fixed", "unfixed", "unknown"}, stat.FixState)
+				return nil, fmt.Errorf("unexpected fix state. expected: %q, actual: %q", []string{"fixed", "unfixed", "unknown"}, stat.FixState)
 			}
 		}
 
 		if len(cs) == 0 {
-			return nil, xerrors.New("confidences not found")
+			return nil, errors.New("confidences not found")
 		}
 		return cs, nil
 	}()
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to detect confidences. err: %w", err)
+		return nil, fmt.Errorf("Failed to detect confidences. err: %w", err)
 	}
 	vinfo.Confidences = confs
 

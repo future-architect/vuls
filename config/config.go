@@ -1,13 +1,13 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config/syslog"
 	"github.com/future-architect/vuls/constant"
@@ -113,7 +113,7 @@ func (c Config) ValidateOnScan() bool {
 	errs := c.checkSSHKeyExist()
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, xerrors.Errorf(
+			errs = append(errs, fmt.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
@@ -147,7 +147,7 @@ func (c Config) checkSSHKeyExist() (errs []error) {
 		}
 		if v.KeyPath != "" {
 			if _, err := os.Stat(v.KeyPath); err != nil {
-				errs = append(errs, xerrors.Errorf(
+				errs = append(errs, fmt.Errorf(
 					"%s is invalid. keypath: %s not exists", serverName, v.KeyPath))
 			}
 		}
@@ -161,7 +161,7 @@ func (c *Config) ValidateOnReport() bool {
 
 	if len(c.ResultsDir) != 0 {
 		if ok, _ := govalidator.IsFilePath(c.ResultsDir); !ok {
-			errs = append(errs, xerrors.Errorf(
+			errs = append(errs, fmt.Errorf(
 				"JSON base directory must be a *Absolute* file path. -results-dir: %s", c.ResultsDir))
 		}
 	}
@@ -196,10 +196,10 @@ func (c *Config) ValidateOnReport() bool {
 		&Conf.Cti,
 	} {
 		if err := cnf.Validate(); err != nil {
-			errs = append(errs, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))
+			errs = append(errs, fmt.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))
 		}
 		if err := cnf.CheckHTTPHealth(); err != nil {
-			errs = append(errs, xerrors.Errorf("Run %s as server mode before reporting: %+v", cnf.GetName(), err))
+			errs = append(errs, fmt.Errorf("Run %s as server mode before reporting: %+v", cnf.GetName(), err))
 		}
 	}
 
@@ -340,7 +340,7 @@ func (l Distro) MajorVersion() (int, error) {
 			return strconv.Atoi(strings.Split(l.Release, ".")[0])
 		}
 	}
-	return 0, xerrors.New("Release is empty")
+	return 0, errors.New("Release is empty")
 }
 
 // IsContainer returns whether this ServerInfo is about container

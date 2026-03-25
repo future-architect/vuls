@@ -2,11 +2,10 @@ package scanner
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -38,7 +37,7 @@ func detectMacOS(c config.ServerInfo) (bool, osTypeInterface) {
 		m := newMacOS(c)
 		family, version, err := parseSWVers(r.Stdout)
 		if err != nil {
-			m.setErrs([]error{xerrors.Errorf("Failed to parse sw_vers. err: %w", err)})
+			m.setErrs([]error{fmt.Errorf("Failed to parse sw_vers. err: %w", err)})
 			return true, m
 		}
 		m.setDistro(family, version)
@@ -60,7 +59,7 @@ func parseSWVers(stdout string) (string, string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return "", "", xerrors.Errorf("Failed to scan by the scanner. err: %w", err)
+		return "", "", fmt.Errorf("Failed to scan by the scanner. err: %w", err)
 	}
 
 	var family string
@@ -74,11 +73,11 @@ func parseSWVers(stdout string) (string, string, error) {
 	case "macOS Server":
 		family = constant.MacOSServer
 	default:
-		return "", "", xerrors.Errorf("Failed to detect MacOS Family. err: \"%s\" is unexpected product name", name)
+		return "", "", fmt.Errorf("Failed to detect MacOS Family. err: \"%s\" is unexpected product name", name)
 	}
 
 	if version == "" {
-		return "", "", xerrors.New("Failed to get ProductVersion string. err: ProductVersion is empty")
+		return "", "", errors.New("Failed to get ProductVersion string. err: ProductVersion is empty")
 	}
 
 	return family, version, nil
@@ -107,7 +106,7 @@ func (o *macos) preCure() error {
 func (o *macos) detectIPAddr() (err error) {
 	r := o.exec("/sbin/ifconfig", noSudo)
 	if !r.isSuccess() {
-		return xerrors.Errorf("Failed to detect IP address: %v", r)
+		return fmt.Errorf("Failed to detect IP address: %v", r)
 	}
 	o.ServerInfo.IPv4Addrs, o.ServerInfo.IPv6Addrs = o.parseIfconfig(r.Stdout)
 	return nil
@@ -133,7 +132,7 @@ func (o *macos) scanPackages() error {
 
 	installed, err := o.scanInstalledPackages()
 	if err != nil {
-		return xerrors.Errorf("Failed to scan installed packages. err: %w", err)
+		return fmt.Errorf("Failed to scan installed packages. err: %w", err)
 	}
 	o.Packages = installed
 
@@ -143,7 +142,7 @@ func (o *macos) scanPackages() error {
 func (o *macos) scanInstalledPackages() (models.Packages, error) {
 	r := o.exec("find -L /Applications /System/Applications -type f -path \"*.app/Contents/Info.plist\" -not -path \"*.app/**/*.app/*\"", noSudo)
 	if !r.isSuccess() {
-		return nil, xerrors.Errorf("Failed to exec: %v", r)
+		return nil, fmt.Errorf("Failed to exec: %v", r)
 	}
 
 	installed := models.Packages{}
@@ -174,7 +173,7 @@ func (o *macos) scanInstalledPackages() (models.Packages, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, xerrors.Errorf("Failed to scan by the scanner. err: %w", err)
+		return nil, fmt.Errorf("Failed to scan by the scanner. err: %w", err)
 	}
 
 	return installed, nil
@@ -204,7 +203,7 @@ func (o *macos) parseInstalledPackages(stdout string) (models.Packages, models.S
 
 		lhs, rhs, ok := strings.Cut(t, ":")
 		if !ok {
-			return nil, nil, xerrors.Errorf("unexpected installed packages line. expected: \"<TAG>: <VALUE>\", actual: \"%s\"", t)
+			return nil, nil, fmt.Errorf("unexpected installed packages line. expected: \"<TAG>: <VALUE>\", actual: \"%s\"", t)
 		}
 
 		switch lhs {
@@ -230,7 +229,7 @@ func (o *macos) parseInstalledPackages(stdout string) (models.Packages, models.S
 				id = strings.TrimSpace(rhs)
 			}
 		default:
-			return nil, nil, xerrors.Errorf("unexpected installed packages line tag. expected: [\"Info.plist\", \"CFBundleDisplayName\", \"CFBundleName\", \"CFBundleShortVersionString\", \"CFBundleIdentifier\"], actual: \"%s\"", lhs)
+			return nil, nil, fmt.Errorf("unexpected installed packages line tag. expected: [\"Info.plist\", \"CFBundleDisplayName\", \"CFBundleName\", \"CFBundleShortVersionString\", \"CFBundleIdentifier\"], actual: \"%s\"", lhs)
 		}
 	}
 	if file != "" {
@@ -244,7 +243,7 @@ func (o *macos) parseInstalledPackages(stdout string) (models.Packages, models.S
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, xerrors.Errorf("Failed to scan by the scanner. err: %w", err)
+		return nil, nil, fmt.Errorf("Failed to scan by the scanner. err: %w", err)
 	}
 
 	return pkgs, nil, nil

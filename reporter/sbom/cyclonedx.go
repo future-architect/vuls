@@ -11,7 +11,6 @@ import (
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/uuid"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
@@ -32,7 +31,7 @@ func SerializeCycloneDX(bom *cdx.BOM, format cdx.BOMFileFormat) ([]byte, error) 
 	enc := cdx.NewBOMEncoder(buf, format)
 	enc.SetPretty(true)
 	if err := enc.Encode(bom); err != nil {
-		return nil, xerrors.Errorf("Failed to encode CycloneDX. err: %w", err)
+		return nil, fmt.Errorf("Failed to encode CycloneDX. err: %w", err)
 	}
 	return buf.Bytes(), nil
 }

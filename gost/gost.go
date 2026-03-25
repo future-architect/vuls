@@ -4,8 +4,7 @@ package gost
 
 import (
 	"errors"
-
-	"golang.org/x/xerrors"
+	"fmt"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -43,7 +42,7 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf, o logging.Log
 
 	db, err := newGostDB(&cnf)
 	if err != nil {
-		return xerrors.Errorf("Failed to newGostDB. err: %w", err)
+		return fmt.Errorf("Failed to newGostDB. err: %w", err)
 	}
 
 	client := RedHat{Base{driver: db, baseURL: cnf.GetURL()}}
@@ -58,12 +57,12 @@ func FillCVEsWithRedHat(r *models.ScanResult, cnf config.GostConf, o logging.Log
 // NewGostClient make Client by family
 func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Client, error) {
 	if err := gostlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, xerrors.Errorf("Failed to set gost logger. err: %w", err)
+		return nil, fmt.Errorf("Failed to set gost logger. err: %w", err)
 	}
 
 	db, err := newGostDB(&cnf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to newGostDB. err: %w", err)
+		return nil, fmt.Errorf("Failed to newGostDB. err: %w", err)
 	}
 
 	base := Base{driver: db, baseURL: cnf.GetURL()}
@@ -74,9 +73,9 @@ func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Clien
 		return Pseudo{base}, nil
 	default:
 		if family == "" {
-			return nil, xerrors.New("Probably an error occurred during scanning. Check the error message")
+			return nil, errors.New("Probably an error occurred during scanning. Check the error message")
 		}
-		return nil, xerrors.Errorf("Gost for %s is not implemented yet", family)
+		return nil, fmt.Errorf("Gost for %s is not implemented yet", family)
 	}
 }
 
@@ -92,9 +91,9 @@ func newGostDB(cnf config.VulnDictInterface) (gostdb.DB, error) {
 	driver, err := gostdb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), gostdb.Option{})
 	if err != nil {
 		if errors.Is(err, gostdb.ErrDBLocked) {
-			return nil, xerrors.Errorf("Failed to init gost DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+			return nil, fmt.Errorf("Failed to init gost DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, xerrors.Errorf("Failed to init gost DB. DB Path: %s, err: %w", path, err)
+		return nil, fmt.Errorf("Failed to init gost DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
 }

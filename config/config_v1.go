@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"golang.org/x/xerrors"
 )
 
 // ConfV1 has old version Configuration for windows
@@ -68,10 +67,10 @@ func convertToLatestConfig(pathToToml string) error {
 		case "3":
 			server.WinUpdateSrcInt = LocalCab
 			if server.CabPath == "" {
-				return xerrors.Errorf("Failed to load CabPath. err: CabPath is empty")
+				return fmt.Errorf("Failed to load CabPath. err: CabPath is empty")
 			}
 		default:
-			return xerrors.Errorf(`Specify WindUpdateSrc in  "0"|"1"|"2"|"3"`)
+			return fmt.Errorf(`Specify WindUpdateSrc in  "0"|"1"|"2"|"3"`)
 		}
 
 		convertedServerConfig := ServerInfo{
@@ -90,11 +89,11 @@ func convertToLatestConfig(pathToToml string) error {
 
 	raw, err := os.ReadFile(pathToSaasJSON)
 	if err != nil {
-		return xerrors.Errorf("Failed to read saas-credential.json. err: %w", err)
+		return fmt.Errorf("Failed to read saas-credential.json. err: %w", err)
 	}
 	saasJSON := SaasConf{}
 	if err := json.Unmarshal(raw, &saasJSON); err != nil {
-		return xerrors.Errorf("Failed to unmarshal saas-credential.json. err: %w", err)
+		return fmt.Errorf("Failed to unmarshal saas-credential.json. err: %w", err)
 	}
 	Conf.Saas = SaasConf{
 		GroupID: saasJSON.GroupID,
@@ -117,21 +116,21 @@ func convertToLatestConfig(pathToToml string) error {
 	// rename the current config.toml to config.toml.bak
 	info, err := os.Lstat(pathToToml)
 	if err != nil {
-		return xerrors.Errorf("Failed to lstat %s: %w", pathToToml, err)
+		return fmt.Errorf("Failed to lstat %s: %w", pathToToml, err)
 	}
 	realPath := pathToToml
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		if realPath, err = os.Readlink(pathToToml); err != nil {
-			return xerrors.Errorf("Failed to Read link %s: %w", pathToToml, err)
+			return fmt.Errorf("Failed to Read link %s: %w", pathToToml, err)
 		}
 	}
 	if err := os.Rename(realPath, realPath+".bak"); err != nil {
-		return xerrors.Errorf("Failed to rename %s: %w", pathToToml, err)
+		return fmt.Errorf("Failed to rename %s: %w", pathToToml, err)
 	}
 
 	var buf bytes.Buffer
 	if err := toml.NewEncoder(&buf).Encode(c); err != nil {
-		return xerrors.Errorf("Failed to encode to toml: %w", err)
+		return fmt.Errorf("Failed to encode to toml: %w", err)
 	}
 	str := strings.ReplaceAll(buf.String(), "\n  [", "\n\n  [")
 	str = fmt.Sprintf("%s\n\n%s",

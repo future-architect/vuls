@@ -5,12 +5,12 @@ package detector
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/parnurzeal/gorequest"
-	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/logging"
@@ -36,12 +36,12 @@ func (client goKEVulnDBClient) closeDB() error {
 
 func newGoKEVulnDBClient(cnf config.VulnDictInterface, o logging.LogOpts) (*goKEVulnDBClient, error) {
 	if err := kevulnlog.SetLogger(o.LogToFile, o.LogDir, o.Debug, o.LogJSON); err != nil {
-		return nil, xerrors.Errorf("Failed to set go-kev logger. err: %w", err)
+		return nil, fmt.Errorf("Failed to set go-kev logger. err: %w", err)
 	}
 
 	db, err := newKEVulnDB(cnf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to newKEVulnDB. err: %w", err)
+		return nil, fmt.Errorf("Failed to newKEVulnDB. err: %w", err)
 	}
 	return &goKEVulnDBClient{driver: db, baseURL: cnf.GetURL()}, nil
 }
@@ -156,7 +156,7 @@ func FillWithKEVuln(r *models.ScanResult, cnf config.KEVulnConf, logOpts logging
 			}
 			kev, err := client.driver.GetKEVByCveID(cveID)
 			if err != nil {
-				return xerrors.Errorf("Failed to get kev by %s", cveID)
+				return fmt.Errorf("Failed to get kev by %s", cveID)
 			}
 			if len(kev.CISA) == 0 && len(kev.VulnCheck) == 0 {
 				continue
@@ -288,11 +288,11 @@ func getKEVulnsViaHTTP(cveIDs []string, urlPrefix string) (
 		case err := <-errChan:
 			errs = append(errs, err)
 		case <-timeout:
-			return nil, xerrors.New("Timeout Fetching KEVuln")
+			return nil, errors.New("Timeout Fetching KEVuln")
 		}
 	}
 	if len(errs) != 0 {
-		return nil, xerrors.Errorf("Failed to fetch KEVuln. err: %w", errs)
+		return nil, fmt.Errorf("Failed to fetch KEVuln. err: %w", errors.Join(errs...))
 	}
 	return
 }
@@ -317,7 +317,7 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 			if count == retryMax {
 				return nil
 			}
-			return xerrors.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
+			return fmt.Errorf("HTTP GET error, url: %s, resp: %v, err: %+v", url, resp, errs)
 		}
 		return nil
 	}
@@ -326,11 +326,11 @@ func httpGetKEVuln(url string, req kevulnRequest, resChan chan<- kevulnResponse,
 	}
 	err := backoff.RetryNotify(f, backoff.NewExponentialBackOff(), notify)
 	if err != nil {
-		errChan <- xerrors.Errorf("HTTP Error %w", err)
+		errChan <- fmt.Errorf("HTTP Error %w", err)
 		return
 	}
 	if count == retryMax {
-		errChan <- xerrors.New("Retry count exceeded")
+		errChan <- errors.New("Retry count exceeded")
 		return
 	}
 
@@ -351,9 +351,9 @@ func newKEVulnDB(cnf config.VulnDictInterface) (kevulndb.DB, error) {
 	driver, err := kevulndb.NewDB(cnf.GetType(), path, cnf.GetDebugSQL(), kevulndb.Option{})
 	if err != nil {
 		if errors.Is(err, kevulndb.ErrDBLocked) {
-			return nil, xerrors.Errorf("Failed to init kevuln DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
+			return nil, fmt.Errorf("Failed to init kevuln DB. SQLite3: %s is locked. err: %w", cnf.GetSQLite3Path(), err)
 		}
-		return nil, xerrors.Errorf("Failed to init kevuln DB. DB Path: %s, err: %w", path, err)
+		return nil, fmt.Errorf("Failed to init kevuln DB. DB Path: %s, err: %w", path, err)
 	}
 	return driver, nil
 }
