@@ -212,16 +212,23 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 					sv = fmt.Sprintf("%d:%s", p.SrcEpoch, sv)
 				}
 
-				existing := srcPkgs[p.SrcName]
-				existing.AddBinaryName(p.Name)
-				if existing.Name == "" || compareVersions(trivyResult.Type, sv, existing.Version) >= 0 {
+				if existing, ok := srcPkgs[p.SrcName]; ok {
+					existing.AddBinaryName(p.Name)
+					if compareVersions(trivyResult.Type, sv, existing.Version) >= 0 {
+						srcPkgs[p.SrcName] = models.SrcPackage{
+							Name:        p.SrcName,
+							Version:     sv,
+							BinaryNames: existing.BinaryNames,
+						}
+					} else {
+						srcPkgs[p.SrcName] = existing
+					}
+				} else {
 					srcPkgs[p.SrcName] = models.SrcPackage{
 						Name:        p.SrcName,
 						Version:     sv,
-						BinaryNames: existing.BinaryNames,
+						BinaryNames: []string{p.Name},
 					}
-				} else {
-					srcPkgs[p.SrcName] = existing
 				}
 			}
 		case types.ClassLangPkg:
