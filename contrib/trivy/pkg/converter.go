@@ -200,10 +200,11 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 
 				if existing, ok := pkgs[p.Name]; ok {
 					if existing.Version != pv {
-						if _, seen := dupPkgs[p.Name]; !seen {
-							dupPkgs[p.Name] = []string{existing.Version}
+						if versions, seen := dupPkgs[p.Name]; !seen {
+							dupPkgs[p.Name] = []string{existing.Version, pv}
+						} else if !slices.Contains(versions, pv) {
+							dupPkgs[p.Name] = append(versions, pv)
 						}
-						dupPkgs[p.Name] = append(dupPkgs[p.Name], pv)
 					}
 					if compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
 						pkgs[p.Name] = models.Package{
