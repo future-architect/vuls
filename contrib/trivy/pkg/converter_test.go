@@ -3,8 +3,13 @@ package pkg_test
 import (
 	"testing"
 
+	gocmp "github.com/google/go-cmp/cmp"
+	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
+
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/future-architect/vuls/contrib/trivy/pkg"
+	"github.com/future-architect/vuls/models"
 )
 
 func Test_getLockfilePath(t *testing.T) {
@@ -487,6 +492,316 @@ func Test_getLockfilePath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := pkg.GetLockfilePath(tt.args.scanmode, tt.args.artifactName, tt.args.libType, tt.args.target, tt.args.libFilepath); got != tt.want {
 				t.Errorf("getLockfilePath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConvert(t *testing.T) {
+	type args struct {
+		results      types.Results
+		artifactType ftypes.ArtifactType
+		artifactName string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *models.ScanResult
+	}{
+		{
+			name: "no duplicate, single source",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:    "libssl3t64",
+						Version: "3.5.5-1~deb13u1",
+						Arch:    "amd64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
+					},
+				},
+			},
+		},
+		{
+			// Duplicate packages from status + status.d/: newer version wins via dpkg comparison.
+			name: "duplicate packages, newer wins",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.4",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:    "libssl3t64",
+						Version: "3.5.5-1~deb13u1",
+						Arch:    "amd64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
+					},
+				},
+			},
+		},
+		{
+			// Reverse order: newer version still wins regardless of input order.
+			name: "duplicate packages reverse order, newer wins",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.4",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:    "libssl3t64",
+						Version: "3.5.5-1~deb13u1",
+						Arch:    "amd64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
+					},
+				},
+			},
+		},
+		{
+			// BinaryNames are accumulated across all duplicates.
+			name: "multiple binary packages with duplicates",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.4",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+							{
+								Name:       "openssl-provider-legacy",
+								Version:    "3.5.4",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+							{
+								Name:       "openssl-provider-legacy",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:    "libssl3t64",
+						Version: "3.5.5-1~deb13u1",
+						Arch:    "amd64",
+					},
+					"openssl-provider-legacy": {
+						Name:    "openssl-provider-legacy",
+						Version: "3.5.5-1~deb13u1",
+						Arch:    "amd64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64", "openssl-provider-legacy"},
+					},
+				},
+			},
+		},
+		{
+			// Non-dpkg OS: duplicates are unrealistic, but verifies the lexicographic fallback path.
+			name: "non-dpkg OS, lexicographic comparison (unrealistic)",
+			args: args{
+				results: types.Results{
+					{
+						Target: "alpine 3.21",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Alpine,
+						Packages: []ftypes.Package{
+							{
+								Name:       "openssl",
+								Version:    "3.5.5",
+								Release:    "r0",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "r0",
+								Arch:       "x86_64",
+							},
+							{
+								Name:       "openssl",
+								Version:    "3.5.4",
+								Release:    "r0",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "r0",
+								Arch:       "x86_64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"openssl": {
+						Name:    "openssl",
+						Version: "3.5.5-r0",
+						Arch:    "x86_64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-r0",
+						BinaryNames: []string{"openssl"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := pkg.Convert(tt.args.results, tt.args.artifactType, tt.args.artifactName)
+			if err != nil {
+				t.Fatalf("Convert() error = %v", err)
+			}
+
+			if diff := gocmp.Diff(tt.want, got, gocmpopts.IgnoreFields(models.ScanResult{}, "Config")); diff != "" {
+				t.Errorf("Convert() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
