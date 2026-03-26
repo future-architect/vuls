@@ -590,6 +590,9 @@ func TestConvert(t *testing.T) {
 				JSONVersion:     models.JSONVersion,
 				ScannedCves:     models.VulnInfos{},
 				LibraryScanners: models.LibraryScanners{},
+				Warnings: []string{
+					"Duplicate OS package detected: libssl3t64 (3.5.4-1~deb13u1, 3.5.5-1~deb13u1). The newest version is kept, but false-positive CVEs may remain.",
+				},
 				Packages: models.Packages{
 					"libssl3t64": {
 						Name:    "libssl3t64",
@@ -644,6 +647,9 @@ func TestConvert(t *testing.T) {
 				JSONVersion:     models.JSONVersion,
 				ScannedCves:     models.VulnInfos{},
 				LibraryScanners: models.LibraryScanners{},
+				Warnings: []string{
+					"Duplicate OS package detected: libssl3t64 (3.5.4-1~deb13u1, 3.5.5-1~deb13u1). The newest version is kept, but false-positive CVEs may remain.",
+				},
 				Packages: models.Packages{
 					"libssl3t64": {
 						Name:    "libssl3t64",
@@ -716,6 +722,10 @@ func TestConvert(t *testing.T) {
 				JSONVersion:     models.JSONVersion,
 				ScannedCves:     models.VulnInfos{},
 				LibraryScanners: models.LibraryScanners{},
+				Warnings: []string{
+					"Duplicate OS package detected: libssl3t64 (3.5.4-1~deb13u1, 3.5.5-1~deb13u1). The newest version is kept, but false-positive CVEs may remain.",
+					"Duplicate OS package detected: openssl-provider-legacy (3.5.4-1~deb13u1, 3.5.5-1~deb13u1). The newest version is kept, but false-positive CVEs may remain.",
+				},
 				Packages: models.Packages{
 					"libssl3t64": {
 						Name:    "libssl3t64",
@@ -775,6 +785,9 @@ func TestConvert(t *testing.T) {
 				JSONVersion:     models.JSONVersion,
 				ScannedCves:     models.VulnInfos{},
 				LibraryScanners: models.LibraryScanners{},
+				Warnings: []string{
+					"Duplicate OS package detected: openssl (3.5.4-r0, 3.5.5-r0). The newest version is kept, but false-positive CVEs may remain.",
+				},
 				Packages: models.Packages{
 					"openssl": {
 						Name:    "openssl",

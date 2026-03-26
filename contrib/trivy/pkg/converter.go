@@ -3,6 +3,7 @@ package pkg
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -41,6 +42,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 	pkgs := models.Packages{}
 	srcPkgs := models.SrcPackages{}
 	vulnInfos := models.VulnInfos{}
+	dupPkgs := map[string][]string{} // name -> list of versions seen (for duplicate detection)
 	libraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range results {
 		for _, vuln := range trivyResult.Vulnerabilities {
@@ -196,7 +198,21 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 					pv = fmt.Sprintf("%d:%s", p.Epoch, pv)
 				}
 
-				if existing, ok := pkgs[p.Name]; !ok || compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
+				if existing, ok := pkgs[p.Name]; ok {
+					if existing.Version != pv {
+						if _, seen := dupPkgs[p.Name]; !seen {
+							dupPkgs[p.Name] = []string{existing.Version}
+						}
+						dupPkgs[p.Name] = append(dupPkgs[p.Name], pv)
+					}
+					if compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
+						pkgs[p.Name] = models.Package{
+							Name:    p.Name,
+							Version: pv,
+							Arch:    p.Arch,
+						}
+					}
+				} else {
 					pkgs[p.Name] = models.Package{
 						Name:    p.Name,
 						Version: pv,
@@ -281,6 +297,15 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 	scanResult.Packages = pkgs
 	scanResult.SrcPackages = srcPkgs
 	scanResult.LibraryScanners = libraryScanners
+
+	for _, name := range slices.Sorted(maps.Keys(dupPkgs)) {
+		slices.Sort(dupPkgs[name])
+		scanResult.Warnings = append(scanResult.Warnings, fmt.Sprintf(
+			"Duplicate OS package detected: %s (%s). The newest version is kept, but false-positive CVEs may remain.",
+			name, strings.Join(dupPkgs[name], ", "),
+		))
+	}
+
 	return scanResult, nil
 }
 
