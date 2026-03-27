@@ -206,6 +206,9 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 							dupPkgs[p.Name] = append(versions, pv)
 						}
 					}
+					// >= (not >) so that the Arch-bearing entry from Packages
+					// overwrites the Arch-less one written by the Vulnerabilities
+					// loop above, even when the version is identical.
 					if compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
 						pkgs[p.Name] = models.Package{
 							Name:    p.Name,
@@ -231,6 +234,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 
 				if existing, ok := srcPkgs[p.SrcName]; ok {
 					existing.AddBinaryName(p.Name)
+					// >= for consistency with pkgs above.
 					if compareVersions(trivyResult.Type, sv, existing.Version) >= 0 {
 						srcPkgs[p.SrcName] = models.SrcPackage{
 							Name:        p.SrcName,

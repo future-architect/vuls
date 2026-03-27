@@ -3,6 +3,8 @@ package pkg_test
 import (
 	"testing"
 
+	trivydbTypes "github.com/aquasecurity/trivy-db/pkg/types"
+	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
 	gocmp "github.com/google/go-cmp/cmp"
 	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 
@@ -800,6 +802,83 @@ func TestConvert(t *testing.T) {
 						Name:        "openssl",
 						Version:     "3.5.5-r0",
 						BinaryNames: []string{"openssl"},
+					},
+				},
+			},
+		},
+		{
+			// The Vulnerabilities loop writes pkgs entries without Arch.
+			// The ClassOSPkg Packages loop must overwrite with same version
+			// to add Arch (hence >= not > in compareVersions).
+			name: "vuln entry without Arch is augmented by Packages entry",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Vulnerabilities: []types.DetectedVulnerability{
+							{
+								VulnerabilityID:  "CVE-2025-99999",
+								PkgName:          "libssl3t64",
+								InstalledVersion: "3.5.5-1~deb13u1",
+								Vulnerability: trivydbTypes.Vulnerability{
+									VendorSeverity: trivydbTypes.VendorSeverity{
+										vulnerability.Debian: trivydbTypes.SeverityLow,
+									},
+								},
+							},
+						},
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion: models.JSONVersion,
+				ScannedCves: models.VulnInfos{
+					"CVE-2025-99999": {
+						CveID: "CVE-2025-99999",
+						Confidences: models.Confidences{
+							{Score: 100, DetectionMethod: models.TrivyMatchStr},
+						},
+						AffectedPackages: models.PackageFixStatuses{
+							{Name: "libssl3t64", NotFixedYet: true, FixState: "Affected"},
+						},
+						CveContents: models.CveContents{
+							"trivy:debian": []models.CveContent{{
+								Type:          "trivy:debian",
+								CveID:         "CVE-2025-99999",
+								Cvss3Severity: "LOW",
+							}},
+						},
+						LibraryFixedIns: models.LibraryFixedIns{},
+					},
+				},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:    "libssl3t64",
+						Version: "3.5.5-1~deb13u1",
+						Arch:    "amd64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
 					},
 				},
 			},
