@@ -5491,7 +5491,11 @@ func (w *windows) scanLibraries() (err error) {
 		trivypath := w.cleanPath(abspath)
 		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, w.ServerInfo.Mode.IsOffline())
 		if err != nil {
-			return xerrors.Errorf("Failed to analyze library. err: %w, filepath: %s", err, trivypath)
+			// Collect errors and continue scanning remaining lockfiles.
+			// Errors are included in ScanResult.Errors in the JSON output.
+			w.log.Errorf("Failed to analyze library %s: %+v", abspath, err)
+			w.errs = append(w.errs, xerrors.Errorf("Failed to analyze library %s: %w", abspath, err))
+			continue
 		}
 		for _, libscanner := range libraryScanners {
 			libscanner.LockfilePath = abspath

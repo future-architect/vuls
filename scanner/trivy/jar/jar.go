@@ -1,72 +1,29 @@
 package jar
 
 import (
-	"context"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
+	"io"
 
-	"golang.org/x/xerrors"
-
-	"github.com/aquasecurity/trivy/pkg/fanal/analyzer"
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
-	"github.com/aquasecurity/trivy/pkg/parallel"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
+	"golang.org/x/xerrors"
 )
 
-func init() {
-	analyzer.RegisterPostAnalyzer(analyzer.TypeJar, newJavaLibraryAnalyzer)
-}
-
-const version = 1
-
-var requiredExtensions = []string{
-	".jar",
-	".war",
-	".ear",
-	".par",
-}
-
-// javaLibraryAnalyzer analyzes jar/war/ear/par files
-type javaLibraryAnalyzer struct {
-	parallel int
-}
-
-func newJavaLibraryAnalyzer(options analyzer.AnalyzerOptions) (analyzer.PostAnalyzer, error) {
-	return &javaLibraryAnalyzer{
-		parallel: options.Parallel,
-	}, nil
-}
-
-func (a *javaLibraryAnalyzer) PostAnalyze(ctx context.Context, input analyzer.PostAnalysisInput) (*analyzer.AnalysisResult, error) {
-	// It will be called on each JAR file
-	onFile := func(path string, info fs.FileInfo, r xio.ReadSeekerAt) (*types.Application, error) {
-		p := newParser(withSize(info.Size()), withFilePath(path))
-		parsedLibs, err := p.parse(r)
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to parse %s. err: %w", path, err)
-		}
-
-		return toApplication(path, parsedLibs), nil
+// ParseJAR parses a JAR/WAR/EAR/PAR file and returns the detected libraries.
+func ParseJAR(filePath string, r xio.ReadSeekerAt) (*types.Application, error) {
+	size, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to get size of %s: %w", filePath, err)
+	}
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return nil, xerrors.Errorf("Failed to seek %s: %w", filePath, err)
 	}
 
-	var apps []types.Application
-	onResult := func(app *types.Application) error {
-		if app == nil {
-			return nil
-		}
-		apps = append(apps, *app)
-		return nil
+	p := newParser(withSize(size), withFilePath(filePath))
+	libs, err := p.parse(r)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to parse %s: %w", filePath, err)
 	}
-
-	if err := parallel.WalkDir(ctx, input.FS, ".", a.parallel, onFile, onResult); err != nil {
-		return nil, xerrors.Errorf("Failed to walk dir. err: %w", err)
-	}
-
-	return &analyzer.AnalysisResult{
-		Applications: apps,
-	}, nil
+	return toApplication(filePath, libs), nil
 }
 
 func toApplication(rootFilePath string, libs []jarLibrary) *types.Application {
@@ -94,22 +51,4 @@ func toApplication(rootFilePath string, libs []jarLibrary) *types.Application {
 		FilePath: rootFilePath,
 		Packages: pkgs,
 	}
-}
-
-func (a *javaLibraryAnalyzer) Required(filePath string, _ os.FileInfo) bool {
-	ext := filepath.Ext(filePath)
-	for _, required := range requiredExtensions {
-		if strings.EqualFold(ext, required) {
-			return true
-		}
-	}
-	return false
-}
-
-func (a *javaLibraryAnalyzer) Type() analyzer.Type {
-	return analyzer.TypeJar
-}
-
-func (a *javaLibraryAnalyzer) Version() int {
-	return version
 }

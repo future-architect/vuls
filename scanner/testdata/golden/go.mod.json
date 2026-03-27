@@ -1,0 +1,103 @@
+[
+  {
+    "type": "gomod",
+    "lockfilePath": "go.mod",
+    "libs": [
+      {
+        "name": "github.com/docker/distribution",
+        "version": "v2.7.1+incompatible",
+        "purl": "pkg:golang/github.com/docker/distribution@v2.7.1%2Bincompatible"
+      },
+      {
+        "name": "github.com/docker/docker",
+        "version": "v20.10.11+incompatible",
+        "purl": "pkg:golang/github.com/docker/docker@v20.10.11%2Bincompatible"
+      },
+      {
+        "name": "github.com/docker/go-connections",
+        "version": "v0.4.0",
+        "purl": "pkg:golang/github.com/docker/go-connections@v0.4.0"
+      },
+      {
+        "name": "github.com/docker/go-units",
+        "version": "v0.4.0",
+        "purl": "pkg:golang/github.com/docker/go-units@v0.4.0"
+      },
+      {
+        "name": "github.com/open-policy-agent/opa",
+        "version": "v0.35.0",
+        "purl": "pkg:golang/github.com/open-policy-agent/opa@v0.35.0"
+      },
+      {
+        "name": "github.com/testdata/testdata",
+        "version": "",
+        "purl": "pkg:golang/github.com/testdata/testdata"
+      },
+      {
+        "name": "go.opencensus.io",
+        "version": "v0.23.0",
+        "purl": "pkg:golang/go.opencensus.io@v0.23.0"
+      },
+      {
+        "name": "go4.org/intern",
+        "version": "v0.0.0-20211027215823-ae77deb06f29",
+        "purl": "pkg:golang/go4.org/intern@v0.0.0-20211027215823-ae77deb06f29"
+      },
+      {
+        "name": "go4.org/unsafe/assume-no-moving-gc",
+        "version": "v0.0.0-20211027215541-db492cf91b37",
+        "purl": "pkg:golang/go4.org/unsafe/assume-no-moving-gc@v0.0.0-20211027215541-db492cf91b37"
+      },
+      {
+        "name": "golang.org/x/crypto",
+        "version": "v0.0.0-20201002170205-7f63de1d35b0",
+        "purl": "pkg:golang/golang.org/x/crypto@v0.0.0-20201002170205-7f63de1d35b0"
+      },
+      {
+        "name": "golang.org/x/net",
+        "version": "v0.0.0-20211111083644-e5c967477495",
+        "purl": "pkg:golang/golang.org/x/net@v0.0.0-20211111083644-e5c967477495"
+      },
+      {
+        "name": "golang.org/x/sys",
+        "version": "v0.0.0-20211205182925-97ca703d548d",
+        "purl": "pkg:golang/golang.org/x/sys@v0.0.0-20211205182925-97ca703d548d"
+      },
+      {
+        "name": "golang.org/x/text",
+        "version": "v0.3.6",
+        "purl": "pkg:golang/golang.org/x/text@v0.3.6"
+      },
+      {
+        "name": "golang.org/x/time",
+        "version": "v0.0.0-20210723032227-1f47c861a9ac",
+        "purl": "pkg:golang/golang.org/x/time@v0.0.0-20210723032227-1f47c861a9ac"
+      },
+      {
+        "name": "google.golang.org/genproto",
+        "version": "v0.0.0-20210602131652-f16073e35f0c",
+        "purl": "pkg:golang/google.golang.org/genproto@v0.0.0-20210602131652-f16073e35f0c"
+      },
+      {
+        "name": "google.golang.org/grpc",
+        "version": "v1.38.0",
+        "purl": "pkg:golang/google.golang.org/grpc@v1.38.0"
+      },
+      {
+        "name": "google.golang.org/protobuf",
+        "version": "v1.27.1",
+        "purl": "pkg:golang/google.golang.org/protobuf@v1.27.1"
+      },
+      {
+        "name": "gopkg.in/yaml.v2",
+        "version": "v2.4.0",
+        "purl": "pkg:golang/gopkg.in/yaml.v2@v2.4.0"
+      },
+      {
+        "name": "gopkg.in/yaml.v3",
+        "version": "v3.0.0-20210107192922-496545a6307b",
+        "purl": "pkg:golang/gopkg.in/yaml.v3@v3.0.0-20210107192922-496545a6307b"
+      }
+    ]
+  }
+]

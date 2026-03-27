@@ -1,0 +1,28 @@
+[
+  {
+    "type": "hex",
+    "lockfilePath": "mix.lock",
+    "libs": [
+      {
+        "name": "cowboy",
+        "version": "2.10.0",
+        "purl": "pkg:hex/cowboy@2.10.0"
+      },
+      {
+        "name": "cowboy_telemetry",
+        "version": "0.4.0",
+        "purl": "pkg:hex/cowboy_telemetry@0.4.0"
+      },
+      {
+        "name": "cowlib",
+        "version": "2.12.1",
+        "purl": "pkg:hex/cowlib@2.12.1"
+      },
+      {
+        "name": "paginator",
+        "version": "0.6.0",
+        "purl": "pkg:hex/paginator@0.6.0"
+      }
+    ]
+  }
+]

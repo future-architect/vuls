@@ -1,0 +1,21 @@
+[
+  {
+    "type": "jar",
+    "lockfilePath": "wrong-name-log4j-core.jar",
+    "libs": [
+      {
+        "name": "org.apache.logging.log4j:Apache Log4j Core",
+        "version": "2.13.0",
+        "purl": "pkg:maven/org.apache.logging.log4j/Apache%20Log4j%20Core@2.13.0",
+        "filePath": "wrong-name-log4j-core.jar",
+        "digest": "sha1:57b8b57dac4c87696acb4b8457fd8cbf4273d40d"
+      },
+      {
+        "name": "org.apache.logging.log4j:log4j-core",
+        "version": "2.13.0",
+        "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.13.0",
+        "filePath": "wrong-name-log4j-core.jar"
+      }
+    ]
+  }
+]

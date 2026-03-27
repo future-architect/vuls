@@ -1,0 +1,98 @@
+# scripts/
+
+Development scripts for testing and validation.
+
+## compare-lockfile: Lockfile parsing regression test
+
+Compares `AnalyzeLibrary()` output between two Git refs using real-world lockfiles from popular OSS projects. Use this to verify that changes to the library scanning code (scanner package, Trivy parser integration) do not introduce regressions.
+
+### When to run
+
+- Refactoring `scanner/base.go` (`AnalyzeLibrary`, `scanLibraries`)
+- Changing `scanner/dispatch.go` (file-to-parser mapping)
+- Updating Trivy dependency version in `go.mod`
+- Modifying `scanner/trivy/jar/` (JAR/WAR parsing)
+- Adding or removing a language parser
+
+### Usage
+
+```bash
+# Compare current branch against master
+make compare-lockfile
+
+# Compare against a specific commit or tag
+make compare-lockfile BASE=abc1234
+make compare-lockfile BASE=v0.27.0
+```
+
+### What it does
+
+1. Downloads lockfiles/binaries from the internet (GitHub, Maven Central) — currently 129 fixtures defined in `lockfile-fixtures.json`
+2. Creates a `git worktree` for the base ref and generates a minimal runner executed via `go run`
+3. Runs `AnalyzeLibrary()` on both refs for all fixtures
+4. Compares JSON output (sorted by name+version for deterministic comparison)
+5. Prints results and writes detailed log to `<workdir>/comparison.log` (default workdir: `$TMPDIR/diet-compare`)
+
+### Fixtures
+
+Defined in `scripts/lockfile-fixtures.json`. All URLs use pinned tags for reproducibility.
+
+| Type | Project | Source |
+|------|---------|--------|
+| npm (10) | nestjs/nest, etc. | GitHub |
+| yarn (10) | facebook/react, etc. | GitHub |
+| pnpm (10) | vitejs/vite, etc. | GitHub |
+| pip (10) | home-assistant/core, etc. | GitHub |
+| pipenv (5) | pypa/pipenv, etc. | GitHub |
+| poetry (10) | python-poetry/poetry, etc. | GitHub |
+| bundler (10) | rails/rails, etc. | GitHub |
+| cargo (10) | BurntSushi/ripgrep, etc. | GitHub |
+| composer (10) | matomo-org/matomo, etc. | GitHub |
+| gomod (10) | kubernetes/kubernetes, etc. | GitHub |
+| pom (10) | apache/spark, etc. | GitHub |
+| mix (10) | phoenixframework/phoenix, etc. | GitHub |
+| swift (10) | swift-composable-architecture, etc. | GitHub |
+| jar (2) | log4j-core, commons-lang3 | Maven Central |
+| gobinary (1) | mikefarah/yq | GitHub Releases |
+| rustbinary (1) | cargo-bins/cargo-binstall | GitHub Releases |
+
+### Adding fixtures
+
+Edit `scripts/lockfile-fixtures.json`. Each entry:
+
+```json
+{
+  "type": "npm",
+  "project": "expressjs/express",
+  "tag": "v5.1.0",
+  "filename": "package-lock.json",
+  "url": "https://raw.githubusercontent.com/expressjs/express/v5.1.0/package-lock.json"
+}
+```
+
+For binaries, add `filemode` (493 = 0755) and optionally `archivePath` for tar.gz:
+
+```json
+{
+  "type": "gobinary",
+  "project": "mikefarah/yq",
+  "tag": "v4.44.6",
+  "filename": "yq",
+  "filemode": 493,
+  "url": "https://github.com/mikefarah/yq/releases/download/v4.44.6/yq_linux_amd64"
+}
+```
+
+### Output
+
+```
+=== Summary ===
+Total: 129 fixtures
+Identical: 128
+Different: 1
+Skipped: 0
+```
+
+Exit code 0 = all identical, 1 = differences found.
+
+Detailed log: `<workdir>/comparison.log` (use `-workdir` to change, default: `$TMPDIR/diet-compare`)
