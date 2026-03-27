@@ -95,7 +95,7 @@ var lockfiles = []lockfileEntry{
 // e.g. "npm-v3/package-lock.json" -> "npm-v3_package-lock.json"
 // Uses filepath.ToSlash to normalize path separators across platforms.
 func goldenFileName(lockfilePath string) string {
-	return strings.ReplaceAll(filepath.ToSlash(lockfilePath), "/", "_") + ".golden.json"
+	return strings.ReplaceAll(filepath.ToSlash(lockfilePath), "/", "_") + ".json"
 }
 
 func TestAnalyzeLibrary_Golden(t *testing.T) {
@@ -199,7 +199,7 @@ func TestAnalyzeLibrary_PomOnline(t *testing.T) {
 		t.Fatalf("Failed to marshal result: %v", err)
 	}
 
-	goldenPath := filepath.Join(goldenDir, "pom.xml.online.golden.json")
+	goldenPath := filepath.Join(goldenDir, "pom.xml.online.json")
 
 	if *update {
 		if err := os.MkdirAll(goldenDir, 0755); err != nil {
@@ -223,7 +223,7 @@ func TestAnalyzeLibrary_PomOnline(t *testing.T) {
 	}
 
 	// Online mode should resolve transitive dependencies, producing more results than offline.
-	offlineGoldenPath := filepath.Join(goldenDir, "pom.xml.golden.json")
+	offlineGoldenPath := filepath.Join(goldenDir, "pom.xml.json")
 	offlineJSON, err := os.ReadFile(offlineGoldenPath)
 	if err != nil {
 		t.Logf("Offline golden file not found, skipping comparison: %s", offlineGoldenPath)
@@ -268,13 +268,6 @@ type goldenLibrary struct {
 	Dev      bool   `json:"dev,omitempty"`
 }
 
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
 	result := make([]goldenLibraryScanner, 0, len(scanners))
 	for _, s := range scanners {
@@ -294,30 +287,31 @@ func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
 			})
 		}
 		slices.SortFunc(gs.Libs, func(a, b goldenLibrary) int {
-			if c := cmp.Compare(a.Name, b.Name); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.Version, b.Version); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.PURL, b.PURL); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.FilePath, b.FilePath); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.Digest, b.Digest); c != 0 {
-				return c
-			}
-			return cmp.Compare(boolToInt(a.Dev), boolToInt(b.Dev))
+			return cmp.Or(
+				cmp.Compare(a.Name, b.Name),
+				cmp.Compare(a.Version, b.Version),
+				cmp.Compare(a.PURL, b.PURL),
+				cmp.Compare(a.FilePath, b.FilePath),
+				cmp.Compare(a.Digest, b.Digest),
+				func() int {
+					switch {
+					case !a.Dev && b.Dev:
+						return -1
+					case a.Dev && !b.Dev:
+						return +1
+					default:
+						return 0
+					}
+				}(),
+			)
 		})
 		result = append(result, gs)
 	}
 	slices.SortFunc(result, func(a, b goldenLibraryScanner) int {
-		if c := cmp.Compare(a.Type, b.Type); c != 0 {
-			return c
-		}
-		return cmp.Compare(a.LockfilePath, b.LockfilePath)
+		return cmp.Or(
+			cmp.Compare(a.Type, b.Type),
+			cmp.Compare(a.LockfilePath, b.LockfilePath),
+		)
 	})
 	return result
 }

@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
@@ -45,10 +46,8 @@ const (
 // detectParserType determines which parser should handle a given file,
 // replicating the logic of each Trivy fanal analyzer's Required() method.
 func detectParserType(filePath string, filemode os.FileMode) parserType {
-	fileName := filepath.Base(filePath)
-
 	// Exact filename matches (most common case)
-	switch fileName {
+	switch filepath.Base(filePath) {
 	// Node.js
 	case ftypes.NpmPkgLock: // package-lock.json
 		if containsDir(filePath, "node_modules") {
@@ -159,12 +158,7 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 
 // containsDir checks if a filepath contains a specific directory component.
 func containsDir(filePath, dir string) bool {
-	for _, part := range strings.Split(filepath.ToSlash(filePath), "/") {
-		if part == dir {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(strings.Split(filepath.ToSlash(filePath), "/"), dir)
 }
 
 // isExecutable checks if the file is an executable binary.

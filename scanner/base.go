@@ -871,13 +871,22 @@ func parseLockfile(ctx context.Context, langType ftypes.LangType, filePath strin
 func parseBinary(ctx context.Context, langType ftypes.LangType, filePath string, r xio.ReadSeekerAt, parser lockfileParser) (*ftypes.Application, error) {
 	pkgs, _, err := parser.Parse(ctx, r)
 	if err != nil {
-		// Go binary parser: ErrUnrecognizedExe, ErrNonGoBinary
-		// Rust binary parser: ErrUnrecognizedExe, ErrNonRustBinary
-		if errors.Is(err, gobinary.ErrUnrecognizedExe) || errors.Is(err, gobinary.ErrNonGoBinary) ||
-			errors.Is(err, rustbinary.ErrUnrecognizedExe) || errors.Is(err, rustbinary.ErrNonRustBinary) {
-			return nil, nil
+		switch langType {
+		case ftypes.GoBinary:
+			// Go binary parser: ErrUnrecognizedExe, ErrNonGoBinary
+			if errors.Is(err, gobinary.ErrUnrecognizedExe) || errors.Is(err, gobinary.ErrNonGoBinary) {
+				return nil, nil
+			}
+			return nil, xerrors.Errorf("parse error: %w", err)
+		case ftypes.RustBinary:
+			// Rust binary parser: ErrUnrecognizedExe, ErrNonRustBinary
+			if errors.Is(err, rustbinary.ErrUnrecognizedExe) || errors.Is(err, rustbinary.ErrNonRustBinary) {
+				return nil, nil
+			}
+			return nil, xerrors.Errorf("parse error: %w", err)
+		default:
+			return nil, xerrors.Errorf("unexpected language type for binary parser. expected: %q, actual: %q", []ftypes.LangType{ftypes.GoBinary, ftypes.RustBinary}, langType)
 		}
-		return nil, xerrors.Errorf("parse error: %w", err)
 	}
 	if len(pkgs) == 0 {
 		return nil, nil
@@ -895,7 +904,7 @@ func parseExecutableBinary(ctx context.Context, filePath string, r xio.ReadSeeke
 	// Try Go binary first
 	app, err := parseBinary(ctx, ftypes.GoBinary, filePath, r, gobinary.NewParser())
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to parse Go binary: %w", err)
 	}
 	if app != nil {
 		return app, nil
@@ -905,7 +914,16 @@ func parseExecutableBinary(ctx context.Context, filePath string, r xio.ReadSeeke
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, xerrors.Errorf("seek error: %w", err)
 	}
-	return parseBinary(ctx, ftypes.RustBinary, filePath, r, rustbinary.NewParser())
+
+	app, err = parseBinary(ctx, ftypes.RustBinary, filePath, r, rustbinary.NewParser())
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to parse Rust binary: %w", err)
+	}
+	if app != nil {
+		return app, nil
+	}
+
+	return nil, nil
 }
 
 // parseYarn handles yarn.lock which has a different parser signature (4 return values including licenses).

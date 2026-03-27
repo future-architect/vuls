@@ -28,9 +28,9 @@ package main
 
 import (
 	"archive/tar"
-	"cmp"
 	"compress/gzip"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -39,13 +39,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
-
-	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/scanner"
 )
+
+//go:embed base-runner.go
+var baseRunnerCode string
 
 type fixture struct {
 	Type        string      `json:"type"`
@@ -55,82 +54,6 @@ type fixture struct {
 	Filemode    os.FileMode `json:"filemode,omitempty"` // 0 means 0644
 	URL         string      `json:"url"`
 	ArchivePath string      `json:"archivePath,omitempty"` // path inside tar.gz archive
-}
-
-func (f fixture) effectiveFilemode() os.FileMode {
-	if f.Filemode != 0 {
-		return f.Filemode
-	}
-	return 0644
-}
-
-type lib struct {
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	PURL     string `json:"purl,omitempty"`
-	FilePath string `json:"filePath,omitempty"`
-	Digest   string `json:"digest,omitempty"`
-	Dev      bool   `json:"dev,omitempty"`
-}
-
-type result struct {
-	Type         string `json:"type"`
-	LockfilePath string `json:"lockfilePath"`
-	Libs         []lib  `json:"libs"`
-}
-
-func normalize(scanners []models.LibraryScanner) []result {
-	out := make([]result, 0, len(scanners))
-	for _, s := range scanners {
-		r := result{Type: string(s.Type), LockfilePath: s.LockfilePath}
-		for _, l := range s.Libs {
-			r.Libs = append(r.Libs, lib{
-				Name: l.Name, Version: l.Version, PURL: l.PURL,
-				FilePath: l.FilePath, Digest: l.Digest, Dev: l.Dev,
-			})
-		}
-		slices.SortFunc(r.Libs, func(a, b lib) int {
-			if c := cmp.Compare(a.Name, b.Name); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.Version, b.Version); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.PURL, b.PURL); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.FilePath, b.FilePath); c != 0 {
-				return c
-			}
-			if c := cmp.Compare(a.Digest, b.Digest); c != 0 {
-				return c
-			}
-			return cmp.Compare(boolToInt(a.Dev), boolToInt(b.Dev))
-		})
-		out = append(out, r)
-	}
-	slices.SortFunc(out, func(a, b result) int {
-		if c := cmp.Compare(a.Type, b.Type); c != 0 {
-			return c
-		}
-		return cmp.Compare(a.LockfilePath, b.LockfilePath)
-	})
-	return out
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-func countLibs(scanners []models.LibraryScanner) int {
-	n := 0
-	for _, s := range scanners {
-		n += len(s.Libs)
-	}
-	return n
 }
 
 type logger struct {
@@ -227,7 +150,8 @@ func main() {
 
 	// Run on current branch
 	log.log("=== Running AnalyzeLibrary on current branch ===")
-	currentResults := runAnalyze(fixtures, fixtureDir, resultCurrentDir, log)
+	runAnalyze(fixtureDir, resultCurrentDir, *fixturesPath, log)
+	currentResults := countResultLibs(resultCurrentDir)
 
 	// Run on base ref using worktree
 	log.log("")
@@ -369,43 +293,42 @@ func extractFromTarGz(r io.Reader, targetPath, outPath string) error {
 	}
 }
 
-func runAnalyze(fixtures []fixture, fixtureDir, outputDir string, log *logger) map[string]int {
+func runAnalyze(fixtureDir, outputDir, fixturesPath string, log *logger) {
+	cmd := exec.Command("go", "run", "scripts/base-runner.go", fixtureDir, outputDir, fixturesPath)
+	out, err := cmd.CombinedOutput()
+	if len(out) > 0 {
+		log.log("%s", strings.TrimRight(string(out), "\n"))
+	}
+	if err != nil {
+		log.log("ERROR: Failed to run current branch analysis: %v", err)
+	}
+}
+
+func countResultLibs(outputDir string) map[string]int {
 	results := make(map[string]int)
-	for _, f := range fixtures {
-		srcPath := filepath.Join(fixtureDir, f.safeFilename())
-		contents, err := os.ReadFile(srcPath)
-		if err != nil {
-			log.log("READ ERROR  %-12s %-40s %v", f.Type, f.Project, err)
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		return results
+	}
+	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".result.json") {
 			continue
 		}
-
-		parseErr := false
-		got, err := scanner.AnalyzeLibrary(context.Background(), f.Filename, contents, f.effectiveFilemode(), true)
+		data, err := os.ReadFile(filepath.Join(outputDir, e.Name()))
 		if err != nil {
-			log.log("PARSE ERROR %-12s %-40s %v", f.Type, f.Project, err)
-			// Write empty result so comparison can still detect the difference
-			got = nil
-			parseErr = true
-		}
-
-		j, err := json.MarshalIndent(normalize(got), "", "  ")
-		if err != nil {
-			log.log("JSON ERROR  %-12s %-40s %v", f.Type, f.Project, err)
 			continue
 		}
-		outFile := filepath.Join(outputDir, f.safeFilename()+".result.json")
-		if err := os.WriteFile(outFile, j, 0644); err != nil {
-			log.log("WRITE ERROR %-12s %-40s %v", f.Type, f.Project, err)
+		var res []struct {
+			Libs []json.RawMessage `json:"libs"`
+		}
+		if err := json.Unmarshal(data, &res); err != nil {
 			continue
 		}
-
-		libs := countLibs(got)
-		results[f.safeFilename()] = libs
-		if parseErr {
-			log.log("PARSE ERROR %-12s %-40s (wrote empty result)", f.Type, f.Project)
-		} else {
-			log.log("OK  %-12s %-40s %d libs", f.Type, f.Project, libs)
+		libs := 0
+		for _, r := range res {
+			libs += len(r.Libs)
 		}
+		results[strings.TrimSuffix(e.Name(), ".result.json")] = libs
 	}
 	return results
 }
@@ -442,150 +365,11 @@ func runOnBase(baseRef, fixtureDir, outputDir, fixturesPath, workdir string, log
 		return nil
 	}
 
-	// Write a minimal runner that uses the base's scanner package
-	runnerCode := `//go:build ignore
-
-package main
-
-import (
-	"cmp"
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
-	"slices"
-	"strings"
-
-	"github.com/future-architect/vuls/models"
-	"github.com/future-architect/vuls/scanner"
-)
-
-type fixture struct {
-	Type     string      ` + "`json:\"type\"`" + `
-	Project  string      ` + "`json:\"project\"`" + `
-	Filename string      ` + "`json:\"filename\"`" + `
-	Filemode os.FileMode ` + "`json:\"filemode,omitempty\"`" + `
-	URL      string      ` + "`json:\"url\"`" + `
-}
-
-func (f fixture) effectiveFilemode() os.FileMode {
-	if f.Filemode != 0 { return f.Filemode }
-	return 0644
-}
-
-type lib struct {
-	Name     string ` + "`json:\"name\"`" + `
-	Version  string ` + "`json:\"version\"`" + `
-	PURL     string ` + "`json:\"purl,omitempty\"`" + `
-	FilePath string ` + "`json:\"filePath,omitempty\"`" + `
-	Digest   string ` + "`json:\"digest,omitempty\"`" + `
-	Dev      bool   ` + "`json:\"dev,omitempty\"`" + `
-}
-
-type result struct {
-	Type         string ` + "`json:\"type\"`" + `
-	LockfilePath string ` + "`json:\"lockfilePath\"`" + `
-	Libs         []lib  ` + "`json:\"libs\"`" + `
-}
-
-func btoi(b bool) int { if b { return 1 }; return 0 }
-
-func normalize(scanners []models.LibraryScanner) []result {
-	out := make([]result, 0, len(scanners))
-	for _, s := range scanners {
-		r := result{Type: string(s.Type), LockfilePath: s.LockfilePath}
-		for _, l := range s.Libs {
-			r.Libs = append(r.Libs, lib{
-				Name: l.Name, Version: l.Version, PURL: l.PURL,
-				FilePath: l.FilePath, Digest: l.Digest, Dev: l.Dev,
-			})
-		}
-		slices.SortFunc(r.Libs, func(a, b lib) int {
-			if c := cmp.Compare(a.Name, b.Name); c != 0 { return c }
-			if c := cmp.Compare(a.Version, b.Version); c != 0 { return c }
-			if c := cmp.Compare(a.PURL, b.PURL); c != 0 { return c }
-			if c := cmp.Compare(a.FilePath, b.FilePath); c != 0 { return c }
-			if c := cmp.Compare(a.Digest, b.Digest); c != 0 { return c }
-			return cmp.Compare(btoi(a.Dev), btoi(b.Dev))
-		})
-		out = append(out, r)
-	}
-	slices.SortFunc(out, func(a, b result) int {
-		if c := cmp.Compare(a.Type, b.Type); c != 0 { return c }
-		return cmp.Compare(a.LockfilePath, b.LockfilePath)
-	})
-	return out
-}
-
-func main() {
-	if len(os.Args) < 4 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <fixtureDir> <outputDir> <fixturesJSON>\n", os.Args[0])
-		os.Exit(1)
-	}
-	fixtureDir := os.Args[1]
-	outputDir := os.Args[2]
-	fixturesJSON := os.Args[3]
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create output dir: %v\n", err)
-		os.Exit(1)
-	}
-
-	data, err := os.ReadFile(fixturesJSON)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to read fixtures: %v\n", err)
-		os.Exit(1)
-	}
-	var fixtures []fixture
-	if err := json.Unmarshal(data, &fixtures); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse fixtures: %v\n", err)
-		os.Exit(1)
-	}
-
-	replacer := strings.NewReplacer("/", "_", "\\", "_", "..", "_")
-	for _, f := range fixtures {
-		safe := replacer.Replace(f.Project) + "__" + replacer.Replace(f.Filename)
-
-		srcPath := filepath.Join(fixtureDir, safe)
-		contents, err := os.ReadFile(srcPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "READ ERROR  %-12s %-40s %v\n", f.Type, f.Project, err)
-			continue
-		}
-
-		parseErr := false
-		got, err := scanner.AnalyzeLibrary(context.Background(), f.Filename, contents, f.effectiveFilemode(), true)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "PARSE ERROR %-12s %-40s %v\n", f.Type, f.Project, err)
-			got = nil
-			parseErr = true
-		}
-
-		j, jerr := json.MarshalIndent(normalize(got), "", "  ")
-		if jerr != nil {
-			fmt.Fprintf(os.Stderr, "JSON ERROR  %-12s %-40s %v\n", f.Type, f.Project, jerr)
-			continue
-		}
-		outFile := filepath.Join(outputDir, safe+".result.json")
-		if werr := os.WriteFile(outFile, j, 0644); werr != nil {
-			fmt.Fprintf(os.Stderr, "WRITE ERROR %-12s %-40s %v\n", f.Type, f.Project, werr)
-			continue
-		}
-		libs := 0
-		for _, s := range got { libs += len(s.Libs) }
-		if parseErr {
-			fmt.Fprintf(os.Stderr, "PARSE ERROR %-12s %-40s (wrote empty result)\n", f.Type, f.Project)
-		} else {
-			fmt.Printf("OK  %-12s %-40s %d libs\n", f.Type, f.Project, libs)
-		}
-	}
-}
-`
 	if err := os.MkdirAll(filepath.Join(worktreeDir, "scripts"), 0755); err != nil {
 		log.log("ERROR: Failed to create scripts dir in worktree: %v", err)
 		return nil
 	}
-	if err := os.WriteFile(filepath.Join(worktreeDir, "base_runner.go"), []byte(runnerCode), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(worktreeDir, "base_runner.go"), []byte(baseRunnerCode), 0644); err != nil {
 		log.log("ERROR: Failed to write base_runner.go: %v", err)
 		return nil
 	}
@@ -594,38 +378,16 @@ func main() {
 	cmd = exec.Command("go", "run", "base_runner.go", fixtureDir, outputDir,
 		filepath.Join(worktreeDir, "scripts", "lockfile-fixtures.json"))
 	cmd.Dir = worktreeDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	out, err := cmd.CombinedOutput()
+	if len(out) > 0 {
+		log.log("%s", strings.TrimRight(string(out), "\n"))
+	}
+	if err != nil {
 		log.log("ERROR: Failed to run base analysis: %v", err)
 		return nil
 	}
 
-	// Count results
-	results := make(map[string]int)
-	entries, err := os.ReadDir(outputDir)
-	if err != nil {
-		log.log("ERROR: Failed to read output dir %s: %v", outputDir, err)
-		return results
-	}
-	for _, e := range entries {
-		data, err := os.ReadFile(filepath.Join(outputDir, e.Name()))
-		if err != nil {
-			log.log("WARNING: Failed to read result file %s: %v", e.Name(), err)
-			continue
-		}
-		var res []result
-		if err := json.Unmarshal(data, &res); err != nil {
-			log.log("WARNING: Failed to parse result file %s: %v", e.Name(), err)
-			continue
-		}
-		libs := 0
-		for _, r := range res {
-			libs += len(r.Libs)
-		}
-		results[strings.TrimSuffix(e.Name(), ".result.json")] = libs
-	}
-	return results
+	return countResultLibs(outputDir)
 }
 
 func copyFile(src, dst string) error {
