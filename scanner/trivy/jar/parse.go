@@ -15,7 +15,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/log"
 	xio "github.com/aquasecurity/trivy/pkg/x/io"
 	xos "github.com/aquasecurity/trivy/pkg/x/os"
-	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 )
 
@@ -390,7 +389,21 @@ func (m manifest) determineVersion() (string, error) {
 }
 
 func removeLibraryDuplicates(libs []jarLibrary) []jarLibrary {
-	return lo.UniqBy(libs, func(lib jarLibrary) string {
+	return uniqBy(libs, func(lib jarLibrary) string {
 		return fmt.Sprintf("%s::%s::%s", lib.name, lib.version, lib.filePath)
 	})
+}
+
+func uniqBy[T any, K comparable](collection []T, keyFn func(T) K) []T {
+	seen := make(map[K]struct{}, len(collection))
+	result := make([]T, 0, len(collection))
+	for _, item := range collection {
+		k := keyFn(item)
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		seen[k] = struct{}{}
+		result = append(result, item)
+	}
+	return result
 }

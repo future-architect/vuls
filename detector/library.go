@@ -21,7 +21,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/samber/lo"
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
@@ -228,7 +227,7 @@ func (d *libraryDetector) improveJARInfo() error {
 		libs = append(libs, l)
 	}
 
-	d.scanner.Libs = lo.UniqBy(libs, func(lib models.Library) string {
+	d.scanner.Libs = uniqBy(libs, func(lib models.Library) string {
 		return fmt.Sprintf("%s::%s::%s", lib.Name, lib.Version, lib.FilePath)
 	})
 	return nil

@@ -314,3 +314,17 @@ func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, exploit
 
 	return nil
 }
+
+func uniqBy[T any, K comparable](collection []T, keyFn func(T) K) []T {
+	seen := make(map[K]struct{}, len(collection))
+	result := make([]T, 0, len(collection))
+	for _, item := range collection {
+		k := keyFn(item)
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		seen[k] = struct{}{}
+		result = append(result, item)
+	}
+	return result
+}
