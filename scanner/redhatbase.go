@@ -951,24 +951,41 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 			continue
 		}
 
+		pid := ss[0]
 		path := ss[1]
 		if path != "" && !strings.HasPrefix(path, "/") {
-			path = strings.Fields(path)[0]
-			// [ec2-user@ip-172-31-11-139 ~]$ sudo needs-restarting
-			// 2024 : auditd
-			// [ec2-user@ip-172-31-11-139 ~]$ type -p auditd
-			// /sbin/auditd
-			cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 which %s", path)
+			// Path is not absolute, use /proc/<PID>/exe to get the actual executable path
+			// This handles cases like "sshd: vagrant [priv]", "(sd-pam)", "-bash"
+			cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 readlink -f /proc/%s/exe", pid)
 			r := o.exec(cmd, sudo)
-			if !r.isSuccess() {
-				o.log.Debugf("Failed to exec which %s: %s", path, r)
-				continue
+			if r.isSuccess() {
+				path = strings.TrimSpace(r.Stdout)
+			} else {
+				// Fallback to old behavior (using which)
+				path = strings.Fields(path)[0]
+				cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 which %s", path)
+				r := o.exec(cmd, sudo)
+				if !r.isSuccess() {
+					o.log.Debugf("Failed to exec which %s: %s", path, r)
+					continue
+				}
+				path = strings.TrimSpace(r.Stdout)
 			}
-			path = strings.TrimSpace(r.Stdout)
+		}
+
+		// Resolve symlinks to get the real path before rpm -qf
+		// This handles cases like /usr/sbin/VBoxService -> /opt/VBoxGuestAdditions-*/sbin/VBoxService
+		cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 readlink -f %s", path)
+		r := o.exec(cmd, sudo)
+		if r.isSuccess() {
+			resolvedPath := strings.TrimSpace(r.Stdout)
+			if resolvedPath != "" {
+				path = resolvedPath
+			}
 		}
 
 		procs = append(procs, models.NeedRestartProcess{
-			PID:     ss[0],
+			PID:     pid,
 			Path:    path,
 			HasInit: true,
 		})
@@ -980,19 +997,44 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 // procPathToFQPN returns Fully-Qualified-Package-Name from the command
 func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 	execCommand = strings.ReplaceAll(execCommand, "\x00", " ") // for CentOS6.9
-	cmd := fmt.Sprintf("%s %s", o.rpmQf(), strings.Fields(execCommand)[0])
+	originalPath := strings.Fields(execCommand)[0]
+
+	// First try with the original path
+	cmd := fmt.Sprintf("%s %s", o.rpmQf(), originalPath)
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	if !r.isSuccess() {
 		return "", xerrors.Errorf("Failed to SSH: %s", r)
 	}
-	pack, ignroed, err := o.parseRpmQfLine(r.Stdout)
+	pack, ignored, err := o.parseRpmQfLine(r.Stdout)
 	if err != nil {
 		return "", xerrors.Errorf("Failed to parse rpm -qf line: %s, err: %+v", r.Stdout, err)
 	}
-	if ignroed {
-		return "", xerrors.Errorf("Failed to return FQPN. line: %s, err: ignore line", r.Stdout)
+	if !ignored {
+		return pack.FQPN(), nil
 	}
-	return pack.FQPN(), nil
+
+	// If original path didn't work, try resolving symlinks
+	// This handles cases like /usr/sbin/arptables -> /etc/alternatives/arptables
+	cmd = fmt.Sprintf("LANGUAGE=en_US.UTF-8 readlink -f %s", originalPath)
+	r = o.exec(util.PrependProxyEnv(cmd), noSudo)
+	if r.isSuccess() {
+		resolvedPath := strings.TrimSpace(r.Stdout)
+		if resolvedPath != "" && resolvedPath != originalPath {
+			cmd = fmt.Sprintf("%s %s", o.rpmQf(), resolvedPath)
+			r = o.exec(util.PrependProxyEnv(cmd), noSudo)
+			if r.isSuccess() {
+				pack, ignored, err = o.parseRpmQfLine(r.Stdout)
+				if err != nil {
+					return "", xerrors.Errorf("Failed to parse rpm -qf line: %s, err: %+v", r.Stdout, err)
+				}
+				if !ignored {
+					return pack.FQPN(), nil
+				}
+			}
+		}
+	}
+
+	return "", xerrors.Errorf("Failed to return FQPN. line: %s, err: ignore line", r.Stdout)
 }
 
 func (o *redhatBase) getOwnerPkgs(paths []string) (names []string, _ error) {
