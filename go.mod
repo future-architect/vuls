@@ -53,7 +53,6 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/vulsio/go-cti v0.3.6
 	github.com/vulsio/go-cve-dictionary v0.16.2
-	github.com/vulsio/gost v0.7.4
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/term v0.42.0
 	golang.org/x/text v0.36.0

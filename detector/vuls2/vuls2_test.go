@@ -465,6 +465,82 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "windows -> microsoft with WindowsKB",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "win-server",
+					Family:     "windows",
+					Release:    "Windows 10 Version 21H2 for x64-based Systems",
+					RunningKernel: models.Kernel{
+						Version: "10.0.19044.1234",
+					},
+					WindowsKB: &models.WindowsKB{
+						Applied:   []string{"5025288"},
+						Unapplied: []string{"5025221"},
+					},
+					Packages: models.Packages{
+						"Microsoft Edge": models.Package{
+							Name:    "Microsoft Edge",
+							Version: "128.0.2739.79",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "win-server",
+				Family:      ecosystemTypes.EcosystemTypeMicrosoft,
+				Release:     "Windows 10 Version 21H2 for x64-based Systems",
+
+				Kernel: scanTypes.Kernel{
+					Version: "10.0.19044.1234",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "Microsoft Edge",
+						Version: "128.0.2739.79",
+					},
+					{
+						Name:    "Windows 10 Version 21H2 for x64-based Systems",
+						Version: "10.0.19044.1234",
+					},
+				},
+				MicrosoftKB: scanTypes.MicrosoftKB{
+					Applied:   []string{"5025288"},
+					Unapplied: []string{"5025221"},
+				},
+			},
+		},
+		{
+			name: "windows without WindowsKB (nil)",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "win-server-no-kb",
+					Family:     "windows",
+					Release:    "Windows Server 2019",
+					RunningKernel: models.Kernel{
+						Version: "10.0.17763.1234",
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "win-server-no-kb",
+				Family:      ecosystemTypes.EcosystemTypeMicrosoft,
+				Release:     "Windows Server 2019",
+
+				Kernel: scanTypes.Kernel{
+					Version: "10.0.17763.1234",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "Windows Server 2019",
+						Version: "10.0.17763.1234",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

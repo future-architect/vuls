@@ -50,7 +50,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(&r, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
+		if err := DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
@@ -296,18 +296,15 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 }
 
 // DetectPkgCves detects OS pkg cves
-func DetectPkgCves(r *models.ScanResult, gostCnf config.GostConf, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
+func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
-			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine:
+			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine,
+			constant.Windows:
 			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
-			}
-		case constant.Windows:
-			if err := detectPkgsCvesWithGost(gostCnf, r, logOpts); err != nil {
-				return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 			}
 		default:
 			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
@@ -344,27 +341,27 @@ func DetectPkgCves(r *models.ScanResult, gostCnf config.GostConf, vuls2Conf conf
 	return nil
 }
 
-// isPkgCvesDetactable checks whether CVEs is detactable with gost and vuls2 from the result
+// isPkgCvesDetactable checks whether CVEs is detactable with vuls2 from the result
 func isPkgCvesDetactable(r *models.ScanResult) bool {
 	switch r.Family {
 	case constant.FreeBSD, constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer, constant.ServerTypePseudo:
-		logging.Log.Infof("%s type. Skip gost and vuls2 detection", r.Family)
+		logging.Log.Infof("%s type. Skip vuls2 detection", r.Family)
 		return false
 	case constant.Windows:
 		return true
 	default:
 		if r.ScannedVia == "trivy" {
-			logging.Log.Infof("r.ScannedVia is trivy. Skip gost and vuls2 detection")
+			logging.Log.Infof("r.ScannedVia is trivy. Skip vuls2 detection")
 			return false
 		}
 
 		if r.Release == "" {
-			logging.Log.Infof("r.Release is empty. Skip gost and vuls2 detection")
+			logging.Log.Infof("r.Release is empty. Skip vuls2 detection")
 			return false
 		}
 
 		if len(r.Packages)+len(r.SrcPackages) == 0 {
-			logging.Log.Infof("Number of packages is 0. Skip gost and vuls2 detection")
+			logging.Log.Infof("Number of packages is 0. Skip vuls2 detection")
 			return false
 		}
 		return true
@@ -478,27 +475,6 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	}
 
 	return dict
-}
-
-func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts logging.LogOpts) error {
-	client, err := gost.NewGostClient(cnf, r.Family, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new a gost client: %w", err)
-	}
-	defer func() {
-		if err := client.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close the gost DB. err: %+v", err)
-		}
-	}()
-
-	nCVEs, err := client.DetectCVEs(r, true)
-	if err != nil {
-		return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
-	}
-
-	logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
-
-	return nil
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs

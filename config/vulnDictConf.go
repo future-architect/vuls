@@ -173,33 +173,6 @@ func (cnf *GoCveDictConf) Init() {
 	cnf.DebugSQL = Conf.DebugSQL
 }
 
-// GostConf is gost config
-type GostConf struct {
-	VulnDict
-}
-
-const gostDBType = "GOSTDB_TYPE"
-const gostDBURL = "GOSTDB_URL"
-const gostDBPATH = "GOSTDB_SQLITE3_PATH"
-
-// Init set options with the following priority.
-// 1. Environment variable
-// 2. config.toml
-func (cnf *GostConf) Init() {
-	cnf.Name = "gost"
-	if os.Getenv(gostDBType) != "" {
-		cnf.Type = os.Getenv(gostDBType)
-	}
-	if os.Getenv(gostDBURL) != "" {
-		cnf.URL = os.Getenv(gostDBURL)
-	}
-	if os.Getenv(gostDBPATH) != "" {
-		cnf.SQLite3Path = os.Getenv(gostDBPATH)
-	}
-	cnf.setDefault("gost.sqlite3")
-	cnf.DebugSQL = Conf.DebugSQL
-}
-
 // CtiConf is go-cti config
 type CtiConf struct {
 	VulnDict
