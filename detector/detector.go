@@ -322,13 +322,10 @@ func DetectPkgCves(r *models.ScanResult, gostCnf config.GostConf, vuls2Conf conf
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
-			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine:
+			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine,
+			constant.Windows:
 			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
-			}
-		case constant.Windows:
-			if err := detectPkgsCvesWithGost(gostCnf, r, logOpts); err != nil {
-				return xerrors.Errorf("Failed to detect CVE with gost: %w", err)
 			}
 		default:
 			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
@@ -526,27 +523,6 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	}
 
 	return dict
-}
-
-func detectPkgsCvesWithGost(cnf config.GostConf, r *models.ScanResult, logOpts logging.LogOpts) error {
-	client, err := gost.NewGostClient(cnf, r.Family, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new a gost client: %w", err)
-	}
-	defer func() {
-		if err := client.CloseDB(); err != nil {
-			logging.Log.Errorf("Failed to close the gost DB. err: %+v", err)
-		}
-	}()
-
-	nCVEs, err := client.DetectCVEs(r, true)
-	if err != nil {
-		return xerrors.Errorf("Failed to detect CVEs with gost: %w", err)
-	}
-
-	logging.Log.Infof("%s: %d CVEs are detected with gost", r.FormatServerName(), nCVEs)
-
-	return nil
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs
