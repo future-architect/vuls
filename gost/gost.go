@@ -68,8 +68,6 @@ func NewGostClient(cnf config.GostConf, family string, o logging.LogOpts) (Clien
 
 	base := Base{driver: db, baseURL: cnf.GetURL()}
 	switch family {
-	case constant.Windows:
-		return Microsoft{base}, nil
 	case constant.ServerTypePseudo:
 		return Pseudo{base}, nil
 	default:
