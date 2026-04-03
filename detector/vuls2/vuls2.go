@@ -156,7 +156,27 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 			Version:        sr.RunningKernel.Version,
 			RebootRequired: sr.RunningKernel.RebootRequired,
 		},
-		OSPackages: slices.Collect(maps.Values(pkgs)),
+		OSPackages: func() []scanTypes.OSPackage {
+			ps := slices.Collect(maps.Values(pkgs))
+			// For Windows, include the OS release as a synthetic package so that
+			// kernel-version-based detection can report the correct release name.
+			if sr.Family == constant.Windows && sr.RunningKernel.Version != "" {
+				ps = append(ps, scanTypes.OSPackage{
+					Name:    toVuls2Release(sr.Family, sr.Release),
+					Version: sr.RunningKernel.Version,
+				})
+			}
+			return ps
+		}(),
+		MicrosoftKB: func() scanTypes.MicrosoftKB {
+			if sr.WindowsKB == nil {
+				return scanTypes.MicrosoftKB{}
+			}
+			return scanTypes.MicrosoftKB{
+				Applied:   sr.WindowsKB.Applied,
+				Unapplied: sr.WindowsKB.Unapplied,
+			}
+		}(),
 
 		ScannedAt: time.Now(),
 		ScannedBy: version.String(),
@@ -166,7 +186,7 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
-	if len(sr.OSPackages) > 0 {
+	if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
 		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
@@ -420,6 +440,19 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		vi.AffectedPackages = ps
 		vi.CpeURIs = am[vi.CveID].cpes
 
+		// Populate WindowsKBFixedIns and KB-based DistroAdvisories for Microsoft detections
+		if string(scanned.Family) == ecosystemTypes.EcosystemTypeMicrosoft {
+			for _, p := range ps {
+				if kbID, ok := strings.CutPrefix(p.FixedIn, "KB"); ok {
+					if !slices.Contains(vi.WindowsKBFixedIns, kbID) {
+						vi.WindowsKBFixedIns = append(vi.WindowsKBFixedIns, kbID)
+					}
+					da := models.DistroAdvisory{AdvisoryID: p.FixedIn, Description: "Microsoft Knowledge Base"}
+					vi.DistroAdvisories.AppendIfMissing(&da)
+				}
+			}
+		}
+
 		vim[vi.CveID] = vi
 	}
 
@@ -552,59 +585,76 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			return nil, nil, true, nil
 		}
 
-		if cn.Criterion.Type != criterionTypes.CriterionTypeVersion || cn.Criterion.Version == nil {
-			continue
-		}
-
-		if ignoreCriterion(e, cn, tag) {
-			continue
-		}
-
-		fcn, err := filterCriterion(e, scanned, cn)
-		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
-		}
-
-		switch fcn.Criterion.Version.Package.Type {
-		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
-			if !fcn.Criterion.Version.Vulnerable {
+		switch cn.Criterion.Type {
+		case criterionTypes.CriterionTypeKB:
+			if cn.Criterion.KB == nil || !cn.Accepts.KB {
+				continue
+			}
+			statuses = append(statuses, packStatus{
+				rangeType: vcAffectedRangeTypes.RangeTypeUnknown,
+				status: models.PackageFixStatus{
+					Name:        cn.Criterion.KB.Product,
+					FixedIn:     fmt.Sprintf("KB%s", cn.Criterion.KB.KBID),
+					NotFixedYet: true,
+				},
+			})
+		case criterionTypes.CriterionTypeVersion:
+			if cn.Criterion.Version == nil {
 				continue
 			}
 
-			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
-				if fcn.Criterion.Version.Affected == nil {
-					return vcAffectedRangeTypes.RangeTypeUnknown, ""
-				}
-				return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
-			}()
+			if ignoreCriterion(e, cn, tag) {
+				continue
+			}
 
-			for _, index := range fcn.Accepts.Version {
-				if len(scanned.OSPackages) <= index {
-					return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
-				}
-				statuses = append(statuses, packStatus{
-					rangeType: rangeType,
-					status: models.PackageFixStatus{
-						Name: affectedPackageName(e, scanned.OSPackages[index]),
-						FixState: func() string {
-							if fcn.Criterion.Version.FixStatus == nil {
-								return ""
-							}
-							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
-						}(),
-						FixedIn:     fixedIn,
-						NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
-					},
-				})
+			fcn, err := filterCriterion(e, scanned, cn)
+			if err != nil {
+				return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
 			}
-		case vcPackageTypes.PackageTypeCPE:
-			for _, index := range fcn.Accepts.Version {
-				if len(scanned.CPE) <= index {
-					return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+
+			switch fcn.Criterion.Version.Package.Type {
+			case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
+				if !fcn.Criterion.Version.Vulnerable {
+					continue
 				}
+
+				rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
+					if fcn.Criterion.Version.Affected == nil {
+						return vcAffectedRangeTypes.RangeTypeUnknown, ""
+					}
+					return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
+				}()
+
+				for _, index := range fcn.Accepts.Version {
+					if len(scanned.OSPackages) <= index {
+						return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+					}
+					statuses = append(statuses, packStatus{
+						rangeType: rangeType,
+						status: models.PackageFixStatus{
+							Name: affectedPackageName(e, scanned.OSPackages[index]),
+							FixState: func() string {
+								if fcn.Criterion.Version.FixStatus == nil {
+									return ""
+								}
+								return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
+							}(),
+							FixedIn:     fixedIn,
+							NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
+						},
+					})
+				}
+			case vcPackageTypes.PackageTypeCPE:
+				for _, index := range fcn.Accepts.Version {
+					if len(scanned.CPE) <= index {
+						return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+					}
+				}
+				cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
+			default:
 			}
-			cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
 		default:
+			continue
 		}
 	}
 	return statuses, cpes, false, nil
