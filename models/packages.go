@@ -22,7 +22,7 @@ type Packages map[string]Package
 func NewPackages(packs ...Package) Packages {
 	m := Packages{}
 	for _, pack := range packs {
-		m[pack.Name] = pack
+		m[pack.MapKey()] = pack
 	}
 	return m
 }
@@ -35,12 +35,12 @@ func (ps Packages) MergeNewVersion(as Packages) {
 		ps[name] = pack
 	}
 
-	for _, a := range as {
-		if pack, ok := ps[a.Name]; ok {
+	for key, a := range as {
+		if pack, ok := ps[key]; ok {
 			pack.NewVersion = a.NewVersion
 			pack.NewRelease = a.NewRelease
 			pack.Repository = a.Repository
-			ps[a.Name] = pack
+			ps[key] = pack
 		}
 	}
 }
@@ -87,6 +87,16 @@ type Package struct {
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
 	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
+}
+
+// MapKey returns the key used in the Packages map.
+// For multi-arch dpkg packages, this is "name:arch" to avoid collisions.
+// Otherwise it is just the package name.
+func (p Package) MapKey() string {
+	if p.Arch != "" {
+		return p.Name + ":" + p.Arch
+	}
+	return p.Name
 }
 
 // FQPN returns Fully-Qualified-Package-Name

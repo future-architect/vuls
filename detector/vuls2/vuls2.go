@@ -129,11 +129,11 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 			}
 		}
 	}
-	for _, p := range sr.Packages {
+	for key, p := range sr.Packages {
 		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
 			continue
 		}
-		base := pkgs[p.Name]
+		base := pkgs[key]
 		base.Name = p.Name
 		base.Version = preConvertBinaryVersion(sr.Family, p.Version)
 		base.Release = p.Release
@@ -142,7 +142,7 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 		base.Arch = p.Arch
 		base.Repository = p.Repository
 		base.ModularityLabel = p.ModularityLabel
-		pkgs[p.Name] = base
+		pkgs[key] = base
 	}
 
 	return scanTypes.ScanResult{
