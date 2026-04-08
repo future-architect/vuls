@@ -27,7 +27,6 @@ require (
 	github.com/google/go-containerregistry v0.21.3
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.6.0
-	github.com/gosnmp/gosnmp v1.43.2
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.9.0
