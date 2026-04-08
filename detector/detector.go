@@ -191,11 +191,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
-		repos := config.Conf.Servers[r.ServerName].GitHubRepos
-		if err := DetectGitHubCves(&r, repos); err != nil {
-			return nil, xerrors.Errorf("Failed to detect GitHub Cves: %w", err)
-		}
-
 		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
@@ -390,33 +385,6 @@ func isPkgCvesDetactable(r *models.ScanResult) bool {
 		}
 		return true
 	}
-}
-
-// DetectGitHubCves fetches CVEs from GitHub Security Alerts
-func DetectGitHubCves(r *models.ScanResult, githubConfs map[string]config.GitHubConf) error {
-	if len(githubConfs) == 0 {
-		return nil
-	}
-
-	r.GitHubManifests = models.DependencyGraphManifests{}
-	for ownerRepo, setting := range githubConfs {
-		ss := strings.Split(ownerRepo, "/")
-		if len(ss) != 2 {
-			return xerrors.Errorf("Failed to parse GitHub owner/repo: %s", ownerRepo)
-		}
-		owner, repo := ss[0], ss[1]
-		n, err := DetectGitHubSecurityAlerts(r, owner, repo, setting.Token, setting.IgnoreGitHubDismissed)
-		if err != nil {
-			return xerrors.Errorf("Failed to access GitHub Security Alerts: %w", err)
-		}
-		logging.Log.Infof("%s: %d CVEs detected with GHSA %s/%s",
-			r.FormatServerName(), n, owner, repo)
-
-		if err = DetectGitHubDependencyGraph(r, owner, repo, setting.Token); err != nil {
-			return xerrors.Errorf("Failed to access GitHub Dependency graph: %w", err)
-		}
-	}
-	return nil
 }
 
 // DetectWordPressCves detects CVEs of WordPress
