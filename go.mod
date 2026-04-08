@@ -45,7 +45,6 @@ require (
 	github.com/package-url/packageurl-go v0.1.5
 	github.com/parnurzeal/gorequest v0.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/samber/lo v1.53.0
 	github.com/sirupsen/logrus v1.9.4
