@@ -793,23 +793,11 @@ func detectOSNameFromOSInfo(osInfo osInfo) (string, error) {
 	case "10.0":
 		switch osInfo.installationType {
 		case "Client":
-			if strings.Contains(osInfo.productName, "Windows 11") {
-				arch, err := formatArch(osInfo.arch)
-				if err != nil {
-					return "", xerrors.Errorf("Failed to format architecture: %w", err)
-				}
-				name, err := formatNamebyBuild("11", osInfo.build)
-				if err != nil {
-					return "", xerrors.Errorf("Failed to format name by build: %w", err)
-				}
-				return fmt.Sprintf("%s for %s Systems", name, arch), nil
-			}
-
 			arch, err := formatArch(osInfo.arch)
 			if err != nil {
 				return "", xerrors.Errorf("Failed to format architecture: %w", err)
 			}
-			name, err := formatNamebyBuild("10", osInfo.build)
+			name, err := formatNamebyBuild("Client", osInfo.build)
 			if err != nil {
 				return "", xerrors.Errorf("Failed to format name by build: %w", err)
 			}
@@ -849,7 +837,7 @@ type buildNumber struct {
 
 var (
 	winBuilds = map[string][]buildNumber{
-		"10": {
+		"Client": {
 			{
 				build: "10240",
 				name:  "Windows 10", // not "Windows 10 Version 1507"
@@ -908,24 +896,6 @@ var (
 			},
 			// It seems that there are cases where the Product Name is Windows 10 even though it is Windows 11
 			// ref: https://docs.microsoft.com/en-us/answers/questions/586548/in-the-official-version-of-windows-11-why-the-key.html
-			{
-				build: "22000",
-				name:  "Windows 11 Version 21H2",
-			},
-			{
-				build: "22621",
-				name:  "Windows 11 Version 22H2",
-			},
-			{
-				build: "22631",
-				name:  "Windows 11 Version 23H2",
-			},
-			{
-				build: "26100",
-				name:  "Windows 11 Version 24H2",
-			},
-		},
-		"11": {
 			{
 				build: "22000",
 				name:  "Windows 11 Version 21H2",
