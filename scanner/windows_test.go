@@ -444,6 +444,20 @@ func Test_detectOSName(t *testing.T) {
 			want: "Windows 11 Version 24H2 for x64-based Systems",
 		},
 		{
+			name: "Windows 11 Version 25H2 for x64-based Systems (productName says Windows 10)",
+			args: osInfo{
+				productName:      "Windows 10 Enterprise Evaluation",
+				version:          "10.0",
+				build:            "26200",
+				revision:         "7623",
+				edition:          "EnterpriseEval",
+				servicePack:      "",
+				arch:             "AMD64",
+				installationType: "Client",
+			},
+			want: "Windows 11 Version 25H2 for x64-based Systems",
+		},
+		{
 			name: "Windows 11 latest release",
 			args: osInfo{
 				productName:      "Microsoft Windows 11 Pro",
