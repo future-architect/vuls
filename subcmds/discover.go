@@ -262,10 +262,6 @@ host                = "{{$ip}}"
 #owaspDCXMLPath = "/path/to/dependency-check-report.xml"
 #ignoreCves     = ["CVE-2014-0160"]
 
-#[servers.{{index $names $i}}.githubs."owner/repo"]
-#token	= "yourToken"
-#ignoreGitHubDismissed	= false
-
 #[servers.{{index $names $i}}.wordpress]
 #cmdPath = "/usr/local/bin/wp"
 #osUser = "wordpress"

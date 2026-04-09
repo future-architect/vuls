@@ -115,15 +115,6 @@ func (c TOMLLoader) Load(pathToToml string) error {
 			}
 		}
 
-		for ownerRepo, githubSetting := range server.GitHubRepos {
-			if ss := strings.Split(ownerRepo, "/"); len(ss) != 2 {
-				return xerrors.Errorf("Failed to parse GitHub owner/repo: %s in %s", ownerRepo, name)
-			}
-			if githubSetting.Token == "" {
-				return xerrors.Errorf("GitHub owner/repo: %s in %s token is empty", ownerRepo, name)
-			}
-		}
-
 		if len(server.Enablerepo) == 0 {
 			server.Enablerepo = Conf.Default.Enablerepo
 		}
