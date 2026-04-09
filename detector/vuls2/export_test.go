@@ -6,6 +6,7 @@ var (
 	PreConvert    = preConvert
 	PostConvert   = postConvert
 	PruneCriteria = pruneCriteria
+	Enrich        = enrich
 )
 
 type Source source
