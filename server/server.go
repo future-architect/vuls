@@ -13,7 +13,6 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
-	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
@@ -68,12 +67,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with gost: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-
 	logging.Log.Infof("Fill CVE detailed with CVE-DB")
 	if err := detector.FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with CVE: %+v", err)
@@ -93,11 +86,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
-
-	if err := detector.FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with Known Exploited Vulnerabilities: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
 
 	if err := detector.FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with Cyber Threat Intelligences: %+v", err)

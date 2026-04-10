@@ -195,10 +195,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
 		}
 
-		if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with gost: %w", err)
-		}
-
 		if err := FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
@@ -214,10 +210,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
-
-		if err := FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Known Exploited Vulnerabilities: %w", err)
-		}
 
 		if err := FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
