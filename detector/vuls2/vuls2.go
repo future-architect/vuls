@@ -659,6 +659,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 			}
 		}
 
+		srcsWithVulns := make(map[source]struct{})
 		for _, vdv := range vd.Vulnerabilities {
 			for sid, rm := range vdv.Contents {
 				if rm == nil {
@@ -675,6 +676,8 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 						if _, ok := m[src]; !ok {
 							continue
 						}
+
+						srcsWithVulns[src] = struct{}{}
 
 						if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
 							continue
@@ -762,6 +765,15 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 					}
 				}
 			}
+		}
+
+		// Remove sources that had vulnerabilities from the advisory map.
+		// The advisory fallback below creates VulnInfo from advisory IDs only when
+		// no vulnerabilities exist for a source. Without this deletion, sources whose
+		// vulnerabilities were all dropped by ignoreVulnerability would incorrectly
+		// fall through to advisory-based VulnInfo creation.
+		for src := range srcsWithVulns {
+			delete(am, src)
 		}
 
 		for src, das := range am {

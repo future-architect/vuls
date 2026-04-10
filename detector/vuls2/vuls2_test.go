@@ -8235,6 +8235,133 @@ func Test_postConvert(t *testing.T) {
 			want: models.VulnInfos{},
 		},
 		{
+			name: "redhat: all vulnerabilities ignored should not fallback to advisory",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "package1",
+							Epoch:   new(0),
+							Version: "0.0.0",
+							Release: "0.el9",
+							Arch:    "x86_64",
+							SrcName: "package",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "RHSA-2025:0001",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "RHSA-2025:0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("RHSA-2025:0001"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "RHSA-2025:0001",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("RHSA-2025:0001"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "** REJECT ** This CVE has been rejected.",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.RedHatOVALv2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name:          "package1",
+																			Architectures: []string{"aarch64", "x86_64"},
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0.0.0-1.el9",
+																			},
+																		},
+																		Fixed: []string{"0.0.0-1.el9"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
 			name: "debian: advisory without vulnerability",
 			args: args{
 				scanned: scanTypes.ScanResult{
