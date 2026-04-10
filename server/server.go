@@ -87,11 +87,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
-	if err := detector.FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with Known Exploited Vulnerabilities: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-
 	if err := detector.FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with Cyber Threat Intelligences: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

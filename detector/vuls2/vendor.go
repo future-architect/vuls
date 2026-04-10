@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	apk "github.com/knqyf263/go-apk-version"
 	deb "github.com/knqyf263/go-deb-version"
 	rpm "github.com/knqyf263/go-rpm-version"
 	"golang.org/x/xerrors"
 
+	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -18,6 +20,8 @@ import (
 	versioncriterionpackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
+	reportedExploitationTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/kev/vulncheck/reportedexploitation"
+	xdbTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/kev/vulncheck/xdb"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
 	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
@@ -999,8 +1003,7 @@ func enrichCveContentType(s sourceTypes.SourceID) models.CveContentType {
 }
 
 // enrichCvss extracts CVSS scores from severity data without ecosystem-specific handling.
-func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
-	var (
+func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {	var (
 		cvss2  v2.CVSSv2
 		cvss3  v31.CVSSv31
 		cvss4  v40.CVSSv40
@@ -1051,3 +1054,92 @@ func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv4
 
 	return cvss2, cvss3, cvss4
 }
+
+
+// enrichKEV extracts KEV data from vulnerability data and maps it to models.KEV.
+func enrichKEV(sourceID sourceTypes.SourceID, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) []models.KEV {
+	var kevType models.KEVType
+	switch sourceID {
+	case sourceTypes.CISAKEV:
+		kevType = models.CISAKEVType
+	case sourceTypes.VulnCheckKEV:
+		kevType = models.VulnCheckKEVType
+	default:
+		return nil
+	}
+
+	var kevs []models.KEV
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			if v.Content.KEV == nil {
+				continue
+			}
+
+			k := models.KEV{
+				Type:                       kevType,
+				VendorProject:              v.Content.KEV.VendorProject,
+				Product:                    v.Content.KEV.Product,
+				VulnerabilityName:          string(v.Content.Title),
+				ShortDescription:           v.Content.Description,
+				RequiredAction:             v.Content.KEV.RequiredAction,
+				KnownRansomwareCampaignUse: v.Content.KEV.KnownRansomwareCampaignUse,
+				DateAdded:                  v.Content.KEV.DateAdded,
+				DueDate: func() *time.Time {
+					if v.Content.KEV.DueDate.Equal(time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)) || v.Content.KEV.DueDate.IsZero() {
+						return nil
+					}
+					return &v.Content.KEV.DueDate
+				}(),
+			}
+
+			switch sourceID {
+			case sourceTypes.CISAKEV:
+				k.CISA = &models.CISAKEV{
+					Note: v.Content.KEV.Notes,
+				}
+			case sourceTypes.VulnCheckKEV:
+				if v.Content.KEV.VulnCheck != nil {
+					k.VulnCheck = &models.VulnCheckKEV{
+						XDB:                  mapVulnCheckXDB(v.Content.KEV.VulnCheck.XDB),
+						ReportedExploitation: mapVulnCheckReportedExploitation(v.Content.KEV.VulnCheck.ReportedExploitation),
+					}
+				}
+			}
+
+			kevs = append(kevs, k)
+		}
+	}
+	return kevs
+}
+
+func mapVulnCheckXDB(xdbs []xdbTypes.XDB) []models.VulnCheckXDB {
+	if len(xdbs) == 0 {
+		return nil
+	}
+	xs := make([]models.VulnCheckXDB, 0, len(xdbs))
+	for _, x := range xdbs {
+		xs = append(xs, models.VulnCheckXDB{
+			XDBID:       x.XDBID,
+			XDBURL:      x.XDBURL,
+			DateAdded:   x.DateAdded,
+			ExploitType: x.ExploitType,
+			CloneSSHURL: x.CloneSSHURL,
+		})
+	}
+	return xs
+}
+
+func mapVulnCheckReportedExploitation(res []reportedExploitationTypes.ReportedExploitation) []models.VulnCheckReportedExploitation {
+	if len(res) == 0 {
+		return nil
+	}
+	es := make([]models.VulnCheckReportedExploitation, 0, len(res))
+	for _, e := range res {
+		es = append(es, models.VulnCheckReportedExploitation{
+			URL:       e.URL,
+			DateAdded: e.DateAdded,
+		})
+	}
+	return es
+}
+

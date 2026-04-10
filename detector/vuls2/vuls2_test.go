@@ -9147,6 +9147,90 @@ func Test_enrich(t *testing.T) {
 			},
 		},
 		{
+			name: "enrich with cisa-kev data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2022-21971": models.VulnInfo{
+						CveID:       "CVE-2022-21971",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2022-21971": models.VulnInfo{
+					CveID:       "CVE-2022-21971",
+					CveContents: models.CveContents{},
+					KEVs: []models.KEV{
+						{
+							Type:                       models.CISAKEVType,
+							VendorProject:              "Microsoft",
+							Product:                    "Windows",
+							VulnerabilityName:          "Microsoft Windows Runtime Remote Code Execution Vulnerability",
+							ShortDescription:           "Microsoft Windows Runtime contains an unspecified vulnerability which allows for remote code execution.",
+							RequiredAction:             "Apply updates per vendor instructions.",
+							KnownRansomwareCampaignUse: "Unknown",
+							DateAdded:                  time.Date(2022, time.August, 18, 0, 0, 0, 0, time.UTC),
+							DueDate:                    func() *time.Time { t := time.Date(2022, time.September, 8, 0, 0, 0, 0, time.UTC); return &t }(),
+							CISA: &models.CISAKEV{
+								Note: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2022-21971",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with vulncheck-kev data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2021-30713": models.VulnInfo{
+						CveID:       "CVE-2021-30713",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2021-30713": models.VulnInfo{
+					CveID:       "CVE-2021-30713",
+					CveContents: models.CveContents{},
+					KEVs: []models.KEV{
+						{
+							Type:                       models.VulnCheckKEVType,
+							VendorProject:              "Apple",
+							Product:                    "MacOS X",
+							VulnerabilityName:          "Apple macOS Unspecified Vulnerability",
+							ShortDescription:           "Apple macOS Transparency, Consent, and Control (TCC) contains an unspecified permissions issue which may allow a malicious application to bypass privacy preferences.",
+							RequiredAction:             "Apply updates per vendor instructions.",
+							KnownRansomwareCampaignUse: "Unknown",
+							DateAdded:                  time.Date(2021, time.November, 3, 0, 0, 0, 0, time.UTC),
+							DueDate:                    func() *time.Time { t := time.Date(2021, time.November, 17, 0, 0, 0, 0, time.UTC); return &t }(),
+							VulnCheck: &models.VulnCheckKEV{
+								XDB: []models.VulnCheckXDB{
+									{
+										XDBID:       "a1b2c3",
+										XDBURL:      "https://vulncheck.com/xdb/a1b2c3",
+										DateAdded:   time.Date(2022, time.March, 15, 0, 0, 0, 0, time.UTC),
+										ExploitType: "initial_access",
+										CloneSSHURL: "git@github.com:example/exploit.git",
+									},
+								},
+								ReportedExploitation: []models.VulnCheckReportedExploitation{
+									{
+										URL:       "https://support.apple.com/kb/HT212529",
+										DateAdded: time.Date(2022, time.January, 19, 0, 0, 0, 0, time.UTC),
+									},
+									{
+										URL:       "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+										DateAdded: time.Date(2021, time.November, 3, 0, 0, 0, 0, time.UTC),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "empty VulnInfos",
 			args: args{
 				vim: models.VulnInfos{},

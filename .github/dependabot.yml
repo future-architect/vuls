@@ -44,7 +44,6 @@ updates:
           - "github.com/vulsio/go-cti"
           - "github.com/vulsio/go-cve-dictionary"
           - "github.com/vulsio/go-exploitdb"
-          - "github.com/vulsio/go-kev"
           - "github.com/vulsio/go-msfdb"
           - "github.com/vulsio/gost"
       trivy:
@@ -61,7 +60,6 @@ updates:
           - "github.com/vulsio/go-cti"
           - "github.com/vulsio/go-cve-dictionary"
           - "github.com/vulsio/go-exploitdb"
-          - "github.com/vulsio/go-kev"
           - "github.com/vulsio/go-msfdb"
           - "github.com/vulsio/gost"
           - "github.com/aquasecurity/trivy"
