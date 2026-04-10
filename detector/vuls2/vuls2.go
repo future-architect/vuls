@@ -3,6 +3,7 @@ package vuls2
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"iter"
 	"maps"
@@ -25,6 +26,7 @@ import (
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	severityVendorTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/vendor"
+	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
@@ -90,6 +92,10 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected)
 	if err != nil {
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
+	}
+
+	if err := enrich(sesh, vulnInfos); err != nil {
+		return xerrors.Errorf("Failed to enrich vulnerability data. err: %w", err)
 	}
 
 	for cveID, vi := range vulnInfos {
@@ -1153,4 +1159,80 @@ func toReference(ref string) models.Reference {
 			Source: "MISC",
 		}
 	}
+}
+
+// enrich adds vulnerability data from all sources (including non-detecting sources)
+// to the already-detected VulnInfos. This replaces gost.FillCVEsWithRedHat and also
+// provides cross-source enrichment (e.g., RedHat CVE data for Debian-detected CVEs).
+func enrich(sesh *session.Session, vim models.VulnInfos) error {
+	for cveID, vi := range vim {
+		vm, err := sesh.Storage().GetVulnerability(vulnerabilityContentTypes.VulnerabilityID(cveID))
+		if err != nil {
+			if errors.Is(err, dbTypes.ErrNotFoundVulnerability) {
+				continue
+			}
+			return xerrors.Errorf("Failed to get vulnerability. CVE-ID: %s, err: %w", cveID, err)
+		}
+
+		for sourceID, rootMap := range vm {
+			cctype := enrichCveContentType(sourceID)
+			if cctype == models.Unknown {
+				continue
+			}
+			if _, ok := vi.CveContents[cctype]; ok {
+				continue
+			}
+
+			for _, vulns := range rootMap {
+				for _, v := range vulns {
+					cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
+
+					var rs models.References
+					for _, r := range v.Content.References {
+						rs = append(rs, toReference(r.URL))
+					}
+
+					cc := models.CveContent{
+						Type:           cctype,
+						CveID:          cveID,
+						Title:          v.Content.Title,
+						Summary:        v.Content.Description,
+						Cvss2Score:     cvss2.BaseScore,
+						Cvss2Vector:    cvss2.Vector,
+						Cvss2Severity:  cvss2.NVDBaseSeverity,
+						Cvss3Score:     cvss3.BaseScore,
+						Cvss3Vector:    cvss3.Vector,
+						Cvss3Severity:  cvss3.BaseSeverity,
+						Cvss40Score:    cvss40.Score,
+						Cvss40Vector:   cvss40.Vector,
+						Cvss40Severity: cvss40.Severity,
+						SourceLink:     cveContentSourceLink(cctype, v),
+						References:     rs,
+						CweIDs: func() []string {
+							var cs []string //nolint:prealloc
+							for _, cwe := range v.Content.CWE {
+								cs = append(cs, cwe.CWE...)
+							}
+							return cs
+						}(),
+						Published: func() time.Time {
+							if v.Content.Published != nil {
+								return *v.Content.Published
+							}
+							return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+						}(),
+						LastModified: func() time.Time {
+							if v.Content.Modified != nil {
+								return *v.Content.Modified
+							}
+							return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+						}(),
+					}
+					vi.CveContents[cctype] = append(vi.CveContents[cctype], cc)
+				}
+			}
+		}
+		vim[cveID] = vi
+	}
+	return nil
 }

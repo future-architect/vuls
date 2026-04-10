@@ -584,7 +584,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 
 func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
 	switch ccType {
-	case models.RedHat:
+	case models.RedHat, models.RedHatAPI:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:
 		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.Content.ID)
@@ -985,4 +985,69 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 			SortOrder:       100,
 		}
 	}
+}
+
+// enrichCveContentType maps a sourceID to a CveContentType for enrichment data.
+// Returns models.Unknown for source IDs that are not enrichment targets.
+func enrichCveContentType(s sourceTypes.SourceID) models.CveContentType {
+	switch s {
+	case sourceTypes.RedHatCVE:
+		return models.RedHatAPI
+	default:
+		return models.Unknown
+	}
+}
+
+// enrichCvss extracts CVSS scores from severity data without ecosystem-specific handling.
+func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
+	var (
+		cvss2  v2.CVSSv2
+		cvss3  v31.CVSSv31
+		cvss4  v40.CVSSv40
+		vendor string
+	)
+
+	for _, s := range ss {
+		switch s.Type {
+		case severityTypes.SeverityTypeVendor:
+			if s.Vendor != nil {
+				vendor = *s.Vendor
+			}
+		case severityTypes.SeverityTypeCVSSv2:
+			if cvss2.Vector == "" && s.CVSSv2 != nil {
+				cvss2 = *s.CVSSv2
+			}
+		case severityTypes.SeverityTypeCVSSv30:
+			if cvss3.Vector == "" && s.CVSSv30 != nil {
+				cvss3 = v31.CVSSv31{
+					Vector:       s.CVSSv30.Vector,
+					BaseScore:    s.CVSSv30.BaseScore,
+					BaseSeverity: s.CVSSv30.BaseSeverity,
+				}
+			}
+		case severityTypes.SeverityTypeCVSSv31:
+			if !strings.HasPrefix(cvss3.Vector, "CVSS:3.1/") && s.CVSSv31 != nil {
+				cvss3 = *s.CVSSv31
+			}
+		case severityTypes.SeverityTypeCVSSv40:
+			if cvss4.Vector == "" && s.CVSSv40 != nil {
+				cvss4 = *s.CVSSv40
+			}
+		default:
+		}
+	}
+
+	if vendor != "" {
+		if cvss2.Vector != "" {
+			cvss2.NVDBaseSeverity = vendor
+		}
+		if cvss3.Vector != "" {
+			cvss3.BaseSeverity = vendor
+		}
+		if cvss4.Vector != "" {
+			cvss4.Severity = vendor
+		}
+	}
+
+	return cvss2, cvss3, cvss4
 }
