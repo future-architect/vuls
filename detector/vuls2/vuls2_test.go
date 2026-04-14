@@ -17,6 +17,7 @@ import (
 	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
+	kbcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/kbcriterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	necBinaryPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion/binary"
 	versioncriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion"
@@ -8766,6 +8767,118 @@ func Test_postConvert(t *testing.T) {
 								Published:    time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional:     map[string]string{"vuls2-sources": `[{"root_id":"DSA-5990-1","source_id":"debian-security-tracker-salsa","segment":{"ecosystem":"debian:12"}}]`},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "microsoft kb detection",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Family:  ecosystemTypes.EcosystemTypeMicrosoft,
+					Release: "Windows 10 Version 21H2 for x64-based Systems",
+					MicrosoftKB: scanTypes.MicrosoftKB{
+						Applied:   []string{"5025288"},
+						Unapplied: []string{"5025221"},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-21234",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-21234",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.MicrosoftCVRF: {
+											dataTypes.RootID("CVE-2025-21234"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-21234",
+														Title:       "Windows Win32k Elevation of Privilege Vulnerability",
+														Description: "A privilege escalation vulnerability.",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:       "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+																	BaseScore:    7.8,
+																	BaseSeverity: "HIGH",
+																}),
+															},
+														},
+														Published: new(time.Date(2025, 5, 13, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeMicrosoft,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeMicrosoft,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.MicrosoftCVRF: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeKB,
+																KB: &kbcriterionTypes.Criterion{
+																	Product: "Windows 10 Version 21H2 for x64-based Systems",
+																	KBID:    "5025221",
+																},
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																KB: criterionTypes.KB{Unapplied: true},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-21234": {
+					CveID:       "CVE-2025-21234",
+					Confidences: models.Confidences{models.WindowsUpdateSearch},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "KB5025221",
+							Description: "Microsoft Knowledge Base",
+						},
+					},
+					WindowsKBFixedIns: []string{"KB5025221"},
+					CveContents: models.CveContents{
+						models.Microsoft: []models.CveContent{
+							{
+								Type:          models.Microsoft,
+								CveID:         "CVE-2025-21234",
+								Title:         "Windows Win32k Elevation of Privilege Vulnerability",
+								Summary:       "A privilege escalation vulnerability.",
+								Cvss3Score:    7.8,
+								Cvss3Vector:   "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+								Cvss3Severity: "HIGH",
+								SourceLink:    "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-21234",
+								Published:     time.Date(2025, 5, 13, 0, 0, 0, 0, time.UTC),
+								LastModified:  time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional:      map[string]string{"vuls2-sources": `[{"root_id":"CVE-2025-21234","source_id":"microsoft-cvrf","segment":{"ecosystem":"microsoft"}}]`},
 							},
 						},
 					},

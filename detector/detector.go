@@ -17,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
 	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/detector/vuls2"
-	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"

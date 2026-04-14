@@ -318,6 +318,7 @@ type sourceData struct {
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
 	cpes             []string
+	kbIDs            []string
 }
 
 type rootTag struct {
@@ -352,6 +353,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	type affected struct {
 		packm map[string]pack
 		cpes  []string
+		kbIDs []string
 	}
 
 	am := make(map[string]affected)
@@ -431,6 +433,17 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				}
 			}
 
+			if len(vd.kbIDs) > 0 {
+				for _, kbID := range vd.kbIDs {
+					if !slices.Contains(base.kbIDs, kbID) {
+						base.kbIDs = append(base.kbIDs, kbID)
+					}
+				}
+				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
+					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
+				}
+			}
+
 			am[vi.CveID] = base
 		}
 
@@ -481,19 +494,20 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		for _, p := range am[vi.CveID].packm {
 			ps = append(ps, p.packStatus.status)
 		}
-		vi.AffectedPackages = ps
+		if len(ps) > 0 {
+			vi.AffectedPackages = ps
+		}
 		vi.CpeURIs = am[vi.CveID].cpes
 
 		// Populate WindowsKBFixedIns and KB-based DistroAdvisories for Microsoft detections
 		if string(scanned.Family) == ecosystemTypes.EcosystemTypeMicrosoft {
-			for _, p := range ps {
-				if kbID, ok := strings.CutPrefix(p.FixedIn, "KB"); ok {
-					if !slices.Contains(vi.WindowsKBFixedIns, kbID) {
-						vi.WindowsKBFixedIns = append(vi.WindowsKBFixedIns, kbID)
-					}
-					da := models.DistroAdvisory{AdvisoryID: p.FixedIn, Description: "Microsoft Knowledge Base"}
-					vi.DistroAdvisories.AppendIfMissing(&da)
+			for _, kbID := range am[vi.CveID].kbIDs {
+				kbWithPrefix := fmt.Sprintf("KB%s", kbID)
+				if !slices.Contains(vi.WindowsKBFixedIns, kbWithPrefix) {
+					vi.WindowsKBFixedIns = append(vi.WindowsKBFixedIns, kbWithPrefix)
 				}
+				da := models.DistroAdvisory{AdvisoryID: kbWithPrefix, Description: "Microsoft Knowledge Base"}
+				vi.DistroAdvisories.AppendIfMissing(&da)
 			}
 		}
 
@@ -513,11 +527,11 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
 					}
 
-					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
+					statuses, cpes, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
-					if len(statuses) == 0 && len(cpes) == 0 {
+					if len(statuses) == 0 && len(cpes) == 0 && len(kbIDs) == 0 {
 						continue
 					}
 
@@ -532,6 +546,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					base := m[src]
 					base.packStatuses = append(base.packStatuses, statuses...)
 					base.cpes = append(base.cpes, cpes...)
+					base.kbIDs = append(base.kbIDs, kbIDs...)
 					m[src] = base
 				}
 			}
@@ -600,33 +615,35 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	return pruned, nil
 }
 
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, []string, bool, error) {
 	var (
 		statuses []packStatus
 		cpes     []string
+		kbIDs    []string
 	)
 	for _, child := range ca.Criterias {
-		ss, cs, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
+		ss, cs, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+			return nil, nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
 		if ignore {
 			switch ca.Operator {
 			case criteriaTypes.CriteriaOperatorTypeAND:
-				return nil, nil, ignore, nil
+				return nil, nil, nil, ignore, nil
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+				return nil, nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
 			}
 		}
 		statuses = append(statuses, ss...)
 		cpes = append(cpes, cs...)
+		kbIDs = append(kbIDs, ks...)
 	}
 
 	for _, cn := range ca.Criterions {
 		if ignoreCriteria(e, sourceID, cn) {
-			return nil, nil, true, nil
+			return nil, nil, nil, true, nil
 		}
 
 		switch cn.Criterion.Type {
@@ -641,7 +658,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 			fcn, err := filterCriterion(e, scanned, cn)
 			if err != nil {
-				return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+				return nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
 			}
 
 			switch fcn.Criterion.Version.Package.Type {
@@ -659,7 +676,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 				for _, index := range fcn.Accepts.Version {
 					if len(scanned.OSPackages) <= index {
-						return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+						return nil, nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 					}
 					statuses = append(statuses, packStatus{
 						rangeType: rangeType,
@@ -679,29 +696,22 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			case vcPackageTypes.PackageTypeCPE:
 				for _, index := range fcn.Accepts.Version {
 					if len(scanned.CPE) <= index {
-						return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+						return nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 					}
 				}
 				cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
 			default:
 			}
 		case criterionTypes.CriterionTypeKB:
-			if cn.Criterion.KB == nil || !cn.Accepts.KB {
+			if cn.Criterion.KB == nil || (!cn.Accepts.KB.Covered && !cn.Accepts.KB.Unapplied) {
 				continue
 			}
-			statuses = append(statuses, packStatus{
-				rangeType: vcAffectedRangeTypes.RangeTypeUnknown,
-				status: models.PackageFixStatus{
-					Name:        cn.Criterion.KB.Product,
-					FixedIn:     fmt.Sprintf("KB%s", cn.Criterion.KB.KBID),
-					NotFixedYet: true,
-				},
-			})
+			kbIDs = append(kbIDs, cn.Criterion.KB.KBID)
 		default:
 			continue
 		}
 	}
-	return statuses, cpes, false, nil
+	return statuses, cpes, kbIDs, false, nil
 }
 
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
