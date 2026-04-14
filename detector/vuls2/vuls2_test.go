@@ -3,6 +3,7 @@ package vuls2_test
 import (
 	"cmp"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +35,7 @@ import (
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
+	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
@@ -41,6 +43,7 @@ import (
 	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/future-architect/vuls/detector/vuls2"
+	testutil "github.com/future-architect/vuls/detector/vuls2/internal/test"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -9008,6 +9011,176 @@ func Test_pruneCriteria(t *testing.T) {
 			}
 			if diff := gocmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_enrich(t *testing.T) {
+	type args struct {
+		vim models.VulnInfos
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    models.VulnInfos
+		wantErr bool
+	}{
+		{
+			name: "enrich with redhat-cve data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-1102": models.VulnInfo{
+						CveID: "CVE-2024-1102",
+						CveContents: models.CveContents{
+							models.RedHat: []models.CveContent{
+								{
+									Type:  models.RedHat,
+									CveID: "CVE-2024-1102",
+									Title: "from-oval",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-1102": models.VulnInfo{
+					CveID: "CVE-2024-1102",
+					CveContents: models.CveContents{
+						models.RedHat: []models.CveContent{
+							{
+								Type:  models.RedHat,
+								CveID: "CVE-2024-1102",
+								Title: "from-oval",
+							},
+						},
+						models.RedHatAPI: []models.CveContent{
+							{
+								Type:          models.RedHatAPI,
+								CveID:         "CVE-2024-1102",
+								Title:         "jberet: jberet-core logging database credentials",
+								Summary:       "A vulnerability was found in jberet-core logging. An exception in 'dbProperties' might display user credentials such as the username and password for the database-connection.\nA vulnerability was found in jberet-core logging. An exception in 'dbProperties' might display user credentials such as the username and password for the database-connection.",
+								Cvss3Score:    6.5,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+								Cvss3Severity: "Moderate",
+								SourceLink:    "https://access.redhat.com/security/cve/CVE-2024-1102",
+								CweIDs:        []string{"CWE-523"},
+								References: models.References{
+									{Link: "https://bugzilla.redhat.com/show_bug.cgi?id=2262060", Source: "REDHAT", RefID: "2262060"},
+									{Link: "https://github.com/jberet/jsr352/issues/452", Source: "MISC"},
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2024-1102", Source: "NVD", RefID: "CVE-2024-1102"},
+									{Link: "https://www.cve.org/CVERecord?id=CVE-2024-1102", Source: "CVE", RefID: "CVE-2024-1102"},
+								},
+								Published:    time.Date(2024, 1, 29, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "CVE not found in DB leaves VulnInfo unchanged",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-9999-0001": models.VulnInfo{
+						CveID: "CVE-9999-0001",
+						CveContents: models.CveContents{
+							models.RedHat: []models.CveContent{
+								{
+									Type:  models.RedHat,
+									CveID: "CVE-9999-0001",
+									Title: "original",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-9999-0001": models.VulnInfo{
+					CveID: "CVE-9999-0001",
+					CveContents: models.CveContents{
+						models.RedHat: []models.CveContent{
+							{
+								Type:  models.RedHat,
+								CveID: "CVE-9999-0001",
+								Title: "original",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "skip if RedHatAPI already present",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-1102": models.VulnInfo{
+						CveID: "CVE-2024-1102",
+						CveContents: models.CveContents{
+							models.RedHatAPI: []models.CveContent{
+								{
+									Type:  models.RedHatAPI,
+									CveID: "CVE-2024-1102",
+									Title: "already-enriched",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-1102": models.VulnInfo{
+					CveID: "CVE-2024-1102",
+					CveContents: models.CveContents{
+						models.RedHatAPI: []models.CveContent{
+							{
+								Type:  models.RedHatAPI,
+								CveID: "CVE-2024-1102",
+								Title: "already-enriched",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "empty VulnInfos",
+			args: args{
+				vim: models.VulnInfos{},
+			},
+			want: models.VulnInfos{},
+		},
+	}
+
+	c := session.Config{Type: "boltdb", Path: filepath.Join(t.TempDir(), "enrich-test.db")}
+	if err := testutil.PopulateDB(c, "testdata/fixtures/enrich"); err != nil {
+		t.Fatalf("PopulateDB() err: %v", err)
+	}
+
+	sesh, err := c.New()
+	if err != nil {
+		t.Fatalf("session.Config.New() err: %v", err)
+	}
+	if err := sesh.Storage().Open(); err != nil {
+		t.Fatalf("Storage().Open() err: %v", err)
+	}
+	defer sesh.Storage().Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := vuls2.Enrich(sesh, tt.args.vim); (err != nil) != tt.wantErr {
+				t.Errorf("enrich() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			diff, err := compareVulnInfos(tt.args.vim, tt.want)
+			if err != nil {
+				t.Errorf("enrich() compareVulnInfos() error = %v", err)
+			}
+			if diff != "" {
+				t.Errorf("enrich() mismatch (-got +want):\n%s", diff)
 			}
 		})
 	}

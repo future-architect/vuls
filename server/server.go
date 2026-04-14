@@ -13,7 +13,6 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
-	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
@@ -66,12 +65,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
-	}
-
-	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with gost: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
 	logging.Log.Infof("Fill CVE detailed with CVE-DB")
