@@ -263,7 +263,7 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 }
 
 // ValidateDBs checks if the databases are accessible and can be closed properly
-func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, exploitConf config.ExploitConf, metasploitConf config.MetasploitConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
+func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, exploitConf config.ExploitConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
 	cvec, err := newGoCveDictClient(&cveConf, logOpts)
 	if err != nil {
 		return xerrors.Errorf("Failed to new CVE client. err: %w", err)
@@ -286,14 +286,6 @@ func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, exploit
 	}
 	if err := exploitc.closeDB(); err != nil {
 		return xerrors.Errorf("Failed to close exploit DB. err: %w", err)
-	}
-
-	metasploitc, err := newGoMetasploitDBClient(&metasploitConf, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new metasploit client. err: %w", err)
-	}
-	if err := metasploitc.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close metasploit DB. err: %w", err)
 	}
 
 	ctic, err := newGoCTIDBClient(&ctiConf, logOpts)

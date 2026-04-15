@@ -9261,6 +9261,34 @@ func Test_enrich(t *testing.T) {
 			},
 		},
 		{
+			name: "enrich with metasploit data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-0012": models.VulnInfo{
+						CveID:       "CVE-2024-0012",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-0012": models.VulnInfo{
+					CveID:       "CVE-2024-0012",
+					CveContents: models.CveContents{},
+					Metasploits: []models.Metasploit{
+						{
+							Name:        "exploit/linux/http/panos_management_unauth_rce",
+							Title:       "Palo Alto Networks PAN-OS Management Interface Unauthenticated Remote Code Execution",
+							Description: "This module exploits an authentication bypass vulnerability (CVE-2024-0012).",
+							URLs: []string{
+								"https://security.paloaltonetworks.com/CVE-2024-0012",
+								"https://www.cve.org/CVERecord?id=CVE-2024-0012",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "empty VulnInfos",
 			args: args{
 				vim: models.VulnInfos{},

@@ -1054,6 +1054,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				vi.KEVs = append(vi.KEVs, enrichVulnerabilityKEV(sourceID, rootMap)...)
 			case sourceTypes.RedHatCVE:
 				enrichRedHatCVE(vi, rootMap)
+			case sourceTypes.Metasploit:
+				enrichMetasploit(vi, rootMap)
 			}
 		}
 	}
@@ -1066,6 +1068,29 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 			switch sourceID {
 			case sourceTypes.ENISAKEV:
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
+			}
+		}
+	}
+}
+
+// enrichMetasploit adds Metasploit module data to VulnInfo.
+func enrichMetasploit(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	if len(vi.Metasploits) > 0 {
+		return
+	}
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			for _, m := range v.Content.Metasploit {
+				var urls []string
+				for _, r := range m.References {
+					urls = append(urls, r.URL)
+				}
+				vi.Metasploits = append(vi.Metasploits, models.Metasploit{
+					Name:        m.FullName,
+					Title:       m.Name,
+					Description: m.Description,
+					URLs:        urls,
+				})
 			}
 		}
 	}

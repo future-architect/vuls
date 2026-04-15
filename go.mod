@@ -54,7 +54,6 @@ require (
 	github.com/vulsio/go-cti v0.3.4
 	github.com/vulsio/go-cve-dictionary v0.16.0
 	github.com/vulsio/go-exploitdb v0.7.0
-	github.com/vulsio/go-msfdb v0.4.4
 	github.com/vulsio/gost v0.7.2
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/term v0.41.0

@@ -41,7 +41,6 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		&Conf.CveDict,
 		&Conf.Gost,
 		&Conf.Exploit,
-		&Conf.Metasploit,
 		&Conf.Cti,
 	} {
 		cnf.Init()
