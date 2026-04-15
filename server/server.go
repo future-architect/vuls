@@ -13,6 +13,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
@@ -63,6 +64,12 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if err := detector.DetectPkgCves(&r, config.Conf.Gost, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := vuls2.EnrichVulnInfos(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+		logging.Log.Errorf("Failed to enrich vulnerability data with vuls2: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
