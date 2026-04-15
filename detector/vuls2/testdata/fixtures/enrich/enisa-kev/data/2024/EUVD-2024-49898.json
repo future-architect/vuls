@@ -1,0 +1,34 @@
+{
+	"id": "EUVD-2024-49898",
+	"advisories": [
+		{
+			"content": {
+				"id": "EUVD-2024-49898",
+				"kev": {
+					"vendor_project": "Ivanti",
+					"product": "CSA (Cloud Services Appliance)",
+					"enisa": {
+						"date_reported": "2025-01-17T00:00:00Z",
+						"patched_since": "tbc",
+						"origin_source": "cnw"
+					}
+				}
+			}
+		}
+	],
+	"vulnerabilities": [
+		{
+			"content": {
+				"id": "CVE-2024-9380",
+				"title": "Ivanti CSA OS Command Injection Vulnerability",
+				"description": "Ivanti Cloud Services Appliance (CSA) contains an OS command injection vulnerability in the admin web console."
+			}
+		}
+	],
+	"data_source": {
+		"id": "enisa-kev",
+		"raws": [
+			"fixtures/2024/CVE-2024-9380.json"
+		]
+	}
+}

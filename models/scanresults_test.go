@@ -477,6 +477,7 @@ func TestScanResult_Sort(t *testing.T) {
 					"CVE-0000-0000": VulnInfo{
 						KEVs: []KEV{
 							{Type: VulnCheckKEVType},
+							{Type: ENISAKEVType},
 							{Type: CISAKEVType},
 						},
 					},
@@ -487,6 +488,7 @@ func TestScanResult_Sort(t *testing.T) {
 					"CVE-0000-0000": VulnInfo{
 						KEVs: []KEV{
 							{Type: CISAKEVType},
+							{Type: ENISAKEVType},
 							{Type: VulnCheckKEVType},
 						},
 					},

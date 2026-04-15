@@ -923,9 +923,11 @@ const (
 	CISAKEVType KEVType = "cisa"
 	// VulnCheckKEVType is VulnCheck KEV
 	VulnCheckKEVType KEVType = "vulncheck"
+	// ENISAKEVType is ENISA KEV
+	ENISAKEVType KEVType = "enisa"
 )
 
-// KEV has CISA or VulnCheck Known Exploited Vulnerability
+// KEV has CISA, VulnCheck, or ENISA Known Exploited Vulnerability
 type KEV struct {
 	Type                       KEVType    `json:"type,omitempty"`
 	VendorProject              string     `json:"vendor_project,omitempty"`
@@ -939,6 +941,7 @@ type KEV struct {
 
 	CISA      *CISAKEV      `json:"cisa,omitempty"`
 	VulnCheck *VulnCheckKEV `json:"vulncheck,omitempty"`
+	ENISA     *ENISAKEV     `json:"enisa,omitempty"`
 }
 
 // CISAKEV has CISA KEV only data
@@ -965,6 +968,15 @@ type VulnCheckXDB struct {
 type VulnCheckReportedExploitation struct {
 	URL       string    `json:"url,omitempty"`
 	DateAdded time.Time `json:"date_added,omitzero"`
+}
+
+// ENISAKEV has ENISA KEV only data
+type ENISAKEV struct {
+	DateReported           time.Time `json:"date_reported,omitzero"`
+	PatchedSince           string    `json:"patched_since,omitempty"`
+	OriginSource           string    `json:"origin_source,omitempty"`
+	ExploitationType       string    `json:"exploitation_type,omitempty"`
+	ThreatActorsExploiting string    `json:"threat_actors_exploiting,omitempty"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data

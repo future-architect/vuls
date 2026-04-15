@@ -212,7 +212,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...any) subcom
 			&config.Conf.Gost,
 			&config.Conf.Exploit,
 			&config.Conf.Metasploit,
-			&config.Conf.KEVuln,
 			&config.Conf.Cti,
 		} {
 			cnf.Init()
