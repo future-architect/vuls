@@ -1214,7 +1214,12 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 			DataSources: []sourceTypes.SourceID{
 				sourceTypes.CISAKEV,
 				sourceTypes.ENISAKEV,
+				sourceTypes.ExploitExploitDB,
+				sourceTypes.ExploitGitHub,
+				sourceTypes.ExploitInTheWild,
+				sourceTypes.ExploitTrickest,
 				sourceTypes.Metasploit,
+				sourceTypes.NucleiRepository,
 				sourceTypes.RedHatCVE,
 				sourceTypes.VulnCheckKEV,
 			},

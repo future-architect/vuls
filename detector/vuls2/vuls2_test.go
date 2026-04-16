@@ -9171,7 +9171,7 @@ func Test_enrich(t *testing.T) {
 							RequiredAction:             "Apply updates per vendor instructions.",
 							KnownRansomwareCampaignUse: "Unknown",
 							DateAdded:                  time.Date(2022, time.August, 18, 0, 0, 0, 0, time.UTC),
-							DueDate:                    func() *time.Time { t := time.Date(2022, time.September, 8, 0, 0, 0, 0, time.UTC); return &t }(),
+							DueDate:                    new(time.Date(2022, time.September, 8, 0, 0, 0, 0, time.UTC)),
 							CISA: &models.CISAKEV{
 								Note: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2022-21971",
 							},
@@ -9204,7 +9204,7 @@ func Test_enrich(t *testing.T) {
 							RequiredAction:             "Apply updates per vendor instructions.",
 							KnownRansomwareCampaignUse: "Unknown",
 							DateAdded:                  time.Date(2021, time.November, 3, 0, 0, 0, 0, time.UTC),
-							DueDate:                    func() *time.Time { t := time.Date(2021, time.November, 17, 0, 0, 0, 0, time.UTC); return &t }(),
+							DueDate:                    new(time.Date(2021, time.November, 17, 0, 0, 0, 0, time.UTC)),
 							VulnCheck: &models.VulnCheckKEV{
 								XDB: []models.VulnCheckXDB{
 									{
@@ -9283,6 +9283,159 @@ func Test_enrich(t *testing.T) {
 								"https://security.paloaltonetworks.com/CVE-2024-0012",
 								"https://www.cve.org/CVERecord?id=CVE-2024-0012",
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-exploitdb data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-3132": models.VulnInfo{
+						CveID:       "CVE-2017-3132",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-3132": models.VulnInfo{
+					CveID:       "CVE-2017-3132",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeExploitDB,
+							ID:          "42388",
+							URL:         "https://www.exploit-db.com/exploits/42388",
+							Description: "Fortinet FortiOS < 5.6.0 - Cross-Site Scripting",
+							Verified:    new(true),
+							DocumentURL: new("https://www.exploit-db.com/raw/42388"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-github data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-9779": models.VulnInfo{
+						CveID:       "CVE-2017-9779",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-9779": models.VulnInfo{
+					CveID:       "CVE-2017-9779",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeGitHub,
+							URL:         "https://github.com/homjxi0e/CVE-2017-9779",
+							Description: "Automatic execution Payload From Windows By Path Users All Exploit Via File bashrc ",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-inthewild data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-16885": models.VulnInfo{
+						CveID:       "CVE-2017-16885",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-16885": models.VulnInfo{
+					CveID:       "CVE-2017-16885",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeInTheWild,
+							URL:         "https://www.exploit-db.com/exploits/43460/",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-trickest data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-7273": models.VulnInfo{
+						CveID:       "CVE-2017-7273",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-7273": models.VulnInfo{
+					CveID:       "CVE-2017-7273",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeTrickest,
+							URL:         "https://github.com/thdusdl1219/CVE-Study",
+							Description: "The cp_report_fixup function in drivers/hid/hid-cypress.c in the Linux kernel 3.2 and 4.x before 4.9.4 allows physically proximate attackers to cause a denial of service (integer underflow) or possibly have unspecified other impact via a crafted HID report.",
+						},
+						{
+							ExploitType: models.ExploitTypeTrickest,
+							URL:         "https://github.com/vincent-deng/veracode-container-security-finding-parser",
+							Description: "The cp_report_fixup function in drivers/hid/hid-cypress.c in the Linux kernel 3.2 and 4.x before 4.9.4 allows physically proximate attackers to cause a denial of service (integer underflow) or possibly have unspecified other impact via a crafted HID report.",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with nuclei-repository data (verified=true)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-18565": models.VulnInfo{
+						CveID:       "CVE-2017-18565",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-18565": models.VulnInfo{
+					CveID:       "CVE-2017-18565",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeNuclei,
+							URL:         "https://github.com/projectdiscovery/nuclei-templates/blob/main/http/cves/2017/CVE-2017-18565.yaml",
+							Description: "The updater plugin before 1.35 for WordPress has multiple XSS issues.",
+							Verified:    new(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with nuclei-repository data (verified=false)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-14535": models.VulnInfo{
+						CveID:       "CVE-2017-14535",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-14535": models.VulnInfo{
+					CveID:       "CVE-2017-14535",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeNuclei,
+							URL:         "https://github.com/projectdiscovery/nuclei-templates/blob/main/http/cves/2017/CVE-2017-14535.yaml",
+							Description: "Trixbox 2.8.0.4 is vulnerable to OS command injection via shell metacharacters in the lang parameter to /maint/modules/home/index.php.",
+							Verified:    new(false),
 						},
 					},
 				},

@@ -80,13 +80,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
-	nExploitCve, err := detector.FillWithExploit(&r, config.Conf.Exploit, config.Conf.LogOpts)
-	if err != nil {
-		logging.Log.Errorf("Failed to fill with exploit: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-	logging.Log.Infof("%s: %d PoC detected", r.FormatServerName(), nExploitCve)
-
 	if err := detector.FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with Cyber Threat Intelligences: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
