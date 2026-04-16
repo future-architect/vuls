@@ -209,12 +209,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 		logging.Log.Infof("%s: %d PoC are detected", r.FormatServerName(), nExploitCve)
 
-		nMetasploitCve, err := FillWithMetasploit(&r, config.Conf.Metasploit, config.Conf.LogOpts)
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to fill with metasploit: %w", err)
-		}
-		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
-
 		if err := FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
 		}

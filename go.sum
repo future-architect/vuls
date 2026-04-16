@@ -894,8 +894,6 @@ github.com/vulsio/go-cve-dictionary v0.16.0 h1:mVUD+8+NXumaNTOt2QRYTGaWPSovM43BY
 github.com/vulsio/go-cve-dictionary v0.16.0/go.mod h1:nx/pU+20B2DTY+z/lrzZOx73607tC2wmgvj6cbopzLM=
 github.com/vulsio/go-exploitdb v0.7.0 h1:JV/HocGKgMD35I04IYNleB0BpdLLA1KM0dqFPtqqAtI=
 github.com/vulsio/go-exploitdb v0.7.0/go.mod h1:+0hjB0HgGVIsqtkdVo0xJB8HDAezF7cG2XxofYkvTyo=
-github.com/vulsio/go-msfdb v0.4.4 h1:fcuuRuNwnUU1Z9ISBinWrbkWFPJrHluuNcUOpF9GkUM=
-github.com/vulsio/go-msfdb v0.4.4/go.mod h1:9EOtT+xusFgeNG11D6EKpsM2Fijs7YhTxW3iBD5RDoQ=
 github.com/vulsio/gost v0.7.2 h1:COYQ7Y8mi+YK1CDdRyaXgwocP7ZrnCNkJ8jxFe1roPE=
 github.com/vulsio/gost v0.7.2/go.mod h1:DswLTXFo0CUQie9aI1JKhrJTbWM4jgEhmEHALsSKyTs=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=

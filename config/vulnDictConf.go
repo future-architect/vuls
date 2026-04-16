@@ -227,33 +227,6 @@ func (cnf *GostConf) Init() {
 	cnf.DebugSQL = Conf.DebugSQL
 }
 
-// MetasploitConf is go-msfdb config
-type MetasploitConf struct {
-	VulnDict
-}
-
-const metasploitDBType = "METASPLOITDB_TYPE"
-const metasploitDBURL = "METASPLOITDB_URL"
-const metasploitDBPATH = "METASPLOITDB_SQLITE3_PATH"
-
-// Init set options with the following priority.
-// 1. Environment variable
-// 2. config.toml
-func (cnf *MetasploitConf) Init() {
-	cnf.Name = "metasploit"
-	if os.Getenv(metasploitDBType) != "" {
-		cnf.Type = os.Getenv(metasploitDBType)
-	}
-	if os.Getenv(metasploitDBURL) != "" {
-		cnf.URL = os.Getenv(metasploitDBURL)
-	}
-	if os.Getenv(metasploitDBPATH) != "" {
-		cnf.SQLite3Path = os.Getenv(metasploitDBPATH)
-	}
-	cnf.setDefault("go-msfdb.sqlite3")
-	cnf.DebugSQL = Conf.DebugSQL
-}
-
 // CtiConf is go-cti config
 type CtiConf struct {
 	VulnDict
