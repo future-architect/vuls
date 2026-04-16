@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	apk "github.com/knqyf263/go-apk-version"
 	deb "github.com/knqyf263/go-deb-version"
 	rpm "github.com/knqyf263/go-rpm-version"
 	"golang.org/x/xerrors"
 
+	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
+	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -24,6 +27,7 @@ import (
 	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
+	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 
 	"github.com/future-architect/vuls/constant"
@@ -987,17 +991,6 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 	}
 }
 
-// enrichCveContentType maps a sourceID to a CveContentType for enrichment data.
-// Returns models.Unknown for source IDs that are not enrichment targets.
-func enrichCveContentType(s sourceTypes.SourceID) models.CveContentType {
-	switch s {
-	case sourceTypes.RedHatCVE:
-		return models.RedHatAPI
-	default:
-		return models.Unknown
-	}
-}
-
 // enrichCvss extracts CVSS scores from severity data without ecosystem-specific handling.
 func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
 	var (
@@ -1050,4 +1043,200 @@ func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv4
 	}
 
 	return cvss2, cvss3, cvss4
+}
+
+// enrichVulnerabilities enriches VulnInfo with vulnerability-based data (CveContent + KEV).
+func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDataVulnerability) {
+	for _, v := range vulns {
+		for sourceID, rootMap := range v.Contents {
+			switch sourceID {
+			case sourceTypes.CISAKEV, sourceTypes.VulnCheckKEV:
+				vi.KEVs = append(vi.KEVs, enrichVulnerabilityKEV(sourceID, rootMap)...)
+			case sourceTypes.RedHatCVE:
+				enrichRedHatCVE(vi, rootMap)
+			}
+		}
+	}
+}
+
+// enrichAdvisories enriches VulnInfo with advisory-based data (KEV).
+func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDataAdvisory) {
+	for _, a := range advisories {
+		for sourceID, rootMap := range a.Contents {
+			switch sourceID {
+			case sourceTypes.ENISAKEV:
+				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
+			}
+		}
+	}
+}
+
+// enrichRedHatCVE adds RedHat CVE data as CveContent.
+func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	if _, ok := vi.CveContents[models.RedHatAPI]; ok {
+		return
+	}
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
+
+			var rs models.References
+			for _, r := range v.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			vi.CveContents[models.RedHatAPI] = append(vi.CveContents[models.RedHatAPI], models.CveContent{
+				Type:           models.RedHatAPI,
+				CveID:          string(v.Content.ID),
+				Title:          v.Content.Title,
+				Summary:        v.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     cveContentSourceLink(models.RedHatAPI, v),
+				References:     rs,
+				CweIDs: func() []string {
+					var cs []string //nolint:prealloc
+					for _, cwe := range v.Content.CWE {
+						cs = append(cs, cwe.CWE...)
+					}
+					return cs
+				}(),
+				Published: func() time.Time {
+					if v.Content.Published != nil {
+						return *v.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if v.Content.Modified != nil {
+						return *v.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
+		}
+	}
+}
+
+// enrichVulnerabilityKEV extracts KEV data from vulnerability content and maps it to models.KEV.
+// Handles CISA and VulnCheck KEV sources where KEV data is stored in vulnerability content.
+func enrichVulnerabilityKEV(sourceID sourceTypes.SourceID, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) []models.KEV {
+	var kevType models.KEVType
+	switch sourceID {
+	case sourceTypes.CISAKEV:
+		kevType = models.CISAKEVType
+	case sourceTypes.VulnCheckKEV:
+		kevType = models.VulnCheckKEVType
+	default:
+		return nil
+	}
+
+	var kevs []models.KEV
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			if v.Content.KEV == nil {
+				continue
+			}
+
+			k := models.KEV{
+				Type:                       kevType,
+				VendorProject:              v.Content.KEV.VendorProject,
+				Product:                    v.Content.KEV.Product,
+				VulnerabilityName:          string(v.Content.Title),
+				ShortDescription:           v.Content.Description,
+				RequiredAction:             v.Content.KEV.RequiredAction,
+				KnownRansomwareCampaignUse: v.Content.KEV.KnownRansomwareCampaignUse,
+				DateAdded:                  v.Content.KEV.DateAdded,
+				DueDate: func() *time.Time {
+					if v.Content.KEV.DueDate.Equal(time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)) || v.Content.KEV.DueDate.IsZero() {
+						return nil
+					}
+					return new(v.Content.KEV.DueDate)
+				}(),
+			}
+
+			switch sourceID {
+			case sourceTypes.CISAKEV:
+				k.CISA = &models.CISAKEV{
+					Note: v.Content.KEV.Notes,
+				}
+			case sourceTypes.VulnCheckKEV:
+				if v.Content.KEV.VulnCheck != nil {
+					k.VulnCheck = &models.VulnCheckKEV{
+						XDB: func() []models.VulnCheckXDB {
+							if len(v.Content.KEV.VulnCheck.XDB) == 0 {
+								return nil
+							}
+							xs := make([]models.VulnCheckXDB, 0, len(v.Content.KEV.VulnCheck.XDB))
+							for _, x := range v.Content.KEV.VulnCheck.XDB {
+								xs = append(xs, models.VulnCheckXDB{
+									XDBID:       x.XDBID,
+									XDBURL:      x.XDBURL,
+									DateAdded:   x.DateAdded,
+									ExploitType: x.ExploitType,
+									CloneSSHURL: x.CloneSSHURL,
+								})
+							}
+							return xs
+						}(),
+						ReportedExploitation: func() []models.VulnCheckReportedExploitation {
+							if len(v.Content.KEV.VulnCheck.ReportedExploitation) == 0 {
+								return nil
+							}
+							es := make([]models.VulnCheckReportedExploitation, 0, len(v.Content.KEV.VulnCheck.ReportedExploitation))
+							for _, e := range v.Content.KEV.VulnCheck.ReportedExploitation {
+								es = append(es, models.VulnCheckReportedExploitation{
+									URL:       e.URL,
+									DateAdded: e.DateAdded,
+								})
+							}
+							return es
+						}(),
+					}
+				}
+			}
+
+			kevs = append(kevs, k)
+		}
+	}
+	return kevs
+}
+
+// enrichAdvisoryKEV extracts KEV data from advisory content.
+// Handles ENISA KEV where KEV data is stored in advisory content rather than vulnerability content.
+func enrichAdvisoryKEV(rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) []models.KEV {
+	var kevs []models.KEV
+	for _, advisories := range rootMap {
+		for _, a := range advisories {
+			if a.Content.KEV == nil {
+				continue
+			}
+
+			k := models.KEV{
+				Type:          models.ENISAKEVType,
+				VendorProject: a.Content.KEV.VendorProject,
+				Product:       a.Content.KEV.Product,
+			}
+
+			if a.Content.KEV.ENISA != nil {
+				k.ENISA = &models.ENISAKEV{
+					DateReported:           a.Content.KEV.ENISA.DateReported,
+					PatchedSince:           a.Content.KEV.ENISA.PatchedSince,
+					OriginSource:           a.Content.KEV.ENISA.OriginSource,
+					ExploitationType:       a.Content.KEV.ENISA.ExploitationType,
+					ThreatActorsExploiting: a.Content.KEV.ENISA.ThreatActorsExploiting,
+				}
+			}
+
+			kevs = append(kevs, k)
+		}
+	}
+	return kevs
 }

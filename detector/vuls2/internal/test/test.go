@@ -29,6 +29,7 @@ func PopulateDB(c session.Config, fixtureDir string) error {
 		return errors.Wrap(err, "open db connection")
 	}
 	defer s.Storage().Close()
+	defer s.Cache().Close()
 
 	if err := s.Storage().Initialize(); err != nil {
 		return errors.Wrap(err, "initialize")

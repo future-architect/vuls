@@ -42,7 +42,6 @@ type Config struct {
 	Gost       GostConf       `json:"gost,omitzero"`
 	Exploit    ExploitConf    `json:"exploit,omitzero"`
 	Metasploit MetasploitConf `json:"metasploit,omitzero"`
-	KEVuln     KEVulnConf     `json:"kevuln,omitzero"`
 	Cti        CtiConf        `json:"cti,omitzero"`
 	Vuls2      Vuls2Conf      `json:"vuls2,omitzero"`
 
@@ -192,7 +191,6 @@ func (c *Config) ValidateOnReport() bool {
 		&Conf.Gost,
 		&Conf.Exploit,
 		&Conf.Metasploit,
-		&Conf.KEVuln,
 		&Conf.Cti,
 	} {
 		if err := cnf.Validate(); err != nil {

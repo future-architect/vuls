@@ -1206,7 +1206,12 @@ func toReference(ref string) models.Reference {
 // provides cross-source enrichment (e.g., RedHat CVE data for Debian-detected CVEs).
 func enrich(sesh *session.Session, vim models.VulnInfos) error {
 	for cveID, vi := range vim {
-		vm, err := sesh.Storage().GetVulnerability(vulnerabilityContentTypes.VulnerabilityID(cveID))
+		vd, err := sesh.GetVulnerabilityDataByVulnerabilityID(vulnerabilityContentTypes.VulnerabilityID(cveID), dbTypes.Filter{
+			Contents: []dbTypes.FilterContentType{
+				dbTypes.FilterContentTypeAdvisories,
+				dbTypes.FilterContentTypeVulnerabilities,
+			},
+		})
 		if err != nil {
 			if errors.Is(err, dbTypes.ErrNotFoundVulnerability) {
 				continue
@@ -1218,63 +1223,9 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 			vi.CveContents = models.NewCveContents()
 		}
 
-		for sourceID, rootMap := range vm {
-			cctype := enrichCveContentType(sourceID)
-			if cctype == models.Unknown {
-				continue
-			}
-			if _, ok := vi.CveContents[cctype]; ok {
-				continue
-			}
+		enrichVulnerabilities(&vi, vd.Vulnerabilities)
+		enrichAdvisories(&vi, vd.Advisories)
 
-			for _, vulns := range rootMap {
-				for _, v := range vulns {
-					cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
-
-					var rs models.References
-					for _, r := range v.Content.References {
-						rs = append(rs, toReference(r.URL))
-					}
-
-					vi.CveContents[cctype] = append(vi.CveContents[cctype], models.CveContent{
-						Type:           cctype,
-						CveID:          cveID,
-						Title:          v.Content.Title,
-						Summary:        v.Content.Description,
-						Cvss2Score:     cvss2.BaseScore,
-						Cvss2Vector:    cvss2.Vector,
-						Cvss2Severity:  cvss2.NVDBaseSeverity,
-						Cvss3Score:     cvss3.BaseScore,
-						Cvss3Vector:    cvss3.Vector,
-						Cvss3Severity:  cvss3.BaseSeverity,
-						Cvss40Score:    cvss40.Score,
-						Cvss40Vector:   cvss40.Vector,
-						Cvss40Severity: cvss40.Severity,
-						SourceLink:     cveContentSourceLink(cctype, v),
-						References:     rs,
-						CweIDs: func() []string {
-							var cs []string //nolint:prealloc
-							for _, cwe := range v.Content.CWE {
-								cs = append(cs, cwe.CWE...)
-							}
-							return cs
-						}(),
-						Published: func() time.Time {
-							if v.Content.Published != nil {
-								return *v.Content.Published
-							}
-							return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-						}(),
-						LastModified: func() time.Time {
-							if v.Content.Modified != nil {
-								return *v.Content.Modified
-							}
-							return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-						}(),
-					})
-				}
-			}
-		}
 		vim[cveID] = vi
 	}
 	return nil

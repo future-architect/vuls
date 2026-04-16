@@ -215,10 +215,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 		logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
 
-		if err := FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Known Exploited Vulnerabilities: %w", err)
-		}
-
 		if err := FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
 		}
