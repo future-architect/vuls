@@ -9295,6 +9295,22 @@ func Test_enrich(t *testing.T) {
 			},
 			want: models.VulnInfos{},
 		},
+		{
+			name: "datasource not in enrich filter is filtered out",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2023-44487": models.VulnInfo{
+						CveID: "CVE-2023-44487",
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2023-44487": models.VulnInfo{
+					CveID:       "CVE-2023-44487",
+					CveContents: models.CveContents{},
+				},
+			},
+		},
 	}
 
 	c := session.Config{Type: "boltdb", Path: filepath.Join(t.TempDir(), "enrich-test.db")}
