@@ -458,6 +458,20 @@ func Test_detectOSName(t *testing.T) {
 			want: "Windows 11 Version 25H2 for x64-based Systems",
 		},
 		{
+			name: "Windows 11 Version 26H1 for x64-based Systems",
+			args: osInfo{
+				productName:      "Microsoft Windows 11 Pro",
+				version:          "10.0",
+				build:            "28000",
+				revision:         "1575",
+				edition:          "Professional",
+				servicePack:      "",
+				arch:             "x64-based",
+				installationType: "Client",
+			},
+			want: "Windows 11 Version 26H1 for x64-based Systems",
+		},
+		{
 			name: "Windows 11 latest release",
 			args: osInfo{
 				productName:      "Microsoft Windows 11 Pro",
@@ -1016,6 +1030,28 @@ func Test_windows_detectKBsFromKernelVersion(t *testing.T) {
 			},
 			want: models.WindowsKB{
 				Applied:   []string{"5005104", "5005575", "5005619", "5006699", "5006745", "5007205", "5007254", "5008223", "5010197", "5009555", "5010796", "5009608", "5010354", "5010421", "5011497", "5011558", "5012604", "5012637", "5013944", "5015013", "5014021", "5014678", "5014665", "5015827", "5015879", "5016627", "5016693", "5017316", "5017381", "5018421", "5020436", "5018485", "5019081", "5021656", "5020032", "5021249", "5022553", "5022291", "5022842", "5023705", "5025230", "5026370", "5027225", "5028171", "5029250", "5030216", "5031364", "5032198", "5033118", "5034129", "5034770", "5035857", "5037422", "5036909", "5037782", "5039227", "5041054", "5040437", "5041160", "5042881", "5044281", "5046616", "5048654", "5049983", "5051979", "5053603", "5055526", "5058920", "5059092", "5058385", "5061906", "5060526", "5062572", "5063880", "5065432", "5066782", "5070884", "5068787", "5071547", "5073457", "5077800", "5078136", "5075906", "5082314", "5078766", "5082142"},
+				Unapplied: nil,
+			},
+		},
+		{
+			name: "10.0.28000.1",
+			base: base{
+				Distro:     config.Distro{Release: "Windows 11 Version 26H1 for x64-based Systems"},
+				osPackages: osPackages{Kernel: models.Kernel{Version: "10.0.28000.1"}},
+			},
+			want: models.WindowsKB{
+				Applied:   nil,
+				Unapplied: []string{"5077179", "5077239", "5079466", "5079489", "5083768"},
+			},
+		},
+		{
+			name: "10.0.28000.1836",
+			base: base{
+				Distro:     config.Distro{Release: "Windows 11 Version 26H1 for x64-based Systems"},
+				osPackages: osPackages{Kernel: models.Kernel{Version: "10.0.28000.1836"}},
+			},
+			want: models.WindowsKB{
+				Applied:   []string{"5077179", "5077239", "5079466", "5079489", "5083768"},
 				Unapplied: nil,
 			},
 		},
