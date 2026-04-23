@@ -160,6 +160,13 @@ archives:
   - README*
   - CHANGELOG.md
 
+sboms:
+- artifacts: archive
+  cmd: syft
+  args: ["${artifact}", "--output", "spdx-json=${document}"]
+  documents:
+  - '{{ .ArtifactName }}.sbom.spdx.json'
+
 snapshot:
   version_template: SNAPSHOT-{{ .Commit }}
 
