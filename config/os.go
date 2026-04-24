@@ -143,7 +143,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		// Not found
 		eol, found = map[string]EOL{}[major(release)]
 	case constant.Ubuntu:
-		// https://wiki.ubuntu.com/Releases
+		// https://ubuntu.com/about/release-cycle
 		eol, found = map[string]EOL{
 			"6.06":  {Ended: true},
 			"6.10":  {Ended: true},
@@ -218,6 +218,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			},
 			"25.10": {
 				StandardSupportUntil: time.Date(2026, 7, 31, 23, 59, 59, 0, time.UTC),
+			},
+			"26.04": {
+				StandardSupportUntil: time.Date(2031, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2036, 4, 30, 23, 59, 59, 0, time.UTC),
 			},
 		}[release]
 	case constant.OpenSUSE:
