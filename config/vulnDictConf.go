@@ -146,33 +146,6 @@ func (cnf VulnDict) CheckHTTPHealth() error {
 	return nil
 }
 
-// ExploitConf is exploit config
-type ExploitConf struct {
-	VulnDict
-}
-
-const exploitDBType = "EXPLOITDB_TYPE"
-const exploitDBURL = "EXPLOITDB_URL"
-const exploitDBPATH = "EXPLOITDB_SQLITE3_PATH"
-
-// Init set options with the following priority.
-// 1. Environment variable
-// 2. config.toml
-func (cnf *ExploitConf) Init() {
-	cnf.Name = "exploit"
-	if os.Getenv(exploitDBType) != "" {
-		cnf.Type = os.Getenv(exploitDBType)
-	}
-	if os.Getenv(exploitDBURL) != "" {
-		cnf.URL = os.Getenv(exploitDBURL)
-	}
-	if os.Getenv(exploitDBPATH) != "" {
-		cnf.SQLite3Path = os.Getenv(exploitDBPATH)
-	}
-	cnf.setDefault("go-exploitdb.sqlite3")
-	cnf.DebugSQL = Conf.DebugSQL
-}
-
 // GoCveDictConf is GoCveDict config
 type GoCveDictConf struct {
 	VulnDict

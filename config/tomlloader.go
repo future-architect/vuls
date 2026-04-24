@@ -40,7 +40,6 @@ func (c TOMLLoader) Load(pathToToml string) error {
 	for _, cnf := range []VulnDictInterface{
 		&Conf.CveDict,
 		&Conf.Gost,
-		&Conf.Exploit,
 		&Conf.Cti,
 	} {
 		cnf.Init()

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/logging"
-	exploitmodels "github.com/vulsio/go-exploitdb/models"
 )
 
 // VulnInfos has a map of VulnInfo
@@ -886,18 +885,36 @@ func (p DistroAdvisory) Format() string {
 	return strings.Join(buf, "\n")
 }
 
+// ExploitType represents the source type of an exploit
+type ExploitType string
+
+const (
+	// ExploitTypeExploitDB is the source type for Offensive Security Exploit DB.
+	ExploitTypeExploitDB ExploitType = "OffensiveSecurity"
+	// ExploitTypeGitHub is the source type for GitHub PoC-in-GitHub.
+	ExploitTypeGitHub ExploitType = "GitHub"
+	// ExploitTypeInTheWild is the source type for inthewild.io.
+	ExploitTypeInTheWild ExploitType = "InTheWild"
+	// ExploitTypeTrickest is the source type for Trickest.
+	ExploitTypeTrickest ExploitType = "Trickest"
+	// ExploitTypeNuclei is the source type for Nuclei templates.
+	ExploitTypeNuclei ExploitType = "Nuclei"
+	// ExploitTypeNVD is the source type for NVD.
+	ExploitTypeNVD ExploitType = "nvd"
+)
+
 // Exploit :
 type Exploit struct {
-	ExploitType  exploitmodels.ExploitType `json:"exploitType"`
-	ID           string                    `json:"id"`
-	URL          string                    `json:"url"`
-	Description  string                    `json:"description"`
-	Verified     *bool                     `json:"verified,omitempty"`
-	DocumentURL  *string                   `json:"documentURL,omitempty"`
-	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
-	BinaryURL    *string                   `json:"binaryURL,omitempty"`
-	PaperURL     *string                   `json:"paperURL,omitempty"`
-	GHDBURL      *string                   `json:"ghdbURL,omitempty"`
+	ExploitType  ExploitType `json:"exploitType"`
+	ID           string      `json:"id"`
+	URL          string      `json:"url"`
+	Description  string      `json:"description"`
+	Verified     *bool       `json:"verified,omitempty"`
+	DocumentURL  *string     `json:"documentURL,omitempty"`
+	ShellCodeURL *string     `json:"shellCodeURL,omitempty"`
+	BinaryURL    *string     `json:"binaryURL,omitempty"`
+	PaperURL     *string     `json:"paperURL,omitempty"`
+	GHDBURL      *string     `json:"ghdbURL,omitempty"`
 }
 
 // Metasploit :

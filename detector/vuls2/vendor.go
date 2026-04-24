@@ -1056,6 +1056,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				enrichRedHatCVE(vi, rootMap)
 			case sourceTypes.Metasploit:
 				enrichMetasploit(vi, rootMap)
+			case sourceTypes.ExploitExploitDB, sourceTypes.ExploitGitHub, sourceTypes.ExploitInTheWild, sourceTypes.ExploitTrickest, sourceTypes.NucleiRepository:
+				vi.Exploits = append(vi.Exploits, enrichExploits(sourceID, rootMap)...)
 			}
 		}
 	}
@@ -1264,4 +1266,45 @@ func enrichAdvisoryKEV(rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) []
 		}
 	}
 	return kevs
+}
+
+// enrichExploits converts vulnerability exploit data to models.Exploit slice.
+func enrichExploits(sourceID sourceTypes.SourceID, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) []models.Exploit {
+	var exploits []models.Exploit
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			for _, e := range v.Content.Exploit {
+				exploit := models.Exploit{
+					URL:         e.Link,
+					Description: e.Description,
+				}
+				switch sourceID {
+				case sourceTypes.ExploitExploitDB:
+					exploit.ExploitType = models.ExploitTypeExploitDB
+					if e.ExploitDB != nil {
+						exploit.ID = e.ExploitDB.ID
+						exploit.Verified = &e.ExploitDB.Verified
+						if e.ExploitDB.RawURL != "" {
+							exploit.DocumentURL = &e.ExploitDB.RawURL
+						}
+					}
+				case sourceTypes.ExploitGitHub:
+					exploit.ExploitType = models.ExploitTypeGitHub
+				case sourceTypes.ExploitInTheWild:
+					exploit.ExploitType = models.ExploitTypeInTheWild
+				case sourceTypes.ExploitTrickest:
+					exploit.ExploitType = models.ExploitTypeTrickest
+				case sourceTypes.NucleiRepository:
+					exploit.ExploitType = models.ExploitTypeNuclei
+					if e.Nuclei != nil {
+						exploit.Verified = &e.Nuclei.Verified
+					}
+				default:
+					exploit.ExploitType = models.ExploitType(sourceID)
+				}
+				exploits = append(exploits, exploit)
+			}
+		}
+	}
+	return exploits
 }
