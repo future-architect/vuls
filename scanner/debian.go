@@ -221,7 +221,7 @@ func (o *debian) checkDeps() error {
 			continue
 		}
 
-		_, status, _, _, _, _ := o.parseScannedPackagesLine(r.Stdout)
+		_, _, status, _, _, _, _ := o.parseScannedPackagesLine(r.Stdout)
 		if status != "ii" {
 			if dep.additionalMsg != "" {
 				msg += dep.additionalMsg
@@ -365,10 +365,9 @@ func (o *debian) scanInstalledPackages() (models.Packages, models.Packages, mode
 		return nil, nil, nil, err
 	}
 	for _, name := range updatableNames {
-		for _, pack := range installed {
+		for key, pack := range installed {
 			if pack.Name == name {
-				updatable[name] = pack
-				break
+				updatable[key] = pack
 			}
 		}
 	}
@@ -394,7 +393,7 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 	lines := strings.SplitSeq(stdout, "\n")
 	for line := range lines {
 		if trimmed := strings.TrimSpace(line); len(trimmed) != 0 {
-			name, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
+			name, arch, status, version, srcName, srcVersion, err := o.parseScannedPackagesLine(trimmed)
 			if err != nil || len(status) < 2 {
 				return nil, nil, xerrors.Errorf(
 					"Debian: Failed to parse package line: %s", line)
@@ -415,15 +414,23 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 				continue
 			}
 
-			installed[name] = models.Package{
+			// Use "name:arch" as the map key when architecture is present
+			// to support dpkg Multi-Arch packages (e.g. libc6:amd64 and libc6:i386)
+			mapKey := name
+			if arch != "" {
+				mapKey = name + ":" + arch
+			}
+
+			installed[mapKey] = models.Package{
 				Name:    name,
 				Version: version,
+				Arch:    arch,
 			}
 
 			srcPacks = append(srcPacks, models.SrcPackage{
 				Name:        srcName,
 				Version:     srcVersion,
-				BinaryNames: []string{name},
+				BinaryNames: []string{mapKey},
 			})
 
 			if models.IsKernelSourcePackage(o.getDistro().Family, srcName) {
@@ -486,12 +493,13 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 	return bins, srcs, nil
 }
 
-func (o *debian) parseScannedPackagesLine(line string) (name, status, version, srcName, srcVersion string, err error) {
+func (o *debian) parseScannedPackagesLine(line string) (name, arch, status, version, srcName, srcVersion string, err error) {
 	ss := strings.Split(line, ",")
 	if len(ss) == 5 {
-		// remove :amd64, i386...
+		// Extract architecture from binary:Package field (e.g. "libc6:amd64" -> arch="amd64")
 		name = ss[0]
 		if i := strings.IndexRune(name, ':'); i >= 0 {
+			arch = name[i+1:]
 			name = name[:i]
 		}
 		status = strings.TrimSpace(ss[1])
@@ -514,7 +522,7 @@ func (o *debian) parseScannedPackagesLine(line string) (name, status, version, s
 		return
 	}
 
-	return "", "", "", "", "", xerrors.Errorf("Unknown format: %s", line)
+	return "", "", "", "", "", "", xerrors.Errorf("Unknown format: %s", line)
 }
 
 func (o *debian) aptGetUpdate() error {
@@ -616,8 +624,8 @@ func (o *debian) ensureChangelogCache(current cache.Meta) (*cache.Meta, error) {
 
 func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 	names := make([]string, 0, len(updatables))
-	for name := range updatables {
-		names = append(names, name)
+	for _, pack := range updatables {
+		names = append(names, pack.Name)
 	}
 	cmd := fmt.Sprintf("LANGUAGE=en_US.UTF-8 apt-cache policy %s", strings.Join(names, " "))
 	r := o.exec(cmd, noSudo)
@@ -630,13 +638,20 @@ func (o *debian) fillCandidateVersion(updatables models.Packages) (err error) {
 		if err != nil {
 			return xerrors.Errorf("Failed to parse %w", err)
 		}
-		pack, ok := updatables[k]
-		if !ok {
+		// Find the matching package(s) in updatables by plain name,
+		// since apt-cache policy output uses plain package names.
+		found := false
+		for key, pack := range updatables {
+			if pack.Name == k {
+				pack.NewVersion = ver.Candidate
+				pack.Repository = ver.Repo
+				updatables[key] = pack
+				found = true
+			}
+		}
+		if !found {
 			return xerrors.Errorf("Not found: %s", k)
 		}
-		pack.NewVersion = ver.Candidate
-		pack.Repository = ver.Repo
-		updatables[k] = pack
 	}
 	return
 }
@@ -758,9 +773,10 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 	for range updatablePacks {
 		tasks <- func() {
 			func(p models.Package) {
+				mapKey := p.MapKey()
 				changelog := o.getChangelogCache(meta, p)
 				if 0 < len(changelog) {
-					cveIDs, pack := o.getCveIDsFromChangelog(changelog, p.Name, p.Version)
+					cveIDs, pack := o.getCveIDsFromChangelog(changelog, p.Name, p.Version, mapKey)
 					resChan <- response{pack, cveIDs}
 					return
 				}
@@ -786,7 +802,7 @@ func (o *debian) scanChangelogs(updatablePacks models.Packages, meta *cache.Meta
 			if response.pack == nil {
 				continue
 			}
-			o.Packages[response.pack.Name] = *response.pack
+			o.Packages[response.pack.MapKey()] = *response.pack
 			cves := response.DetectedCveIDs
 			for _, cve := range cves {
 				packNames, ok := cvePackages[cve]
@@ -893,7 +909,7 @@ func (o *debian) fetchParseChangelog(pack models.Package, tmpClogPath string) ([
 	}
 
 	stdout := strings.ReplaceAll(r.Stdout, "\r", "")
-	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version)
+	cveIDs, clogFilledPack := o.getCveIDsFromChangelog(stdout, pack.Name, pack.Version, pack.MapKey())
 
 	if clogFilledPack.Changelog.Method != models.FailedToGetChangelog {
 		err := cache.DB.PutChangelog(
@@ -966,10 +982,10 @@ func (o *debian) getChangelogPath(packName, tmpClogPath string) (string, error) 
 }
 
 func (o *debian) getCveIDsFromChangelog(
-	changelog, name, ver string) ([]DetectedCveID, *models.Package) {
+	changelog, name, ver, mapKey string) ([]DetectedCveID, *models.Package) {
 
 	if cveIDs, pack, err := o.parseChangelog(
-		changelog, name, ver, models.ChangelogExactMatch); err == nil {
+		changelog, name, ver, models.ChangelogExactMatch, mapKey); err == nil {
 		return cveIDs, pack
 	}
 
@@ -979,7 +995,7 @@ func (o *debian) getCveIDsFromChangelog(
 	if 1 < len(splittedByColon) {
 		verAfterColon = splittedByColon[1]
 		if cveIDs, pack, err := o.parseChangelog(
-			changelog, name, verAfterColon, models.ChangelogRoughMatch); err == nil {
+			changelog, name, verAfterColon, models.ChangelogRoughMatch, mapKey); err == nil {
 			return cveIDs, pack
 		}
 	}
@@ -996,7 +1012,7 @@ func (o *debian) getCveIDsFromChangelog(
 		ss := strings.Split(ver, d)
 		if 1 < len(ss) {
 			if cveIDs, pack, err := o.parseChangelog(
-				changelog, name, ss[0], models.ChangelogRoughMatch); err == nil {
+				changelog, name, ss[0], models.ChangelogRoughMatch, mapKey); err == nil {
 				return cveIDs, pack
 			}
 		}
@@ -1004,7 +1020,7 @@ func (o *debian) getCveIDsFromChangelog(
 		ss = strings.Split(verAfterColon, d)
 		if 1 < len(ss) {
 			if cveIDs, pack, err := o.parseChangelog(
-				changelog, name, ss[0], models.ChangelogRoughMatch); err == nil {
+				changelog, name, ss[0], models.ChangelogRoughMatch, mapKey); err == nil {
 				return cveIDs, pack
 			}
 		}
@@ -1015,7 +1031,7 @@ func (o *debian) getCveIDsFromChangelog(
 	o.log.Debugf("Changelog of %s-%s: %s", name, ver, changelog)
 
 	// If the version is not in changelog, return entire changelog to put into cache
-	pack := o.Packages[name]
+	pack := o.Packages[mapKey]
 	pack.Changelog = &models.Changelog{
 		Contents: changelog,
 		Method:   models.FailedToFindVersionInChangelog,
@@ -1028,7 +1044,7 @@ var cveRe = regexp.MustCompile(`(CVE-\d{4}-\d{4,})`)
 
 // Collect CVE-IDs included in the changelog.
 // The version specified in argument(versionOrLater) is used to compare.
-func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence) ([]DetectedCveID, *models.Package, error) {
+func (o *debian) parseChangelog(changelog, name, ver string, confidence models.Confidence, mapKey string) ([]DetectedCveID, *models.Package, error) {
 	installedVer, err := version.NewVersion(ver)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed to parse installed version: %s, err: %w", ver, err)
@@ -1065,7 +1081,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 
 	if !found {
 		if o.Distro.Family == constant.Raspbian {
-			pack := o.Packages[name]
+			pack := o.Packages[mapKey]
 			pack.Changelog = &models.Changelog{
 				Contents: strings.Join(buf, "\n"),
 				Method:   models.ChangelogRoughMatchStr,
@@ -1079,7 +1095,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 			return cves, &pack, nil
 		}
 
-		pack := o.Packages[name]
+		pack := o.Packages[mapKey]
 		pack.Changelog = &models.Changelog{
 			Contents: "",
 			Method:   models.FailedToFindVersionInChangelog,
@@ -1093,7 +1109,7 @@ func (o *debian) parseChangelog(changelog, name, ver string, confidence models.C
 		Contents: strings.Join(buf[0:len(buf)-1], "\n"),
 		Method:   confidence.DetectionMethod,
 	}
-	pack := o.Packages[name]
+	pack := o.Packages[mapKey]
 	pack.Changelog = &clog
 
 	cves := []DetectedCveID{}
@@ -1199,7 +1215,8 @@ func (o *debian) checkrestart() error {
 	}
 
 	for _, p := range packs {
-		pack, ok := o.Packages[p.Name]
+		mapKey := p.MapKey()
+		pack, ok := o.Packages[mapKey]
 		if !ok {
 			o.log.Warnf("skip checkrestart for %s, not found in scanned packages", p.Name)
 			o.warns = append(o.warns, fmt.Errorf("skip checkrestart for %s, not found in scanned packages", p.Name))
@@ -1230,7 +1247,7 @@ func (o *debian) checkrestart() error {
 			}
 		}
 
-		o.Packages[p.Name] = pack
+		o.Packages[mapKey] = pack
 	}
 	return nil
 }
