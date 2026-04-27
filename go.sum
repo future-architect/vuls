@@ -824,8 +824,8 @@ github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
 github.com/skeema/knownhosts v1.3.2 h1:EDL9mgf4NzwMXCTfaxSD/o/a5fxDw/xL9nkU28JjdBg=
 github.com/skeema/knownhosts v1.3.2/go.mod h1:bEg3iQAuw+jyiw+484wwFJoKSLwcfd7fqRy+N0QTiow=
-github.com/smartystreets/assertions v1.13.0 h1:Dx1kYM01xsSqKPno3aqLnrwac2LetPvN23diwyr69Qs=
-github.com/smartystreets/assertions v1.13.0/go.mod h1:wDmR7qL282YbGsPy6H/yAsesrxfxaaSlJazyFLYVFx8=
+github.com/smartystreets/assertions v1.13.1 h1:Ef7KhSmjZcK6AVf9YbJdvPYG9avaF0ZxudX+ThRdWfU=
+github.com/smartystreets/assertions v1.13.1/go.mod h1:cXr/IwVfSo/RbCSPhoAPv73p3hlSdrBH/b3SdnW/LMY=
 github.com/smartystreets/goconvey v1.8.0 h1:Oi49ha/2MURE0WexF052Z0m+BNSGirfjg5RL+JXWq3w=
 github.com/smartystreets/goconvey v1.8.0/go.mod h1:EdX8jtrTIj26jmjCOVNMVSIYAtgexqXKHOXW2Dx9JLg=
 github.com/sosedoff/gitkit v0.4.0 h1:opyQJ/h9xMRLsz2ca/2CRXtstePcpldiZN8DpLLF8Os=
@@ -888,8 +888,6 @@ github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IU
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
-github.com/vulsio/go-cti v0.3.4 h1:aCLFKLKsyJNbMHXcPlK3TwKq5DTdfZZcjwqjQH7+ORE=
-github.com/vulsio/go-cti v0.3.4/go.mod h1:quRi50ioECl6WSLxwjq2a10aq9G7eWzfnYTutXnpwF8=
 github.com/vulsio/go-cve-dictionary v0.16.0 h1:mVUD+8+NXumaNTOt2QRYTGaWPSovM43BYr+XjbQ+vXM=
 github.com/vulsio/go-cve-dictionary v0.16.0/go.mod h1:nx/pU+20B2DTY+z/lrzZOx73607tC2wmgvj6cbopzLM=
 github.com/vulsio/gost v0.7.2 h1:COYQ7Y8mi+YK1CDdRyaXgwocP7ZrnCNkJ8jxFe1roPE=

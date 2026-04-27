@@ -1,0 +1,9 @@
+{
+	"id": "CWE-306",
+	"kind": "weakness",
+	"name": "Missing Authentication for Critical Function",
+	"related_attack_patterns": [
+		"CAPEC-115",
+		"CAPEC-36"
+	]
+}

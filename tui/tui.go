@@ -13,7 +13,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cti"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -878,14 +877,15 @@ func setChangelogLayout(g *gocui.Gui) error {
 			attacks := []string{}
 			capecs := []string{}
 			for _, techniqueID := range vinfo.Ctis {
-				technique, ok := cti.TechniqueDict[techniqueID]
+				detail, ok := vinfo.CtiDetails[techniqueID]
 				if !ok {
 					continue
 				}
-				if strings.HasPrefix(techniqueID, "CAPEC-") {
-					capecs = append(capecs, fmt.Sprintf("* %s", technique.Name))
-				} else {
-					attacks = append(attacks, fmt.Sprintf("* %s", technique.Name))
+				switch detail.Type {
+				case "capec":
+					capecs = append(capecs, fmt.Sprintf("* %s", detail.Name))
+				case "attack":
+					attacks = append(attacks, fmt.Sprintf("* %s", detail.Name))
 				}
 			}
 			slices.Sort(attacks)

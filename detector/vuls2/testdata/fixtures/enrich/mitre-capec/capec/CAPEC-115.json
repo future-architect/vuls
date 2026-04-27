@@ -1,0 +1,7 @@
+{
+	"id": "CAPEC-115",
+	"name": "Authentication Bypass",
+	"related_attacks": [
+		"T1552"
+	]
+}

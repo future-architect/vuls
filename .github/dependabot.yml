@@ -41,9 +41,7 @@ updates:
         patterns:
           - "github.com/MaineK00n/vuls-data-update"
           - "github.com/MaineK00n/vuls2"
-          - "github.com/vulsio/go-cti"
           - "github.com/vulsio/go-cve-dictionary"
-          - "github.com/vulsio/go-exploitdb"
           - "github.com/vulsio/gost"
       trivy:
         patterns:
@@ -56,9 +54,7 @@ updates:
         exclude-patterns:
           - "github.com/MaineK00n/vuls-data-update"
           - "github.com/MaineK00n/vuls2"
-          - "github.com/vulsio/go-cti"
           - "github.com/vulsio/go-cve-dictionary"
-          - "github.com/vulsio/go-exploitdb"
           - "github.com/vulsio/gost"
           - "github.com/aquasecurity/trivy"
           - "github.com/aquasecurity/trivy-db"

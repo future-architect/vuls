@@ -1,0 +1,10 @@
+{
+	"id": "T1552",
+	"kind": "technique",
+	"name": "Unsecured Credentials",
+	"platforms": [
+		"Linux",
+		"Windows",
+		"macOS"
+	]
+}

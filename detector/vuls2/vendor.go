@@ -12,6 +12,8 @@ import (
 	rpm "github.com/knqyf263/go-rpm-version"
 	"golang.org/x/xerrors"
 
+	attackTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/attack"
+	capecTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/capec"
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
@@ -27,6 +29,7 @@ import (
 	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
+	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 
@@ -1073,6 +1076,117 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 			}
 		}
 	}
+}
+
+// enrichCTI resolves the CVE → CWE → CAPEC → ATT&CK Technique graph for the given
+// VulnInfo. IDs are collected into vi.Ctis (CAPEC + Technique IDs) and display
+// metadata (name, platforms, type) cached in vi.CtiDetails so renderers can
+// resolve IDs without a DB handle.
+//
+// The traversal is:
+//
+//	vi.CveContents[*].CweIDs ──▶ cweTypes.CWE.RelatedAttackPatterns ──▶ CAPEC
+//	CAPEC.RelatedAttacks ──▶ ATT&CK Technique
+//
+// Missing records in the DB (e.g. a CWE referenced by a CVE for which vuls-data-db
+// does not yet have CWE data) are silently skipped rather than propagated.
+func enrichCTI(vi *models.VulnInfo, sesh *session.Session) {
+	// collect CWE IDs from CveContents
+	cweSet := map[string]struct{}{}
+	for _, conts := range vi.CveContents {
+		for _, c := range conts {
+			for _, id := range c.CweIDs {
+				if id == "" {
+					continue
+				}
+				cweSet[id] = struct{}{}
+			}
+		}
+	}
+	if len(cweSet) == 0 {
+		return
+	}
+
+	capecSet := map[string]struct{}{}
+	for cweID := range cweSet {
+		w, err := sesh.Storage().GetCWE(cweID)
+		if err != nil || w == nil {
+			continue
+		}
+		for _, p := range w.RelatedAttackPatterns {
+			if p != "" {
+				capecSet[p] = struct{}{}
+			}
+		}
+	}
+	if len(capecSet) == 0 {
+		return
+	}
+
+	attackSet := map[string]struct{}{}
+	capecs := make(map[string]*capecTypes.CAPEC, len(capecSet))
+	for capecID := range capecSet {
+		c, err := sesh.Storage().GetCAPEC(capecID)
+		if err != nil || c == nil {
+			continue
+		}
+		capecs[capecID] = c
+		for _, a := range c.RelatedAttacks {
+			if a != "" {
+				attackSet[a] = struct{}{}
+			}
+		}
+	}
+
+	attacks := make(map[string]*attackTypes.Attack, len(attackSet))
+	for attackID := range attackSet {
+		a, err := sesh.Storage().GetAttack(attackID)
+		if err != nil || a == nil {
+			continue
+		}
+		attacks[attackID] = a
+	}
+
+	if len(capecs) == 0 && len(attacks) == 0 {
+		return
+	}
+
+	if vi.CtiDetails == nil {
+		vi.CtiDetails = make(map[string]models.CTIDetail, len(capecs)+len(attacks))
+	}
+
+	ids := make([]string, 0, len(capecs)+len(attacks))
+	for id, c := range capecs {
+		ids = append(ids, id)
+		vi.CtiDetails[id] = models.CTIDetail{
+			ID:   id,
+			Name: c.Name,
+			Type: "capec",
+		}
+	}
+	for id, a := range attacks {
+		ids = append(ids, id)
+		vi.CtiDetails[id] = models.CTIDetail{
+			ID:        id,
+			Name:      a.Name,
+			Type:      "attack",
+			Platforms: append([]string(nil), a.Platforms...),
+		}
+	}
+	slices.Sort(ids)
+
+	// merge into vi.Ctis, preserving any prior entries (edge case: partial enrichment)
+	existing := map[string]struct{}{}
+	for _, e := range vi.Ctis {
+		existing[e] = struct{}{}
+	}
+	for _, id := range ids {
+		if _, ok := existing[id]; ok {
+			continue
+		}
+		vi.Ctis = append(vi.Ctis, id)
+	}
+	slices.Sort(vi.Ctis)
 }
 
 // enrichMetasploit adds Metasploit module data to VulnInfo.

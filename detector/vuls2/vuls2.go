@@ -1237,6 +1237,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 
 		enrichVulnerabilities(&vi, vd.Vulnerabilities)
 		enrichAdvisories(&vi, vd.Advisories)
+		enrichCTI(&vi, sesh)
 
 		vim[cveID] = vi
 	}

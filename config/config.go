@@ -40,7 +40,6 @@ type Config struct {
 	// report
 	CveDict GoCveDictConf `json:"cveDict,omitzero"`
 	Gost    GostConf      `json:"gost,omitzero"`
-	Cti     CtiConf       `json:"cti,omitzero"`
 	Vuls2   Vuls2Conf     `json:"vuls2,omitzero"`
 
 	Slack      SlackConf      `json:"-"`
@@ -187,7 +186,6 @@ func (c *Config) ValidateOnReport() bool {
 	for _, cnf := range []VulnDictInterface{
 		&Conf.CveDict,
 		&Conf.Gost,
-		&Conf.Cti,
 	} {
 		if err := cnf.Validate(); err != nil {
 			errs = append(errs, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))

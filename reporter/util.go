@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cti"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
@@ -612,14 +611,11 @@ No CVE-IDs are found in updatable packages.
 
 		attacks := []string{}
 		for _, techniqueID := range vuln.Ctis {
-			if strings.HasPrefix(techniqueID, "CAPEC-") {
+			detail, ok := vuln.CtiDetails[techniqueID]
+			if !ok || detail.Type != "attack" {
 				continue
 			}
-			technique, ok := cti.TechniqueDict[techniqueID]
-			if !ok {
-				continue
-			}
-			attacks = append(attacks, technique.Name)
+			attacks = append(attacks, detail.Name)
 		}
 		slices.Sort(attacks)
 		for _, attack := range attacks {

@@ -51,7 +51,6 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spdx/tools-golang v0.5.7
 	github.com/spf13/cobra v1.10.2
-	github.com/vulsio/go-cti v0.3.4
 	github.com/vulsio/go-cve-dictionary v0.16.0
 	github.com/vulsio/gost v0.7.2
 	go.etcd.io/bbolt v1.4.3
@@ -202,7 +201,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.9 // indirect
 	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
-	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.65 // indirect
@@ -223,7 +221,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
@@ -299,7 +296,7 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
-	github.com/smartystreets/assertions v1.13.0 // indirect
+	github.com/smartystreets/goconvey v1.8.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

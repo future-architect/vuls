@@ -264,6 +264,7 @@ type VulnInfo struct {
 	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
 	KEVs                 []KEV                `json:"kevs,omitempty"`
 	Ctis                 []string             `json:"ctis,omitempty"`
+	CtiDetails           map[string]CTIDetail `json:"ctiDetails,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitzero"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`
@@ -994,6 +995,15 @@ type ENISAKEV struct {
 	OriginSource           string    `json:"origin_source,omitempty"`
 	ExploitationType       string    `json:"exploitation_type,omitempty"`
 	ThreatActorsExploiting string    `json:"threat_actors_exploiting,omitempty"`
+}
+
+// CTIDetail holds a MITRE ATT&CK technique or CAPEC pattern's display metadata,
+// cached on VulnInfo at enrich time so renderers can resolve IDs without a DB handle.
+type CTIDetail struct {
+	ID        string   `json:"id,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	Type      string   `json:"type,omitempty"` // "attack" | "capec"
+	Platforms []string `json:"platforms,omitempty"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data

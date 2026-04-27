@@ -99,7 +99,6 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 		for _, cnf := range []config.VulnDictInterface{
 			&config.Conf.CveDict,
 			&config.Conf.Gost,
-			&config.Conf.Cti,
 		} {
 			cnf.Init()
 		}
@@ -116,7 +115,7 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 	}
 
 	logging.Log.Info("Validating DBs...")
-	if err := detector.ValidateDBs(config.Conf.CveDict, config.Conf.Gost, config.Conf.Cti, config.Conf.LogOpts); err != nil {
+	if err := detector.ValidateDBs(config.Conf.CveDict, config.Conf.Gost, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to validate DBs. err: %+v", err)
 		return subcommands.ExitFailure
 	}

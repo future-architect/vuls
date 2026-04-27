@@ -100,14 +100,6 @@ func printConfigToml(ips []string) (err error) {
 #timeoutSec = 0
 #timeoutSecPerRequest = 0
 
-[cti]
-#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
-#sqlite3Path = "/path/to/go-cti.sqlite3"
-#url        = ""
-#debugSQL = false
-#timeoutSec = 0
-#timeoutSecPerRequest = 0
-
 [vuls2]
 #Path = "/path/to/vuls.db"
 #Repository = "ghcr.io/vulsio/vuls-nightly-db:<schema-version>"

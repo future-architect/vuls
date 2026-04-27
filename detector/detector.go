@@ -203,10 +203,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
-		if err := FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
-		}
-
 		FillCweDict(&r)
 
 		r.ReportedBy, _ = os.Hostname()
