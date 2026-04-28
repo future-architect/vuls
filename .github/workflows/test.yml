@@ -14,17 +14,17 @@ jobs:
       with:
         persist-credentials: false
     # Fetch the integration test data (lockfile fixtures, jar/war binaries).
-    # Pinned by commit SHA — bump this ref to update test data, equivalent to
-    # advancing a submodule pointer. Do NOT use `submodules: true` on the
+    # Keep this ref on an upstream-reviewed revision that contains the latest
+    # fixture layout needed by tests. Do NOT use `submodules: true` on the
     # checkout above: that reads .gitmodules from the PR head and a fork PR
     # could redirect the URL to attacker-controlled code that `go test` would
-    # then execute. The SHA pin here lives in the workflow file, which a PR
-    # cannot redirect without a reviewable diff.
+    # then execute. This ref lives in the workflow file, which a PR cannot
+    # redirect without a reviewable diff.
     - name: Check out integration test data
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: vulsio/integration
-        ref: 6dfd74510f5944e7c973e40d7844020d53dbb3a7
+        ref: refs/pull/33/merge
         path: integration
         persist-credentials: false
     - name: Set up Go 1.x
