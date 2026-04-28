@@ -1,22 +1,12 @@
 [
   {
     "type": "composer-vendor",
-    "lockfilePath": "installed.json",
+    "lockfilePath": "installed-packagist/installed.json",
     "libs": [
       {
         "name": "guzzlehttp/psr7",
         "version": "1.8.3",
         "purl": "pkg:composer/guzzlehttp/psr7@1.8.3"
-      },
-      {
-        "name": "pear/log",
-        "version": "1.13.3",
-        "purl": "pkg:composer/pear/log@1.13.3"
-      },
-      {
-        "name": "pear/pear_exception",
-        "version": "v1.0.2",
-        "purl": "pkg:composer/pear/pear_exception@v1.0.2"
       },
       {
         "name": "psr/http-message",

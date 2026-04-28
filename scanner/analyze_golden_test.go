@@ -53,7 +53,8 @@ var lockfiles = []lockfileEntry{
 
 	// PHP
 	{"composer.lock", 0644, false},
-	{"installed.json", 0644, false},
+	{"installed-pear/installed.json", 0644, false},
+	{"installed-packagist/installed.json", 0644, false},
 
 	// Go
 	{"go.mod", 0644, false},
