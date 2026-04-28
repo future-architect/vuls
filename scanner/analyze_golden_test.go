@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -113,7 +115,10 @@ func TestAnalyzeLibrary_Golden(t *testing.T) {
 	goldenDir := filepath.Join("testdata", "golden")
 
 	if _, err := os.Stat(lockfileDir); err != nil {
-		t.Skipf("integration test data not available at %s (run: git submodule update --init): %v", lockfileDir, err)
+		if errors.Is(err, fs.ErrNotExist) {
+			t.Skipf("integration test data not available at %s (run: git submodule update --init): %v", lockfileDir, err)
+		}
+		t.Fatalf("failed to stat integration test data directory %s: %v", lockfileDir, err)
 	}
 
 	for _, lf := range lockfiles {
@@ -182,7 +187,10 @@ func TestAnalyzeLibrary_PomOnline(t *testing.T) {
 	goldenDir := filepath.Join("testdata", "golden")
 
 	if _, err := os.Stat(lockfileDir); err != nil {
-		t.Skipf("integration test data not available at %s (run: git submodule update --init): %v", lockfileDir, err)
+		if errors.Is(err, fs.ErrNotExist) {
+			t.Skipf("integration test data not available at %s (run: git submodule update --init): %v", lockfileDir, err)
+		}
+		t.Fatalf("failed to stat integration test data directory %s: %v", lockfileDir, err)
 	}
 
 	contents, err := os.ReadFile(filepath.Join(lockfileDir, "pom.xml"))
