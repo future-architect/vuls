@@ -18,13 +18,10 @@ var update = flag.Bool("update", false, "update golden files")
 
 // lockfileEntry defines a test fixture for AnalyzeLibrary golden testing.
 type lockfileEntry struct {
-	// path is the relative path from the fixtures directory.
+	// path is the relative path from integration/data/lockfile/.
 	path string
 	// filemode to pass to AnalyzeLibrary (0755 for executables, 0644 otherwise).
 	filemode os.FileMode
-	// binary indicates the fixture is a binary file only available in the
-	// integration submodule (not copied to testdata/fixtures/).
-	binary bool
 	// expectParseError indicates this fixture is known to produce a parse error
 	// (e.g. unsupported lockfile version). The test treats errors as empty result.
 	expectParseError bool
@@ -32,63 +29,63 @@ type lockfileEntry struct {
 
 var lockfiles = []lockfileEntry{
 	// Node.js
-	{"npm-v1/package-lock.json", 0644, false, false},
-	{"npm-v2/package-lock.json", 0644, false, false},
-	{"npm-v3/package-lock.json", 0644, false, false},
-	{"yarn.lock", 0644, false, false},
-	{"pnpm/pnpm-lock.yaml", 0644, false, true}, // pnpm v8: known parse error
-	{"pnpm-v9/pnpm-lock.yaml", 0644, false, false},
-	{"bun.lock", 0644, false, false},
+	{"npm-v1/package-lock.json", 0644, false},
+	{"npm-v2/package-lock.json", 0644, false},
+	{"npm-v3/package-lock.json", 0644, false},
+	{"yarn.lock", 0644, false},
+	{"pnpm/pnpm-lock.yaml", 0644, true}, // pnpm v8: known parse error
+	{"pnpm-v9/pnpm-lock.yaml", 0644, false},
+	{"bun.lock", 0644, false},
 
 	// Python
-	{"requirements.txt", 0644, false, false},
-	{"Pipfile.lock", 0644, false, false},
-	{"poetry-v1/poetry.lock", 0644, false, false},
-	{"poetry-v2/poetry.lock", 0644, false, false},
-	{"uv.lock", 0644, false, false},
+	{"requirements.txt", 0644, false},
+	{"Pipfile.lock", 0644, false},
+	{"poetry-v1/poetry.lock", 0644, false},
+	{"poetry-v2/poetry.lock", 0644, false},
+	{"uv.lock", 0644, false},
 
 	// Ruby
-	{"Gemfile.lock", 0644, false, false},
+	{"Gemfile.lock", 0644, false},
 
 	// Rust
-	{"Cargo.lock", 0644, false, false},
-	{"hello-rust", 0755, true, false},
+	{"Cargo.lock", 0644, false},
+	{"hello-rust", 0755, false},
 
 	// PHP
-	{"composer.lock", 0644, false, false},
-	{"installed.json", 0644, false, false},
+	{"composer.lock", 0644, false},
+	{"installed.json", 0644, false},
 
 	// Go
-	{"go.mod", 0644, false, false},
-	{"go.sum", 0644, false, false},
-	{"gobinary", 0755, true, false},
+	{"go.mod", 0644, false},
+	{"go.sum", 0644, false},
+	{"gobinary", 0755, false},
 
 	// Java
-	{"pom.xml", 0644, false, false},
-	{"gradle.lockfile", 0644, false, false},
-	{"log4j-core-2.13.0.jar", 0644, true, false},
-	{"wrong-name-log4j-core.jar", 0644, true, false},
-	{"juddiv3-war-3.3.5.war", 0644, true, false},
+	{"pom.xml", 0644, false},
+	{"gradle.lockfile", 0644, false},
+	{"log4j-core-2.13.0.jar", 0644, false},
+	{"wrong-name-log4j-core.jar", 0644, false},
+	{"juddiv3-war-3.3.5.war", 0644, false},
 
 	// .NET
-	{"packages.lock.json", 0644, false, false},
-	{"packages.config", 0644, false, false},
-	{"datacollector.deps.json", 0644, false, false},
-	{"Directory.Packages.props", 0644, false, false},
+	{"packages.lock.json", 0644, false},
+	{"packages.config", 0644, false},
+	{"datacollector.deps.json", 0644, false},
+	{"Directory.Packages.props", 0644, false},
 
 	// C/C++
-	{"conan-v1/conan.lock", 0644, false, false},
-	{"conan-v2/conan.lock", 0644, false, false},
+	{"conan-v1/conan.lock", 0644, false},
+	{"conan-v2/conan.lock", 0644, false},
 
 	// Dart
-	{"pubspec.lock", 0644, false, false},
+	{"pubspec.lock", 0644, false},
 
 	// Elixir
-	{"mix.lock", 0644, false, false},
+	{"mix.lock", 0644, false},
 
 	// Swift
-	{"Podfile.lock", 0644, false, false},
-	{"Package.resolved", 0644, false, false},
+	{"Podfile.lock", 0644, false},
+	{"Package.resolved", 0644, false},
 }
 
 // goldenFileName converts a lockfile path to a golden file name.
@@ -99,31 +96,30 @@ func goldenFileName(lockfilePath string) string {
 }
 
 func TestAnalyzeLibrary_Golden(t *testing.T) {
-	fixturesDir := filepath.Join("testdata", "fixtures")
-	integrationDir := filepath.Join("..", "integration", "data", "lockfile")
+	// All lockfile fixtures live in the vulsio/integration repo at
+	// data/lockfile/. Locally that's the integration submodule; in CI it's
+	// fetched separately by actions/checkout (repository: vulsio/integration,
+	// ref pinned to a commit SHA) — never via submodules: true.
+	//
+	// We intentionally avoid `submodules: true` on the main checkout because a
+	// fork PR could edit .gitmodules to point at a malicious URL containing a
+	// crafted go.mod or _test.go; with submodules: true, `go test` would run
+	// attacker-controlled code in the CI runner. The separate checkout step
+	// pins the upstream repo by commit SHA in the workflow file, which a PR
+	// cannot redirect without modifying the workflow itself (and that change
+	// is reviewable in the diff).
+	lockfileDir := filepath.Join("..", "integration", "data", "lockfile")
 	goldenDir := filepath.Join("testdata", "golden")
+
+	if _, err := os.Stat(lockfileDir); err != nil {
+		t.Skipf("integration test data not available at %s (run: git submodule update --init): %v", lockfileDir, err)
+	}
 
 	for _, lf := range lockfiles {
 		t.Run(lf.path, func(t *testing.T) {
-			// Test fixtures are in testdata/fixtures/ (committed to repo).
-			// Binary fixtures (JAR, WAR, Go/Rust binaries) are only in the
-			// integration submodule — skip if not available.
-			// NOTE: We intentionally do NOT add submodules: true to CI checkout.
-			// Attack scenario: an attacker forks this repo, edits .gitmodules to
-			// replace the integration submodule URL with their own repo containing
-			// a malicious go.mod or _test.go, then opens a PR. If CI checks out
-			// submodules, `go test` executes attacker-controlled code with access
-			// to the CI environment (secrets, GITHUB_TOKEN, network).
-			// Binary fixture tests therefore run locally only.
-			srcPath := filepath.Join(fixturesDir, lf.path)
-			if lf.binary {
-				srcPath = filepath.Join(integrationDir, lf.path)
-			}
+			srcPath := filepath.Join(lockfileDir, lf.path)
 			contents, err := os.ReadFile(srcPath)
 			if err != nil {
-				if lf.binary {
-					t.Skipf("Binary fixture not found: %s (requires: git submodule update --init)", srcPath)
-				}
 				t.Fatalf("Failed to read %s: %v", srcPath, err)
 			}
 
@@ -181,10 +177,14 @@ func TestAnalyzeLibrary_PomOnline(t *testing.T) {
 		t.Skip("skipping online pom.xml test (requires network access)")
 	}
 
-	fixturesDir := filepath.Join("testdata", "fixtures")
+	lockfileDir := filepath.Join("..", "integration", "data", "lockfile")
 	goldenDir := filepath.Join("testdata", "golden")
 
-	contents, err := os.ReadFile(filepath.Join(fixturesDir, "pom.xml"))
+	if _, err := os.Stat(lockfileDir); err != nil {
+		t.Skipf("integration test data not available at %s (run: git submodule update --init): %v", lockfileDir, err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(lockfileDir, "pom.xml"))
 	if err != nil {
 		t.Fatalf("Failed to read pom.xml: %v", err)
 	}
