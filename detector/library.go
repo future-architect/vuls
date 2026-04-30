@@ -226,11 +226,6 @@ func (d *libraryDetector) improveJARInfo() error {
 		foundLib := foundProps.Package()
 		l.Name = foundLib.Name
 		l.Version = foundLib.Version
-		// PURL was originally derived from Trivy's pre-resolution Name (e.g.
-		// "commons-lang3" without groupId when MANIFEST.MF lacked it), so it
-		// stays groupId-less unless we regenerate it from the SHA1-resolved
-		// "groupId:artifactId" form. Keep the previous PURL when regeneration
-		// fails so we never write back an empty value.
 		if canonical := canonicalMavenPURL(foundLib); canonical != "" {
 			l.PURL = canonical
 		}
