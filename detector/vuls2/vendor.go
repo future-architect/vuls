@@ -1112,6 +1112,18 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 				rs = append(rs, toReference(r.URL))
 			}
 
+			sourceLink := cveContentSourceLink(models.RedHatAPI, v)
+			for _, m := range v.Content.Mitigations {
+				if m.Description == "" {
+					continue
+				}
+				vi.Mitigations = append(vi.Mitigations, models.Mitigation{
+					CveContentType: models.RedHatAPI,
+					Mitigation:     m.Description,
+					URL:            sourceLink,
+				})
+			}
+
 			vi.CveContents[models.RedHatAPI] = append(vi.CveContents[models.RedHatAPI], models.CveContent{
 				Type:           models.RedHatAPI,
 				CveID:          string(v.Content.ID),
@@ -1126,7 +1138,7 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 				Cvss40Score:    cvss40.Score,
 				Cvss40Vector:   cvss40.Vector,
 				Cvss40Severity: cvss40.Severity,
-				SourceLink:     cveContentSourceLink(models.RedHatAPI, v),
+				SourceLink:     sourceLink,
 				References:     rs,
 				CweIDs: func() []string {
 					var cs []string //nolint:prealloc

@@ -755,34 +755,10 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							sourceLink := cveContentSourceLink(cctype, v)
-							var ms []models.Mitigation
-							for _, rr := range v.Content.Mitigations {
-								if rr.Description == "" {
-									continue
-								}
-								ms = append(ms, models.Mitigation{
-									CveContentType: cctype,
-									Mitigation:     rr.Description,
-									URL:            sourceLink,
-								})
-							}
-							for _, rr := range v.Content.Workarounds {
-								if rr.Description == "" {
-									continue
-								}
-								ms = append(ms, models.Mitigation{
-									CveContentType: cctype,
-									Mitigation:     rr.Description,
-									URL:            sourceLink,
-								})
-							}
-
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
 								DistroAdvisories: fdas,
-								Mitigations:      ms,
 								CveContents: models.NewCveContents(models.CveContent{
 									Type:           cctype,
 									CveID:          string(v.Content.ID),
@@ -797,7 +773,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 									Cvss40Score:    cvss40.Score,
 									Cvss40Vector:   cvss40.Vector,
 									Cvss40Severity: cvss40.Severity,
-									SourceLink:     sourceLink,
+									SourceLink:     cveContentSourceLink(cctype, v),
 									References:     rs,
 									CweIDs: func() []string {
 										var cs []string

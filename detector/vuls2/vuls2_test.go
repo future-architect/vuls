@@ -9078,6 +9078,13 @@ func Test_enrich(t *testing.T) {
 							},
 						},
 					},
+					Mitigations: []models.Mitigation{
+						{
+							CveContentType: models.RedHatAPI,
+							Mitigation:     "Mitigation for this issue is either not available or the currently available options don't meet the Red Hat Product Security criteria.",
+							URL:            "https://access.redhat.com/security/cve/CVE-2024-1102",
+						},
+					},
 				},
 			},
 		},
