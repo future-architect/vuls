@@ -90,7 +90,7 @@ var lockfiles = []lockfileEntry{
 }
 
 // goldenFileName converts a lockfile path to a golden file name.
-// e.g. "npm-v3/package-lock.json" -> "npm-v3_package-lock.json"
+// e.g. "npm-v3/package-lock.json" -> "npm-v3_package-lock.json.json"
 // Uses filepath.ToSlash to normalize path separators across platforms.
 func goldenFileName(lockfilePath string) string {
 	return strings.ReplaceAll(filepath.ToSlash(lockfilePath), "/", "_") + ".json"
