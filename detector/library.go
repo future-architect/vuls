@@ -243,7 +243,11 @@ func (d *libraryDetector) improveJARInfo() error {
 // purl cannot be re-encoded (caller keeps the existing value in that case).
 func canonicalMavenPURL(pkg ftypes.Package) string {
 	p, err := purl.New(ftypes.Jar, types.Metadata{}, pkg)
-	if err != nil || p == nil {
+	if err != nil {
+		logging.Log.Debugf("Failed to build canonical Maven purl for %s: %+v", pkg.Name, err)
+		return ""
+	}
+	if p == nil {
 		return ""
 	}
 	return p.Unwrap().ToString()
