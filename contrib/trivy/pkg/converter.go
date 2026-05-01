@@ -263,6 +263,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 					Version:  p.Version,
 					PURL:     getPURL(p),
 					FilePath: p.FilePath,
+					Digest:   string(p.Digest),
 					Dev:      p.Dev,
 				})
 				libraryScannerPaths[lockfilePath] = libScanner

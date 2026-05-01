@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
 	gocmp "github.com/google/go-cmp/cmp"
 	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/package-url/packageurl-go"
 
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/types"
@@ -881,6 +882,61 @@ func TestConvert(t *testing.T) {
 						BinaryNames: []string{"libssl3t64"},
 					},
 				},
+			},
+		},
+		{
+			// Trivy emits Package.Digest (sha1) for JAR files; the converter
+			// must thread it through to models.Library.Digest so downstream
+			// consumers can reuse the SHA-1 (e.g. for Maven Central
+			// canonicalization or supply-chain verification).
+			name: "JAR digest is preserved into models.Library",
+			args: args{
+				results: types.Results{
+					{
+						Target: "Java",
+						Class:  types.ClassLangPkg,
+						Type:   ftypes.Jar,
+						Packages: []ftypes.Package{
+							{
+								Name:    "org.apache.logging.log4j:log4j-core",
+								Version: "2.14.1",
+								Identifier: ftypes.PkgIdentifier{
+									PURL: &packageurl.PackageURL{
+										Type:      packageurl.TypeMaven,
+										Namespace: "org.apache.logging.log4j",
+										Name:      "log4j-core",
+										Version:   "2.14.1",
+									},
+								},
+								FilePath: "app/log4j-core-2.14.1.jar",
+								Digest:   "sha1:ce8a86a3f50a4304749828ce68e7478cafbc8039",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion: models.JSONVersion,
+				ScannedCves: models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{
+					models.LibraryScanner{
+						Type:         ftypes.Jar,
+						LockfilePath: "/app/log4j-core-2.14.1.jar",
+						Libs: []models.Library{
+							{
+								Name:     "org.apache.logging.log4j:log4j-core",
+								Version:  "2.14.1",
+								PURL:     "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+								FilePath: "app/log4j-core-2.14.1.jar",
+								Digest:   "sha1:ce8a86a3f50a4304749828ce68e7478cafbc8039",
+							},
+						},
+					},
+				},
+				Packages:    models.Packages{},
+				SrcPackages: models.SrcPackages{},
 			},
 		},
 	}
