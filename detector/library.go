@@ -240,8 +240,17 @@ func (d *libraryDetector) improveJARInfo() error {
 
 // canonicalMavenPURL builds a Maven purl from a Trivy Java DB-resolved
 // Package whose Name is in "groupId:artifactId" form. Returns "" when the
-// purl cannot be re-encoded (caller keeps the existing value in that case).
+// Name does not match that shape or the purl cannot be re-encoded
+// (caller keeps the existing value in that case).
 func canonicalMavenPURL(pkg ftypes.Package) string {
+	// Reject any Name that is not "groupId:artifactId" with both halves
+	// non-empty, otherwise we may overwrite an existing PURL with another
+	// non-canonical value (e.g. Java DB row with empty GroupID would
+	// expand to ":artifactId" → "pkg:maven//artifactId@..." here).
+	group, artifact, ok := strings.Cut(pkg.Name, ":")
+	if !ok || group == "" || artifact == "" {
+		return ""
+	}
 	p, err := purl.New(ftypes.Jar, types.Metadata{}, pkg)
 	if err != nil {
 		logging.Log.Debugf("Failed to build canonical Maven purl for %s: %+v", pkg.Name, err)

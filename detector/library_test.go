@@ -46,6 +46,40 @@ func Test_canonicalMavenPURL(t *testing.T) {
 			},
 			want: "pkg:maven/com.example/example@1.0%2Bbuild.1",
 		},
+		// Defensive guards: caller must keep its existing PURL when input
+		// does not look like a canonical "groupId:artifactId" pair.
+		{
+			name: "Name with no colon (groupId-less Trivy fallback) returns empty",
+			pkg: ftypes.Package{
+				Name:    "log4j-core",
+				Version: "2.14.1",
+			},
+			want: "",
+		},
+		{
+			name: "Name with empty groupId returns empty",
+			pkg: ftypes.Package{
+				Name:    ":log4j-core",
+				Version: "2.14.1",
+			},
+			want: "",
+		},
+		{
+			name: "Name with empty artifactId returns empty",
+			pkg: ftypes.Package{
+				Name:    "org.apache.logging.log4j:",
+				Version: "2.14.1",
+			},
+			want: "",
+		},
+		{
+			name: "empty Name returns empty",
+			pkg: ftypes.Package{
+				Name:    "",
+				Version: "2.14.1",
+			},
+			want: "",
+		},
 	}
 
 	for _, tt := range tests {
