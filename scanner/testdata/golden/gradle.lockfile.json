@@ -1,0 +1,13 @@
+[
+  {
+    "type": "gradle",
+    "lockfilePath": "gradle.lockfile",
+    "libs": [
+      {
+        "name": "com.fasterxml.jackson.core:jackson-databind",
+        "version": "2.9.1",
+        "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.1"
+      }
+    ]
+  }
+]

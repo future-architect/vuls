@@ -3,6 +3,7 @@ package vuls2
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"iter"
 	"maps"
@@ -25,6 +26,7 @@ import (
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	severityVendorTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/vendor"
+	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
@@ -112,6 +114,50 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 	}
 
 	logging.Log.Infof("%s: %d CVEs are detected with vuls2", r.FormatServerName(), len(vulnInfos))
+
+	return nil
+}
+
+// EnrichVulnInfos enriches all ScannedCves in the ScanResult with additional vulnerability data
+// (e.g., Red Hat API) from the vuls2 database.
+// This should be called after all detection paths have completed.
+func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+	if len(r.ScannedCves) == 0 {
+		return nil
+	}
+
+	if vuls2Conf.Repository == "" {
+		sv, err := session.SchemaVersion("boltdb")
+		if err != nil {
+			return xerrors.Errorf("Failed to get schema version. err: %w", err)
+		}
+
+		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
+	}
+	if vuls2Conf.Path == "" {
+		vuls2Conf.Path = DefaultPath
+	}
+
+	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
+	if err != nil {
+		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
+	}
+
+	sesh, err := dbConfig.New()
+	if err != nil {
+		return xerrors.Errorf("Failed to new db session. err: %w", err)
+	}
+
+	defer sesh.Cache().Close()
+
+	if err := sesh.Storage().Open(); err != nil {
+		return xerrors.Errorf("Failed to open db. err: %w", err)
+	}
+	defer sesh.Storage().Close()
+
+	if err := enrich(sesh, r.ScannedCves); err != nil {
+		return xerrors.Errorf("Failed to enrich vulnerability data. err: %w", err)
+	}
 
 	return nil
 }
@@ -659,6 +705,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 			}
 		}
 
+		srcsWithVulns := make(map[source]struct{})
 		for _, vdv := range vd.Vulnerabilities {
 			for sid, rm := range vdv.Contents {
 				if rm == nil {
@@ -675,6 +722,8 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 						if _, ok := m[src]; !ok {
 							continue
 						}
+
+						srcsWithVulns[src] = struct{}{}
 
 						if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
 							continue
@@ -762,6 +811,15 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 					}
 				}
 			}
+		}
+
+		// Remove sources that had vulnerabilities from the advisory map.
+		// The advisory fallback below creates VulnInfo from advisory IDs only when
+		// no vulnerabilities exist for a source. Without this deletion, sources whose
+		// vulnerabilities were all dropped by ignoreVulnerability would incorrectly
+		// fall through to advisory-based VulnInfo creation.
+		for src := range srcsWithVulns {
+			delete(am, src)
 		}
 
 		for src, das := range am {
@@ -1141,4 +1199,46 @@ func toReference(ref string) models.Reference {
 			Source: "MISC",
 		}
 	}
+}
+
+// enrich adds vulnerability data from specific enrichment sources (KEV, RedHat CVE)
+// to the already-detected VulnInfos. This replaces gost.FillCVEsWithRedHat and also
+// provides cross-source enrichment (e.g., RedHat CVE data for Debian-detected CVEs).
+func enrich(sesh *session.Session, vim models.VulnInfos) error {
+	for cveID, vi := range vim {
+		vd, err := sesh.GetVulnerabilityDataByVulnerabilityID(vulnerabilityContentTypes.VulnerabilityID(cveID), dbTypes.Filter{
+			Contents: []dbTypes.FilterContentType{
+				dbTypes.FilterContentTypeAdvisories,
+				dbTypes.FilterContentTypeVulnerabilities,
+			},
+			DataSources: []sourceTypes.SourceID{
+				sourceTypes.CISAKEV,
+				sourceTypes.ENISAKEV,
+				sourceTypes.ExploitExploitDB,
+				sourceTypes.ExploitGitHub,
+				sourceTypes.ExploitInTheWild,
+				sourceTypes.ExploitTrickest,
+				sourceTypes.Metasploit,
+				sourceTypes.NucleiRepository,
+				sourceTypes.RedHatCVE,
+				sourceTypes.VulnCheckKEV,
+			},
+		})
+		if err != nil {
+			if errors.Is(err, dbTypes.ErrNotFoundVulnerability) {
+				continue
+			}
+			return xerrors.Errorf("Failed to get vulnerability. CVE-ID: %s, err: %w", cveID, err)
+		}
+
+		if vi.CveContents == nil {
+			vi.CveContents = models.NewCveContents()
+		}
+
+		enrichVulnerabilities(&vi, vd.Vulnerabilities)
+		enrichAdvisories(&vi, vd.Advisories)
+
+		vim[cveID] = vi
+	}
+	return nil
 }

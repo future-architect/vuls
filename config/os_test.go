@@ -443,6 +443,22 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			stdEnded: false,
 			extEnded: false,
 		},
+		{
+			name:     "Ubuntu 26.04 supported",
+			fields:   fields{family: constant.Ubuntu, release: "26.04"},
+			now:      time.Date(2026, 4, 25, 23, 59, 59, 0, time.UTC),
+			found:    true,
+			stdEnded: false,
+			extEnded: false,
+		},
+		{
+			name:     "Ubuntu 26.04 ext supported",
+			fields:   fields{family: constant.Ubuntu, release: "26.04"},
+			now:      time.Date(2032, 1, 1, 0, 0, 0, 0, time.UTC),
+			found:    true,
+			stdEnded: true,
+			extEnded: false,
+		},
 		//Debian
 		{
 			name:     "Debian 8 supported",

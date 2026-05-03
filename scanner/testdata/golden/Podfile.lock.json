@@ -1,0 +1,38 @@
+[
+  {
+    "type": "cocoapods",
+    "lockfilePath": "Podfile.lock",
+    "libs": [
+      {
+        "name": "AppCenter",
+        "version": "4.2.0",
+        "purl": "pkg:cocoapods/AppCenter@4.2.0"
+      },
+      {
+        "name": "AppCenter/Analytics",
+        "version": "4.2.0",
+        "purl": "pkg:cocoapods/AppCenter@4.2.0#Analytics"
+      },
+      {
+        "name": "AppCenter/Core",
+        "version": "4.2.0",
+        "purl": "pkg:cocoapods/AppCenter@4.2.0#Core"
+      },
+      {
+        "name": "AppCenter/Crashes",
+        "version": "4.2.0",
+        "purl": "pkg:cocoapods/AppCenter@4.2.0#Crashes"
+      },
+      {
+        "name": "KeychainAccess",
+        "version": "4.2.1",
+        "purl": "pkg:cocoapods/KeychainAccess@4.2.1"
+      },
+      {
+        "name": "SwiftNIO",
+        "version": "2.41.0",
+        "purl": "pkg:cocoapods/SwiftNIO@2.41.0"
+      }
+    ]
+  }
+]

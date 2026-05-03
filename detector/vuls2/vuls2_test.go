@@ -3,9 +3,13 @@ package vuls2_test
 import (
 	"cmp"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
@@ -34,13 +38,13 @@ import (
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
+	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
-	gocmp "github.com/google/go-cmp/cmp"
-	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/future-architect/vuls/detector/vuls2"
+	testutil "github.com/future-architect/vuls/detector/vuls2/internal/test"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -8235,6 +8239,133 @@ func Test_postConvert(t *testing.T) {
 			want: models.VulnInfos{},
 		},
 		{
+			name: "redhat: all vulnerabilities ignored should not fallback to advisory",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "package1",
+							Epoch:   new(0),
+							Version: "0.0.0",
+							Release: "0.el9",
+							Arch:    "x86_64",
+							SrcName: "package",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "RHSA-2025:0001",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "RHSA-2025:0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("RHSA-2025:0001"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "RHSA-2025:0001",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.RedHatOVALv2: {
+											dataTypes.RootID("RHSA-2025:0001"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "** REJECT ** This CVE has been rejected.",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://access.redhat.com/security/cve/CVE-2025-0001",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+															Tag:       segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.RedHatOVALv2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name:          "package1",
+																			Architectures: []string{"aarch64", "x86_64"},
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0.0.0-1.el9",
+																			},
+																		},
+																		Fixed: []string{"0.0.0-1.el9"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+												Tag: segmentTypes.DetectionTag("rhel-9-including-unpatched"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
 			name: "debian: advisory without vulnerability",
 			args: args{
 				scanned: scanTypes.ScanResult{
@@ -8881,6 +9012,493 @@ func Test_pruneCriteria(t *testing.T) {
 			}
 			if diff := gocmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_enrich(t *testing.T) {
+	type args struct {
+		vim models.VulnInfos
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    models.VulnInfos
+		wantErr bool
+	}{
+		{
+			name: "enrich with redhat-cve data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-1102": models.VulnInfo{
+						CveID: "CVE-2024-1102",
+						CveContents: models.CveContents{
+							models.RedHat: []models.CveContent{
+								{
+									Type:  models.RedHat,
+									CveID: "CVE-2024-1102",
+									Title: "from-oval",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-1102": models.VulnInfo{
+					CveID: "CVE-2024-1102",
+					CveContents: models.CveContents{
+						models.RedHat: []models.CveContent{
+							{
+								Type:  models.RedHat,
+								CveID: "CVE-2024-1102",
+								Title: "from-oval",
+							},
+						},
+						models.RedHatAPI: []models.CveContent{
+							{
+								Type:          models.RedHatAPI,
+								CveID:         "CVE-2024-1102",
+								Title:         "jberet: jberet-core logging database credentials",
+								Summary:       "A vulnerability was found in jberet-core logging. An exception in 'dbProperties' might display user credentials such as the username and password for the database-connection.\nA vulnerability was found in jberet-core logging. An exception in 'dbProperties' might display user credentials such as the username and password for the database-connection.",
+								Cvss3Score:    6.5,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+								Cvss3Severity: "Moderate",
+								SourceLink:    "https://access.redhat.com/security/cve/CVE-2024-1102",
+								CweIDs:        []string{"CWE-523"},
+								References: models.References{
+									{Link: "https://bugzilla.redhat.com/show_bug.cgi?id=2262060", Source: "REDHAT", RefID: "2262060"},
+									{Link: "https://github.com/jberet/jsr352/issues/452", Source: "MISC"},
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2024-1102", Source: "NVD", RefID: "CVE-2024-1102"},
+									{Link: "https://www.cve.org/CVERecord?id=CVE-2024-1102", Source: "CVE", RefID: "CVE-2024-1102"},
+								},
+								Published:    time.Date(2024, 1, 29, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+						},
+					},
+					Mitigations: []models.Mitigation{
+						{
+							CveContentType: models.RedHatAPI,
+							Mitigation:     "Mitigation for this issue is either not available or the currently available options don't meet the Red Hat Product Security criteria.",
+							URL:            "https://access.redhat.com/security/cve/CVE-2024-1102",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "CVE not found in DB leaves VulnInfo unchanged",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-9999-0001": models.VulnInfo{
+						CveID: "CVE-9999-0001",
+						CveContents: models.CveContents{
+							models.RedHat: []models.CveContent{
+								{
+									Type:  models.RedHat,
+									CveID: "CVE-9999-0001",
+									Title: "original",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-9999-0001": models.VulnInfo{
+					CveID: "CVE-9999-0001",
+					CveContents: models.CveContents{
+						models.RedHat: []models.CveContent{
+							{
+								Type:  models.RedHat,
+								CveID: "CVE-9999-0001",
+								Title: "original",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "skip if RedHatAPI already present",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-1102": models.VulnInfo{
+						CveID: "CVE-2024-1102",
+						CveContents: models.CveContents{
+							models.RedHatAPI: []models.CveContent{
+								{
+									Type:  models.RedHatAPI,
+									CveID: "CVE-2024-1102",
+									Title: "already-enriched",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-1102": models.VulnInfo{
+					CveID: "CVE-2024-1102",
+					CveContents: models.CveContents{
+						models.RedHatAPI: []models.CveContent{
+							{
+								Type:  models.RedHatAPI,
+								CveID: "CVE-2024-1102",
+								Title: "already-enriched",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with cisa-kev data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2022-21971": models.VulnInfo{
+						CveID:       "CVE-2022-21971",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2022-21971": models.VulnInfo{
+					CveID:       "CVE-2022-21971",
+					CveContents: models.CveContents{},
+					KEVs: []models.KEV{
+						{
+							Type:                       models.CISAKEVType,
+							VendorProject:              "Microsoft",
+							Product:                    "Windows",
+							VulnerabilityName:          "Microsoft Windows Runtime Remote Code Execution Vulnerability",
+							ShortDescription:           "Microsoft Windows Runtime contains an unspecified vulnerability which allows for remote code execution.",
+							RequiredAction:             "Apply updates per vendor instructions.",
+							KnownRansomwareCampaignUse: "Unknown",
+							DateAdded:                  time.Date(2022, time.August, 18, 0, 0, 0, 0, time.UTC),
+							DueDate:                    new(time.Date(2022, time.September, 8, 0, 0, 0, 0, time.UTC)),
+							CISA: &models.CISAKEV{
+								Note: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2022-21971",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with vulncheck-kev data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2021-30713": models.VulnInfo{
+						CveID:       "CVE-2021-30713",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2021-30713": models.VulnInfo{
+					CveID:       "CVE-2021-30713",
+					CveContents: models.CveContents{},
+					KEVs: []models.KEV{
+						{
+							Type:                       models.VulnCheckKEVType,
+							VendorProject:              "Apple",
+							Product:                    "MacOS X",
+							VulnerabilityName:          "Apple macOS Unspecified Vulnerability",
+							ShortDescription:           "Apple macOS Transparency, Consent, and Control (TCC) contains an unspecified permissions issue which may allow a malicious application to bypass privacy preferences.",
+							RequiredAction:             "Apply updates per vendor instructions.",
+							KnownRansomwareCampaignUse: "Unknown",
+							DateAdded:                  time.Date(2021, time.November, 3, 0, 0, 0, 0, time.UTC),
+							DueDate:                    new(time.Date(2021, time.November, 17, 0, 0, 0, 0, time.UTC)),
+							VulnCheck: &models.VulnCheckKEV{
+								XDB: []models.VulnCheckXDB{
+									{
+										XDBID:       "a1b2c3",
+										XDBURL:      "https://vulncheck.com/xdb/a1b2c3",
+										DateAdded:   time.Date(2022, time.March, 15, 0, 0, 0, 0, time.UTC),
+										ExploitType: "initial_access",
+										CloneSSHURL: "git@github.com:example/exploit.git",
+									},
+								},
+								ReportedExploitation: []models.VulnCheckReportedExploitation{
+									{
+										URL:       "https://support.apple.com/kb/HT212529",
+										DateAdded: time.Date(2022, time.January, 19, 0, 0, 0, 0, time.UTC),
+									},
+									{
+										URL:       "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+										DateAdded: time.Date(2021, time.November, 3, 0, 0, 0, 0, time.UTC),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with enisa-kev data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-9380": models.VulnInfo{
+						CveID:       "CVE-2024-9380",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-9380": models.VulnInfo{
+					CveID:       "CVE-2024-9380",
+					CveContents: models.CveContents{},
+					KEVs: []models.KEV{
+						{
+							Type:          models.ENISAKEVType,
+							VendorProject: "Ivanti",
+							Product:       "CSA (Cloud Services Appliance)",
+							ENISA: &models.ENISAKEV{
+								DateReported: time.Date(2025, time.January, 17, 0, 0, 0, 0, time.UTC),
+								PatchedSince: "tbc",
+								OriginSource: "cnw",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with metasploit data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-0012": models.VulnInfo{
+						CveID:       "CVE-2024-0012",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-0012": models.VulnInfo{
+					CveID:       "CVE-2024-0012",
+					CveContents: models.CveContents{},
+					Metasploits: []models.Metasploit{
+						{
+							Name:        "exploit/linux/http/panos_management_unauth_rce",
+							Title:       "Palo Alto Networks PAN-OS Management Interface Unauthenticated Remote Code Execution",
+							Description: "This module exploits an authentication bypass vulnerability (CVE-2024-0012).",
+							URLs: []string{
+								"https://security.paloaltonetworks.com/CVE-2024-0012",
+								"https://www.cve.org/CVERecord?id=CVE-2024-0012",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-exploitdb data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-3132": models.VulnInfo{
+						CveID:       "CVE-2017-3132",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-3132": models.VulnInfo{
+					CveID:       "CVE-2017-3132",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeExploitDB,
+							ID:          "42388",
+							URL:         "https://www.exploit-db.com/exploits/42388",
+							Description: "Fortinet FortiOS < 5.6.0 - Cross-Site Scripting",
+							Verified:    new(true),
+							DocumentURL: new("https://www.exploit-db.com/raw/42388"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-github data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-9779": models.VulnInfo{
+						CveID:       "CVE-2017-9779",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-9779": models.VulnInfo{
+					CveID:       "CVE-2017-9779",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeGitHub,
+							URL:         "https://github.com/homjxi0e/CVE-2017-9779",
+							Description: "Automatic execution Payload From Windows By Path Users All Exploit Via File bashrc ",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-inthewild data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-16885": models.VulnInfo{
+						CveID:       "CVE-2017-16885",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-16885": models.VulnInfo{
+					CveID:       "CVE-2017-16885",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeInTheWild,
+							URL:         "https://www.exploit-db.com/exploits/43460/",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with exploit-trickest data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-7273": models.VulnInfo{
+						CveID:       "CVE-2017-7273",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-7273": models.VulnInfo{
+					CveID:       "CVE-2017-7273",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeTrickest,
+							URL:         "https://github.com/thdusdl1219/CVE-Study",
+							Description: "The cp_report_fixup function in drivers/hid/hid-cypress.c in the Linux kernel 3.2 and 4.x before 4.9.4 allows physically proximate attackers to cause a denial of service (integer underflow) or possibly have unspecified other impact via a crafted HID report.",
+						},
+						{
+							ExploitType: models.ExploitTypeTrickest,
+							URL:         "https://github.com/vincent-deng/veracode-container-security-finding-parser",
+							Description: "The cp_report_fixup function in drivers/hid/hid-cypress.c in the Linux kernel 3.2 and 4.x before 4.9.4 allows physically proximate attackers to cause a denial of service (integer underflow) or possibly have unspecified other impact via a crafted HID report.",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with nuclei-repository data (verified=true)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-18565": models.VulnInfo{
+						CveID:       "CVE-2017-18565",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-18565": models.VulnInfo{
+					CveID:       "CVE-2017-18565",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeNuclei,
+							URL:         "https://github.com/projectdiscovery/nuclei-templates/blob/main/http/cves/2017/CVE-2017-18565.yaml",
+							Description: "The updater plugin before 1.35 for WordPress has multiple XSS issues.",
+							Verified:    new(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with nuclei-repository data (verified=false)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2017-14535": models.VulnInfo{
+						CveID:       "CVE-2017-14535",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2017-14535": models.VulnInfo{
+					CveID:       "CVE-2017-14535",
+					CveContents: models.CveContents{},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeNuclei,
+							URL:         "https://github.com/projectdiscovery/nuclei-templates/blob/main/http/cves/2017/CVE-2017-14535.yaml",
+							Description: "Trixbox 2.8.0.4 is vulnerable to OS command injection via shell metacharacters in the lang parameter to /maint/modules/home/index.php.",
+							Verified:    new(false),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "empty VulnInfos",
+			args: args{
+				vim: models.VulnInfos{},
+			},
+			want: models.VulnInfos{},
+		},
+		{
+			name: "datasource not in enrich filter is filtered out",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2023-44487": models.VulnInfo{
+						CveID: "CVE-2023-44487",
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2023-44487": models.VulnInfo{
+					CveID:       "CVE-2023-44487",
+					CveContents: models.CveContents{},
+				},
+			},
+		},
+	}
+
+	c := session.Config{Type: "boltdb", Path: filepath.Join(t.TempDir(), "enrich-test.db")}
+	if err := testutil.PopulateDB(c, "testdata/fixtures/enrich"); err != nil {
+		t.Fatalf("PopulateDB() err: %v", err)
+	}
+
+	sesh, err := c.New()
+	if err != nil {
+		t.Fatalf("session.Config.New() err: %v", err)
+	}
+	if err := sesh.Storage().Open(); err != nil {
+		t.Fatalf("Storage().Open() err: %v", err)
+	}
+	defer sesh.Storage().Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := vuls2.Enrich(sesh, tt.args.vim); (err != nil) != tt.wantErr {
+				t.Errorf("enrich() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			diff, err := compareVulnInfos(tt.args.vim, tt.want)
+			if err != nil {
+				t.Errorf("enrich() compareVulnInfos() error = %v", err)
+			}
+			if diff != "" {
+				t.Errorf("enrich() mismatch (-got +want):\n%s", diff)
 			}
 		})
 	}

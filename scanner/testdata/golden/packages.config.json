@@ -1,0 +1,13 @@
+[
+  {
+    "type": "nuget",
+    "lockfilePath": "packages.config",
+    "libs": [
+      {
+        "name": "Microsoft.AspNetCore.App",
+        "version": "2.1.0",
+        "purl": "pkg:nuget/Microsoft.AspNetCore.App@2.1.0"
+      }
+    ]
+  }
+]

@@ -13,7 +13,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
-	"github.com/future-architect/vuls/gost"
+	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
@@ -68,34 +68,15 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logging.Log.Infof("Fill CVE detailed with gost")
-	if err := gost.FillCVEsWithRedHat(&r, config.Conf.Gost, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with gost: %+v", err)
+	if err := vuls2.EnrichVulnInfos(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+		logging.Log.Errorf("Failed to enrich vulnerability data with vuls2: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
 
 	logging.Log.Infof("Fill CVE detailed with CVE-DB")
 	if err := detector.FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 		logging.Log.Errorf("Failed to fill with CVE: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-
-	nExploitCve, err := detector.FillWithExploit(&r, config.Conf.Exploit, config.Conf.LogOpts)
-	if err != nil {
-		logging.Log.Errorf("Failed to fill with exploit: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-	logging.Log.Infof("%s: %d PoC detected", r.FormatServerName(), nExploitCve)
-
-	nMetasploitCve, err := detector.FillWithMetasploit(&r, config.Conf.Metasploit, config.Conf.LogOpts)
-	if err != nil {
-		logging.Log.Errorf("Failed to fill with metasploit: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-	logging.Log.Infof("%s: %d exploits are detected", r.FormatServerName(), nMetasploitCve)
-
-	if err := detector.FillWithKEVuln(&r, config.Conf.KEVuln, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with Known Exploited Vulnerabilities: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 

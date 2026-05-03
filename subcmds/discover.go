@@ -100,30 +100,6 @@ func printConfigToml(ips []string) (err error) {
 #timeoutSec = 0
 #timeoutSecPerRequest = 0
 
-[exploit]
-#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
-#sqlite3Path = "/path/to/go-exploitdb.sqlite3"
-#url        = ""
-#debugSQL = false
-#timeoutSec = 0
-#timeoutSecPerRequest = 0
-
-[metasploit]
-#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
-#sqlite3Path = "/path/to/go-msfdb.sqlite3"
-#url        = ""
-#debugSQL = false
-#timeoutSec = 0
-#timeoutSecPerRequest = 0
-
-[kevuln]
-#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
-#sqlite3Path = "/path/to/go-kev.sqlite3"
-#url        = ""
-#debugSQL = false
-#timeoutSec = 0
-#timeoutSecPerRequest = 0
-
 [cti]
 #type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
 #sqlite3Path = "/path/to/go-cti.sqlite3"
@@ -261,10 +237,6 @@ host                = "{{$ip}}"
 #cpeNames       = [ "cpe:/a:rubyonrails:ruby_on_rails:4.2.1" ]
 #owaspDCXMLPath = "/path/to/dependency-check-report.xml"
 #ignoreCves     = ["CVE-2014-0160"]
-
-#[servers.{{index $names $i}}.githubs."owner/repo"]
-#token	= "yourToken"
-#ignoreGitHubDismissed	= false
 
 #[servers.{{index $names $i}}.wordpress]
 #cmdPath = "/usr/local/bin/wp"

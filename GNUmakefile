@@ -10,7 +10,8 @@
 	pretest \
 	test \
 	cov \
-	clean
+	clean \
+	compare-lockfile
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
@@ -90,7 +91,7 @@ NOW=$(shell date '+%Y-%m-%dT%H-%M-%S%z')
 NOW_JSON_DIR := '${BASE_DIR}/$(NOW)'
 ONE_SEC_AFTER=$(shell date -d '+1 second' '+%Y-%m-%dT%H-%M-%S%z')
 ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
-LIBS := 'bundler' 'dart' 'elixir' 'pip' 'pipenv' 'poetry-v1' 'poetry-v2' 'uv' 'composer' 'npm-v1' 'npm-v2' 'npm-v3' 'yarn' 'pnpm' 'pnpm-v9' 'bun' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'jar-wrong-name-log4j-core' 'war' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'dotnet-package-props' 'conan-v1' 'conan-v2' 'swift-cocoapods' 'swift-swift' 'rust-binary'
+LIBS := 'bundler' 'dart' 'elixir' 'pip' 'pipenv' 'poetry-v1' 'poetry-v2' 'uv' 'composer' 'composer-vendor-pear' 'composer-vendor-packagist' 'npm-v1' 'npm-v2' 'npm-v3' 'yarn' 'pnpm' 'pnpm-v9' 'bun' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'jar-wrong-name-log4j-core' 'war' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'dotnet-package-props' 'conan-v1' 'conan-v2' 'swift-cocoapods' 'swift-swift' 'rust-binary'
 
 diff:
 	# git clone git@github.com:vulsio/vulsctl.git
@@ -240,6 +241,17 @@ define sed-d
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedRevision/d' {} \;
 endef
+
+# Compare AnalyzeLibrary output between current branch and BASE ref.
+# Fetches real-world lockfiles from popular OSS projects and compares results.
+# Usage:
+#   make compare-lockfile              # fetch fixtures and compare against master
+#   make compare-lockfile BASE=commit  # compare against specific ref
+#   make compare-lockfile FETCH=0      # re-run with cached fixtures (skip download)
+BASE ?= master
+FETCH ?= 1
+compare-lockfile:
+	$(GO) run scripts/compare-lockfile.go $(if $(filter 1,$(FETCH)),-fetch) -base $(BASE)
 
 define count-cve
 	for jsonfile in ${NOW_JSON_DIR}/*.json ;  do \

@@ -19,6 +19,7 @@ import (
 	"github.com/aquasecurity/trivy/pkg/detector/library"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/log"
+	"github.com/aquasecurity/trivy/pkg/purl"
 	"github.com/aquasecurity/trivy/pkg/types"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/samber/lo"
@@ -225,6 +226,9 @@ func (d *libraryDetector) improveJARInfo() error {
 		foundLib := foundProps.Package()
 		l.Name = foundLib.Name
 		l.Version = foundLib.Version
+		if canonical := canonicalMavenPURL(foundLib); canonical != "" {
+			l.PURL = canonical
+		}
 		libs = append(libs, l)
 	}
 
@@ -232,6 +236,30 @@ func (d *libraryDetector) improveJARInfo() error {
 		return fmt.Sprintf("%s::%s::%s", lib.Name, lib.Version, lib.FilePath)
 	})
 	return nil
+}
+
+// canonicalMavenPURL builds a Maven purl from a Trivy Java DB-resolved
+// Package whose Name is in "groupId:artifactId" form. Returns "" when the
+// Name does not match that shape or the purl cannot be re-encoded
+// (caller keeps the existing value in that case).
+func canonicalMavenPURL(pkg ftypes.Package) string {
+	// Reject any Name that is not "groupId:artifactId" with both halves
+	// non-empty, otherwise we may overwrite an existing PURL with another
+	// non-canonical value (e.g. Java DB row with empty GroupID would
+	// expand to ":artifactId" → "pkg:maven//artifactId@..." here).
+	group, artifact, ok := strings.Cut(pkg.Name, ":")
+	if !ok || group == "" || artifact == "" {
+		return ""
+	}
+	p, err := purl.New(ftypes.Jar, types.Metadata{}, pkg)
+	if err != nil {
+		logging.Log.Debugf("Failed to build canonical Maven purl for %s: %+v", pkg.Name, err)
+		return ""
+	}
+	if p == nil {
+		return ""
+	}
+	return p.Unwrap().ToString()
 }
 
 func (d libraryDetector) convertFanalToVuln(tvulns []types.DetectedVulnerability) (vulns []models.VulnInfo) {

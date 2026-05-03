@@ -1,0 +1,580 @@
+[
+  {
+    "type": "uv",
+    "lockfilePath": "uv.lock",
+    "libs": [
+      {
+        "name": "annotated-types",
+        "version": "0.7.0",
+        "purl": "pkg:pypi/annotated-types@0.7.0"
+      },
+      {
+        "name": "anyio",
+        "version": "4.6.2.post1",
+        "purl": "pkg:pypi/anyio@4.6.2.post1"
+      },
+      {
+        "name": "asttokens",
+        "version": "2.4.1",
+        "purl": "pkg:pypi/asttokens@2.4.1",
+        "dev": true
+      },
+      {
+        "name": "attrs",
+        "version": "24.2.0",
+        "purl": "pkg:pypi/attrs@24.2.0"
+      },
+      {
+        "name": "bcrypt",
+        "version": "4.2.1",
+        "purl": "pkg:pypi/bcrypt@4.2.1",
+        "dev": true
+      },
+      {
+        "name": "boto3",
+        "version": "1.35.65",
+        "purl": "pkg:pypi/boto3@1.35.65"
+      },
+      {
+        "name": "boto3-stubs",
+        "version": "1.35.65",
+        "purl": "pkg:pypi/boto3-stubs@1.35.65"
+      },
+      {
+        "name": "botocore",
+        "version": "1.35.65",
+        "purl": "pkg:pypi/botocore@1.35.65"
+      },
+      {
+        "name": "botocore-stubs",
+        "version": "1.35.65",
+        "purl": "pkg:pypi/botocore-stubs@1.35.65"
+      },
+      {
+        "name": "cachetools",
+        "version": "5.5.0",
+        "purl": "pkg:pypi/cachetools@5.5.0",
+        "dev": true
+      },
+      {
+        "name": "certifi",
+        "version": "2024.8.30",
+        "purl": "pkg:pypi/certifi@2024.8.30"
+      },
+      {
+        "name": "cffi",
+        "version": "1.17.1",
+        "purl": "pkg:pypi/cffi@1.17.1"
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.4.0",
+        "purl": "pkg:pypi/charset-normalizer@3.4.0"
+      },
+      {
+        "name": "click",
+        "version": "8.1.7",
+        "purl": "pkg:pypi/click@8.1.7"
+      },
+      {
+        "name": "codespell",
+        "version": "2.3.0",
+        "purl": "pkg:pypi/codespell@2.3.0",
+        "dev": true
+      },
+      {
+        "name": "colorama",
+        "version": "0.4.6",
+        "purl": "pkg:pypi/colorama@0.4.6"
+      },
+      {
+        "name": "cosl",
+        "version": "0.0.43",
+        "purl": "pkg:pypi/cosl@0.0.43"
+      },
+      {
+        "name": "coverage",
+        "version": "7.6.7",
+        "purl": "pkg:pypi/coverage@7.6.7",
+        "dev": true
+      },
+      {
+        "name": "cryptography",
+        "version": "43.0.3",
+        "purl": "pkg:pypi/cryptography@43.0.3"
+      },
+      {
+        "name": "decorator",
+        "version": "5.1.1",
+        "purl": "pkg:pypi/decorator@5.1.1",
+        "dev": true
+      },
+      {
+        "name": "durationpy",
+        "version": "0.9",
+        "purl": "pkg:pypi/durationpy@0.9",
+        "dev": true
+      },
+      {
+        "name": "exceptiongroup",
+        "version": "1.2.2",
+        "purl": "pkg:pypi/exceptiongroup@1.2.2"
+      },
+      {
+        "name": "executing",
+        "version": "2.1.0",
+        "purl": "pkg:pypi/executing@2.1.0",
+        "dev": true
+      },
+      {
+        "name": "google-auth",
+        "version": "2.36.0",
+        "purl": "pkg:pypi/google-auth@2.36.0",
+        "dev": true
+      },
+      {
+        "name": "h11",
+        "version": "0.14.0",
+        "purl": "pkg:pypi/h11@0.14.0"
+      },
+      {
+        "name": "httpcore",
+        "version": "1.0.7",
+        "purl": "pkg:pypi/httpcore@1.0.7"
+      },
+      {
+        "name": "httpx",
+        "version": "0.27.2",
+        "purl": "pkg:pypi/httpx@0.27.2"
+      },
+      {
+        "name": "hvac",
+        "version": "2.3.0",
+        "purl": "pkg:pypi/hvac@2.3.0"
+      },
+      {
+        "name": "idna",
+        "version": "3.10",
+        "purl": "pkg:pypi/idna@3.10"
+      },
+      {
+        "name": "iniconfig",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/iniconfig@2.0.0"
+      },
+      {
+        "name": "ipdb",
+        "version": "0.13.13",
+        "purl": "pkg:pypi/ipdb@0.13.13",
+        "dev": true
+      },
+      {
+        "name": "ipython",
+        "version": "8.29.0",
+        "purl": "pkg:pypi/ipython@8.29.0",
+        "dev": true
+      },
+      {
+        "name": "jedi",
+        "version": "0.19.2",
+        "purl": "pkg:pypi/jedi@0.19.2",
+        "dev": true
+      },
+      {
+        "name": "jinja2",
+        "version": "3.1.4",
+        "purl": "pkg:pypi/jinja2@3.1.4"
+      },
+      {
+        "name": "jmespath",
+        "version": "1.0.1",
+        "purl": "pkg:pypi/jmespath@1.0.1"
+      },
+      {
+        "name": "jsonschema",
+        "version": "4.23.0",
+        "purl": "pkg:pypi/jsonschema@4.23.0"
+      },
+      {
+        "name": "jsonschema-specifications",
+        "version": "2024.10.1",
+        "purl": "pkg:pypi/jsonschema-specifications@2024.10.1"
+      },
+      {
+        "name": "juju",
+        "version": "3.5.2.1",
+        "purl": "pkg:pypi/juju@3.5.2.1",
+        "dev": true
+      },
+      {
+        "name": "kubernetes",
+        "version": "31.0.0",
+        "purl": "pkg:pypi/kubernetes@31.0.0",
+        "dev": true
+      },
+      {
+        "name": "lightkube",
+        "version": "0.15.5",
+        "purl": "pkg:pypi/lightkube@0.15.5"
+      },
+      {
+        "name": "lightkube-models",
+        "version": "1.31.1.8",
+        "purl": "pkg:pypi/lightkube-models@1.31.1.8"
+      },
+      {
+        "name": "macaroonbakery",
+        "version": "1.3.4",
+        "purl": "pkg:pypi/macaroonbakery@1.3.4",
+        "dev": true
+      },
+      {
+        "name": "markupsafe",
+        "version": "3.0.2",
+        "purl": "pkg:pypi/markupsafe@3.0.2"
+      },
+      {
+        "name": "matplotlib-inline",
+        "version": "0.1.7",
+        "purl": "pkg:pypi/matplotlib-inline@0.1.7",
+        "dev": true
+      },
+      {
+        "name": "mypy-boto3-s3",
+        "version": "1.35.61",
+        "purl": "pkg:pypi/mypy-boto3-s3@1.35.61"
+      },
+      {
+        "name": "mypy-extensions",
+        "version": "1.0.0",
+        "purl": "pkg:pypi/mypy-extensions@1.0.0",
+        "dev": true
+      },
+      {
+        "name": "nodeenv",
+        "version": "1.9.1",
+        "purl": "pkg:pypi/nodeenv@1.9.1",
+        "dev": true
+      },
+      {
+        "name": "oauthlib",
+        "version": "3.2.2",
+        "purl": "pkg:pypi/oauthlib@3.2.2",
+        "dev": true
+      },
+      {
+        "name": "ops",
+        "version": "2.17.0",
+        "purl": "pkg:pypi/ops@2.17.0"
+      },
+      {
+        "name": "ops-scenario",
+        "version": "7.0.5",
+        "purl": "pkg:pypi/ops-scenario@7.0.5"
+      },
+      {
+        "name": "packaging",
+        "version": "24.2",
+        "purl": "pkg:pypi/packaging@24.2"
+      },
+      {
+        "name": "paramiko",
+        "version": "3.5.0",
+        "purl": "pkg:pypi/paramiko@3.5.0",
+        "dev": true
+      },
+      {
+        "name": "parso",
+        "version": "0.8.4",
+        "purl": "pkg:pypi/parso@0.8.4",
+        "dev": true
+      },
+      {
+        "name": "pexpect",
+        "version": "4.9.0",
+        "purl": "pkg:pypi/pexpect@4.9.0",
+        "dev": true
+      },
+      {
+        "name": "pluggy",
+        "version": "1.5.0",
+        "purl": "pkg:pypi/pluggy@1.5.0"
+      },
+      {
+        "name": "prompt-toolkit",
+        "version": "3.0.48",
+        "purl": "pkg:pypi/prompt-toolkit@3.0.48",
+        "dev": true
+      },
+      {
+        "name": "protobuf",
+        "version": "5.28.3",
+        "purl": "pkg:pypi/protobuf@5.28.3",
+        "dev": true
+      },
+      {
+        "name": "psutil",
+        "version": "6.1.0",
+        "purl": "pkg:pypi/psutil@6.1.0"
+      },
+      {
+        "name": "ptyprocess",
+        "version": "0.7.0",
+        "purl": "pkg:pypi/ptyprocess@0.7.0",
+        "dev": true
+      },
+      {
+        "name": "pure-eval",
+        "version": "0.2.3",
+        "purl": "pkg:pypi/pure-eval@0.2.3",
+        "dev": true
+      },
+      {
+        "name": "pyasn1",
+        "version": "0.6.1",
+        "purl": "pkg:pypi/pyasn1@0.6.1",
+        "dev": true
+      },
+      {
+        "name": "pyasn1-modules",
+        "version": "0.4.1",
+        "purl": "pkg:pypi/pyasn1-modules@0.4.1",
+        "dev": true
+      },
+      {
+        "name": "pycparser",
+        "version": "2.22",
+        "purl": "pkg:pypi/pycparser@2.22"
+      },
+      {
+        "name": "pydantic",
+        "version": "2.9.2",
+        "purl": "pkg:pypi/pydantic@2.9.2"
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.23.4",
+        "purl": "pkg:pypi/pydantic-core@2.23.4"
+      },
+      {
+        "name": "pygments",
+        "version": "2.18.0",
+        "purl": "pkg:pypi/pygments@2.18.0",
+        "dev": true
+      },
+      {
+        "name": "pyhcl",
+        "version": "0.4.5",
+        "purl": "pkg:pypi/pyhcl@0.4.5"
+      },
+      {
+        "name": "pymacaroons",
+        "version": "0.13.0",
+        "purl": "pkg:pypi/pymacaroons@0.13.0",
+        "dev": true
+      },
+      {
+        "name": "pynacl",
+        "version": "1.5.0",
+        "purl": "pkg:pypi/pynacl@1.5.0",
+        "dev": true
+      },
+      {
+        "name": "pyopenssl",
+        "version": "24.2.1",
+        "purl": "pkg:pypi/pyopenssl@24.2.1"
+      },
+      {
+        "name": "pyrfc3339",
+        "version": "1.1",
+        "purl": "pkg:pypi/pyrfc3339@1.1",
+        "dev": true
+      },
+      {
+        "name": "pyright",
+        "version": "1.1.389",
+        "purl": "pkg:pypi/pyright@1.1.389",
+        "dev": true
+      },
+      {
+        "name": "pytest",
+        "version": "8.3.3",
+        "purl": "pkg:pypi/pytest@8.3.3"
+      },
+      {
+        "name": "pytest-asyncio",
+        "version": "0.21.2",
+        "purl": "pkg:pypi/pytest-asyncio@0.21.2",
+        "dev": true
+      },
+      {
+        "name": "pytest-dependency",
+        "version": "0.6.0",
+        "purl": "pkg:pypi/pytest-dependency@0.6.0",
+        "dev": true
+      },
+      {
+        "name": "pytest-interface-tester",
+        "version": "3.3.0",
+        "purl": "pkg:pypi/pytest-interface-tester@3.3.0"
+      },
+      {
+        "name": "pytest-operator",
+        "version": "0.38.0",
+        "purl": "pkg:pypi/pytest-operator@0.38.0",
+        "dev": true
+      },
+      {
+        "name": "python-dateutil",
+        "version": "2.9.0.post0",
+        "purl": "pkg:pypi/python-dateutil@2.9.0.post0"
+      },
+      {
+        "name": "pytz",
+        "version": "2024.2",
+        "purl": "pkg:pypi/pytz@2024.2",
+        "dev": true
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.2",
+        "purl": "pkg:pypi/pyyaml@6.0.2"
+      },
+      {
+        "name": "referencing",
+        "version": "0.35.1",
+        "purl": "pkg:pypi/referencing@0.35.1"
+      },
+      {
+        "name": "requests",
+        "version": "2.32.3",
+        "purl": "pkg:pypi/requests@2.32.3"
+      },
+      {
+        "name": "requests-oauthlib",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/requests-oauthlib@2.0.0",
+        "dev": true
+      },
+      {
+        "name": "rpds-py",
+        "version": "0.18.1",
+        "purl": "pkg:pypi/rpds-py@0.18.1"
+      },
+      {
+        "name": "rsa",
+        "version": "4.9",
+        "purl": "pkg:pypi/rsa@4.9",
+        "dev": true
+      },
+      {
+        "name": "ruff",
+        "version": "0.7.4",
+        "purl": "pkg:pypi/ruff@0.7.4",
+        "dev": true
+      },
+      {
+        "name": "s3transfer",
+        "version": "0.10.3",
+        "purl": "pkg:pypi/s3transfer@0.10.3"
+      },
+      {
+        "name": "setuptools",
+        "version": "75.6.0",
+        "purl": "pkg:pypi/setuptools@75.6.0",
+        "dev": true
+      },
+      {
+        "name": "six",
+        "version": "1.16.0",
+        "purl": "pkg:pypi/six@1.16.0"
+      },
+      {
+        "name": "sniffio",
+        "version": "1.3.1",
+        "purl": "pkg:pypi/sniffio@1.3.1"
+      },
+      {
+        "name": "stack-data",
+        "version": "0.6.3",
+        "purl": "pkg:pypi/stack-data@0.6.3",
+        "dev": true
+      },
+      {
+        "name": "tenacity",
+        "version": "9.0.0",
+        "purl": "pkg:pypi/tenacity@9.0.0"
+      },
+      {
+        "name": "tomli",
+        "version": "2.1.0",
+        "purl": "pkg:pypi/tomli@2.1.0"
+      },
+      {
+        "name": "toposort",
+        "version": "1.10",
+        "purl": "pkg:pypi/toposort@1.10",
+        "dev": true
+      },
+      {
+        "name": "traitlets",
+        "version": "5.14.3",
+        "purl": "pkg:pypi/traitlets@5.14.3",
+        "dev": true
+      },
+      {
+        "name": "typer",
+        "version": "0.7.0",
+        "purl": "pkg:pypi/typer@0.7.0"
+      },
+      {
+        "name": "types-awscrt",
+        "version": "0.23.0",
+        "purl": "pkg:pypi/types-awscrt@0.23.0"
+      },
+      {
+        "name": "types-s3transfer",
+        "version": "0.10.3",
+        "purl": "pkg:pypi/types-s3transfer@0.10.3"
+      },
+      {
+        "name": "typing-extensions",
+        "version": "4.12.2",
+        "purl": "pkg:pypi/typing-extensions@4.12.2"
+      },
+      {
+        "name": "typing-inspect",
+        "version": "0.9.0",
+        "purl": "pkg:pypi/typing-inspect@0.9.0",
+        "dev": true
+      },
+      {
+        "name": "urllib3",
+        "version": "2.2.3",
+        "purl": "pkg:pypi/urllib3@2.2.3"
+      },
+      {
+        "name": "vault-operator",
+        "version": "0.1.0",
+        "purl": "pkg:pypi/vault-operator@0.1.0"
+      },
+      {
+        "name": "wcwidth",
+        "version": "0.2.13",
+        "purl": "pkg:pypi/wcwidth@0.2.13",
+        "dev": true
+      },
+      {
+        "name": "websocket-client",
+        "version": "1.8.0",
+        "purl": "pkg:pypi/websocket-client@1.8.0"
+      },
+      {
+        "name": "websockets",
+        "version": "13.1",
+        "purl": "pkg:pypi/websockets@13.1",
+        "dev": true
+      }
+    ]
+  }
+]

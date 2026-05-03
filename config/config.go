@@ -38,13 +38,10 @@ type Config struct {
 	ScanOpts
 
 	// report
-	CveDict    GoCveDictConf  `json:"cveDict,omitzero"`
-	Gost       GostConf       `json:"gost,omitzero"`
-	Exploit    ExploitConf    `json:"exploit,omitzero"`
-	Metasploit MetasploitConf `json:"metasploit,omitzero"`
-	KEVuln     KEVulnConf     `json:"kevuln,omitzero"`
-	Cti        CtiConf        `json:"cti,omitzero"`
-	Vuls2      Vuls2Conf      `json:"vuls2,omitzero"`
+	CveDict GoCveDictConf `json:"cveDict,omitzero"`
+	Gost    GostConf      `json:"gost,omitzero"`
+	Cti     CtiConf       `json:"cti,omitzero"`
+	Vuls2   Vuls2Conf     `json:"vuls2,omitzero"`
 
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
@@ -190,9 +187,6 @@ func (c *Config) ValidateOnReport() bool {
 	for _, cnf := range []VulnDictInterface{
 		&Conf.CveDict,
 		&Conf.Gost,
-		&Conf.Exploit,
-		&Conf.Metasploit,
-		&Conf.KEVuln,
 		&Conf.Cti,
 	} {
 		if err := cnf.Validate(); err != nil {
@@ -247,7 +241,6 @@ type ServerInfo struct {
 	Containers         map[string]ContainerSetting `toml:"containers,omitempty" json:"containers,omitempty"`
 	IgnoreCves         []string                    `toml:"ignoreCves,omitempty" json:"ignoreCves,omitempty"`
 	IgnorePkgsRegexp   []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
-	GitHubRepos        map[string]GitHubConf       `toml:"githubs" json:"githubs,omitempty"` // key: owner/repo
 	UUIDs              map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo               string                      `toml:"memo,omitempty" json:"memo,omitempty"`
 	Enablerepo         []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, Alma, Rocky, RHEL, Amazon
@@ -292,12 +285,6 @@ type WordPressConf struct {
 // IsZero return  whether this struct is not specified in config.toml
 func (cnf WordPressConf) IsZero() bool {
 	return cnf.OSUser == "" && cnf.DocRoot == "" && cnf.CmdPath == ""
-}
-
-// GitHubConf is used for GitHub Security Alerts
-type GitHubConf struct {
-	Token                 string `json:"-"`
-	IgnoreGitHubDismissed bool   `json:"ignoreGitHubDismissed,omitempty"`
 }
 
 // GetServerName returns ServerName if this serverInfo is about host.

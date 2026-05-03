@@ -83,10 +83,9 @@ func (m DependencyGraphManifest) Ecosystem() string {
 
 // Dependency has dependency package information
 type Dependency struct {
-	PackageName    string `json:"packageName"`
-	PackageManager string `json:"packageManager"`
-	Repository     string `json:"repository"`
-	Requirements   string `json:"requirements"`
+	PackageName  string `json:"packageName"`
+	Requirements string `json:"requirements"`
+	PURL         string `json:"purl"`
 }
 
 // Version returns version

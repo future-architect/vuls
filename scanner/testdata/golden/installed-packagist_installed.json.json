@@ -1,0 +1,23 @@
+[
+  {
+    "type": "composer-vendor",
+    "lockfilePath": "installed-packagist/installed.json",
+    "libs": [
+      {
+        "name": "guzzlehttp/psr7",
+        "version": "1.8.3",
+        "purl": "pkg:composer/guzzlehttp/psr7@1.8.3"
+      },
+      {
+        "name": "psr/http-message",
+        "version": "1.1",
+        "purl": "pkg:composer/psr/http-message@1.1"
+      },
+      {
+        "name": "ralouphie/getallheaders",
+        "version": "3.0.3",
+        "purl": "pkg:composer/ralouphie/getallheaders@3.0.3"
+      }
+    ]
+  }
+]

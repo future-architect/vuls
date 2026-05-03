@@ -1,0 +1,90 @@
+[
+  {
+    "type": "poetry",
+    "lockfilePath": "poetry-v2/poetry.lock",
+    "libs": [
+      {
+        "name": "atomicwrites",
+        "version": "1.4.1",
+        "purl": "pkg:pypi/atomicwrites@1.4.1",
+        "dev": true
+      },
+      {
+        "name": "attrs",
+        "version": "25.1.0",
+        "purl": "pkg:pypi/attrs@25.1.0",
+        "dev": true
+      },
+      {
+        "name": "click",
+        "version": "8.1.8",
+        "purl": "pkg:pypi/click@8.1.8"
+      },
+      {
+        "name": "colorama",
+        "version": "0.4.6",
+        "purl": "pkg:pypi/colorama@0.4.6"
+      },
+      {
+        "name": "flask",
+        "version": "1.0.3",
+        "purl": "pkg:pypi/flask@1.0.3"
+      },
+      {
+        "name": "itsdangerous",
+        "version": "2.2.0",
+        "purl": "pkg:pypi/itsdangerous@2.2.0"
+      },
+      {
+        "name": "jinja2",
+        "version": "3.1.5",
+        "purl": "pkg:pypi/jinja2@3.1.5"
+      },
+      {
+        "name": "markupsafe",
+        "version": "3.0.2",
+        "purl": "pkg:pypi/markupsafe@3.0.2"
+      },
+      {
+        "name": "more-itertools",
+        "version": "10.6.0",
+        "purl": "pkg:pypi/more-itertools@10.6.0",
+        "dev": true
+      },
+      {
+        "name": "packaging",
+        "version": "24.2",
+        "purl": "pkg:pypi/packaging@24.2",
+        "dev": true
+      },
+      {
+        "name": "pluggy",
+        "version": "0.13.1",
+        "purl": "pkg:pypi/pluggy@0.13.1"
+      },
+      {
+        "name": "py",
+        "version": "1.11.0",
+        "purl": "pkg:pypi/py@1.11.0",
+        "dev": true
+      },
+      {
+        "name": "pytest",
+        "version": "5.4.3",
+        "purl": "pkg:pypi/pytest@5.4.3",
+        "dev": true
+      },
+      {
+        "name": "wcwidth",
+        "version": "0.2.13",
+        "purl": "pkg:pypi/wcwidth@0.2.13",
+        "dev": true
+      },
+      {
+        "name": "werkzeug",
+        "version": "3.1.3",
+        "purl": "pkg:pypi/werkzeug@3.1.3"
+      }
+    ]
+  }
+]

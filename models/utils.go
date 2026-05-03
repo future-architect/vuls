@@ -154,9 +154,7 @@ func ConvertNvdToModel(cveID string, nvds []cvedict.Nvd) ([]CveContent, []Exploi
 			})
 			if strings.Contains(r.Tags, "Exploit") {
 				exploits = append(exploits, Exploit{
-					//TODO Add const to here
-					// https://github.com/vulsio/go-exploitdb/blob/master/models/exploit.go#L13-L18
-					ExploitType: "nvd",
+					ExploitType: ExploitTypeNVD,
 					URL:         r.Link,
 				})
 			}

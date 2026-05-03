@@ -1,0 +1,13 @@
+[
+  {
+    "type": "pip",
+    "lockfilePath": "requirements.txt",
+    "libs": [
+      {
+        "name": "numpy",
+        "version": "1.18.5",
+        "purl": "pkg:pypi/numpy@1.18.5"
+      }
+    ]
+  }
+]

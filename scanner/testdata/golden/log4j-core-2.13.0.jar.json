@@ -1,0 +1,14 @@
+[
+  {
+    "type": "jar",
+    "lockfilePath": "log4j-core-2.13.0.jar",
+    "libs": [
+      {
+        "name": "org.apache.logging.log4j:log4j-core",
+        "version": "2.13.0",
+        "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.13.0",
+        "filePath": "log4j-core-2.13.0.jar"
+      }
+    ]
+  }
+]

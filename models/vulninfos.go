@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/logging"
-	exploitmodels "github.com/vulsio/go-exploitdb/models"
 )
 
 // VulnInfos has a map of VulnInfo
@@ -886,18 +885,36 @@ func (p DistroAdvisory) Format() string {
 	return strings.Join(buf, "\n")
 }
 
+// ExploitType represents the source type of an exploit
+type ExploitType string
+
+const (
+	// ExploitTypeExploitDB is the source type for Offensive Security Exploit DB.
+	ExploitTypeExploitDB ExploitType = "OffensiveSecurity"
+	// ExploitTypeGitHub is the source type for GitHub PoC-in-GitHub.
+	ExploitTypeGitHub ExploitType = "GitHub"
+	// ExploitTypeInTheWild is the source type for inthewild.io.
+	ExploitTypeInTheWild ExploitType = "InTheWild"
+	// ExploitTypeTrickest is the source type for Trickest.
+	ExploitTypeTrickest ExploitType = "Trickest"
+	// ExploitTypeNuclei is the source type for Nuclei templates.
+	ExploitTypeNuclei ExploitType = "Nuclei"
+	// ExploitTypeNVD is the source type for NVD.
+	ExploitTypeNVD ExploitType = "nvd"
+)
+
 // Exploit :
 type Exploit struct {
-	ExploitType  exploitmodels.ExploitType `json:"exploitType"`
-	ID           string                    `json:"id"`
-	URL          string                    `json:"url"`
-	Description  string                    `json:"description"`
-	Verified     *bool                     `json:"verified,omitempty"`
-	DocumentURL  *string                   `json:"documentURL,omitempty"`
-	ShellCodeURL *string                   `json:"shellCodeURL,omitempty"`
-	BinaryURL    *string                   `json:"binaryURL,omitempty"`
-	PaperURL     *string                   `json:"paperURL,omitempty"`
-	GHDBURL      *string                   `json:"ghdbURL,omitempty"`
+	ExploitType  ExploitType `json:"exploitType"`
+	ID           string      `json:"id"`
+	URL          string      `json:"url"`
+	Description  string      `json:"description"`
+	Verified     *bool       `json:"verified,omitempty"`
+	DocumentURL  *string     `json:"documentURL,omitempty"`
+	ShellCodeURL *string     `json:"shellCodeURL,omitempty"`
+	BinaryURL    *string     `json:"binaryURL,omitempty"`
+	PaperURL     *string     `json:"paperURL,omitempty"`
+	GHDBURL      *string     `json:"ghdbURL,omitempty"`
 }
 
 // Metasploit :
@@ -923,9 +940,11 @@ const (
 	CISAKEVType KEVType = "cisa"
 	// VulnCheckKEVType is VulnCheck KEV
 	VulnCheckKEVType KEVType = "vulncheck"
+	// ENISAKEVType is ENISA KEV
+	ENISAKEVType KEVType = "enisa"
 )
 
-// KEV has CISA or VulnCheck Known Exploited Vulnerability
+// KEV has CISA, VulnCheck, or ENISA Known Exploited Vulnerability
 type KEV struct {
 	Type                       KEVType    `json:"type,omitempty"`
 	VendorProject              string     `json:"vendor_project,omitempty"`
@@ -939,6 +958,7 @@ type KEV struct {
 
 	CISA      *CISAKEV      `json:"cisa,omitempty"`
 	VulnCheck *VulnCheckKEV `json:"vulncheck,omitempty"`
+	ENISA     *ENISAKEV     `json:"enisa,omitempty"`
 }
 
 // CISAKEV has CISA KEV only data
@@ -965,6 +985,15 @@ type VulnCheckXDB struct {
 type VulnCheckReportedExploitation struct {
 	URL       string    `json:"url,omitempty"`
 	DateAdded time.Time `json:"date_added,omitzero"`
+}
+
+// ENISAKEV has ENISA KEV only data
+type ENISAKEV struct {
+	DateReported           time.Time `json:"date_reported,omitzero"`
+	PatchedSince           string    `json:"patched_since,omitempty"`
+	OriginSource           string    `json:"origin_source,omitempty"`
+	ExploitationType       string    `json:"exploitation_type,omitempty"`
+	ThreatActorsExploiting string    `json:"threat_actors_exploiting,omitempty"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data

@@ -11,8 +11,26 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    # Fetch the integration test data (lockfile fixtures, jar/war binaries).
+    # Pinned by commit SHA — bump this ref to update test data, equivalent to
+    # advancing a submodule pointer. Use a SHA, not a mutable ref like a
+    # branch or `refs/pull/N/merge` (the latter disappears once the PR is
+    # merged). Do NOT use `submodules: true` on the checkout above: that
+    # reads .gitmodules from the PR head and a fork PR could redirect the
+    # URL to attacker-controlled code that `go test` would then execute.
+    # The SHA pin here lives in the workflow file, which a PR cannot
+    # redirect without a reviewable diff.
+    - name: Check out integration test data
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        repository: vulsio/integration
+        ref: 6dfd74510f5944e7c973e40d7844020d53dbb3a7
+        path: integration
+        persist-credentials: false
     - name: Set up Go 1.x
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
     - name: go mod tidy check

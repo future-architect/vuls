@@ -3,6 +3,7 @@ package pkg
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,6 +13,7 @@ import (
 	trivydbTypes "github.com/aquasecurity/trivy-db/pkg/types"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/types"
+	debver "github.com/knqyf263/go-deb-version"
 
 	"github.com/future-architect/vuls/models"
 )
@@ -40,6 +42,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 	pkgs := models.Packages{}
 	srcPkgs := models.SrcPackages{}
 	vulnInfos := models.VulnInfos{}
+	dupPkgs := map[string][]string{} // name -> list of versions seen (for duplicate detection)
 	libraryScannerPaths := map[string]models.LibraryScanner{}
 	for _, trivyResult := range results {
 		for _, vuln := range trivyResult.Vulnerabilities {
@@ -171,9 +174,21 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 			vulnInfos[vuln.VulnerabilityID] = vulnInfo
 		}
 
-		// --list-all-pkgs flg of trivy will output all installed packages, so collect them.
 		switch trivyResult.Class {
 		case types.ClassOSPkg:
+			// Collect all installed packages (requires --list-all-pkgs flag in Trivy).
+			//
+			// On Debian/Ubuntu, Trivy's dpkg analyzer reads both /var/lib/dpkg/status
+			// and /var/lib/dpkg/status.d/*, producing duplicate entries for the
+			// same package. The applier's dedup key includes FilePath, so entries
+			// from different paths survive and appear as duplicates in the result.
+			// (Other analyzers — RPM, APK — are not affected.)
+			//
+			// This is not a complete fix; ideally Trivy itself should deduplicate.
+			// As a workaround we keep the newer version: for Debian/Ubuntu we
+			// compare using dpkg version semantics; for other OS types we fall
+			// back to lexicographic string comparison.
+
 			for _, p := range trivyResult.Packages {
 				pv := p.Version
 				if p.Release != "" {
@@ -182,28 +197,60 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 				if p.Epoch > 0 {
 					pv = fmt.Sprintf("%d:%s", p.Epoch, pv)
 				}
-				pkgs[p.Name] = models.Package{
-					Name:    p.Name,
-					Version: pv,
-					Arch:    p.Arch,
+
+				if existing, ok := pkgs[p.Name]; ok {
+					if existing.Version != pv {
+						if versions, seen := dupPkgs[p.Name]; !seen {
+							dupPkgs[p.Name] = []string{existing.Version, pv}
+						} else if !slices.Contains(versions, pv) {
+							dupPkgs[p.Name] = append(versions, pv)
+						}
+					}
+					// >= (not >) so that the Arch-bearing entry from Packages
+					// overwrites the Arch-less one written by the Vulnerabilities
+					// loop above, even when the version is identical.
+					if compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
+						pkgs[p.Name] = models.Package{
+							Name:    p.Name,
+							Version: pv,
+							Arch:    p.Arch,
+						}
+					}
+				} else {
+					pkgs[p.Name] = models.Package{
+						Name:    p.Name,
+						Version: pv,
+						Arch:    p.Arch,
+					}
 				}
 
-				v, ok := srcPkgs[p.SrcName]
-				if !ok {
-					sv := p.SrcVersion
-					if p.SrcRelease != "" {
-						sv = fmt.Sprintf("%s-%s", sv, p.SrcRelease)
+				sv := p.SrcVersion
+				if p.SrcRelease != "" {
+					sv = fmt.Sprintf("%s-%s", sv, p.SrcRelease)
+				}
+				if p.SrcEpoch > 0 {
+					sv = fmt.Sprintf("%d:%s", p.SrcEpoch, sv)
+				}
+
+				if existing, ok := srcPkgs[p.SrcName]; ok {
+					existing.AddBinaryName(p.Name)
+					// >= for consistency with pkgs above.
+					if compareVersions(trivyResult.Type, sv, existing.Version) >= 0 {
+						srcPkgs[p.SrcName] = models.SrcPackage{
+							Name:        p.SrcName,
+							Version:     sv,
+							BinaryNames: existing.BinaryNames,
+						}
+					} else {
+						srcPkgs[p.SrcName] = existing
 					}
-					if p.SrcEpoch > 0 {
-						sv = fmt.Sprintf("%d:%s", p.SrcEpoch, sv)
-					}
-					v = models.SrcPackage{
-						Name:    p.SrcName,
-						Version: sv,
+				} else {
+					srcPkgs[p.SrcName] = models.SrcPackage{
+						Name:        p.SrcName,
+						Version:     sv,
+						BinaryNames: []string{p.Name},
 					}
 				}
-				v.AddBinaryName(p.Name)
-				srcPkgs[p.SrcName] = v
 			}
 		case types.ClassLangPkg:
 			for _, p := range trivyResult.Packages {
@@ -255,6 +302,15 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 	scanResult.Packages = pkgs
 	scanResult.SrcPackages = srcPkgs
 	scanResult.LibraryScanners = libraryScanners
+
+	for _, name := range slices.Sorted(maps.Keys(dupPkgs)) {
+		slices.Sort(dupPkgs[name])
+		scanResult.Warnings = append(scanResult.Warnings, fmt.Sprintf(
+			"Duplicate OS package detected: %s (%s). The newest version is kept, but false-positive CVEs may remain.",
+			name, strings.Join(dupPkgs[name], ", "),
+		))
+	}
+
 	return scanResult, nil
 }
 
@@ -287,6 +343,24 @@ func isTrivySupportedOS(family ftypes.TargetType) bool {
 	}
 	_, ok := supportedFamilies[family]
 	return ok
+}
+
+// compareVersions returns a positive value if a > b, zero if a == b,
+// and a negative value if a < b.
+// For Debian/Ubuntu, dpkg version semantics are used.
+// For other OS types, lexicographic string comparison is used as a fallback.
+func compareVersions(osType ftypes.TargetType, a, b string) int {
+	switch osType {
+	case ftypes.Debian, ftypes.Ubuntu:
+		va, erra := debver.NewVersion(a)
+		vb, errb := debver.NewVersion(b)
+		if erra != nil || errb != nil {
+			return cmp.Compare(a, b)
+		}
+		return va.Compare(vb)
+	default:
+		return cmp.Compare(a, b)
+	}
 }
 
 func getPURL(p ftypes.Package) string {

@@ -146,33 +146,6 @@ func (cnf VulnDict) CheckHTTPHealth() error {
 	return nil
 }
 
-// ExploitConf is exploit config
-type ExploitConf struct {
-	VulnDict
-}
-
-const exploitDBType = "EXPLOITDB_TYPE"
-const exploitDBURL = "EXPLOITDB_URL"
-const exploitDBPATH = "EXPLOITDB_SQLITE3_PATH"
-
-// Init set options with the following priority.
-// 1. Environment variable
-// 2. config.toml
-func (cnf *ExploitConf) Init() {
-	cnf.Name = "exploit"
-	if os.Getenv(exploitDBType) != "" {
-		cnf.Type = os.Getenv(exploitDBType)
-	}
-	if os.Getenv(exploitDBURL) != "" {
-		cnf.URL = os.Getenv(exploitDBURL)
-	}
-	if os.Getenv(exploitDBPATH) != "" {
-		cnf.SQLite3Path = os.Getenv(exploitDBPATH)
-	}
-	cnf.setDefault("go-exploitdb.sqlite3")
-	cnf.DebugSQL = Conf.DebugSQL
-}
-
 // GoCveDictConf is GoCveDict config
 type GoCveDictConf struct {
 	VulnDict
@@ -224,60 +197,6 @@ func (cnf *GostConf) Init() {
 		cnf.SQLite3Path = os.Getenv(gostDBPATH)
 	}
 	cnf.setDefault("gost.sqlite3")
-	cnf.DebugSQL = Conf.DebugSQL
-}
-
-// MetasploitConf is go-msfdb config
-type MetasploitConf struct {
-	VulnDict
-}
-
-const metasploitDBType = "METASPLOITDB_TYPE"
-const metasploitDBURL = "METASPLOITDB_URL"
-const metasploitDBPATH = "METASPLOITDB_SQLITE3_PATH"
-
-// Init set options with the following priority.
-// 1. Environment variable
-// 2. config.toml
-func (cnf *MetasploitConf) Init() {
-	cnf.Name = "metasploit"
-	if os.Getenv(metasploitDBType) != "" {
-		cnf.Type = os.Getenv(metasploitDBType)
-	}
-	if os.Getenv(metasploitDBURL) != "" {
-		cnf.URL = os.Getenv(metasploitDBURL)
-	}
-	if os.Getenv(metasploitDBPATH) != "" {
-		cnf.SQLite3Path = os.Getenv(metasploitDBPATH)
-	}
-	cnf.setDefault("go-msfdb.sqlite3")
-	cnf.DebugSQL = Conf.DebugSQL
-}
-
-// KEVulnConf is go-kev config
-type KEVulnConf struct {
-	VulnDict
-}
-
-const kevulnDBType = "KEVULN_TYPE"
-const kevulnDBURL = "KEVULN_URL"
-const kevulnDBPATH = "KEVULN_SQLITE3_PATH"
-
-// Init set options with the following priority.
-// 1. Environment variable
-// 2. config.toml
-func (cnf *KEVulnConf) Init() {
-	cnf.Name = "kevuln"
-	if os.Getenv(kevulnDBType) != "" {
-		cnf.Type = os.Getenv(kevulnDBType)
-	}
-	if os.Getenv(kevulnDBURL) != "" {
-		cnf.URL = os.Getenv(kevulnDBURL)
-	}
-	if os.Getenv(kevulnDBPATH) != "" {
-		cnf.SQLite3Path = os.Getenv(kevulnDBPATH)
-	}
-	cnf.setDefault("go-kev.sqlite3")
 	cnf.DebugSQL = Conf.DebugSQL
 }
 

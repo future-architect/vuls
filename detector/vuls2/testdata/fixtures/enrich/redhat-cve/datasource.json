@@ -1,0 +1,11 @@
+{
+    "id": "redhat-cve",
+    "name": "RedHat Security Data API",
+    "raw": [
+        {
+            "url": "ghcr.io/vulsio/vuls-data-db:vuls-data-raw-redhat-cve",
+            "commit": "0000000000000000000000000000000000000000",
+            "date": "2025-01-01T00:00:00Z"
+        }
+    ]
+}
