@@ -867,13 +867,13 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "openSUSE Leap 15.6 supported",
 			fields:   fields{family: constant.OpenSUSELeap, release: "15.6"},
-			now:      time.Date(2026, 4, 30, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2026, 4, 30, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    true,
 		},
 		{
-			name:     "openSUSE Leap 15.6 eol since 2026-04-30",
+			name:     "openSUSE Leap 15.6 eol since 2026-5-1",
 			fields:   fields{family: constant.OpenSUSELeap, release: "15.6"},
 			now:      time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
 			stdEnded: true,
@@ -883,13 +883,13 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "openSUSE Leap 16.0 supported",
 			fields:   fields{family: constant.OpenSUSELeap, release: "16.0"},
-			now:      time.Date(2026, 5, 7, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2027, 10, 31, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    true,
 		},
 		{
-			name:     "openSUSE Leap 16.0 eol since 2027-10-31",
+			name:     "openSUSE Leap 16.0 eol since 2027-11-1",
 			fields:   fields{family: constant.OpenSUSELeap, release: "16.0"},
 			now:      time.Date(2027, 11, 1, 0, 0, 0, 0, time.UTC),
 			stdEnded: true,
