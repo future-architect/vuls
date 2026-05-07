@@ -254,6 +254,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"15.4": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"15.5": {StandardSupportUntil: time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"15.6": {StandardSupportUntil: time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"16.0": {StandardSupportUntil: time.Date(2027, 10, 31, 23, 59, 59, 0, time.UTC)},
 		}[release]
 	case constant.SUSEEnterpriseServer:
 		// https://www.suse.com/lifecycle
