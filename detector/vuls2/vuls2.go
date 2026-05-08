@@ -59,22 +59,10 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 		vuls2Conf.Path = DefaultPath
 	}
 
-	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
+	sesh, err := getSession(vuls2Conf, noProgress)
 	if err != nil {
-		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
+		return xerrors.Errorf("Failed to get vuls2 db session. err: %w", err)
 	}
-
-	sesh, err := dbConfig.New()
-	if err != nil {
-		return xerrors.Errorf("Failed to new db session. err: %w", err)
-	}
-
-	defer sesh.Cache().Close()
-
-	if err := sesh.Storage().Open(); err != nil {
-		return xerrors.Errorf("Failed to open db. err: %w", err)
-	}
-	defer sesh.Storage().Close()
 
 	metadata, err := sesh.Storage().GetMetadata()
 	if err != nil {
@@ -138,22 +126,10 @@ func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgres
 		vuls2Conf.Path = DefaultPath
 	}
 
-	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
+	sesh, err := getSession(vuls2Conf, noProgress)
 	if err != nil {
-		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
+		return xerrors.Errorf("Failed to get vuls2 db session. err: %w", err)
 	}
-
-	sesh, err := dbConfig.New()
-	if err != nil {
-		return xerrors.Errorf("Failed to new db session. err: %w", err)
-	}
-
-	defer sesh.Cache().Close()
-
-	if err := sesh.Storage().Open(); err != nil {
-		return xerrors.Errorf("Failed to open db. err: %w", err)
-	}
-	defer sesh.Storage().Close()
 
 	if err := enrich(sesh, r.ScannedCves); err != nil {
 		return xerrors.Errorf("Failed to enrich vulnerability data. err: %w", err)

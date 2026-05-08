@@ -14,6 +14,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector"
+	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
 )
@@ -120,6 +121,11 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 		logging.Log.Errorf("Failed to validate DBs. err: %+v", err)
 		return subcommands.ExitFailure
 	}
+	defer func() {
+		if err := vuls2.CloseSession(); err != nil {
+			logging.Log.Errorf("Failed to close vuls2 db session. err: %+v", err)
+		}
+	}()
 
 	http.Handle("/vuls", server.VulsHandler{
 		ToLocalFile: p.toLocalFile,

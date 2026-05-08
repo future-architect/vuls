@@ -3,6 +3,7 @@ package vuls2
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -24,7 +25,34 @@ var (
 	}()
 )
 
-func newDBConfig(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Config, error) {
+var (
+	sessionMu     sync.Mutex
+	cachedSession *session.Session
+	cachedPath    string
+)
+
+// getSession returns a shared, opened vuls2 db session. The session is opened
+// lazily on the first call and reused by subsequent callers so that concurrent
+// users (e.g. `vuls server` handling parallel HTTP requests) do not repeatedly
+// invoke bolt.Open(), which would otherwise serialize on BoltDB's OS-level file
+// lock and cause severe latency under load.
+//
+// CloseSession should be called at process shutdown to release the file handle.
+func getSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session, error) {
+	sessionMu.Lock()
+	defer sessionMu.Unlock()
+
+	if cachedSession != nil && cachedPath == vuls2Conf.Path {
+		return cachedSession, nil
+	}
+
+	if cachedSession != nil {
+		_ = cachedSession.Storage().Close()
+		cachedSession.Cache().Close()
+		cachedSession = nil
+		cachedPath = ""
+	}
+
 	willDownload, err := shouldDownload(vuls2Conf, time.Now())
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to check whether to download vuls2 db. err: %w", err)
@@ -38,40 +66,68 @@ func newDBConfig(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Config, 
 	}
 
 	sesh, err := (&session.Config{
-		Type:    "boltdb",
-		Path:    vuls2Conf.Path,
-		Options: session.StorageOptions{BoltDB: &bolt.Options{ReadOnly: true}},
+		Type:      "boltdb",
+		Path:      vuls2Conf.Path,
+		Options:   session.StorageOptions{BoltDB: &bolt.Options{ReadOnly: true}},
+		WithCache: true,
 	}).New()
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to new vuls2 db connection. path: %s, err: %w", vuls2Conf.Path, err)
 	}
 
 	if err := sesh.Storage().Open(); err != nil {
+		sesh.Cache().Close()
 		return nil, xerrors.Errorf("Failed to open vuls2 db. path: %s, err: %w", vuls2Conf.Path, err)
 	}
-	defer sesh.Storage().Close()
 
 	metadata, err := sesh.Storage().GetMetadata()
 	if err != nil {
+		_ = sesh.Storage().Close()
+		sesh.Cache().Close()
 		return nil, xerrors.Errorf("Failed to get vuls2 db metadata. path: %s, err: %w", vuls2Conf.Path, err)
 	}
 	if metadata == nil {
+		_ = sesh.Storage().Close()
+		sesh.Cache().Close()
 		return nil, xerrors.Errorf("unexpected vuls2 db metadata. metadata: nil, path: %s", vuls2Conf.Path)
 	}
 	sv, err := session.SchemaVersion("boltdb")
 	if err != nil {
+		_ = sesh.Storage().Close()
+		sesh.Cache().Close()
 		return nil, xerrors.Errorf("Failed to get schema version. err: %w", err)
 	}
 	if metadata.SchemaVersion != sv {
-		return nil, xerrors.Errorf("vuls2 db schema version mismatch. expected: %d, actual: %d", session.SchemaVersion, metadata.SchemaVersion)
+		_ = sesh.Storage().Close()
+		sesh.Cache().Close()
+		return nil, xerrors.Errorf("vuls2 db schema version mismatch. expected: %d, actual: %d", sv, metadata.SchemaVersion)
 	}
 
-	return &session.Config{
-		Type:      "boltdb",
-		Path:      vuls2Conf.Path,
-		Options:   session.StorageOptions{BoltDB: &bolt.Options{ReadOnly: true}},
-		WithCache: true,
-	}, nil
+	cachedSession = sesh
+	cachedPath = vuls2Conf.Path
+	return sesh, nil
+}
+
+// CloseSession releases the cached vuls2 db session. Safe to call when no
+// session has ever been opened, and idempotent across repeated calls.
+// Intended to be deferred at process shutdown (e.g. `vuls server`).
+func CloseSession() error {
+	sessionMu.Lock()
+	defer sessionMu.Unlock()
+
+	if cachedSession == nil {
+		return nil
+	}
+	sesh := cachedSession
+	cachedSession = nil
+	cachedPath = ""
+
+	if err := sesh.Storage().Close(); err != nil {
+		sesh.Cache().Close()
+		return xerrors.Errorf("Failed to close vuls2 db storage. err: %w", err)
+	}
+	sesh.Cache().Close()
+	return nil
 }
 
 func shouldDownload(vuls2Conf config.Vuls2Conf, now time.Time) (bool, error) {
