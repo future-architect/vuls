@@ -51,9 +51,9 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spdx/tools-golang v0.5.7
 	github.com/spf13/cobra v1.10.2
-	github.com/vulsio/go-cti v0.3.4
-	github.com/vulsio/go-cve-dictionary v0.16.0
-	github.com/vulsio/gost v0.7.2
+	github.com/vulsio/go-cti v0.3.6
+	github.com/vulsio/go-cve-dictionary v0.16.2
+	github.com/vulsio/gost v0.7.4
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/term v0.42.0
 	golang.org/x/text v0.36.0
@@ -224,7 +224,7 @@ require (
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
@@ -240,8 +240,8 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/masahiro331/go-mvn-version v0.0.0-20250131095131-f4974fa13b8a // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
