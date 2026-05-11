@@ -22,6 +22,7 @@ const (
 	parserPip            parserType = "pip"
 	parserPipenv         parserType = "pipenv"
 	parserPoetry         parserType = "poetry"
+	parserPylock         parserType = "pylock"
 	parserUv             parserType = "uv"
 	parserBundler        parserType = "bundler"
 	parserCargo          parserType = "cargo"
@@ -74,6 +75,8 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 		return parserPipenv
 	case ftypes.PoetryLock: // poetry.lock
 		return parserPoetry
+	case ftypes.PyLockFile: // pylock.toml
+		return parserPylock
 	case ftypes.UvLock: // uv.lock
 		return parserUv
 
@@ -128,6 +131,12 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 		return parserSwift
 	}
 
+	// PEP 751 named pylock variants (pylock.<identifier>.toml).
+	// The plain pylock.toml is handled by the exact-match switch above.
+	if isPylockNamedVariant(filepath.Base(filePath)) {
+		return parserPylock
+	}
+
 	// Suffix-based matches (case-insensitive for cross-platform compatibility)
 	lowerPath := strings.ToLower(filePath)
 	if strings.HasSuffix(lowerPath, ".deps.json") {
@@ -159,6 +168,21 @@ func detectParserType(filePath string, filemode os.FileMode) parserType {
 // containsDir checks if a filepath contains a specific directory component.
 func containsDir(filePath, dir string) bool {
 	return slices.Contains(strings.Split(filepath.ToSlash(filePath), "/"), dir)
+}
+
+// isPylockNamedVariant reports whether base is a PEP 751 named lockfile of the form
+// `pylock.<identifier>.toml`, where the identifier is non-empty and contains no dots.
+// The plain `pylock.toml` filename is not matched here; callers handle it separately.
+func isPylockNamedVariant(base string) bool {
+	identifier, ok := strings.CutPrefix(base, "pylock.")
+	if !ok {
+		return false
+	}
+	identifier, ok = strings.CutSuffix(identifier, ".toml")
+	if !ok {
+		return false
+	}
+	return identifier != "" && !strings.Contains(identifier, ".")
 }
 
 // isExecutable checks if the file is an executable binary.

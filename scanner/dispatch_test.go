@@ -27,6 +27,14 @@ func TestDetectParserType(t *testing.T) {
 		{"Pipfile.lock", 0644, parserPipenv},
 		{"poetry.lock", 0644, parserPoetry},
 		{"uv.lock", 0644, parserUv},
+		{"pylock.toml", 0644, parserPylock},
+		{"app/pylock.toml", 0644, parserPylock},
+		{"pylock.uv.toml", 0644, parserPylock},    // PEP 751 named variant
+		{"pylock.dev.toml", 0644, parserPylock},   // PEP 751 named variant
+		{"pylock..toml", 0644, parserNone},        // empty identifier → invalid
+		{"pylock.foo.bar.toml", 0644, parserNone}, // identifier with a dot → invalid
+		{"my-pylock.toml", 0644, parserNone},      // no `pylock.` prefix → invalid
+		{"pylock.toml.bak", 0644, parserNone},     // wrong suffix → invalid
 
 		// === Ruby ===
 		{"Gemfile.lock", 0644, parserBundler},

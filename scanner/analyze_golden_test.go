@@ -42,6 +42,7 @@ var lockfiles = []lockfileEntry{
 	{"Pipfile.lock", 0644, false},
 	{"poetry-v1/poetry.lock", 0644, false},
 	{"poetry-v2/poetry.lock", 0644, false},
+	{"pylock.toml", 0644, false},
 	{"uv.lock", 0644, false},
 
 	// Ruby

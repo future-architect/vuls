@@ -1,0 +1,153 @@
+[
+  {
+    "type": "pylock",
+    "lockfilePath": "pylock.toml",
+    "libs": [
+      {
+        "name": "alabaster",
+        "version": "1.0.0",
+        "purl": "pkg:pypi/alabaster@1.0.0"
+      },
+      {
+        "name": "babel",
+        "version": "2.18.0",
+        "purl": "pkg:pypi/babel@2.18.0"
+      },
+      {
+        "name": "blurb",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/blurb@2.0.0"
+      },
+      {
+        "name": "certifi",
+        "version": "2026.4.22",
+        "purl": "pkg:pypi/certifi@2026.4.22"
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.4.7",
+        "purl": "pkg:pypi/charset-normalizer@3.4.7"
+      },
+      {
+        "name": "colorama",
+        "version": "0.4.6",
+        "purl": "pkg:pypi/colorama@0.4.6"
+      },
+      {
+        "name": "docutils",
+        "version": "0.21.2",
+        "purl": "pkg:pypi/docutils@0.21.2"
+      },
+      {
+        "name": "idna",
+        "version": "3.13",
+        "purl": "pkg:pypi/idna@3.13"
+      },
+      {
+        "name": "imagesize",
+        "version": "1.5.0",
+        "purl": "pkg:pypi/imagesize@1.5.0"
+      },
+      {
+        "name": "jinja2",
+        "version": "3.1.4",
+        "purl": "pkg:pypi/jinja2@3.1.4"
+      },
+      {
+        "name": "linklint",
+        "version": "1.0.0",
+        "purl": "pkg:pypi/linklint@1.0.0"
+      },
+      {
+        "name": "markupsafe",
+        "version": "2.1.5",
+        "purl": "pkg:pypi/markupsafe@2.1.5"
+      },
+      {
+        "name": "packaging",
+        "version": "24.2",
+        "purl": "pkg:pypi/packaging@24.2"
+      },
+      {
+        "name": "pygments",
+        "version": "2.20.0",
+        "purl": "pkg:pypi/pygments@2.20.0"
+      },
+      {
+        "name": "python-docs-theme",
+        "version": "2026.4",
+        "purl": "pkg:pypi/python-docs-theme@2026.4"
+      },
+      {
+        "name": "requests",
+        "version": "2.31.0",
+        "purl": "pkg:pypi/requests@2.31.0"
+      },
+      {
+        "name": "roman-numerals",
+        "version": "4.1.0",
+        "purl": "pkg:pypi/roman-numerals@4.1.0"
+      },
+      {
+        "name": "roman-numerals-py",
+        "version": "4.1.0",
+        "purl": "pkg:pypi/roman-numerals-py@4.1.0"
+      },
+      {
+        "name": "snowballstemmer",
+        "version": "2.2.0",
+        "purl": "pkg:pypi/snowballstemmer@2.2.0"
+      },
+      {
+        "name": "sphinx",
+        "version": "8.2.3",
+        "purl": "pkg:pypi/sphinx@8.2.3"
+      },
+      {
+        "name": "sphinx-notfound-page",
+        "version": "1.0.4",
+        "purl": "pkg:pypi/sphinx-notfound-page@1.0.4"
+      },
+      {
+        "name": "sphinxcontrib-applehelp",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/sphinxcontrib-applehelp@2.0.0"
+      },
+      {
+        "name": "sphinxcontrib-devhelp",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/sphinxcontrib-devhelp@2.0.0"
+      },
+      {
+        "name": "sphinxcontrib-htmlhelp",
+        "version": "2.1.0",
+        "purl": "pkg:pypi/sphinxcontrib-htmlhelp@2.1.0"
+      },
+      {
+        "name": "sphinxcontrib-jsmath",
+        "version": "1.0.1",
+        "purl": "pkg:pypi/sphinxcontrib-jsmath@1.0.1"
+      },
+      {
+        "name": "sphinxcontrib-qthelp",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/sphinxcontrib-qthelp@2.0.0"
+      },
+      {
+        "name": "sphinxcontrib-serializinghtml",
+        "version": "2.0.0",
+        "purl": "pkg:pypi/sphinxcontrib-serializinghtml@2.0.0"
+      },
+      {
+        "name": "sphinxext-opengraph",
+        "version": "0.13.0",
+        "purl": "pkg:pypi/sphinxext-opengraph@0.13.0"
+      },
+      {
+        "name": "urllib3",
+        "version": "2.2.1",
+        "purl": "pkg:pypi/urllib3@2.2.1"
+      }
+    ]
+  }
+]

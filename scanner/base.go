@@ -41,6 +41,7 @@ import (
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pip"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pipenv"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/poetry"
+	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/pylock"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/python/uv"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/ruby/bundler"
 	rustbinary "github.com/aquasecurity/trivy/pkg/dependency/parser/rust/binary"
@@ -779,6 +780,8 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 		return parseLockfile(ctx, ftypes.Pipenv, filePath, r, pipenv.NewParser())
 	case parserPoetry:
 		return parseLockfile(ctx, ftypes.Poetry, filePath, r, poetry.NewParser())
+	case parserPylock:
+		return parseLockfile(ctx, ftypes.PyLock, filePath, r, pylock.NewParser())
 	case parserUv:
 		return parseLockfile(ctx, ftypes.Uv, filePath, r, uv.NewParser())
 
