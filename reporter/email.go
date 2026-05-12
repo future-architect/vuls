@@ -99,13 +99,18 @@ type emailSender struct {
 	conf config.SMTPConf
 }
 
+func newSMTPClientTLSConfig(emailConf config.SMTPConf) *tls.Config {
+	return &tls.Config{
+		ServerName:         emailConf.SMTPAddr,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: emailConf.TLSInsecureSkipVerify,
+	}
+}
+
 func (e *emailSender) sendMail(smtpServerAddr, message string) (err error) {
 	var auth sasl.Client
 	emailConf := e.conf
-	tlsConfig := &tls.Config{
-		ServerName:         emailConf.SMTPAddr,
-		InsecureSkipVerify: emailConf.TLSInsecureSkipVerify,
-	}
+	tlsConfig := newSMTPClientTLSConfig(emailConf)
 
 	var c *smtp.Client
 	switch emailConf.TLSMode {
