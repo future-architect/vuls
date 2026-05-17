@@ -51,6 +51,20 @@ type Library struct {
 
 	// Dev indicates whether the library is a development dependency.
 	Dev bool
+
+	// ID is the Trivy Package.ID used as the key when resolving DependsOn.
+	// It is typically formatted as "<name>@<version>" but may be empty for some
+	// language parsers that do not populate package IDs.
+	ID string `json:",omitempty"`
+
+	// Relationship indicates the dependency kind: "direct", "indirect", "workspace",
+	// "root", or "unknown". Mirrors the stringified form of Trivy fanal types Relationship.
+	Relationship string `json:",omitempty"`
+
+	// DependsOn lists the Package.ID values that this library directly depends on.
+	// Combined with ID, it allows callers to reconstruct the full dependency graph
+	// emitted by Trivy.
+	DependsOn []string `json:",omitempty"`
 }
 
 // FindLockFiles is a list of filenames that is the target of findLock
