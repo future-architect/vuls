@@ -6,32 +6,48 @@
       {
         "name": "AppCenter",
         "version": "4.2.0",
-        "purl": "pkg:cocoapods/AppCenter@4.2.0"
+        "purl": "pkg:cocoapods/AppCenter@4.2.0",
+        "id": "AppCenter@4.2.0",
+        "dependsOn": [
+          "AppCenter/Analytics@4.2.0",
+          "AppCenter/Crashes@4.2.0"
+        ]
       },
       {
         "name": "AppCenter/Analytics",
         "version": "4.2.0",
-        "purl": "pkg:cocoapods/AppCenter@4.2.0#Analytics"
+        "purl": "pkg:cocoapods/AppCenter@4.2.0#Analytics",
+        "id": "AppCenter/Analytics@4.2.0",
+        "dependsOn": [
+          "AppCenter/Core@4.2.0"
+        ]
       },
       {
         "name": "AppCenter/Core",
         "version": "4.2.0",
-        "purl": "pkg:cocoapods/AppCenter@4.2.0#Core"
+        "purl": "pkg:cocoapods/AppCenter@4.2.0#Core",
+        "id": "AppCenter/Core@4.2.0"
       },
       {
         "name": "AppCenter/Crashes",
         "version": "4.2.0",
-        "purl": "pkg:cocoapods/AppCenter@4.2.0#Crashes"
+        "purl": "pkg:cocoapods/AppCenter@4.2.0#Crashes",
+        "id": "AppCenter/Crashes@4.2.0",
+        "dependsOn": [
+          "AppCenter/Core@4.2.0"
+        ]
       },
       {
         "name": "KeychainAccess",
         "version": "4.2.1",
-        "purl": "pkg:cocoapods/KeychainAccess@4.2.1"
+        "purl": "pkg:cocoapods/KeychainAccess@4.2.1",
+        "id": "KeychainAccess@4.2.1"
       },
       {
         "name": "SwiftNIO",
         "version": "2.41.0",
-        "purl": "pkg:cocoapods/SwiftNIO@2.41.0"
+        "purl": "pkg:cocoapods/SwiftNIO@2.41.0",
+        "id": "SwiftNIO@2.41.0"
       }
     ]
   }

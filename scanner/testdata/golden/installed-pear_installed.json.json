@@ -6,12 +6,14 @@
       {
         "name": "pear/log",
         "version": "1.13.3",
-        "purl": "pkg:composer/pear/log@1.13.3"
+        "purl": "pkg:composer/pear/log@1.13.3",
+        "id": "pear/log@1.13.3"
       },
       {
         "name": "pear/pear_exception",
         "version": "v1.0.2",
-        "purl": "pkg:composer/pear/pear_exception@v1.0.2"
+        "purl": "pkg:composer/pear/pear_exception@v1.0.2",
+        "id": "pear/pear_exception@v1.0.2"
       }
     ]
   }

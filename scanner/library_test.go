@@ -37,9 +37,9 @@ func Test_convertLibWithScanner(t *testing.T) {
 					Type:         ftypes.Npm,
 					LockfilePath: "package-lock.json",
 					Libs: []models.Library{
-						{Name: "lodash", Version: "4.17.21", PURL: "pkg:npm/lodash@4.17.21", Dev: false},
-						{Name: "jest", Version: "29.0.0", PURL: "pkg:npm/jest@29.0.0", Dev: true},
-						{Name: "express", Version: "4.18.0", PURL: "pkg:npm/express@4.18.0", Dev: false},
+						{Name: "lodash", Version: "4.17.21", PURL: "pkg:npm/lodash@4.17.21", Dev: false, Relationship: "unknown"},
+						{Name: "jest", Version: "29.0.0", PURL: "pkg:npm/jest@29.0.0", Dev: true, Relationship: "unknown"},
+						{Name: "express", Version: "4.18.0", PURL: "pkg:npm/express@4.18.0", Dev: false, Relationship: "unknown"},
 					},
 				},
 			},
@@ -63,8 +63,8 @@ func Test_convertLibWithScanner(t *testing.T) {
 					Type:         ftypes.Npm,
 					LockfilePath: "package-lock.json",
 					Libs: []models.Library{
-						{Name: "jest", Version: "29.0.0", PURL: "pkg:npm/jest@29.0.0", Dev: true},
-						{Name: "mocha", Version: "10.0.0", PURL: "pkg:npm/mocha@10.0.0", Dev: true},
+						{Name: "jest", Version: "29.0.0", PURL: "pkg:npm/jest@29.0.0", Dev: true, Relationship: "unknown"},
+						{Name: "mocha", Version: "10.0.0", PURL: "pkg:npm/mocha@10.0.0", Dev: true, Relationship: "unknown"},
 					},
 				},
 			},
@@ -75,6 +75,83 @@ func Test_convertLibWithScanner(t *testing.T) {
 				apps: []ftypes.Application{},
 			},
 			want: []models.LibraryScanner{},
+		},
+		{
+			name: "includes relationship and dependsOn fields",
+			args: args{
+				apps: []ftypes.Application{
+					{
+						Type:     ftypes.Npm,
+						FilePath: "package-lock.json",
+						Packages: []ftypes.Package{
+							{
+								ID:           "express@4.18.0",
+								Name:         "express",
+								Version:      "4.18.0",
+								Relationship: ftypes.RelationshipDirect,
+								DependsOn:    []string{"body-parser@1.20.0", "cookie@0.5.0"},
+							},
+							{
+								ID:           "body-parser@1.20.0",
+								Name:         "body-parser",
+								Version:      "1.20.0",
+								Relationship: ftypes.RelationshipIndirect,
+								DependsOn:    []string{"bytes@3.1.2"},
+							},
+							{
+								ID:           "bytes@3.1.2",
+								Name:         "bytes",
+								Version:      "3.1.2",
+								Relationship: ftypes.RelationshipIndirect,
+							},
+							{
+								ID:           "cookie@0.5.0",
+								Name:         "cookie",
+								Version:      "0.5.0",
+								Relationship: ftypes.RelationshipUnknown,
+							},
+						},
+					},
+				},
+			},
+			want: []models.LibraryScanner{
+				{
+					Type:         ftypes.Npm,
+					LockfilePath: "package-lock.json",
+					Libs: []models.Library{
+						{
+							ID:           "express@4.18.0",
+							Name:         "express",
+							Version:      "4.18.0",
+							PURL:         "pkg:npm/express@4.18.0",
+							Relationship: "direct",
+							DependsOn:    []string{"body-parser@1.20.0", "cookie@0.5.0"},
+						},
+						{
+							ID:           "body-parser@1.20.0",
+							Name:         "body-parser",
+							Version:      "1.20.0",
+							PURL:         "pkg:npm/body-parser@1.20.0",
+							Relationship: "indirect",
+							DependsOn:    []string{"bytes@3.1.2"},
+						},
+						{
+							ID:           "bytes@3.1.2",
+							Name:         "bytes",
+							Version:      "3.1.2",
+							PURL:         "pkg:npm/bytes@3.1.2",
+							Relationship: "indirect",
+						},
+						{
+							ID:           "cookie@0.5.0",
+							Name:         "cookie",
+							Version:      "0.5.0",
+							PURL:         "pkg:npm/cookie@0.5.0",
+							Relationship: "unknown",
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

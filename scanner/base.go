@@ -854,15 +854,34 @@ type lockfileParser interface {
 	Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error)
 }
 
+// applyDependsOn populates Package.DependsOn from the parser's dependency graph.
+// Trivy's fanal analyzer normally performs this step inside language.toApplication
+// (pkg/fanal/analyzer/language/analyze.go); since we bypass the fanal analyzer and
+// call parsers directly, we must replicate the same logic so callers see the same
+// DependsOn graph as `trivy fs` would emit.
+func applyDependsOn(pkgs []ftypes.Package, depGraph []ftypes.Dependency) {
+	if len(depGraph) == 0 {
+		return
+	}
+	deps := make(map[string][]string, len(depGraph))
+	for _, dep := range depGraph {
+		deps[dep.ID] = dep.DependsOn
+	}
+	for i := range pkgs {
+		pkgs[i].DependsOn = deps[pkgs[i].ID]
+	}
+}
+
 // parseLockfile calls a standard Trivy parser and wraps the result as an Application.
 func parseLockfile(ctx context.Context, langType ftypes.LangType, filePath string, r xio.ReadSeekerAt, parser lockfileParser) (*ftypes.Application, error) {
-	pkgs, _, err := parser.Parse(ctx, r)
+	pkgs, depGraph, err := parser.Parse(ctx, r)
 	if err != nil {
 		return nil, xerrors.Errorf("parse error: %w", err)
 	}
 	if len(pkgs) == 0 {
 		return nil, nil
 	}
+	applyDependsOn(pkgs, depGraph)
 	return &ftypes.Application{
 		Type:     langType,
 		FilePath: filePath,
@@ -872,7 +891,7 @@ func parseLockfile(ctx context.Context, langType ftypes.LangType, filePath strin
 
 // parseBinary calls a binary parser (Go/Rust), returning nil for non-matching binaries.
 func parseBinary(ctx context.Context, langType ftypes.LangType, filePath string, r xio.ReadSeekerAt, parser lockfileParser) (*ftypes.Application, error) {
-	pkgs, _, err := parser.Parse(ctx, r)
+	pkgs, depGraph, err := parser.Parse(ctx, r)
 	if err != nil {
 		switch langType {
 		case ftypes.GoBinary:
@@ -894,6 +913,7 @@ func parseBinary(ctx context.Context, langType ftypes.LangType, filePath string,
 	if len(pkgs) == 0 {
 		return nil, nil
 	}
+	applyDependsOn(pkgs, depGraph)
 	return &ftypes.Application{
 		Type:     langType,
 		FilePath: filePath,
@@ -932,13 +952,14 @@ func parseExecutableBinary(ctx context.Context, filePath string, r xio.ReadSeeke
 // parseYarn handles yarn.lock which has a different parser signature (4 return values including licenses).
 func parseYarn(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftypes.Application, error) {
 	p := yarn.NewParser()
-	pkgs, _, _, err := p.Parse(ctx, r)
+	pkgs, depGraph, _, err := p.Parse(ctx, r)
 	if err != nil {
 		return nil, xerrors.Errorf("parse error: %w", err)
 	}
 	if len(pkgs) == 0 {
 		return nil, nil
 	}
+	applyDependsOn(pkgs, depGraph)
 	return &ftypes.Application{
 		Type:     ftypes.Yarn,
 		FilePath: filePath,

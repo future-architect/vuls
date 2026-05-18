@@ -6,32 +6,50 @@
       {
         "name": "ferris-says",
         "version": "0.2.1",
-        "purl": "pkg:cargo/ferris-says@0.2.1"
+        "purl": "pkg:cargo/ferris-says@0.2.1",
+        "id": "ferris-says@0.2.1",
+        "dependsOn": [
+          "smallvec@0.4.5",
+          "textwrap@0.13.4",
+          "unicode-width@0.1.11"
+        ]
       },
       {
         "name": "hello-rust",
         "version": "0.1.0",
-        "purl": "pkg:cargo/hello-rust@0.1.0"
+        "purl": "pkg:cargo/hello-rust@0.1.0",
+        "id": "hello-rust@0.1.0",
+        "dependsOn": [
+          "ferris-says@0.2.1"
+        ]
       },
       {
         "name": "smallvec",
         "version": "0.4.5",
-        "purl": "pkg:cargo/smallvec@0.4.5"
+        "purl": "pkg:cargo/smallvec@0.4.5",
+        "id": "smallvec@0.4.5"
       },
       {
         "name": "smawk",
         "version": "0.3.2",
-        "purl": "pkg:cargo/smawk@0.3.2"
+        "purl": "pkg:cargo/smawk@0.3.2",
+        "id": "smawk@0.3.2"
       },
       {
         "name": "textwrap",
         "version": "0.13.4",
-        "purl": "pkg:cargo/textwrap@0.13.4"
+        "purl": "pkg:cargo/textwrap@0.13.4",
+        "id": "textwrap@0.13.4",
+        "dependsOn": [
+          "smawk@0.3.2",
+          "unicode-width@0.1.11"
+        ]
       },
       {
         "name": "unicode-width",
         "version": "0.1.11",
-        "purl": "pkg:cargo/unicode-width@0.1.11"
+        "purl": "pkg:cargo/unicode-width@0.1.11",
+        "id": "unicode-width@0.1.11"
       }
     ]
   }

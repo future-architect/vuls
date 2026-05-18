@@ -883,6 +883,65 @@ func TestConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			// ClassLangPkg propagates the Trivy dependency-graph fields
+			// (ID, Relationship, DependsOn) to models.Library so downstream
+			// consumers can reconstruct the dependency graph.
+			name: "ClassLangPkg propagates ID, Relationship, DependsOn to Library",
+			args: args{
+				results: types.Results{
+					{
+						Target: "package-lock.json",
+						Class:  types.ClassLangPkg,
+						Type:   ftypes.Npm,
+						Packages: []ftypes.Package{
+							{
+								ID:           "express@4.18.0",
+								Name:         "express",
+								Version:      "4.18.0",
+								Relationship: ftypes.RelationshipDirect,
+								DependsOn:    []string{"body-parser@1.20.0"},
+							},
+							{
+								ID:           "body-parser@1.20.0",
+								Name:         "body-parser",
+								Version:      "1.20.0",
+								Relationship: ftypes.RelationshipIndirect,
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeFilesystem,
+				artifactName: "package-lock.json",
+			},
+			want: &models.ScanResult{
+				JSONVersion: models.JSONVersion,
+				ScannedCves: models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{
+					{
+						Type:         ftypes.Npm,
+						LockfilePath: "package-lock.json",
+						Libs: []models.Library{
+							{
+								ID:           "body-parser@1.20.0",
+								Name:         "body-parser",
+								Version:      "1.20.0",
+								Relationship: "indirect",
+							},
+							{
+								ID:           "express@4.18.0",
+								Name:         "express",
+								Version:      "4.18.0",
+								Relationship: "direct",
+								DependsOn:    []string{"body-parser@1.20.0"},
+							},
+						},
+					},
+				},
+				Packages:    models.Packages{},
+				SrcPackages: models.SrcPackages{},
+			},
+		},
 	}
 
 	for _, tt := range tests {

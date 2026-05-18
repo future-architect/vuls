@@ -6,12 +6,17 @@
       {
         "name": "com.example:example",
         "version": "1",
-        "purl": "pkg:maven/com.example/example@1"
+        "purl": "pkg:maven/com.example/example@1",
+        "id": "com.example:example:1::e263a4c8",
+        "dependsOn": [
+          "org.apache.logging.log4j:log4j-core:2.14.1::833d4111"
+        ]
       },
       {
         "name": "org.apache.logging.log4j:log4j-core",
         "version": "2.14.1",
-        "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"
+        "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+        "id": "org.apache.logging.log4j:log4j-core:2.14.1::833d4111"
       }
     ]
   }

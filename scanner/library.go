@@ -15,12 +15,15 @@ func convertLibWithScanner(apps []ftypes.Application) ([]models.LibraryScanner, 
 		libs := make([]models.Library, 0, len(app.Packages))
 		for _, lib := range app.Packages {
 			libs = append(libs, models.Library{
-				Name:     lib.Name,
-				Version:  lib.Version,
-				PURL:     newPURL(app.Type, types.Metadata{}, lib),
-				FilePath: lib.FilePath,
-				Digest:   string(lib.Digest),
-				Dev:      lib.Dev,
+				Name:         lib.Name,
+				Version:      lib.Version,
+				PURL:         newPURL(app.Type, types.Metadata{}, lib),
+				FilePath:     lib.FilePath,
+				Digest:       string(lib.Digest),
+				Dev:          lib.Dev,
+				ID:           lib.ID,
+				Relationship: lib.Relationship.String(),
+				DependsOn:    lib.DependsOn,
 			})
 		}
 		scanners = append(scanners, models.LibraryScanner{

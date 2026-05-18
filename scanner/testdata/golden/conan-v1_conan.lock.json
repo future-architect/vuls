@@ -6,37 +6,55 @@
       {
         "name": "bzip2",
         "version": "1.0.8",
-        "purl": "pkg:conan/bzip2@1.0.8"
+        "purl": "pkg:conan/bzip2@1.0.8",
+        "id": "bzip2/1.0.8"
       },
       {
         "name": "expat",
         "version": "2.4.8",
-        "purl": "pkg:conan/expat@2.4.8"
+        "purl": "pkg:conan/expat@2.4.8",
+        "id": "expat/2.4.8"
       },
       {
         "name": "openssl",
         "version": "1.1.1q",
-        "purl": "pkg:conan/openssl@1.1.1q"
+        "purl": "pkg:conan/openssl@1.1.1q",
+        "id": "openssl/1.1.1q"
       },
       {
         "name": "pcre",
         "version": "8.43",
-        "purl": "pkg:conan/pcre@8.43"
+        "purl": "pkg:conan/pcre@8.43",
+        "id": "pcre/8.43",
+        "dependsOn": [
+          "bzip2/1.0.8",
+          "zlib/1.2.12"
+        ]
       },
       {
         "name": "poco",
         "version": "1.9.4",
-        "purl": "pkg:conan/poco@1.9.4"
+        "purl": "pkg:conan/poco@1.9.4",
+        "id": "poco/1.9.4",
+        "dependsOn": [
+          "expat/2.4.8",
+          "openssl/1.1.1q",
+          "pcre/8.43",
+          "sqlite3/3.39.2",
+          "zlib/1.2.12"
+        ]
       },
       {
         "name": "sqlite3",
         "version": "3.39.2",
-        "purl": "pkg:conan/sqlite3@3.39.2"
+        "purl": "pkg:conan/sqlite3@3.39.2",
+        "id": "sqlite3/3.39.2"
       },
       {
         "name": "zlib",
         "version": "1.2.12",
-        "purl": "pkg:conan/zlib@1.2.12"
+        "purl": "pkg:conan/zlib@1.2.12",
+        "id": "zlib/1.2.12"
       }
     ]
   }
