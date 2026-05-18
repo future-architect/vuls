@@ -261,13 +261,20 @@ type goldenLibraryScanner struct {
 	Libs         []goldenLibrary `json:"libs"`
 }
 
+// goldenLibrary intentionally omits Relationship: some Trivy parsers
+// (e.g. the npm parser) are non-deterministic for packages reachable through
+// multiple paths, so the resulting "direct"/"indirect" label can flip between
+// runs. ID and DependsOn are stable (ID is parser-assigned, DependsOn is keyed
+// by ID), so the dependency graph regression we care about is still covered.
 type goldenLibrary struct {
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	PURL     string `json:"purl,omitempty"`
-	FilePath string `json:"filePath,omitempty"`
-	Digest   string `json:"digest,omitempty"`
-	Dev      bool   `json:"dev,omitempty"`
+	Name      string   `json:"name"`
+	Version   string   `json:"version"`
+	PURL      string   `json:"purl,omitempty"`
+	FilePath  string   `json:"filePath,omitempty"`
+	Digest    string   `json:"digest,omitempty"`
+	Dev       bool     `json:"dev,omitempty"`
+	ID        string   `json:"id,omitempty"`
+	DependsOn []string `json:"dependsOn,omitempty"`
 }
 
 func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
@@ -279,13 +286,17 @@ func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
 			Libs:         make([]goldenLibrary, 0, len(s.Libs)),
 		}
 		for _, lib := range s.Libs {
+			dependsOn := append([]string(nil), lib.DependsOn...)
+			slices.Sort(dependsOn)
 			gs.Libs = append(gs.Libs, goldenLibrary{
-				Name:     lib.Name,
-				Version:  lib.Version,
-				PURL:     lib.PURL,
-				FilePath: lib.FilePath,
-				Digest:   lib.Digest,
-				Dev:      lib.Dev,
+				Name:      lib.Name,
+				Version:   lib.Version,
+				PURL:      lib.PURL,
+				FilePath:  lib.FilePath,
+				Digest:    lib.Digest,
+				Dev:       lib.Dev,
+				ID:        lib.ID,
+				DependsOn: dependsOn,
 			})
 		}
 		slices.SortFunc(gs.Libs, func(a, b goldenLibrary) int {

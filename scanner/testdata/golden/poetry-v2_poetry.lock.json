@@ -7,83 +7,123 @@
         "name": "atomicwrites",
         "version": "1.4.1",
         "purl": "pkg:pypi/atomicwrites@1.4.1",
-        "dev": true
+        "dev": true,
+        "id": "atomicwrites@1.4.1"
       },
       {
         "name": "attrs",
         "version": "25.1.0",
         "purl": "pkg:pypi/attrs@25.1.0",
-        "dev": true
+        "dev": true,
+        "id": "attrs@25.1.0"
       },
       {
         "name": "click",
         "version": "8.1.8",
-        "purl": "pkg:pypi/click@8.1.8"
+        "purl": "pkg:pypi/click@8.1.8",
+        "id": "click@8.1.8",
+        "dependsOn": [
+          "colorama@0.4.6"
+        ]
       },
       {
         "name": "colorama",
         "version": "0.4.6",
-        "purl": "pkg:pypi/colorama@0.4.6"
+        "purl": "pkg:pypi/colorama@0.4.6",
+        "id": "colorama@0.4.6"
       },
       {
         "name": "flask",
         "version": "1.0.3",
-        "purl": "pkg:pypi/flask@1.0.3"
+        "purl": "pkg:pypi/flask@1.0.3",
+        "id": "flask@1.0.3",
+        "dependsOn": [
+          "click@8.1.8",
+          "itsdangerous@2.2.0",
+          "jinja2@3.1.5",
+          "werkzeug@3.1.3"
+        ]
       },
       {
         "name": "itsdangerous",
         "version": "2.2.0",
-        "purl": "pkg:pypi/itsdangerous@2.2.0"
+        "purl": "pkg:pypi/itsdangerous@2.2.0",
+        "id": "itsdangerous@2.2.0"
       },
       {
         "name": "jinja2",
         "version": "3.1.5",
-        "purl": "pkg:pypi/jinja2@3.1.5"
+        "purl": "pkg:pypi/jinja2@3.1.5",
+        "id": "jinja2@3.1.5",
+        "dependsOn": [
+          "markupsafe@3.0.2"
+        ]
       },
       {
         "name": "markupsafe",
         "version": "3.0.2",
-        "purl": "pkg:pypi/markupsafe@3.0.2"
+        "purl": "pkg:pypi/markupsafe@3.0.2",
+        "id": "markupsafe@3.0.2"
       },
       {
         "name": "more-itertools",
         "version": "10.6.0",
         "purl": "pkg:pypi/more-itertools@10.6.0",
-        "dev": true
+        "dev": true,
+        "id": "more-itertools@10.6.0"
       },
       {
         "name": "packaging",
         "version": "24.2",
         "purl": "pkg:pypi/packaging@24.2",
-        "dev": true
+        "dev": true,
+        "id": "packaging@24.2"
       },
       {
         "name": "pluggy",
         "version": "0.13.1",
-        "purl": "pkg:pypi/pluggy@0.13.1"
+        "purl": "pkg:pypi/pluggy@0.13.1",
+        "id": "pluggy@0.13.1"
       },
       {
         "name": "py",
         "version": "1.11.0",
         "purl": "pkg:pypi/py@1.11.0",
-        "dev": true
+        "dev": true,
+        "id": "py@1.11.0"
       },
       {
         "name": "pytest",
         "version": "5.4.3",
         "purl": "pkg:pypi/pytest@5.4.3",
-        "dev": true
+        "dev": true,
+        "id": "pytest@5.4.3",
+        "dependsOn": [
+          "atomicwrites@1.4.1",
+          "attrs@25.1.0",
+          "colorama@0.4.6",
+          "more-itertools@10.6.0",
+          "packaging@24.2",
+          "pluggy@0.13.1",
+          "py@1.11.0",
+          "wcwidth@0.2.13"
+        ]
       },
       {
         "name": "wcwidth",
         "version": "0.2.13",
         "purl": "pkg:pypi/wcwidth@0.2.13",
-        "dev": true
+        "dev": true,
+        "id": "wcwidth@0.2.13"
       },
       {
         "name": "werkzeug",
         "version": "3.1.3",
-        "purl": "pkg:pypi/werkzeug@3.1.3"
+        "purl": "pkg:pypi/werkzeug@3.1.3",
+        "id": "werkzeug@3.1.3",
+        "dependsOn": [
+          "markupsafe@3.0.2"
+        ]
       }
     ]
   }

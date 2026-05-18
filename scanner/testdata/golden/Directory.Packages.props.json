@@ -6,12 +6,14 @@
       {
         "name": "CommandLineParser",
         "version": "2.9.1",
-        "purl": "pkg:nuget/CommandLineParser@2.9.1"
+        "purl": "pkg:nuget/CommandLineParser@2.9.1",
+        "id": "CommandLineParser@2.9.1"
       },
       {
         "name": "Snowflake.Data",
         "version": "2.1.2",
-        "purl": "pkg:nuget/Snowflake.Data@2.1.2"
+        "purl": "pkg:nuget/Snowflake.Data@2.1.2",
+        "id": "Snowflake.Data@2.1.2"
       }
     ]
   }

@@ -6,557 +6,924 @@
       {
         "name": "actionmailer",
         "version": "4.2.6",
-        "purl": "pkg:gem/actionmailer@4.2.6"
+        "purl": "pkg:gem/actionmailer@4.2.6",
+        "id": "actionmailer@4.2.6",
+        "dependsOn": [
+          "actionpack@4.2.6",
+          "actionview@4.2.6",
+          "activejob@4.2.6",
+          "mail@2.6.4",
+          "rails-dom-testing@1.0.7"
+        ]
       },
       {
         "name": "actionpack",
         "version": "4.2.6",
-        "purl": "pkg:gem/actionpack@4.2.6"
+        "purl": "pkg:gem/actionpack@4.2.6",
+        "id": "actionpack@4.2.6",
+        "dependsOn": [
+          "actionview@4.2.6",
+          "activesupport@4.2.6",
+          "rack-test@0.6.3",
+          "rack@1.6.4",
+          "rails-dom-testing@1.0.7",
+          "rails-html-sanitizer@1.0.3"
+        ]
       },
       {
         "name": "actionpack-action_caching",
         "version": "1.1.1",
-        "purl": "pkg:gem/actionpack-action_caching@1.1.1"
+        "purl": "pkg:gem/actionpack-action_caching@1.1.1",
+        "id": "actionpack-action_caching@1.1.1",
+        "dependsOn": [
+          "actionpack@4.2.6"
+        ]
       },
       {
         "name": "actionpack-xml_parser",
         "version": "1.0.2",
-        "purl": "pkg:gem/actionpack-xml_parser@1.0.2"
+        "purl": "pkg:gem/actionpack-xml_parser@1.0.2",
+        "id": "actionpack-xml_parser@1.0.2",
+        "dependsOn": [
+          "actionpack@4.2.6"
+        ]
       },
       {
         "name": "actionview",
         "version": "4.2.6",
-        "purl": "pkg:gem/actionview@4.2.6"
+        "purl": "pkg:gem/actionview@4.2.6",
+        "id": "actionview@4.2.6",
+        "dependsOn": [
+          "activesupport@4.2.6",
+          "builder@3.2.2",
+          "erubis@2.7.0",
+          "rails-dom-testing@1.0.7",
+          "rails-html-sanitizer@1.0.3"
+        ]
       },
       {
         "name": "activejob",
         "version": "4.2.6",
-        "purl": "pkg:gem/activejob@4.2.6"
+        "purl": "pkg:gem/activejob@4.2.6",
+        "id": "activejob@4.2.6",
+        "dependsOn": [
+          "activesupport@4.2.6",
+          "globalid@0.3.6"
+        ]
       },
       {
         "name": "activemodel",
         "version": "4.2.6",
-        "purl": "pkg:gem/activemodel@4.2.6"
+        "purl": "pkg:gem/activemodel@4.2.6",
+        "id": "activemodel@4.2.6",
+        "dependsOn": [
+          "activesupport@4.2.6",
+          "builder@3.2.2"
+        ]
       },
       {
         "name": "activerecord",
         "version": "4.2.6",
-        "purl": "pkg:gem/activerecord@4.2.6"
+        "purl": "pkg:gem/activerecord@4.2.6",
+        "id": "activerecord@4.2.6",
+        "dependsOn": [
+          "activemodel@4.2.6",
+          "activesupport@4.2.6",
+          "arel@6.0.3"
+        ]
       },
       {
         "name": "activesupport",
         "version": "4.2.6",
-        "purl": "pkg:gem/activesupport@4.2.6"
+        "purl": "pkg:gem/activesupport@4.2.6",
+        "id": "activesupport@4.2.6",
+        "dependsOn": [
+          "i18n@0.7.0",
+          "json@1.8.3",
+          "minitest@5.8.4",
+          "thread_safe@0.3.5",
+          "tzinfo@1.2.2"
+        ]
       },
       {
         "name": "addressable",
         "version": "2.4.0",
-        "purl": "pkg:gem/addressable@2.4.0"
+        "purl": "pkg:gem/addressable@2.4.0",
+        "id": "addressable@2.4.0"
       },
       {
         "name": "arel",
         "version": "6.0.3",
-        "purl": "pkg:gem/arel@6.0.3"
+        "purl": "pkg:gem/arel@6.0.3",
+        "id": "arel@6.0.3"
       },
       {
         "name": "bourbon",
         "version": "4.2.7",
-        "purl": "pkg:gem/bourbon@4.2.7"
+        "purl": "pkg:gem/bourbon@4.2.7",
+        "id": "bourbon@4.2.7",
+        "dependsOn": [
+          "sass@3.4.22",
+          "thor@0.19.1"
+        ]
       },
       {
         "name": "builder",
         "version": "3.2.2",
-        "purl": "pkg:gem/builder@3.2.2"
+        "purl": "pkg:gem/builder@3.2.2",
+        "id": "builder@3.2.2"
       },
       {
         "name": "byebug",
         "version": "8.2.4",
-        "purl": "pkg:gem/byebug@8.2.4"
+        "purl": "pkg:gem/byebug@8.2.4",
+        "id": "byebug@8.2.4"
       },
       {
         "name": "capistrano",
         "version": "3.4.1",
-        "purl": "pkg:gem/capistrano@3.4.1"
+        "purl": "pkg:gem/capistrano@3.4.1",
+        "id": "capistrano@3.4.1",
+        "dependsOn": [
+          "i18n@0.7.0",
+          "rake@11.1.2",
+          "sshkit@1.9.0"
+        ]
       },
       {
         "name": "capistrano-bundler",
         "version": "1.1.4",
-        "purl": "pkg:gem/capistrano-bundler@1.1.4"
+        "purl": "pkg:gem/capistrano-bundler@1.1.4",
+        "id": "capistrano-bundler@1.1.4",
+        "dependsOn": [
+          "capistrano@3.4.1",
+          "sshkit@1.9.0"
+        ]
       },
       {
         "name": "capistrano-passenger",
         "version": "0.2.0",
-        "purl": "pkg:gem/capistrano-passenger@0.2.0"
+        "purl": "pkg:gem/capistrano-passenger@0.2.0",
+        "id": "capistrano-passenger@0.2.0",
+        "dependsOn": [
+          "capistrano@3.4.1"
+        ]
       },
       {
         "name": "capistrano-rails",
         "version": "1.1.6",
-        "purl": "pkg:gem/capistrano-rails@1.1.6"
+        "purl": "pkg:gem/capistrano-rails@1.1.6",
+        "id": "capistrano-rails@1.1.6",
+        "dependsOn": [
+          "capistrano-bundler@1.1.4",
+          "capistrano@3.4.1"
+        ]
       },
       {
         "name": "capybara",
         "version": "2.7.0",
-        "purl": "pkg:gem/capybara@2.7.0"
+        "purl": "pkg:gem/capybara@2.7.0",
+        "id": "capybara@2.7.0",
+        "dependsOn": [
+          "addressable@2.4.0",
+          "mime-types@3.0",
+          "nokogiri@1.6.7.2",
+          "rack-test@0.6.3",
+          "rack@1.6.4",
+          "xpath@2.0.0"
+        ]
       },
       {
         "name": "childprocess",
         "version": "0.5.9",
-        "purl": "pkg:gem/childprocess@0.5.9"
+        "purl": "pkg:gem/childprocess@0.5.9",
+        "id": "childprocess@0.5.9",
+        "dependsOn": [
+          "ffi@1.9.10"
+        ]
       },
       {
         "name": "coderay",
         "version": "1.1.1",
-        "purl": "pkg:gem/coderay@1.1.1"
+        "purl": "pkg:gem/coderay@1.1.1",
+        "id": "coderay@1.1.1"
       },
       {
         "name": "concurrent-ruby",
         "version": "1.0.1",
-        "purl": "pkg:gem/concurrent-ruby@1.0.1"
+        "purl": "pkg:gem/concurrent-ruby@1.0.1",
+        "id": "concurrent-ruby@1.0.1"
       },
       {
         "name": "css_parser",
         "version": "1.3.7",
-        "purl": "pkg:gem/css_parser@1.3.7"
+        "purl": "pkg:gem/css_parser@1.3.7",
+        "id": "css_parser@1.3.7",
+        "dependsOn": [
+          "addressable@2.4.0"
+        ]
       },
       {
         "name": "daemons",
         "version": "1.2.3",
-        "purl": "pkg:gem/daemons@1.2.3"
+        "purl": "pkg:gem/daemons@1.2.3",
+        "id": "daemons@1.2.3"
       },
       {
         "name": "database_cleaner",
         "version": "1.5.2",
-        "purl": "pkg:gem/database_cleaner@1.5.2"
+        "purl": "pkg:gem/database_cleaner@1.5.2",
+        "id": "database_cleaner@1.5.2"
       },
       {
         "name": "diff-lcs",
         "version": "1.2.5",
-        "purl": "pkg:gem/diff-lcs@1.2.5"
+        "purl": "pkg:gem/diff-lcs@1.2.5",
+        "id": "diff-lcs@1.2.5"
       },
       {
         "name": "docile",
         "version": "1.1.5",
-        "purl": "pkg:gem/docile@1.1.5"
+        "purl": "pkg:gem/docile@1.1.5",
+        "id": "docile@1.1.5"
       },
       {
         "name": "erubis",
         "version": "2.7.0",
-        "purl": "pkg:gem/erubis@2.7.0"
+        "purl": "pkg:gem/erubis@2.7.0",
+        "id": "erubis@2.7.0"
       },
       {
         "name": "eventmachine",
         "version": "1.2.0.1",
-        "purl": "pkg:gem/eventmachine@1.2.0.1"
+        "purl": "pkg:gem/eventmachine@1.2.0.1",
+        "id": "eventmachine@1.2.0.1"
       },
       {
         "name": "faraday",
         "version": "0.8.11",
-        "purl": "pkg:gem/faraday@0.8.11"
+        "purl": "pkg:gem/faraday@0.8.11",
+        "id": "faraday@0.8.11",
+        "dependsOn": [
+          "multipart-post@1.2.0"
+        ]
       },
       {
         "name": "faraday_middleware",
         "version": "0.9.2",
-        "purl": "pkg:gem/faraday_middleware@0.9.2"
+        "purl": "pkg:gem/faraday_middleware@0.9.2",
+        "id": "faraday_middleware@0.9.2",
+        "dependsOn": [
+          "faraday@0.8.11"
+        ]
       },
       {
         "name": "ffi",
         "version": "1.9.10",
-        "purl": "pkg:gem/ffi@1.9.10"
+        "purl": "pkg:gem/ffi@1.9.10",
+        "id": "ffi@1.9.10"
       },
       {
         "name": "fuubar",
         "version": "2.0.0",
-        "purl": "pkg:gem/fuubar@2.0.0"
+        "purl": "pkg:gem/fuubar@2.0.0",
+        "id": "fuubar@2.0.0",
+        "dependsOn": [
+          "rspec@3.4.0",
+          "ruby-progressbar@1.7.5"
+        ]
       },
       {
         "name": "gemoji",
         "version": "1.5.0",
-        "purl": "pkg:gem/gemoji@1.5.0"
+        "purl": "pkg:gem/gemoji@1.5.0",
+        "id": "gemoji@1.5.0"
       },
       {
         "name": "globalid",
         "version": "0.3.6",
-        "purl": "pkg:gem/globalid@0.3.6"
+        "purl": "pkg:gem/globalid@0.3.6",
+        "id": "globalid@0.3.6",
+        "dependsOn": [
+          "activesupport@4.2.6"
+        ]
       },
       {
         "name": "hashie",
         "version": "1.2.0",
-        "purl": "pkg:gem/hashie@1.2.0"
+        "purl": "pkg:gem/hashie@1.2.0",
+        "id": "hashie@1.2.0"
       },
       {
         "name": "headless",
         "version": "2.2.3",
-        "purl": "pkg:gem/headless@2.2.3"
+        "purl": "pkg:gem/headless@2.2.3",
+        "id": "headless@2.2.3"
       },
       {
         "name": "htmlentities",
         "version": "4.3.1",
-        "purl": "pkg:gem/htmlentities@4.3.1"
+        "purl": "pkg:gem/htmlentities@4.3.1",
+        "id": "htmlentities@4.3.1"
       },
       {
         "name": "i18n",
         "version": "0.7.0",
-        "purl": "pkg:gem/i18n@0.7.0"
+        "purl": "pkg:gem/i18n@0.7.0",
+        "id": "i18n@0.7.0"
       },
       {
         "name": "inifile",
         "version": "3.0.0",
-        "purl": "pkg:gem/inifile@3.0.0"
+        "purl": "pkg:gem/inifile@3.0.0",
+        "id": "inifile@3.0.0"
       },
       {
         "name": "jquery-rails",
         "version": "3.1.4",
-        "purl": "pkg:gem/jquery-rails@3.1.4"
+        "purl": "pkg:gem/jquery-rails@3.1.4",
+        "id": "jquery-rails@3.1.4",
+        "dependsOn": [
+          "railties@4.2.6",
+          "thor@0.19.1"
+        ]
       },
       {
         "name": "json",
         "version": "1.8.3",
-        "purl": "pkg:gem/json@1.8.3"
+        "purl": "pkg:gem/json@1.8.3",
+        "id": "json@1.8.3"
       },
       {
         "name": "le",
         "version": "2.7.1",
-        "purl": "pkg:gem/le@2.7.1"
+        "purl": "pkg:gem/le@2.7.1",
+        "id": "le@2.7.1"
       },
       {
         "name": "loofah",
         "version": "2.0.3",
-        "purl": "pkg:gem/loofah@2.0.3"
+        "purl": "pkg:gem/loofah@2.0.3",
+        "id": "loofah@2.0.3",
+        "dependsOn": [
+          "nokogiri@1.6.7.2"
+        ]
       },
       {
         "name": "mail",
         "version": "2.6.4",
-        "purl": "pkg:gem/mail@2.6.4"
+        "purl": "pkg:gem/mail@2.6.4",
+        "id": "mail@2.6.4",
+        "dependsOn": [
+          "mime-types@3.0"
+        ]
       },
       {
         "name": "metaclass",
         "version": "0.0.4",
-        "purl": "pkg:gem/metaclass@0.0.4"
+        "purl": "pkg:gem/metaclass@0.0.4",
+        "id": "metaclass@0.0.4"
       },
       {
         "name": "method_source",
         "version": "0.8.2",
-        "purl": "pkg:gem/method_source@0.8.2"
+        "purl": "pkg:gem/method_source@0.8.2",
+        "id": "method_source@0.8.2"
       },
       {
         "name": "mime-types",
         "version": "3.0",
-        "purl": "pkg:gem/mime-types@3.0"
+        "purl": "pkg:gem/mime-types@3.0",
+        "id": "mime-types@3.0",
+        "dependsOn": [
+          "mime-types-data@3.2016.0221"
+        ]
       },
       {
         "name": "mime-types-data",
         "version": "3.2016.0221",
-        "purl": "pkg:gem/mime-types-data@3.2016.0221"
+        "purl": "pkg:gem/mime-types-data@3.2016.0221",
+        "id": "mime-types-data@3.2016.0221"
       },
       {
         "name": "mini_portile2",
         "version": "2.0.0",
-        "purl": "pkg:gem/mini_portile2@2.0.0"
+        "purl": "pkg:gem/mini_portile2@2.0.0",
+        "id": "mini_portile2@2.0.0"
       },
       {
         "name": "minitest",
         "version": "5.8.4",
-        "purl": "pkg:gem/minitest@5.8.4"
+        "purl": "pkg:gem/minitest@5.8.4",
+        "id": "minitest@5.8.4"
       },
       {
         "name": "mocha",
         "version": "1.1.0",
-        "purl": "pkg:gem/mocha@1.1.0"
+        "purl": "pkg:gem/mocha@1.1.0",
+        "id": "mocha@1.1.0",
+        "dependsOn": [
+          "metaclass@0.0.4"
+        ]
       },
       {
         "name": "multi_json",
         "version": "1.11.2",
-        "purl": "pkg:gem/multi_json@1.11.2"
+        "purl": "pkg:gem/multi_json@1.11.2",
+        "id": "multi_json@1.11.2"
       },
       {
         "name": "multipart-post",
         "version": "1.2.0",
-        "purl": "pkg:gem/multipart-post@1.2.0"
+        "purl": "pkg:gem/multipart-post@1.2.0",
+        "id": "multipart-post@1.2.0"
       },
       {
         "name": "net-ldap",
         "version": "0.12.1",
-        "purl": "pkg:gem/net-ldap@0.12.1"
+        "purl": "pkg:gem/net-ldap@0.12.1",
+        "id": "net-ldap@0.12.1"
       },
       {
         "name": "net-scp",
         "version": "1.2.1",
-        "purl": "pkg:gem/net-scp@1.2.1"
+        "purl": "pkg:gem/net-scp@1.2.1",
+        "id": "net-scp@1.2.1",
+        "dependsOn": [
+          "net-ssh@3.1.1"
+        ]
       },
       {
         "name": "net-ssh",
         "version": "3.1.1",
-        "purl": "pkg:gem/net-ssh@3.1.1"
+        "purl": "pkg:gem/net-ssh@3.1.1",
+        "id": "net-ssh@3.1.1"
       },
       {
         "name": "nokogiri",
         "version": "1.6.7.2",
-        "purl": "pkg:gem/nokogiri@1.6.7.2"
+        "purl": "pkg:gem/nokogiri@1.6.7.2",
+        "id": "nokogiri@1.6.7.2",
+        "dependsOn": [
+          "mini_portile2@2.0.0"
+        ]
       },
       {
         "name": "pg",
         "version": "0.18.4",
-        "purl": "pkg:gem/pg@0.18.4"
+        "purl": "pkg:gem/pg@0.18.4",
+        "id": "pg@0.18.4"
       },
       {
         "name": "power_assert",
         "version": "0.2.7",
-        "purl": "pkg:gem/power_assert@0.2.7"
+        "purl": "pkg:gem/power_assert@0.2.7",
+        "id": "power_assert@0.2.7"
       },
       {
         "name": "protected_attributes",
         "version": "1.1.3",
-        "purl": "pkg:gem/protected_attributes@1.1.3"
+        "purl": "pkg:gem/protected_attributes@1.1.3",
+        "id": "protected_attributes@1.1.3",
+        "dependsOn": [
+          "activemodel@4.2.6"
+        ]
       },
       {
         "name": "pry",
         "version": "0.10.3",
-        "purl": "pkg:gem/pry@0.10.3"
+        "purl": "pkg:gem/pry@0.10.3",
+        "id": "pry@0.10.3",
+        "dependsOn": [
+          "coderay@1.1.1",
+          "method_source@0.8.2",
+          "slop@3.6.0"
+        ]
       },
       {
         "name": "pry-byebug",
         "version": "3.3.0",
-        "purl": "pkg:gem/pry-byebug@3.3.0"
+        "purl": "pkg:gem/pry-byebug@3.3.0",
+        "id": "pry-byebug@3.3.0",
+        "dependsOn": [
+          "byebug@8.2.4",
+          "pry@0.10.3"
+        ]
       },
       {
         "name": "pry-nav",
         "version": "0.2.4",
-        "purl": "pkg:gem/pry-nav@0.2.4"
+        "purl": "pkg:gem/pry-nav@0.2.4",
+        "id": "pry-nav@0.2.4",
+        "dependsOn": [
+          "pry@0.10.3"
+        ]
       },
       {
         "name": "rack",
         "version": "1.6.4",
-        "purl": "pkg:gem/rack@1.6.4"
+        "purl": "pkg:gem/rack@1.6.4",
+        "id": "rack@1.6.4"
       },
       {
         "name": "rack-openid",
         "version": "1.4.2",
-        "purl": "pkg:gem/rack-openid@1.4.2"
+        "purl": "pkg:gem/rack-openid@1.4.2",
+        "id": "rack-openid@1.4.2",
+        "dependsOn": [
+          "rack@1.6.4",
+          "ruby-openid@2.3.0"
+        ]
       },
       {
         "name": "rack-test",
         "version": "0.6.3",
-        "purl": "pkg:gem/rack-test@0.6.3"
+        "purl": "pkg:gem/rack-test@0.6.3",
+        "id": "rack-test@0.6.3",
+        "dependsOn": [
+          "rack@1.6.4"
+        ]
       },
       {
         "name": "rails",
         "version": "4.2.6",
-        "purl": "pkg:gem/rails@4.2.6"
+        "purl": "pkg:gem/rails@4.2.6",
+        "id": "rails@4.2.6",
+        "dependsOn": [
+          "actionmailer@4.2.6",
+          "actionpack@4.2.6",
+          "actionview@4.2.6",
+          "activejob@4.2.6",
+          "activemodel@4.2.6",
+          "activerecord@4.2.6",
+          "activesupport@4.2.6",
+          "railties@4.2.6",
+          "sprockets-rails@3.0.4"
+        ]
       },
       {
         "name": "rails-deprecated_sanitizer",
         "version": "1.0.3",
-        "purl": "pkg:gem/rails-deprecated_sanitizer@1.0.3"
+        "purl": "pkg:gem/rails-deprecated_sanitizer@1.0.3",
+        "id": "rails-deprecated_sanitizer@1.0.3",
+        "dependsOn": [
+          "activesupport@4.2.6"
+        ]
       },
       {
         "name": "rails-dom-testing",
         "version": "1.0.7",
-        "purl": "pkg:gem/rails-dom-testing@1.0.7"
+        "purl": "pkg:gem/rails-dom-testing@1.0.7",
+        "id": "rails-dom-testing@1.0.7",
+        "dependsOn": [
+          "activesupport@4.2.6",
+          "nokogiri@1.6.7.2",
+          "rails-deprecated_sanitizer@1.0.3"
+        ]
       },
       {
         "name": "rails-html-sanitizer",
         "version": "1.0.3",
-        "purl": "pkg:gem/rails-html-sanitizer@1.0.3"
+        "purl": "pkg:gem/rails-html-sanitizer@1.0.3",
+        "id": "rails-html-sanitizer@1.0.3",
+        "dependsOn": [
+          "loofah@2.0.3"
+        ]
       },
       {
         "name": "railties",
         "version": "4.2.6",
-        "purl": "pkg:gem/railties@4.2.6"
+        "purl": "pkg:gem/railties@4.2.6",
+        "id": "railties@4.2.6",
+        "dependsOn": [
+          "actionpack@4.2.6",
+          "activesupport@4.2.6",
+          "rake@11.1.2",
+          "thor@0.19.1"
+        ]
       },
       {
         "name": "rake",
         "version": "11.1.2",
-        "purl": "pkg:gem/rake@11.1.2"
+        "purl": "pkg:gem/rake@11.1.2",
+        "id": "rake@11.1.2"
       },
       {
         "name": "rbpdf",
         "version": "1.19.0",
-        "purl": "pkg:gem/rbpdf@1.19.0"
+        "purl": "pkg:gem/rbpdf@1.19.0",
+        "id": "rbpdf@1.19.0",
+        "dependsOn": [
+          "htmlentities@4.3.1",
+          "rbpdf-font@1.19.0"
+        ]
       },
       {
         "name": "rbpdf-font",
         "version": "1.19.0",
-        "purl": "pkg:gem/rbpdf-font@1.19.0"
+        "purl": "pkg:gem/rbpdf-font@1.19.0",
+        "id": "rbpdf-font@1.19.0"
       },
       {
         "name": "rdoc",
         "version": "4.2.2",
-        "purl": "pkg:gem/rdoc@4.2.2"
+        "purl": "pkg:gem/rdoc@4.2.2",
+        "id": "rdoc@4.2.2",
+        "dependsOn": [
+          "json@1.8.3"
+        ]
       },
       {
         "name": "redcarpet",
         "version": "3.3.4",
-        "purl": "pkg:gem/redcarpet@3.3.4"
+        "purl": "pkg:gem/redcarpet@3.3.4",
+        "id": "redcarpet@3.3.4"
       },
       {
         "name": "request_store",
         "version": "1.0.5",
-        "purl": "pkg:gem/request_store@1.0.5"
+        "purl": "pkg:gem/request_store@1.0.5",
+        "id": "request_store@1.0.5"
       },
       {
         "name": "rmagick",
         "version": "2.15.4",
-        "purl": "pkg:gem/rmagick@2.15.4"
+        "purl": "pkg:gem/rmagick@2.15.4",
+        "id": "rmagick@2.15.4"
       },
       {
         "name": "roadie",
         "version": "3.1.1",
-        "purl": "pkg:gem/roadie@3.1.1"
+        "purl": "pkg:gem/roadie@3.1.1",
+        "id": "roadie@3.1.1",
+        "dependsOn": [
+          "css_parser@1.3.7",
+          "nokogiri@1.6.7.2"
+        ]
       },
       {
         "name": "roadie-rails",
         "version": "1.1.1",
-        "purl": "pkg:gem/roadie-rails@1.1.1"
+        "purl": "pkg:gem/roadie-rails@1.1.1",
+        "id": "roadie-rails@1.1.1",
+        "dependsOn": [
+          "railties@4.2.6",
+          "roadie@3.1.1"
+        ]
       },
       {
         "name": "rspec",
         "version": "3.4.0",
-        "purl": "pkg:gem/rspec@3.4.0"
+        "purl": "pkg:gem/rspec@3.4.0",
+        "id": "rspec@3.4.0",
+        "dependsOn": [
+          "rspec-core@3.4.4",
+          "rspec-expectations@3.4.0",
+          "rspec-mocks@3.4.1"
+        ]
       },
       {
         "name": "rspec-core",
         "version": "3.4.4",
-        "purl": "pkg:gem/rspec-core@3.4.4"
+        "purl": "pkg:gem/rspec-core@3.4.4",
+        "id": "rspec-core@3.4.4",
+        "dependsOn": [
+          "rspec-support@3.4.1"
+        ]
       },
       {
         "name": "rspec-expectations",
         "version": "3.4.0",
-        "purl": "pkg:gem/rspec-expectations@3.4.0"
+        "purl": "pkg:gem/rspec-expectations@3.4.0",
+        "id": "rspec-expectations@3.4.0",
+        "dependsOn": [
+          "diff-lcs@1.2.5",
+          "rspec-support@3.4.1"
+        ]
       },
       {
         "name": "rspec-mocks",
         "version": "3.4.1",
-        "purl": "pkg:gem/rspec-mocks@3.4.1"
+        "purl": "pkg:gem/rspec-mocks@3.4.1",
+        "id": "rspec-mocks@3.4.1",
+        "dependsOn": [
+          "diff-lcs@1.2.5",
+          "rspec-support@3.4.1"
+        ]
       },
       {
         "name": "rspec-rails",
         "version": "3.4.2",
-        "purl": "pkg:gem/rspec-rails@3.4.2"
+        "purl": "pkg:gem/rspec-rails@3.4.2",
+        "id": "rspec-rails@3.4.2",
+        "dependsOn": [
+          "actionpack@4.2.6",
+          "activesupport@4.2.6",
+          "railties@4.2.6",
+          "rspec-core@3.4.4",
+          "rspec-expectations@3.4.0",
+          "rspec-mocks@3.4.1",
+          "rspec-support@3.4.1"
+        ]
       },
       {
         "name": "rspec-support",
         "version": "3.4.1",
-        "purl": "pkg:gem/rspec-support@3.4.1"
+        "purl": "pkg:gem/rspec-support@3.4.1",
+        "id": "rspec-support@3.4.1"
       },
       {
         "name": "ruby-openid",
         "version": "2.3.0",
-        "purl": "pkg:gem/ruby-openid@2.3.0"
+        "purl": "pkg:gem/ruby-openid@2.3.0",
+        "id": "ruby-openid@2.3.0"
       },
       {
         "name": "ruby-progressbar",
         "version": "1.7.5",
-        "purl": "pkg:gem/ruby-progressbar@1.7.5"
+        "purl": "pkg:gem/ruby-progressbar@1.7.5",
+        "id": "ruby-progressbar@1.7.5"
       },
       {
         "name": "rubyzip",
         "version": "1.2.0",
-        "purl": "pkg:gem/rubyzip@1.2.0"
+        "purl": "pkg:gem/rubyzip@1.2.0",
+        "id": "rubyzip@1.2.0"
       },
       {
         "name": "sass",
         "version": "3.4.22",
-        "purl": "pkg:gem/sass@3.4.22"
+        "purl": "pkg:gem/sass@3.4.22",
+        "id": "sass@3.4.22"
       },
       {
         "name": "selenium-webdriver",
         "version": "2.53.0",
-        "purl": "pkg:gem/selenium-webdriver@2.53.0"
+        "purl": "pkg:gem/selenium-webdriver@2.53.0",
+        "id": "selenium-webdriver@2.53.0",
+        "dependsOn": [
+          "childprocess@0.5.9",
+          "rubyzip@1.2.0",
+          "websocket@1.2.3"
+        ]
       },
       {
         "name": "simplecov",
         "version": "0.9.2",
-        "purl": "pkg:gem/simplecov@0.9.2"
+        "purl": "pkg:gem/simplecov@0.9.2",
+        "id": "simplecov@0.9.2",
+        "dependsOn": [
+          "docile@1.1.5",
+          "multi_json@1.11.2",
+          "simplecov-html@0.9.0"
+        ]
       },
       {
         "name": "simplecov-html",
         "version": "0.9.0",
-        "purl": "pkg:gem/simplecov-html@0.9.0"
+        "purl": "pkg:gem/simplecov-html@0.9.0",
+        "id": "simplecov-html@0.9.0"
       },
       {
         "name": "simplecov-rcov",
         "version": "0.2.3",
-        "purl": "pkg:gem/simplecov-rcov@0.2.3"
+        "purl": "pkg:gem/simplecov-rcov@0.2.3",
+        "id": "simplecov-rcov@0.2.3",
+        "dependsOn": [
+          "simplecov@0.9.2"
+        ]
       },
       {
         "name": "slim",
         "version": "3.0.6",
-        "purl": "pkg:gem/slim@3.0.6"
+        "purl": "pkg:gem/slim@3.0.6",
+        "id": "slim@3.0.6",
+        "dependsOn": [
+          "temple@0.7.6",
+          "tilt@2.0.2"
+        ]
       },
       {
         "name": "slop",
         "version": "3.6.0",
-        "purl": "pkg:gem/slop@3.6.0"
+        "purl": "pkg:gem/slop@3.6.0",
+        "id": "slop@3.6.0"
       },
       {
         "name": "sprockets",
         "version": "3.6.0",
-        "purl": "pkg:gem/sprockets@3.6.0"
+        "purl": "pkg:gem/sprockets@3.6.0",
+        "id": "sprockets@3.6.0",
+        "dependsOn": [
+          "concurrent-ruby@1.0.1",
+          "rack@1.6.4"
+        ]
       },
       {
         "name": "sprockets-rails",
         "version": "3.0.4",
-        "purl": "pkg:gem/sprockets-rails@3.0.4"
+        "purl": "pkg:gem/sprockets-rails@3.0.4",
+        "id": "sprockets-rails@3.0.4",
+        "dependsOn": [
+          "actionpack@4.2.6",
+          "activesupport@4.2.6",
+          "sprockets@3.6.0"
+        ]
       },
       {
         "name": "sshkit",
         "version": "1.9.0",
-        "purl": "pkg:gem/sshkit@1.9.0"
+        "purl": "pkg:gem/sshkit@1.9.0",
+        "id": "sshkit@1.9.0",
+        "dependsOn": [
+          "net-scp@1.2.1",
+          "net-ssh@3.1.1"
+        ]
       },
       {
         "name": "temple",
         "version": "0.7.6",
-        "purl": "pkg:gem/temple@0.7.6"
+        "purl": "pkg:gem/temple@0.7.6",
+        "id": "temple@0.7.6"
       },
       {
         "name": "test-unit",
         "version": "3.1.8",
-        "purl": "pkg:gem/test-unit@3.1.8"
+        "purl": "pkg:gem/test-unit@3.1.8",
+        "id": "test-unit@3.1.8",
+        "dependsOn": [
+          "power_assert@0.2.7"
+        ]
       },
       {
         "name": "thin",
         "version": "1.6.4",
-        "purl": "pkg:gem/thin@1.6.4"
+        "purl": "pkg:gem/thin@1.6.4",
+        "id": "thin@1.6.4",
+        "dependsOn": [
+          "daemons@1.2.3",
+          "eventmachine@1.2.0.1",
+          "rack@1.6.4"
+        ]
       },
       {
         "name": "thor",
         "version": "0.19.1",
-        "purl": "pkg:gem/thor@0.19.1"
+        "purl": "pkg:gem/thor@0.19.1",
+        "id": "thor@0.19.1"
       },
       {
         "name": "thread_safe",
         "version": "0.3.5",
-        "purl": "pkg:gem/thread_safe@0.3.5"
+        "purl": "pkg:gem/thread_safe@0.3.5",
+        "id": "thread_safe@0.3.5"
       },
       {
         "name": "tilt",
         "version": "2.0.2",
-        "purl": "pkg:gem/tilt@2.0.2"
+        "purl": "pkg:gem/tilt@2.0.2",
+        "id": "tilt@2.0.2"
       },
       {
         "name": "transifex-ruby-fork-jg",
         "version": "0.1.0",
-        "purl": "pkg:gem/transifex-ruby-fork-jg@0.1.0"
+        "purl": "pkg:gem/transifex-ruby-fork-jg@0.1.0",
+        "id": "transifex-ruby-fork-jg@0.1.0",
+        "dependsOn": [
+          "faraday@0.8.11",
+          "faraday_middleware@0.9.2",
+          "hashie@1.2.0"
+        ]
       },
       {
         "name": "tzinfo",
         "version": "1.2.2",
-        "purl": "pkg:gem/tzinfo@1.2.2"
+        "purl": "pkg:gem/tzinfo@1.2.2",
+        "id": "tzinfo@1.2.2",
+        "dependsOn": [
+          "thread_safe@0.3.5"
+        ]
       },
       {
         "name": "websocket",
         "version": "1.2.3",
-        "purl": "pkg:gem/websocket@1.2.3"
+        "purl": "pkg:gem/websocket@1.2.3",
+        "id": "websocket@1.2.3"
       },
       {
         "name": "xpath",
         "version": "2.0.0",
-        "purl": "pkg:gem/xpath@2.0.0"
+        "purl": "pkg:gem/xpath@2.0.0",
+        "id": "xpath@2.0.0",
+        "dependsOn": [
+          "nokogiri@1.6.7.2"
+        ]
       },
       {
         "name": "yard",
         "version": "0.8.7.6",
-        "purl": "pkg:gem/yard@0.8.7.6"
+        "purl": "pkg:gem/yard@0.8.7.6",
+        "id": "yard@0.8.7.6"
       }
     ]
   }
