@@ -59,6 +59,12 @@ type Library struct {
 
 	// Relationship indicates the dependency kind: "direct", "indirect", "workspace",
 	// "root", or "unknown". Mirrors the stringified form of Trivy fanal types Relationship.
+	//
+	// Note: some Trivy parsers (e.g. the npm parser) are non-deterministic for
+	// packages reachable through multiple paths, so the resulting "direct"/"indirect"
+	// label can flip between runs. ID and DependsOn are stable (ID is parser-assigned,
+	// DependsOn is keyed by ID), so callers that need a deterministic dependency
+	// graph should rely on ID + DependsOn rather than Relationship.
 	Relationship string `json:",omitempty"`
 
 	// DependsOn lists the Package.ID values that this library directly depends on.

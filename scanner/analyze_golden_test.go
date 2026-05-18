@@ -316,6 +316,8 @@ func normalizeResult(scanners []models.LibraryScanner) []goldenLibraryScanner {
 						return 0
 					}
 				}(),
+				cmp.Compare(a.ID, b.ID),
+				slices.Compare(a.DependsOn, b.DependsOn),
 			)
 		})
 		result = append(result, gs)
