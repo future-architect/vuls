@@ -1,7 +1,6 @@
 
 # Vuls: VULnerability Scanner
 
-[![Slack](https://img.shields.io/badge/slack-join-blue.svg)](http://goo.gl/forms/xm5KFo35tu)
 [![License](https://img.shields.io/github/license/future-architect/vuls.svg?style=flat-square)](https://github.com/future-architect/vuls/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/future-architect/vuls)](https://goreportcard.com/report/github.com/future-architect/vuls)
 [![Contributors](https://img.shields.io/github/contributors/future-architect/vuls.svg)](https://github.com/future-architect/vuls/graphs/contributors)
@@ -9,7 +8,6 @@
 ![Vuls-logo](img/vuls_logo.png)
 
 Vulnerability scanner for Linux/FreeBSD, agent-less, written in Go.  
-We have a slack team. [Join slack team](https://join.slack.com/t/vuls-github/shared_invite/zt-1fculjwj4-6nex2JNE7DpOSiKZ1ztDFw)  
 Twitter: [@vuls_en](https://twitter.com/vuls_en)
 
 ![Vuls-Abstract](img/vuls-abstract.png)
