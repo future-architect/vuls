@@ -3,6 +3,7 @@
 package detector
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -235,7 +236,9 @@ func ListValidJSONDirs(resultsDir string) (dirs []string, err error) {
 			}
 		}
 	}
-	slices.Sort(dirs)
+	slices.SortFunc(dirs, func(a, b string) int {
+		return -cmp.Compare(a, b)
+	})
 	return
 }
 
