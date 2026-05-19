@@ -243,9 +243,10 @@ type ServerInfo struct {
 	IgnorePkgsRegexp   []string                    `toml:"ignorePkgsRegexp,omitempty" json:"ignorePkgsRegexp,omitempty"`
 	UUIDs              map[string]string           `toml:"uuids,omitempty" json:"uuids,omitempty"`
 	Memo               string                      `toml:"memo,omitempty" json:"memo,omitempty"`
-	Enablerepo         []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"` // For CentOS, Alma, Rocky, RHEL, Amazon
-	Optional           map[string]any              `toml:"optional,omitempty" json:"optional,omitempty"`     // Optional key-value set that will be outputted to JSON
-	Lockfiles          []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`   // ie) path/to/package-lock.json
+	Enablerepo         []string                    `toml:"enablerepo,omitempty" json:"enablerepo,omitempty"`   // For CentOS, Alma, Rocky, RHEL, Amazon, Fedora
+	Disablerepo        []string                    `toml:"disablerepo,omitempty" json:"disablerepo,omitempty"` // For CentOS, Alma, Rocky, RHEL, Amazon, Fedora
+	Optional           map[string]any              `toml:"optional,omitempty" json:"optional,omitempty"`       // Optional key-value set that will be outputted to JSON
+	Lockfiles          []string                    `toml:"lockfiles,omitempty" json:"lockfiles,omitempty"`     // ie) path/to/package-lock.json
 	FindLock           bool                        `toml:"findLock,omitempty" json:"findLock,omitempty"`
 	FindLockDirs       []string                    `toml:"findLockDirs,omitempty" json:"findLockDirs,omitempty"`
 	Type               string                      `toml:"type,omitempty" json:"type,omitempty"` // "pseudo" or ""

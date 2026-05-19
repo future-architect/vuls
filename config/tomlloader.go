@@ -124,6 +124,10 @@ func (c TOMLLoader) Load(pathToToml string) error {
 			}
 		}
 
+		if len(server.Disablerepo) == 0 {
+			server.Disablerepo = Conf.Default.Disablerepo
+		}
+
 		if server.PortScan.ScannerBinPath != "" {
 			server.PortScan.IsUseExternalScanner = true
 		}

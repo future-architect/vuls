@@ -191,6 +191,10 @@ func cleanForTOMLEncoding(server config.ServerInfo, def config.ServerInfo) confi
 		server.Enablerepo = nil
 	}
 
+	if reflect.DeepEqual(server.Disablerepo, def.Disablerepo) {
+		server.Disablerepo = nil
+	}
+
 	for k, v := range def.Optional {
 		if vv, ok := server.Optional[k]; ok && v == vv {
 			delete(server.Optional, k)
