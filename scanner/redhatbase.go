@@ -788,6 +788,9 @@ func (o *redhatBase) scanUpdatablePackages() (models.Packages, error) {
 	for _, repo := range o.getServerInfo().Enablerepo {
 		cmd += " --enablerepo=" + repo
 	}
+	for _, repo := range o.getServerInfo().Disablerepo {
+		cmd += " --disablerepo=" + repo
+	}
 
 	r := o.exec(util.PrependProxyEnv(cmd), o.sudo.repoquery())
 	if !r.isSuccess() {

@@ -205,6 +205,8 @@ func printConfigToml(ips []string) (err error) {
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
+#enablerepo         = ["base", "updates"] # For RHEL-family. Currently only "base" and "updates" are allowed
+#disablerepo        = ["epel"] # For RHEL-family
 
 # https://vuls.io/docs/en/config.toml.html#servers-section
 [servers]
@@ -231,6 +233,8 @@ host                = "{{$ip}}"
 #containerType      = "docker" #or "lxd" or "lxc" default: docker
 #containersIncluded = ["${running}"]
 #containersExcluded = ["container_name_a"]
+#enablerepo         = ["base", "updates"] # For RHEL-family. Currently only "base" and "updates" are allowed
+#disablerepo        = ["epel"] # For RHEL-family
 #confidenceScoreOver = 80
 
 #[servers.{{index $names $i}}.containers.container_name_a]
