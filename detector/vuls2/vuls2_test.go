@@ -270,6 +270,201 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "amazon linux 2, old scanner with codename suffix",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "al2",
+					Family:     "amazon",
+					Release:    "2 (Karoo)",
+					RunningKernel: models.Kernel{
+						Release: "5.10.0-amzn2.x86_64",
+					},
+					Packages: models.Packages{
+						"zlib": models.Package{
+							Name:    "zlib",
+							Version: "1.2.7",
+							Release: "19.amzn2.0.3",
+							Arch:    "x86_64",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "al2",
+				Family:      ecosystemTypes.Ecosystem("amazon"),
+				Release:     "2",
+
+				Kernel: scanTypes.Kernel{
+					Release: "5.10.0-amzn2.x86_64",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "zlib",
+						Version: "1.2.7",
+						Release: "19.amzn2.0.3",
+						Arch:    "x86_64",
+					},
+				},
+			},
+		},
+		{
+			name: "amazon linux 2022, old scanner with codename suffix",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "al2022",
+					Family:     "amazon",
+					Release:    "2022 (Amazon Linux)",
+					RunningKernel: models.Kernel{
+						Release: "5.15.0-amzn2022.x86_64",
+					},
+					Packages: models.Packages{
+						"zlib": models.Package{
+							Name:    "zlib",
+							Version: "1.2.11",
+							Release: "31.amzn2022.0.3",
+							Arch:    "x86_64",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "al2022",
+				Family:      ecosystemTypes.Ecosystem("amazon"),
+				Release:     "2022",
+
+				Kernel: scanTypes.Kernel{
+					Release: "5.15.0-amzn2022.x86_64",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "zlib",
+						Version: "1.2.11",
+						Release: "31.amzn2022.0.3",
+						Arch:    "x86_64",
+					},
+				},
+			},
+		},
+		{
+			name: "amazon linux 2023, new scanner",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "al2023",
+					Family:     "amazon",
+					Release:    "2023.3.20240312",
+					RunningKernel: models.Kernel{
+						Release: "6.1.0-amzn2023.x86_64",
+					},
+					Packages: models.Packages{
+						"zlib": models.Package{
+							Name:    "zlib",
+							Version: "1.2.13",
+							Release: "1.amzn2023.0.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "al2023",
+				Family:      ecosystemTypes.Ecosystem("amazon"),
+				Release:     "2023",
+
+				Kernel: scanTypes.Kernel{
+					Release: "6.1.0-amzn2023.x86_64",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "zlib",
+						Version: "1.2.13",
+						Release: "1.amzn2023.0.1",
+						Arch:    "x86_64",
+					},
+				},
+			},
+		},
+		{
+			name: "amazon linux 1, old scanner with date-style release",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "al1",
+					Family:     "amazon",
+					Release:    "2018.03",
+					RunningKernel: models.Kernel{
+						Release: "4.14.0-amzn1.x86_64",
+					},
+					Packages: models.Packages{
+						"zlib": models.Package{
+							Name:    "zlib",
+							Version: "1.2.8",
+							Release: "10.32.amzn1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "al1",
+				Family:      ecosystemTypes.Ecosystem("amazon"),
+				Release:     "1",
+
+				Kernel: scanTypes.Kernel{
+					Release: "4.14.0-amzn1.x86_64",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "zlib",
+						Version: "1.2.8",
+						Release: "10.32.amzn1",
+						Arch:    "x86_64",
+					},
+				},
+			},
+		},
+		{
+			name: "amazon linux 2, new scanner",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "al2",
+					Family:     "amazon",
+					Release:    "2",
+					RunningKernel: models.Kernel{
+						Release: "5.10.0-amzn2.x86_64",
+					},
+					Packages: models.Packages{
+						"zlib": models.Package{
+							Name:    "zlib",
+							Version: "1.2.7",
+							Release: "19.amzn2.0.3",
+							Arch:    "x86_64",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "al2",
+				Family:      ecosystemTypes.Ecosystem("amazon"),
+				Release:     "2",
+
+				Kernel: scanTypes.Kernel{
+					Release: "5.10.0-amzn2.x86_64",
+				},
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:    "zlib",
+						Version: "1.2.7",
+						Release: "19.amzn2.0.3",
+						Arch:    "x86_64",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
