@@ -69,6 +69,23 @@ func toVuls2Family(vuls0Family, vuls0Release string) string {
 
 func toVuls2Release(vuls0Family, vuls0Release string) string {
 	switch vuls0Family {
+	case constant.Amazon:
+		// Normalize to the Amazon Linux major version ("1", "2", "2022", "2023", ...).
+		// Older vuls scanners stored releases with a codename suffix (e.g. "2 (Karoo)",
+		// "2022 (Amazon Linux)") and Amazon Linux 1 was stored as its date-style version
+		// (e.g. "2017.09", "2018.03"). The new scanner can also produce patch-suffixed
+		// values like "2023.3.20240312". Reducing all of these to the major version here
+		// keeps scanTypes.ScanResult.Release canonical and avoids surprises like
+		// "amazon:2 (Karoo)" or "amazon:2018" appearing in the downstream ecosystem.
+		fields := strings.Fields(vuls0Release)
+		if len(fields) == 0 {
+			return vuls0Release
+		}
+		s := fields[0]
+		if _, err := time.Parse("2006.01", s); err == nil {
+			return "1"
+		}
+		return strings.Split(s, ".")[0]
 	case constant.OpenSUSE:
 		switch vuls0Release {
 		case "tumbleweed":
