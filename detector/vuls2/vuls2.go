@@ -579,7 +579,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					ca, err := pruneCriteria(fcond.Criteria)
+					ca, err := pruneCriteria(d.Ecosystem, fcond.Criteria)
 					if err != nil {
 						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
 					}
@@ -612,7 +612,20 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 	return nil
 }
 
-func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
+// pruneCriteria drops unaffected branches from a FilteredCriteria tree.
+//
+// AND parents fail (return empty) if any required child is unaffected, OR
+// parents skip unaffected children. The vuls2 util.Detect step now passes
+// every condition through unconditionally — this function is the actual
+// AND/OR gate.
+//
+// For ecosystem == "cpe", AND nodes are relaxed: vulnerable=false subtrees
+// (environment / hardware guards, e.g. "vulnerable iff running on broadcom
+// hardware") are skipped before AND evaluation. They cannot be confirmed
+// from a CPE-only scan, and historical go-cve-dictionary behaviour — on
+// which existing vuls users rely — is to ignore them. Only vulnerable=true
+// children must satisfy the AND.
+func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
 	pruned := criteriaTypes.FilteredCriteria{
 		Operator: c.Operator,
 		Criterias: func() []criteriaTypes.FilteredCriteria {
@@ -629,8 +642,13 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 		}(),
 	}
 
+	cpeAndRelax := e == ecosystemTypes.EcosystemTypeCPE && c.Operator == criteriaTypes.CriteriaOperatorTypeAND
+
 	for _, child := range c.Criterias {
-		child, err := pruneCriteria(child)
+		if cpeAndRelax && !hasVulnerableTrueCriterion(child) {
+			continue
+		}
+		child, err := pruneCriteria(e, child)
 		if err != nil {
 			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("prune criteria: %w", err)
 		}
@@ -650,6 +668,9 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	}
 
 	for _, cn := range c.Criterions {
+		if cpeAndRelax && !isVulnerableTrue(cn) {
+			continue
+		}
 		isAffected, err := cn.Affected()
 		if err != nil {
 			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("criterion affected: %w", err)
@@ -670,6 +691,45 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	}
 
 	return pruned, nil
+}
+
+// isVulnerableTrue reports whether a FilteredCriterion is a Version-typed
+// criterion with Vulnerable=true. Non-Version criteria (NoneExist, KB, CPE)
+// have no Vulnerable concept and are treated as vulnerable so the CPE-AND
+// relax in pruneCriteria leaves them in place.
+func isVulnerableTrue(cn criterionTypes.FilteredCriterion) bool {
+	switch cn.Criterion.Type {
+	case criterionTypes.CriterionTypeVersion:
+		if cn.Criterion.Version == nil {
+			return true
+		}
+		return cn.Criterion.Version.Vulnerable
+	case criterionTypes.CriterionTypeCPE:
+		if cn.Criterion.CPE == nil {
+			return true
+		}
+		return cn.Criterion.CPE.Vulnerable
+	default:
+		return true
+	}
+}
+
+// hasVulnerableTrueCriterion reports whether the subtree contains any
+// vulnerable=true criterion. Used by pruneCriteria's CPE-AND relax to
+// distinguish env-only subtrees (drop) from vulnerable-product subtrees
+// (keep, evaluate normally).
+func hasVulnerableTrueCriterion(c criteriaTypes.FilteredCriteria) bool {
+	for _, cn := range c.Criterions {
+		if isVulnerableTrue(cn) {
+			return true
+		}
+	}
+	for _, ch := range c.Criterias {
+		if hasVulnerableTrueCriterion(ch) {
+			return true
+		}
+	}
+	return false
 }
 
 func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, []string, bool, error) {

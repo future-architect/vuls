@@ -9506,7 +9506,7 @@ func Test_pruneCriteria(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PruneCriteria(tt.args.criteria)
+			got, err := vuls2.PruneCriteria("", tt.args.criteria)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
 				return
