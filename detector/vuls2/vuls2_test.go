@@ -24,9 +24,9 @@ import (
 	vcAffectedTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
+	cpecriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	vcBinaryPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/binary"
-	vcCPEPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/cpe"
 	vcSourcePackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/source"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
@@ -545,7 +545,7 @@ func Test_preConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := gocmp.Diff(vuls2.PreConvert(tt.args.sr), tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
+			if diff := gocmp.Diff(vuls2.PreConvert(tt.args.sr, nil), tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
 				t.Errorf("preConvert() mismatch (-got +want):\n%s", diff)
 			}
 		})
@@ -1892,7 +1892,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "RHSA-2025:0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0001"): []advisoryTypes.Advisory{
 												{
 													Content: advisoryContentTypes.Content{
@@ -1963,7 +1963,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0001"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -2073,7 +2073,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
 									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											{
 												Criteria: criteriaTypes.FilteredCriteria{
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -2167,7 +2167,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "RHSA-2025:0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0002"): []advisoryTypes.Advisory{
 												{
 													Content: advisoryContentTypes.Content{
@@ -2236,7 +2236,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "RHSA-2025:0002",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0002"): []advisoryTypes.Advisory{
 												{
 													Content: advisoryContentTypes.Content{
@@ -2267,7 +2267,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0002",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0002"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -2406,7 +2406,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
 									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											{
 												Criteria: criteriaTypes.FilteredCriteria{
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -2841,7 +2841,7 @@ func Test_postConvert(t *testing.T) {
 												},
 											},
 										},
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0001"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -3014,7 +3014,7 @@ func Test_postConvert(t *testing.T) {
 												},
 											},
 										},
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0001"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -3058,7 +3058,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
 									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											{
 												Criteria: criteriaTypes.FilteredCriteria{
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -3230,7 +3230,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0001"): {
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -3346,7 +3346,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
 									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											{
 												Criteria: criteriaTypes.FilteredCriteria{
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -3389,20 +3389,17 @@ func Test_postConvert(t *testing.T) {
 													Criterions: []criterionTypes.FilteredCriterion{
 														{
 															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeVersion,
-																Version: new(versioncriterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(cpecriterionTypes.Criterion{
 																	Vulnerable: true,
 																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassUnknown,
 																	}),
-																	Package: vcPackageTypes.Package{
-																		Type: vcPackageTypes.PackageTypeCPE,
-																		CPE:  new(vcCPEPackageTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*")),
-																	},
+																	CPE: cpecriterionTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
 																}),
 															},
 															Accepts: criterionTypes.AcceptQueries{
-																Version: []int{0},
+																CPE: []int{0},
 															},
 														},
 													},
@@ -3449,7 +3446,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0001",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0001"): {
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -4544,7 +4541,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									ID: "CVE-2025-0007",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											dataTypes.RootID("CVE-2025-0007"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
@@ -4574,7 +4571,7 @@ func Test_postConvert(t *testing.T) {
 								{
 									Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
 									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.RedHatVEX: {
+										sourceTypes.RedHatVEXv1: {
 											{
 												Criteria: criteriaTypes.FilteredCriteria{
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,

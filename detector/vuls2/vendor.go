@@ -703,7 +703,7 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 			switch sourceID {
 			case sourceTypes.RedHatCSAF:
 				return 5
-			case sourceTypes.RedHatVEX:
+			case sourceTypes.RedHatVEXv1:
 				return 4
 			case sourceTypes.RedHatOVALv2:
 				return 3
@@ -821,7 +821,7 @@ func compareTag(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, a, b segment
 				default:
 					return 1
 				}
-			case sourceTypes.RedHatCSAF, sourceTypes.RedHatVEX:
+			case sourceTypes.RedHatCSAF, sourceTypes.RedHatVEXv1:
 				lhs, _, _ := strings.Cut(string(tag), ":")
 				switch {
 				case strings.HasSuffix(lhs, "-including-unpatched"):

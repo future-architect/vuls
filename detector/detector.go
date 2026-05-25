@@ -53,13 +53,20 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
+		// Collect the CPE URIs to check against vuls2. Sources, in order:
+		//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
+		//      that was captured at scan time and shipped in the result JSON.
+		//      Using the scan-time snapshot keeps detection coupled to the
+		//      server that was actually scanned, and lets detection run
+		//      without re-loading config.toml.
+		//   2. OWASP DC XML, if configured.
+		//   3. Synthesised Apple CPEs for macOS scans.
 		cpeURIs, owaspDCXMLPath := []string{}, ""
-		cpes := []Cpe{}
 		if len(r.Container.ContainerID) == 0 {
-			cpeURIs = config.Conf.Servers[r.ServerName].CpeNames
-			owaspDCXMLPath = config.Conf.Servers[r.ServerName].OwaspDCXMLPath
+			cpeURIs = r.Config.Scan.Servers[r.ServerName].CpeNames
+			owaspDCXMLPath = r.Config.Scan.Servers[r.ServerName].OwaspDCXMLPath
 		} else {
-			if s, ok := config.Conf.Servers[r.ServerName]; ok {
+			if s, ok := r.Config.Scan.Servers[r.ServerName]; ok {
 				if con, ok := s.Containers[r.Container.Name]; ok {
 					cpeURIs = con.Cpes
 					owaspDCXMLPath = con.OwaspDCXMLPath
@@ -67,18 +74,12 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 		}
 		if owaspDCXMLPath != "" {
-			cpes, err := parser.Parse(owaspDCXMLPath)
+			extra, err := parser.Parse(owaspDCXMLPath)
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
 					r.ServerInfo(), owaspDCXMLPath, err)
 			}
-			cpeURIs = append(cpeURIs, cpes...)
-		}
-		for _, uri := range cpeURIs {
-			cpes = append(cpes, Cpe{
-				CpeURI: uri,
-				UseJVN: true,
-			})
+			cpeURIs = append(cpeURIs, extra...)
 		}
 
 		if slices.Contains([]string{constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer}, r.Family) {
@@ -95,10 +96,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 					targets = append(targets, "macos_server", "mac_os_server")
 				}
 				for _, t := range targets {
-					cpes = append(cpes, Cpe{
-						CpeURI: fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release),
-						UseJVN: false,
-					})
+					cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release))
 				}
 			}
 			for _, p := range r.Packages {
@@ -108,86 +106,59 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 				switch p.Repository {
 				case "com.apple.Safari":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.Music":
 					for _, t := range targets {
-						cpes = append(cpes,
-							Cpe{
-								CpeURI: fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t),
-								UseJVN: false,
-							},
-							Cpe{
-								CpeURI: fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t),
-								UseJVN: false,
-							},
+						cpeURIs = append(cpeURIs,
+							fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t),
+							fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t),
 						)
 					}
 				case "com.apple.mail":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.Terminal":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.shortcuts":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iCal":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iWork.Keynote":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iWork.Numbers":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iWork.Pages":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.dt.Xcode":
 					for _, t := range targets {
-						cpes = append(cpes, Cpe{
-							CpeURI: fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t),
-							UseJVN: false,
-						})
+						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t))
 					}
 				}
 			}
 		}
 
-		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+		// vuls2.Detect handles both OS-package and CPE detection in a single
+		// DB session, so it is called once per server (even when DetectPkgCves
+		// above was skipped because the family is pseudo/macOS/etc).
+		// The go-cve-dictionary-backed DetectCpeURIsCves call is intentionally
+		// dropped; the function itself is kept for now since we may want to
+		// restore it (or run a side-by-side fallback) later.
+		if err := vuls2.Detect(&r, cpeURIs, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+			return nil, xerrors.Errorf("Failed to detect CVE with vuls2: %w", err)
 		}
 
 		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
@@ -302,9 +273,11 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
 			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine,
 			constant.Windows:
-			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
-				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
-			}
+			// vuls2-based pkg detection is performed by the outer vuls2.Detect
+			// call in the main Detect flow (where it is combined with CPE
+			// detection in one DB session). Windows joined the vuls2 path
+			// upstream (PR #2499) and gost was retired (no detectPkgsCvesWithGost
+			// branch); the unified outer call already covers all of these.
 		default:
 			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
 		}

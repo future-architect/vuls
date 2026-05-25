@@ -31,10 +31,12 @@ import (
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
+	"github.com/MaineK00n/vuls2/pkg/detect/cpe"
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	"github.com/MaineK00n/vuls2/pkg/version"
+	"github.com/knqyf263/go-cpe/naming"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -45,8 +47,11 @@ import (
 // defaultRegistory is GitHub Container Registry for vuls2 db
 const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
 
-// Detect detects vulnerabilities and fills ScanResult
-func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// Detect detects vulnerabilities (OS packages and CPE URIs) using the vuls2
+// database and fills ScanResult.ScannedCves. cpeURIs is the per-server CPE
+// list (CPE 2.2 URI or 2.3 FS) collected by the caller — typically from
+// ScanResult.Config.Scan.Servers[r.ServerName].CpeNames.
+func Detect(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if vuls2Conf.Repository == "" {
 		sv, err := session.SchemaVersion("boltdb")
 		if err != nil {
@@ -82,7 +87,7 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 	}
 	config.Conf.Vuls2.Digest = metadata.Digest
 
-	vuls2Scanned := preConvert(r)
+	vuls2Scanned := preConvert(r, cpeURIs)
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
@@ -162,7 +167,7 @@ func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgres
 	return nil
 }
 
-func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
+func preConvert(sr *models.ScanResult, cpeURIs []string) scanTypes.ScanResult {
 	pkgs := make(map[string]scanTypes.OSPackage)
 	for _, p := range sr.SrcPackages {
 		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
@@ -223,25 +228,53 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 				Unapplied: sr.WindowsKB.Unapplied,
 			}
 		}(),
+		CPE: toFSCPEs(cpeURIs),
 
 		ScannedAt: time.Now(),
 		ScannedBy: version.String(),
 	}
 }
 
+// toFSCPEs returns the input list converted to CPE 2.3 Formatted-String form
+// (which vuls2 requires). vuls/ normalises config CPEs to CPE 2.2 URI, so
+// most inputs go through UnbindURI + BindToFS; entries already in FS form
+// pass through. Unparseable entries are dropped with a warning.
+func toFSCPEs(cpeURIs []string) []string {
+	if len(cpeURIs) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(cpeURIs))
+	for _, u := range cpeURIs {
+		if strings.HasPrefix(u, "cpe:2.3:") {
+			out = append(out, u)
+			continue
+		}
+		wfn, err := naming.UnbindURI(u)
+		if err != nil {
+			logging.Log.Warnf("cannot unbind CPE URI %q: %v", u, err)
+			continue
+		}
+		out = append(out, naming.BindToFS(wfn))
+	}
+	return out
+}
+
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
-	m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
-	if err != nil {
-		return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
-	}
-	for rootID, d := range m {
+	// addDetection merges one detection into the per-RootID accumulator. New
+	// RootIDs trigger a Vulnerability/Advisory fetch; subsequent detections
+	// for the same RootID just append (e.g. OS-pkg + CPE both flagging it).
+	addDetection := func(rootID dataTypes.RootID, d detectTypes.VulnerabilityDataDetection) error {
+		if base, ok := detected[rootID]; ok {
+			base.Detections = append(base.Detections, d)
+			detected[rootID] = base
+			return nil
+		}
 		base := detectTypes.VulnerabilityData{
 			ID:         rootID,
 			Detections: []detectTypes.VulnerabilityDataDetection{d},
 		}
-
 		avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
 			Contents: []dbTypes.FilterContentType{
 				dbTypes.FilterContentTypeAdvisories,
@@ -252,12 +285,36 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 			DataSources: slices.Collect(maps.Keys(d.Contents)),
 		})
 		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+			return xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
 		}
-
 		base.Advisories = avs.Advisories
 		base.Vulnerabilities = avs.Vulnerabilities
 		detected[rootID] = base
+		return nil
+	}
+
+	if len(sr.OSPackages) > 0 {
+		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
+		if err != nil {
+			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+		}
+		for rootID, d := range m {
+			if err := addDetection(rootID, d); err != nil {
+				return detectTypes.DetectResult{}, err
+			}
+		}
+	}
+
+	if len(sr.CPE) > 0 {
+		m, err := cpe.Detect(sesh.Storage(), sr, runtime.NumCPU())
+		if err != nil {
+			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect cpe. err: %w", err)
+		}
+		for rootID, d := range m {
+			if err := addDetection(rootID, d); err != nil {
+				return detectTypes.DetectResult{}, err
+			}
+		}
 	}
 
 	var sourceIDs []sourceTypes.SourceID
@@ -693,14 +750,29 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 						},
 					})
 				}
-			case vcPackageTypes.PackageTypeCPE:
-				for _, index := range fcn.Accepts.Version {
-					if len(scanned.CPE) <= index {
-						return nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
-					}
-				}
-				cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
 			default:
+			}
+		case criterionTypes.CriterionTypeCPE:
+			if cn.Criterion.CPE == nil {
+				continue
+			}
+
+			fcn, err := filterCriterion(e, scanned, cn)
+			if err != nil {
+				return nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+			}
+
+			// Emit the SCANNED CPE form (preserves version) instead of
+			// the criterion's CPE (matched-spec, has `*` for version).
+			// postConvert maps these back to the user-supplied URI form.
+			for _, index := range fcn.Accepts.CPE {
+				if len(scanned.CPE) <= index {
+					return nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+				}
+				cpe := scanned.CPE[index]
+				if !slices.Contains(cpes, cpe) {
+					cpes = append(cpes, cpe)
+				}
 			}
 		case criterionTypes.CriterionTypeKB:
 			if cn.Criterion.KB == nil || (!cn.Accepts.KB.Covered && !cn.Accepts.KB.Unapplied) {
