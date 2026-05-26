@@ -87,14 +87,14 @@ func Detect(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, 
 	}
 	config.Conf.Vuls2.Digest = metadata.Digest
 
-	vuls2Scanned := preConvert(r, cpeURIs)
+	vuls2Scanned, fsToOriginalCPE := preConvert(r, cpeURIs)
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
-	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected)
+	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE)
 	if err != nil {
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
@@ -167,7 +167,11 @@ func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgres
 	return nil
 }
 
-func preConvert(sr *models.ScanResult, cpeURIs []string) scanTypes.ScanResult {
+// preConvert builds the vuls2-shape ScanResult and also returns a reverse map
+// from each CPE 2.3 FS string (the form vuls2 uses internally) back to the
+// user-supplied CPE form (URI or FS). The map is consumed by postConvert to
+// restore the user-supplied form in VulnInfo.CpeURIs.
+func preConvert(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string]string) {
 	pkgs := make(map[string]scanTypes.OSPackage)
 	for _, p := range sr.SrcPackages {
 		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
@@ -195,6 +199,8 @@ func preConvert(sr *models.ScanResult, cpeURIs []string) scanTypes.ScanResult {
 		base.ModularityLabel = p.ModularityLabel
 		pkgs[p.Name] = base
 	}
+
+	fsCPEs, fsToOriginal := toFSCPEs(cpeURIs)
 
 	return scanTypes.ScanResult{
 		JSONVersion: 0,
@@ -228,35 +234,48 @@ func preConvert(sr *models.ScanResult, cpeURIs []string) scanTypes.ScanResult {
 				Unapplied: sr.WindowsKB.Unapplied,
 			}
 		}(),
-		CPE: toFSCPEs(cpeURIs),
+		CPE: fsCPEs,
 
 		ScannedAt: time.Now(),
 		ScannedBy: version.String(),
-	}
+	}, fsToOriginal
 }
 
 // toFSCPEs returns the input list converted to CPE 2.3 Formatted-String form
-// (which vuls2 requires). vuls/ normalises config CPEs to CPE 2.2 URI, so
-// most inputs go through UnbindURI + BindToFS; entries already in FS form
-// pass through. Unparseable entries are dropped with a warning.
-func toFSCPEs(cpeURIs []string) []string {
+// (which vuls2 requires) along with a reverse map from each FS string back to
+// the user-supplied form (CPE 2.2 URI or CPE 2.3 FS). The reverse map lets
+// postConvert restore the user-supplied form in VulnInfo.CpeURIs so reports
+// stay consistent with what the user configured, rather than leaking the
+// internal FS-with-wildcards representation.
+//
+// vuls/ normalises config CPEs to CPE 2.2 URI, so most inputs go through
+// UnbindURI + BindToFS; entries already in FS form pass through. Unparseable
+// entries are dropped with a warning. Duplicate FS keys keep the first
+// user-supplied form (consistent with util.AppendIfMissing semantics).
+func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string]string) {
 	if len(cpeURIs) == 0 {
-		return nil
+		return nil, nil
 	}
-	out := make([]string, 0, len(cpeURIs))
+	fsCPEs = make([]string, 0, len(cpeURIs))
+	fsToOriginal = make(map[string]string, len(cpeURIs))
 	for _, u := range cpeURIs {
+		var fs string
 		if strings.HasPrefix(u, "cpe:2.3:") {
-			out = append(out, u)
-			continue
+			fs = u
+		} else {
+			wfn, err := naming.UnbindURI(u)
+			if err != nil {
+				logging.Log.Warnf("cannot unbind CPE URI %q: %v", u, err)
+				continue
+			}
+			fs = naming.BindToFS(wfn)
 		}
-		wfn, err := naming.UnbindURI(u)
-		if err != nil {
-			logging.Log.Warnf("cannot unbind CPE URI %q: %v", u, err)
-			continue
+		fsCPEs = append(fsCPEs, fs)
+		if _, exists := fsToOriginal[fs]; !exists {
+			fsToOriginal[fs] = u
 		}
-		out = append(out, naming.BindToFS(wfn))
 	}
-	return out
+	return fsCPEs, fsToOriginal
 }
 
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
@@ -396,7 +415,14 @@ type packStatus struct {
 	status    models.PackageFixStatus
 }
 
-func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult) (models.VulnInfos, error) {
+// postConvert assembles VulnInfos from the vuls2 detect result.
+//
+// fsToOriginalCPE maps each CPE 2.3 FS string in scanned.CPE back to the
+// user-supplied CPE form (URI or FS). It is consulted when building
+// VulnInfo.CpeURIs so the report shows the user-supplied CPE rather than
+// the internal FS-with-wildcards form. Nil / missing keys fall back to
+// the FS string as-is.
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string]string) (models.VulnInfos, error) {
 	m := make(map[source]sourceData)
 
 	if err := walkVulnerabilityDetections(m, scanned, detected.Detected); err != nil {
@@ -547,14 +573,35 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		}
 	}
 	for _, vi := range vim {
-		ps := make(models.PackageFixStatuses, 0, len(am[vi.CveID].packm))
-		for _, p := range am[vi.CveID].packm {
-			ps = append(ps, p.packStatus.status)
+		// §2: keep nil when there are no affected packages so the JSON
+		// encoder emits `null` (matching the classic gocve path) instead
+		// of `[]`.
+		var ps models.PackageFixStatuses
+		if n := len(am[vi.CveID].packm); n > 0 {
+			ps = make(models.PackageFixStatuses, 0, n)
+			for _, p := range am[vi.CveID].packm {
+				ps = append(ps, p.packStatus.status)
+			}
 		}
 		if len(ps) > 0 {
 			vi.AffectedPackages = ps
 		}
-		vi.CpeURIs = am[vi.CveID].cpes
+
+		// §3: restore the user-supplied CPE form (URI or FS) instead of
+		// leaking the matched FS-with-wildcards form. Unknown FS keys
+		// pass through verbatim (defensive — should not occur because
+		// walkCriteria sources cpes from scanned.CPE).
+		if cpes := am[vi.CveID].cpes; len(cpes) > 0 {
+			out := make([]string, 0, len(cpes))
+			for _, fs := range cpes {
+				if orig, ok := fsToOriginalCPE[fs]; ok {
+					out = append(out, orig)
+				} else {
+					out = append(out, fs)
+				}
+			}
+			vi.CpeURIs = out
+		}
 
 		// Populate WindowsKBFixedIns and KB-based DistroAdvisories for Microsoft detections
 		if string(scanned.Family) == ecosystemTypes.EcosystemTypeMicrosoft {

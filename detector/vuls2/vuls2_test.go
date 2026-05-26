@@ -545,7 +545,8 @@ func Test_preConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := gocmp.Diff(vuls2.PreConvert(tt.args.sr, nil), tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
+			got, _ := vuls2.PreConvert(tt.args.sr, nil)
+			if diff := gocmp.Diff(got, tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
 				t.Errorf("preConvert() mismatch (-got +want):\n%s", diff)
 			}
 		})
@@ -9005,7 +9006,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
