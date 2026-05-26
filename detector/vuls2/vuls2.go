@@ -852,7 +852,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 										}
 										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 									}(),
-									Optional: map[string]string{"vuls2-sources": string(bs)},
+									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
 								}),
 							}, nil
 						}()

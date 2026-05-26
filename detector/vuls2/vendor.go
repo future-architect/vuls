@@ -611,6 +611,26 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 	}
 }
 
+// cveContentOptional builds the per-source CveContent.Optional map. Every
+// ecosystem records the vuls2-sources trace; ecosystem-specific extras are
+// added per case. Microsoft surfaces the MSRC exploitability assessment
+// ("Publicly Disclosed:...;Exploited:...;...") under "exploit", mirroring the
+// legacy gost Microsoft path (gost/microsoft.go: Optional["exploit"] =
+// cve.ExploitStatus). vuls-data-update extracts it as the advisory-level
+// "exploitability" optional value on the CVRF vulnerability content.
+func cveContentOptional(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnerability, sources string) map[string]string {
+	m := map[string]string{"vuls2-sources": sources}
+
+	et, _, _ := strings.Cut(string(e), ":")
+	switch et {
+	case ecosystemTypes.EcosystemTypeMicrosoft:
+		if ex, ok := v.Content.Optional["exploitability"].(string); ok && ex != "" {
+			m["exploit"] = ex
+		}
+	}
+	return m
+}
+
 func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
 	switch ccType {
 	case models.RedHat, models.RedHatAPI:

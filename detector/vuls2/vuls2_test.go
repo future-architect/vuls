@@ -8810,6 +8810,7 @@ func Test_postConvert(t *testing.T) {
 															},
 														},
 														Published: new(time.Date(2025, 5, 13, 0, 0, 0, 0, time.UTC)),
+														Optional:  map[string]any{"exploitability": "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely"},
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -8878,7 +8879,10 @@ func Test_postConvert(t *testing.T) {
 								SourceLink:    "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-21234",
 								Published:     time.Date(2025, 5, 13, 0, 0, 0, 0, time.UTC),
 								LastModified:  time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional:      map[string]string{"vuls2-sources": `[{"root_id":"CVE-2025-21234","source_id":"microsoft-cvrf","segment":{"ecosystem":"microsoft"}}]`},
+								Optional: map[string]string{
+									"exploit":       "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely",
+									"vuls2-sources": `[{"root_id":"CVE-2025-21234","source_id":"microsoft-cvrf","segment":{"ecosystem":"microsoft"}}]`,
+								},
 							},
 						},
 					},
