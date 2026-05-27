@@ -49,7 +49,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.LogOpts, config.Conf.NoProgress); err != nil {
+		if err := DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
@@ -295,7 +295,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 }
 
 // DetectPkgCves detects OS pkg cves
-func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, logOpts logging.LogOpts, noProgress bool) error {
+func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
