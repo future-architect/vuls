@@ -8774,7 +8774,7 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			name: "microsoft kb detection",
+			name: "microsoft kb detection: unapplied",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					Family:  ecosystemTypes.EcosystemTypeMicrosoft,
@@ -8882,6 +8882,122 @@ func Test_postConvert(t *testing.T) {
 								Optional: map[string]string{
 									"exploit":       "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely",
 									"vuls2-sources": `[{"root_id":"CVE-2025-21234","source_id":"microsoft-cvrf","segment":{"ecosystem":"microsoft"}}]`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "microsoft kb detection: covered",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					Family:  ecosystemTypes.EcosystemTypeMicrosoft,
+					Release: "Windows 10 Version 21H2 for x64-based Systems",
+					MicrosoftKB: scanTypes.MicrosoftKB{
+						Applied:   []string{"5025221"},
+						Unapplied: []string{},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-21235",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-21235",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.MicrosoftCVRF: {
+											dataTypes.RootID("CVE-2025-21235"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-21235",
+														Title:       "Windows Kernel Information Disclosure Vulnerability",
+														Description: "An information disclosure vulnerability.",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:       "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+																	BaseScore:    5.5,
+																	BaseSeverity: "MEDIUM",
+																}),
+															},
+														},
+														Published: new(time.Date(2025, 6, 10, 0, 0, 0, 0, time.UTC)),
+														Optional:  map[string]any{"exploitability": "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely"},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeMicrosoft,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeMicrosoft,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.MicrosoftCVRF: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeKB,
+																KB: &kbcriterionTypes.Criterion{
+																	Product: "Windows 10 Version 21H2 for x64-based Systems",
+																	KBID:    "5025288",
+																},
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																KB: criterionTypes.KB{Covered: true},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-21235": {
+					CveID:       "CVE-2025-21235",
+					Confidences: models.Confidences{models.WindowsUpdateSearch},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "KB5025288",
+							Description: "Microsoft Knowledge Base",
+						},
+					},
+					WindowsKBFixedIns: []string{"KB5025288"},
+					CveContents: models.CveContents{
+						models.Microsoft: []models.CveContent{
+							{
+								Type:          models.Microsoft,
+								CveID:         "CVE-2025-21235",
+								Title:         "Windows Kernel Information Disclosure Vulnerability",
+								Summary:       "An information disclosure vulnerability.",
+								Cvss3Score:    5.5,
+								Cvss3Vector:   "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-21235",
+								Published:     time.Date(2025, 6, 10, 0, 0, 0, 0, time.UTC),
+								LastModified:  time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"exploit":       "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely",
+									"vuls2-sources": `[{"root_id":"CVE-2025-21235","source_id":"microsoft-cvrf","segment":{"ecosystem":"microsoft"}}]`,
 								},
 							},
 						},
