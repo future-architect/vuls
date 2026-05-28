@@ -51,6 +51,8 @@ func preConvertBinaryVersion(family, version string) string {
 
 func toVuls2Family(vuls0Family, vuls0Release string) string {
 	switch vuls0Family {
+	case constant.Windows:
+		return ecosystemTypes.EcosystemTypeMicrosoft
 	case constant.Raspbian:
 		return ecosystemTypes.EcosystemTypeDebian
 	case constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
@@ -598,9 +600,35 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "SUSE",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeMicrosoft:
+		return models.Reference{
+			Link:   fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", da.AdvisoryID),
+			Source: "MICROSOFT",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
+}
+
+// cveContentOptional builds the per-source CveContent.Optional map. Every
+// ecosystem records the vuls2-sources trace; ecosystem-specific extras are
+// added per case. Microsoft surfaces the MSRC exploitability assessment
+// ("Publicly Disclosed:...;Exploited:...;...") under "exploit", mirroring the
+// legacy gost Microsoft path (gost/microsoft.go: Optional["exploit"] =
+// cve.ExploitStatus). vuls-data-update extracts it as the advisory-level
+// "exploitability" optional value on the CVRF vulnerability content.
+func cveContentOptional(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnerability, sources string) map[string]string {
+	m := map[string]string{"vuls2-sources": sources}
+
+	et, _, _ := strings.Cut(string(e), ":")
+	switch et {
+	case ecosystemTypes.EcosystemTypeMicrosoft:
+		if ex, ok := v.Content.Optional["exploitability"].(string); ok && ex != "" {
+			m["exploit"] = ex
+		}
+	}
+	return m
 }
 
 func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
@@ -621,6 +649,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+	case models.Microsoft:
+		return fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", v.Content.ID)
 	default:
 		return ""
 	}
@@ -752,6 +782,22 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 			}
 		}
 		return cmp.Compare(preferenceFn(a), preferenceFn(b))
+	case ecosystemTypes.EcosystemTypeMicrosoft:
+		preferenceFn := func(sourceID sourceTypes.SourceID) int {
+			switch sourceID {
+			case sourceTypes.MicrosoftCVRF:
+				return 5
+			case sourceTypes.MicrosoftCSAF:
+				return 4
+			case sourceTypes.MicrosoftBulletin:
+				return 3
+			case sourceTypes.MicrosoftWSUSSCN2, sourceTypes.MicrosoftMSUC:
+				return 2
+			default:
+				return 1
+			}
+		}
+		return cmp.Compare(preferenceFn(a), preferenceFn(b))
 	default:
 		return 0
 	}
@@ -849,6 +895,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		}
 	case ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed:
 		return models.SUSE
+	case ecosystemTypes.EcosystemTypeMicrosoft:
+		return models.Microsoft
 	default:
 		return models.NewCveContentType(et)
 	}
@@ -999,6 +1047,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) model
 		default:
 			return models.OvalMatch
 		}
+	case ecosystemTypes.EcosystemTypeMicrosoft:
+		return models.WindowsUpdateSearch
 	default:
 		return models.Confidence{
 			Score:           0,

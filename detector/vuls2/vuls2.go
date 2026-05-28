@@ -202,7 +202,27 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 			Version:        sr.RunningKernel.Version,
 			RebootRequired: sr.RunningKernel.RebootRequired,
 		},
-		OSPackages: slices.Collect(maps.Values(pkgs)),
+		OSPackages: func() []scanTypes.OSPackage {
+			ps := slices.Collect(maps.Values(pkgs))
+			// For Windows, include the OS release as a synthetic package so that
+			// kernel-version-based detection can report the correct release name.
+			if sr.Family == constant.Windows && sr.RunningKernel.Version != "" {
+				ps = append(ps, scanTypes.OSPackage{
+					Name:    toVuls2Release(sr.Family, sr.Release),
+					Version: sr.RunningKernel.Version,
+				})
+			}
+			return ps
+		}(),
+		MicrosoftKB: func() scanTypes.MicrosoftKB {
+			if sr.WindowsKB == nil {
+				return scanTypes.MicrosoftKB{}
+			}
+			return scanTypes.MicrosoftKB{
+				Applied:   sr.WindowsKB.Applied,
+				Unapplied: sr.WindowsKB.Unapplied,
+			}
+		}(),
 
 		ScannedAt: time.Now(),
 		ScannedBy: version.String(),
@@ -212,34 +232,32 @@ func preConvert(sr *models.ScanResult) scanTypes.ScanResult {
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
-	if len(sr.OSPackages) > 0 {
-		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
+	m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
+	if err != nil {
+		return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+	}
+	for rootID, d := range m {
+		base := detectTypes.VulnerabilityData{
+			ID:         rootID,
+			Detections: []detectTypes.VulnerabilityDataDetection{d},
+		}
+
+		avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
+			Contents: []dbTypes.FilterContentType{
+				dbTypes.FilterContentTypeAdvisories,
+				dbTypes.FilterContentTypeVulnerabilities,
+			},
+			RootIDs:     []dataTypes.RootID{rootID},
+			Ecosystems:  []ecosystemTypes.Ecosystem{d.Ecosystem},
+			DataSources: slices.Collect(maps.Keys(d.Contents)),
+		})
 		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
 		}
-		for rootID, d := range m {
-			base := detectTypes.VulnerabilityData{
-				ID:         rootID,
-				Detections: []detectTypes.VulnerabilityDataDetection{d},
-			}
 
-			avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
-				Contents: []dbTypes.FilterContentType{
-					dbTypes.FilterContentTypeAdvisories,
-					dbTypes.FilterContentTypeVulnerabilities,
-				},
-				RootIDs:     []dataTypes.RootID{rootID},
-				Ecosystems:  []ecosystemTypes.Ecosystem{d.Ecosystem},
-				DataSources: slices.Collect(maps.Keys(d.Contents)),
-			})
-			if err != nil {
-				return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
-			}
-
-			base.Advisories = avs.Advisories
-			base.Vulnerabilities = avs.Vulnerabilities
-			detected[rootID] = base
-		}
+		base.Advisories = avs.Advisories
+		base.Vulnerabilities = avs.Vulnerabilities
+		detected[rootID] = base
 	}
 
 	var sourceIDs []sourceTypes.SourceID
@@ -300,6 +318,7 @@ type sourceData struct {
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
 	cpes             []string
+	kbIDs            []string
 }
 
 type rootTag struct {
@@ -334,6 +353,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	type affected struct {
 		packm map[string]pack
 		cpes  []string
+		kbIDs []string
 	}
 
 	am := make(map[string]affected)
@@ -413,6 +433,17 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				}
 			}
 
+			if len(vd.kbIDs) > 0 {
+				for _, kbID := range vd.kbIDs {
+					if !slices.Contains(base.kbIDs, kbID) {
+						base.kbIDs = append(base.kbIDs, kbID)
+					}
+				}
+				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
+					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
+				}
+			}
+
 			am[vi.CveID] = base
 		}
 
@@ -463,8 +494,22 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		for _, p := range am[vi.CveID].packm {
 			ps = append(ps, p.packStatus.status)
 		}
-		vi.AffectedPackages = ps
+		if len(ps) > 0 {
+			vi.AffectedPackages = ps
+		}
 		vi.CpeURIs = am[vi.CveID].cpes
+
+		// Populate WindowsKBFixedIns and KB-based DistroAdvisories for Microsoft detections
+		if string(scanned.Family) == ecosystemTypes.EcosystemTypeMicrosoft {
+			for _, kbID := range am[vi.CveID].kbIDs {
+				kbWithPrefix := fmt.Sprintf("KB%s", kbID)
+				if !slices.Contains(vi.WindowsKBFixedIns, kbWithPrefix) {
+					vi.WindowsKBFixedIns = append(vi.WindowsKBFixedIns, kbWithPrefix)
+				}
+				da := models.DistroAdvisory{AdvisoryID: kbWithPrefix, Description: "Microsoft Knowledge Base"}
+				vi.DistroAdvisories.AppendIfMissing(&da)
+			}
+		}
 
 		vim[vi.CveID] = vi
 	}
@@ -482,11 +527,11 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
 					}
 
-					statuses, cpes, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
+					statuses, cpes, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
-					if len(statuses) == 0 && len(cpes) == 0 {
+					if len(statuses) == 0 && len(cpes) == 0 && len(kbIDs) == 0 {
 						continue
 					}
 
@@ -501,6 +546,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					base := m[src]
 					base.packStatuses = append(base.packStatuses, statuses...)
 					base.cpes = append(base.cpes, cpes...)
+					base.kbIDs = append(base.kbIDs, kbIDs...)
 					m[src] = base
 				}
 			}
@@ -569,91 +615,103 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	return pruned, nil
 }
 
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, []string, bool, error) {
 	var (
 		statuses []packStatus
 		cpes     []string
+		kbIDs    []string
 	)
 	for _, child := range ca.Criterias {
-		ss, cs, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
+		ss, cs, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+			return nil, nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
 		if ignore {
 			switch ca.Operator {
 			case criteriaTypes.CriteriaOperatorTypeAND:
-				return nil, nil, ignore, nil
+				return nil, nil, nil, ignore, nil
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+				return nil, nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
 			}
 		}
 		statuses = append(statuses, ss...)
 		cpes = append(cpes, cs...)
+		kbIDs = append(kbIDs, ks...)
 	}
 
 	for _, cn := range ca.Criterions {
 		if ignoreCriteria(e, sourceID, cn) {
-			return nil, nil, true, nil
+			return nil, nil, nil, true, nil
 		}
 
-		if cn.Criterion.Type != criterionTypes.CriterionTypeVersion || cn.Criterion.Version == nil {
-			continue
-		}
-
-		if ignoreCriterion(e, cn, tag) {
-			continue
-		}
-
-		fcn, err := filterCriterion(e, scanned, cn)
-		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
-		}
-
-		switch fcn.Criterion.Version.Package.Type {
-		case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
-			if !fcn.Criterion.Version.Vulnerable {
+		switch cn.Criterion.Type {
+		case criterionTypes.CriterionTypeVersion:
+			if cn.Criterion.Version == nil {
 				continue
 			}
 
-			rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
-				if fcn.Criterion.Version.Affected == nil {
-					return vcAffectedRangeTypes.RangeTypeUnknown, ""
-				}
-				return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
-			}()
+			if ignoreCriterion(e, cn, tag) {
+				continue
+			}
 
-			for _, index := range fcn.Accepts.Version {
-				if len(scanned.OSPackages) <= index {
-					return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
-				}
-				statuses = append(statuses, packStatus{
-					rangeType: rangeType,
-					status: models.PackageFixStatus{
-						Name: affectedPackageName(e, scanned.OSPackages[index]),
-						FixState: func() string {
-							if fcn.Criterion.Version.FixStatus == nil {
-								return ""
-							}
-							return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
-						}(),
-						FixedIn:     fixedIn,
-						NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
-					},
-				})
+			fcn, err := filterCriterion(e, scanned, cn)
+			if err != nil {
+				return nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
 			}
-		case vcPackageTypes.PackageTypeCPE:
-			for _, index := range fcn.Accepts.Version {
-				if len(scanned.CPE) <= index {
-					return nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+
+			switch fcn.Criterion.Version.Package.Type {
+			case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
+				if !fcn.Criterion.Version.Vulnerable {
+					continue
 				}
+
+				rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
+					if fcn.Criterion.Version.Affected == nil {
+						return vcAffectedRangeTypes.RangeTypeUnknown, ""
+					}
+					return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
+				}()
+
+				for _, index := range fcn.Accepts.Version {
+					if len(scanned.OSPackages) <= index {
+						return nil, nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+					}
+					statuses = append(statuses, packStatus{
+						rangeType: rangeType,
+						status: models.PackageFixStatus{
+							Name: affectedPackageName(e, scanned.OSPackages[index]),
+							FixState: func() string {
+								if fcn.Criterion.Version.FixStatus == nil {
+									return ""
+								}
+								return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
+							}(),
+							FixedIn:     fixedIn,
+							NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
+						},
+					})
+				}
+			case vcPackageTypes.PackageTypeCPE:
+				for _, index := range fcn.Accepts.Version {
+					if len(scanned.CPE) <= index {
+						return nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+					}
+				}
+				cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
+			default:
 			}
-			cpes = append(cpes, string(*fcn.Criterion.Version.Package.CPE))
+		case criterionTypes.CriterionTypeKB:
+			if cn.Criterion.KB == nil || (!cn.Accepts.KB.Covered && !cn.Accepts.KB.Unapplied) {
+				continue
+			}
+			kbIDs = append(kbIDs, cn.Criterion.KB.KBID)
 		default:
+			continue
 		}
 	}
-	return statuses, cpes, false, nil
+	return statuses, cpes, kbIDs, false, nil
 }
 
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
@@ -794,7 +852,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 										}
 										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 									}(),
-									Optional: map[string]string{"vuls2-sources": string(bs)},
+									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
 								}),
 							}, nil
 						}()

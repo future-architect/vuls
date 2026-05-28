@@ -15,7 +15,6 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
-	"github.com/future-architect/vuls/gost"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"golang.org/x/xerrors"
@@ -134,7 +133,6 @@ func getPlusDiffCves(previous, current models.ScanResult) models.VulnInfos {
 
 				// TODO commented out because  a bug of diff logic when multiple oval defs found for a certain CVE-ID and same updated_at
 				// if these OVAL defs have different affected packages, this logic detects as updated.
-				// This logic will be uncommented after integration with gost https://github.com/vulsio/gost
 				// } else if isCveFixed(v, previous) {
 				// updated[v.CveID] = v
 				// logging.Log.Debugf("fixed: %s", v.CveID)
@@ -266,21 +264,13 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 }
 
 // ValidateDBs checks if the databases are accessible and can be closed properly
-func ValidateDBs(cveConf config.GoCveDictConf, gostConf config.GostConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
+func ValidateDBs(cveConf config.GoCveDictConf, ctiConf config.CtiConf, logOpts logging.LogOpts) error {
 	cvec, err := newGoCveDictClient(&cveConf, logOpts)
 	if err != nil {
 		return xerrors.Errorf("Failed to new CVE client. err: %w", err)
 	}
 	if err := cvec.closeDB(); err != nil {
 		return xerrors.Errorf("Failed to close CVE DB. err: %w", err)
-	}
-
-	gostc, err := gost.NewGostClient(gostConf, constant.ServerTypePseudo, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new gost client. err: %w", err)
-	}
-	if err := gostc.CloseDB(); err != nil {
-		return xerrors.Errorf("Failed to close gost DB. err: %w", err)
 	}
 
 	ctic, err := newGoCTIDBClient(&ctiConf, logOpts)
