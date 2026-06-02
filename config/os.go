@@ -123,7 +123,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 				StandardSupportUntil: time.Date(2032, 6, 1, 23, 59, 59, 0, time.UTC),
 				ExtendedSupportUntil: time.Date(2034, 6, 1, 23, 59, 59, 0, time.UTC),
 			},
-			"10": {},
+			"10": {
+				StandardSupportUntil: time.Date(2035, 6, 1, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2037, 6, 1, 23, 59, 59, 0, time.UTC),
+			},
 		}[major(release)]
 	case constant.Debian:
 		eol, found = map[string]EOL{
@@ -275,9 +278,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"15.2": {Ended: true},
 			"15.3": {StandardSupportUntil: time.Date(2022, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"15.4": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
-			"15.5": {},
-			"15.6": {},
-			"15.7": {StandardSupportUntil: time.Date(2028, 7, 31, 23, 59, 59, 0, time.UTC)},
+			"15.5": {StandardSupportUntil: time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.6": {StandardSupportUntil: time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.7": {StandardSupportUntil: time.Date(2031, 7, 31, 23, 59, 59, 0, time.UTC)},
+			"16.0": {StandardSupportUntil: time.Date(2027, 11, 30, 23, 59, 59, 0, time.UTC)},
 		}[release]
 	case constant.SUSEEnterpriseDesktop:
 		// https://www.suse.com/lifecycle
@@ -297,9 +301,10 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"15.2": {Ended: true},
 			"15.3": {StandardSupportUntil: time.Date(2022, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"15.4": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
-			"15.5": {},
-			"15.6": {},
-			"15.7": {StandardSupportUntil: time.Date(2028, 7, 31, 23, 59, 59, 0, time.UTC)},
+			"15.5": {StandardSupportUntil: time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.6": {StandardSupportUntil: time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC)},
+			"15.7": {StandardSupportUntil: time.Date(2031, 7, 31, 23, 59, 59, 0, time.UTC)},
+			"16.0": {StandardSupportUntil: time.Date(2027, 11, 30, 23, 59, 59, 0, time.UTC)},
 		}[release]
 	case constant.Alpine:
 		// https://github.com/aquasecurity/trivy/blob/master/pkg/detector/ospkg/alpine/alpine.go#L19
@@ -349,6 +354,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"12": {StandardSupportUntil: time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"13": {StandardSupportUntil: time.Date(2026, 4, 30, 23, 59, 59, 0, time.UTC)},
 			"14": {StandardSupportUntil: time.Date(2028, 11, 30, 23, 59, 59, 0, time.UTC)},
+			"15": {StandardSupportUntil: time.Date(2029, 12, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Fedora:
 		// https://docs.fedoraproject.org/en-US/releases/eol/
@@ -365,6 +371,8 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"40": {StandardSupportUntil: time.Date(2025, 5, 12, 23, 59, 59, 0, time.UTC)},
 			"41": {StandardSupportUntil: time.Date(2025, 12, 14, 23, 59, 59, 0, time.UTC)},
 			"42": {StandardSupportUntil: time.Date(2026, 5, 13, 23, 59, 59, 0, time.UTC)},
+			"43": {StandardSupportUntil: time.Date(2026, 12, 9, 23, 59, 59, 0, time.UTC)},
+			"44": {StandardSupportUntil: time.Date(2027, 6, 2, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
 		// https://learn.microsoft.com/ja-jp/lifecycle/products/?products=windows
@@ -418,8 +426,8 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			eol, found = EOL{StandardSupportUntil: time.Date(2027, 10, 12, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows 11 Version 25H2":
 			eol, found = EOL{StandardSupportUntil: time.Date(2028, 10, 10, 23, 59, 59, 0, time.UTC)}, true
-		// case "Windows 11 Version 26H1":
-		// 	eol, found = EOL{StandardSupportUntil: time.Date(2029, 10, 8, 23, 59, 59, 0, time.UTC)}, true
+		case "Windows 11 Version 26H1":
+			eol, found = EOL{StandardSupportUntil: time.Date(2029, 3, 13, 23, 59, 59, 0, time.UTC)}, true
 		case "Windows Server 2008":
 			eol, found = EOL{StandardSupportUntil: time.Date(2011, 7, 12, 23, 59, 59, 0, time.UTC)}, true
 			if strings.Contains(rhs, "Service Pack 2") {
