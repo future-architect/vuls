@@ -133,10 +133,10 @@ func (o *pseudo) scanLibraries() (err error) {
 		trivypath := o.cleanPath(abspath)
 		libraryScanners, err := AnalyzeLibrary(context.Background(), trivypath, contents, filemode, o.getServerInfo().Mode.IsOffline())
 		if err != nil {
-			// Collect errors and continue scanning remaining lockfiles.
-			// Errors are included in ScanResult.Errors in the JSON output.
-			o.log.Errorf("Failed to analyze library %s: %+v", abspath, err)
-			o.errs = append(o.errs, xerrors.Errorf("Failed to analyze library %s: %w", abspath, err))
+			// Collect warnings and continue scanning remaining lockfiles.
+			// Warnings are included in ScanResult.Warnings in the JSON output.
+			o.log.Warnf("Failed to analyze library %s: %+v", abspath, err)
+			o.warns = append(o.warns, xerrors.Errorf("Failed to analyze library %s: %w", abspath, err))
 			continue
 		}
 		for _, libscanner := range libraryScanners {
