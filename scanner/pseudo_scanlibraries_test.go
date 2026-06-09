@@ -48,3 +48,33 @@ func TestPseudoScanLibraries_PartialFailure(t *testing.T) {
 		t.Errorf("len(errs) = %d, want 0 (failure must not be recorded as an error)", len(o.errs))
 	}
 }
+
+// TestPseudoScanLibraries_Success verifies the happy path: a single valid
+// lockfile is analyzed, its libraries are reported, and neither warns nor errs
+// is populated.
+func TestPseudoScanLibraries_Success(t *testing.T) {
+	// A valid npm v2 lockfile shared with the integration testdata.
+	valid := filepath.Join("..", "integration", "data", "lockfile", "npm-v2", "package-lock.json")
+	if _, err := os.Stat(valid); err != nil {
+		t.Fatalf("valid lockfile not found: %v", err)
+	}
+
+	o := newPseudo(config.ServerInfo{
+		Type:      constant.ServerTypePseudo,
+		Lockfiles: []string{valid},
+	})
+
+	if err := o.scanLibraries(); err != nil {
+		t.Fatalf("scanLibraries() returned error, want nil: %v", err)
+	}
+
+	if len(o.LibraryScanners) == 0 {
+		t.Errorf("LibraryScanners is empty, want libraries from the valid lockfile")
+	}
+	if len(o.warns) != 0 {
+		t.Errorf("len(warns) = %d, want 0", len(o.warns))
+	}
+	if len(o.errs) != 0 {
+		t.Errorf("len(errs) = %d, want 0", len(o.errs))
+	}
+}
