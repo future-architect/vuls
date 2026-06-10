@@ -145,11 +145,18 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			// An empty SourceLink is not a usable identity — two distinct
 			// entries can both carry "" — so those are always appended.
 			for ccType, cc := range vi.CveContents {
+				seen := make(map[string]struct{}, len(viBase.CveContents[ccType]))
+				for _, x := range viBase.CveContents[ccType] {
+					if x.SourceLink != "" {
+						seen[x.SourceLink] = struct{}{}
+					}
+				}
 				for _, c := range cc {
-					if c.SourceLink != "" && slices.ContainsFunc(viBase.CveContents[ccType], func(x models.CveContent) bool {
-						return x.SourceLink == c.SourceLink
-					}) {
-						continue
+					if c.SourceLink != "" {
+						if _, ok := seen[c.SourceLink]; ok {
+							continue
+						}
+						seen[c.SourceLink] = struct{}{}
 					}
 					viBase.CveContents[ccType] = append(viBase.CveContents[ccType], c)
 				}
