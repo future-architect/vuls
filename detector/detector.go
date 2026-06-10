@@ -49,10 +49,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
-		}
-
 		// Collect the CPE URIs to check. Sources, in order:
 		//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
 		//      that was captured at scan time and shipped in the result JSON.
@@ -63,7 +59,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		//   3. Synthesised Apple CPEs for macOS scans.
 		//
 		// Two parallel views are kept:
-		//   - cpeURIs []string for vuls2.Detect (NVD CPE detection)
+		//   - cpeURIs []string for vuls2.DetectCPEs (NVD CPE detection)
 		//   - cpes []Cpe for the go-cve-dictionary path (UseJVN flag matters:
 		//     user-supplied / OWASP CPEs consult JVN, synthesised Apple CPEs
 		//     are NVD-only and contribute nothing there once NVD is stripped)
@@ -163,23 +159,8 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 		}
 
-		// go-cve-dictionary CPE detection runs FIRST and contributes only
-		// non-NVD sources (JVN, Cisco, Paloalto, Fortinet, ...) — the NVD
-		// contribution is stripped inside DetectCpeURIsCves because vuls2
-		// is now the authority for NVD CPE detection. Running it before
-		// vuls2.Detect means vuls2's NVD content lands on a ScannedCves map
-		// that never contains go-cve-dictionary's NVD remnants, so the two
-		// paths cannot double-report the same source.
-		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpeURIs, err)
-		}
-
-		// CPE detection via the vuls2 library. OS-package detection already
-		// ran inside DetectPkgCves (vuls2.Detect), so this only exercises
-		// the CPE path — it also covers families DetectPkgCves skips
-		// (pseudo / macOS / ...), whose CPE lists still need checking.
-		if err := vuls2.DetectCPEs(&r, cpeURIs, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVE with vuls2: %w", err)
+		if err := DetectCves(&r, cpes, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+			return nil, xerrors.Errorf("Failed to detect CVEs: %w", err)
 		}
 
 		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
@@ -286,8 +267,22 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	return rs, nil
 }
 
-// DetectPkgCves detects OS pkg cves
-func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// DetectCves detects OS-package CVEs and CPE-URI CVEs in one place so every
+// caller (the report flow and server mode) shares the same pipeline.
+//
+//   - OS packages / Microsoft KB: vuls2.Detect, gated by family support.
+//   - CPE URIs: go-cve-dictionary first (DetectCpeURIsCves — non-NVD sources
+//     only, the NVD contribution is stripped there because vuls2 is the
+//     authority for NVD CPE detection), then vuls2.DetectCPEs. Running the
+//     dictionary path first means vuls2's NVD content lands on a ScannedCves
+//     map that never contains go-cve-dictionary's NVD remnants, so the two
+//     paths cannot double-report the same source. The CPE path has no family
+//     gate — families the package path skips (pseudo / macOS / ...) still
+//     get their CPE lists checked.
+//
+// Callers that have no CPE list (e.g. server mode today) pass nil cpes /
+// cpeURIs and get the package detection plus post-processing only.
+func DetectCves(r *models.ScanResult, cpes []Cpe, cpeURIs []string, cveCnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
@@ -300,6 +295,15 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 		default:
 			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
 		}
+	}
+
+	if len(cpes) > 0 {
+		if err := DetectCpeURIsCves(r, cpes, cveCnf, logOpts); err != nil {
+			return xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpeURIs, err)
+		}
+	}
+	if err := vuls2.DetectCPEs(r, cpeURIs, vuls2Conf, noProgress); err != nil {
+		return xerrors.Errorf("Failed to detect CVE with vuls2: %w", err)
 	}
 
 	for i, v := range r.ScannedCves {
