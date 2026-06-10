@@ -171,7 +171,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		// that never contains go-cve-dictionary's NVD remnants, so the two
 		// paths cannot double-report the same source.
 		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+			return nil, xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpeURIs, err)
 		}
 
 		// vuls2.Detect handles both OS-package and CPE detection in a single

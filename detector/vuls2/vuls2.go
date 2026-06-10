@@ -282,34 +282,15 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
 
 	// addDetection merges one detection into the per-RootID accumulator. New
-	// RootIDs trigger a Vulnerability/Advisory fetch; subsequent detections
-	// for the same RootID just append (e.g. OS-pkg + CPE both flagging it).
-	addDetection := func(rootID dataTypes.RootID, d detectTypes.VulnerabilityDataDetection) error {
-		if base, ok := detected[rootID]; ok {
-			base.Detections = append(base.Detections, d)
-			detected[rootID] = base
-			return nil
+	// RootIDs accumulate their detections first; the Vulnerability/Advisory
+	// fetch happens once per RootID after BOTH detection paths have run.
+	addDetection := func(rootID dataTypes.RootID, d detectTypes.VulnerabilityDataDetection) {
+		base, ok := detected[rootID]
+		if !ok {
+			base = detectTypes.VulnerabilityData{ID: rootID}
 		}
-		base := detectTypes.VulnerabilityData{
-			ID:         rootID,
-			Detections: []detectTypes.VulnerabilityDataDetection{d},
-		}
-		avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
-			Contents: []dbTypes.FilterContentType{
-				dbTypes.FilterContentTypeAdvisories,
-				dbTypes.FilterContentTypeVulnerabilities,
-			},
-			RootIDs:     []dataTypes.RootID{rootID},
-			Ecosystems:  []ecosystemTypes.Ecosystem{d.Ecosystem},
-			DataSources: slices.Collect(maps.Keys(d.Contents)),
-		})
-		if err != nil {
-			return xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
-		}
-		base.Advisories = avs.Advisories
-		base.Vulnerabilities = avs.Vulnerabilities
+		base.Detections = append(base.Detections, d)
 		detected[rootID] = base
-		return nil
 	}
 
 	if len(sr.OSPackages) > 0 {
@@ -318,9 +299,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
 		}
 		for rootID, d := range m {
-			if err := addDetection(rootID, d); err != nil {
-				return detectTypes.DetectResult{}, err
-			}
+			addDetection(rootID, d)
 		}
 	}
 
@@ -330,10 +309,28 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect cpe. err: %w", err)
 		}
 		for rootID, d := range m {
-			if err := addDetection(rootID, d); err != nil {
-				return detectTypes.DetectResult{}, err
-			}
+			addDetection(rootID, d)
 		}
+	}
+
+	// Fetch Vulnerability/Advisory data once per RootID WITHOUT narrowing by
+	// ecosystem/datasource: a RootID can be flagged via multiple detection
+	// paths (OS package + CPE) whose contents span different ecosystems, and
+	// narrowing the filter to the first detection's ecosystem would drop the
+	// content the other path needs. Mirrors vuls2's pkg/detect.detect.
+	for rootID, base := range detected {
+		avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
+			Contents: []dbTypes.FilterContentType{
+				dbTypes.FilterContentTypeAdvisories,
+				dbTypes.FilterContentTypeVulnerabilities,
+			},
+		})
+		if err != nil {
+			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+		}
+		base.Advisories = avs.Advisories
+		base.Vulnerabilities = avs.Vulnerabilities
+		detected[rootID] = base
 	}
 
 	var sourceIDs []sourceTypes.SourceID
