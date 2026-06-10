@@ -555,8 +555,9 @@ func Test_preConvert(t *testing.T) {
 
 func Test_postConvert(t *testing.T) {
 	type args struct {
-		scanned  scanTypes.ScanResult
-		detected detectTypes.DetectResult
+		scanned         scanTypes.ScanResult
+		detected        detectTypes.DetectResult
+		fsToOriginalCPE map[string]string
 	}
 	tests := []struct {
 		name    string
@@ -3223,6 +3224,11 @@ func Test_postConvert(t *testing.T) {
 						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
 					},
 				},
+				// The detection ran on the FS form; the reverse map restores
+				// the user-supplied CPE 2.2 URI in VulnInfo.CpeURIs.
+				fsToOriginalCPE: map[string]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": "cpe:/a:vendor:product:0.0.0",
+				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
 						{
@@ -3679,7 +3685,7 @@ func Test_postConvert(t *testing.T) {
 							Description: "description",
 						},
 					},
-					CpeURIs: []string{"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
+					CpeURIs: []string{"cpe:/a:vendor:product:0.0.0"},
 					CveContents: models.CveContents{
 						models.RedHat: []models.CveContent{
 							{
@@ -9006,7 +9012,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, nil)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -9025,7 +9031,8 @@ func Test_postConvert(t *testing.T) {
 
 func Test_pruneCriteria(t *testing.T) {
 	type args struct {
-		criteria criteriaTypes.FilteredCriteria
+		ecosystem ecosystemTypes.Ecosystem
+		criteria  criteriaTypes.FilteredCriteria
 	}
 	tests := []struct {
 		name    string
@@ -9504,10 +9511,115 @@ func Test_pruneCriteria(t *testing.T) {
 				},
 			},
 		},
+		{
+			// CPE-AND relax: under ecosystem "cpe", vulnerable=false
+			// criteria (environment / hardware guards) and subtrees
+			// containing only such criteria are skipped before AND
+			// evaluation, so the guard cannot veto the vulnerable=true
+			// product criterion.
+			name: "cpe AND relax: env-only vulnerable=false guard is skipped",
+			args: args{
+				ecosystem: ecosystemTypes.EcosystemTypeCPE,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterias: []criteriaTypes.FilteredCriteria{
+						{
+							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeCPE,
+										CPE: &cpecriterionTypes.Criterion{
+											Vulnerable: false,
+											CPE:        cpecriterionTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: &cpecriterionTypes.Criterion{
+									Vulnerable: true,
+									CPE:        cpecriterionTypes.CPE("cpe:2.3:o:vendor:firmware:*:*:*:*:*:*:*:*"),
+								},
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{
+				Operator:  criteriaTypes.CriteriaOperatorTypeAND,
+				Criterias: []criteriaTypes.FilteredCriteria{},
+				Criterions: []criterionTypes.FilteredCriterion{
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &cpecriterionTypes.Criterion{
+								Vulnerable: true,
+								CPE:        cpecriterionTypes.CPE("cpe:2.3:o:vendor:firmware:*:*:*:*:*:*:*:*"),
+							},
+						},
+						Accepts: criterionTypes.AcceptQueries{
+							CPE: []int{0},
+						},
+					},
+				},
+			},
+		},
+		{
+			// Same shape under a non-CPE ecosystem: no relax, the guard
+			// subtree is evaluated normally, comes back empty (its only
+			// criterion has no accepts) and fails the whole AND.
+			name: "non-cpe ecosystem: vulnerable=false guard still fails the AND",
+			args: args{
+				ecosystem: ecosystemTypes.Ecosystem("debian:12"),
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterias: []criteriaTypes.FilteredCriteria{
+						{
+							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeCPE,
+										CPE: &cpecriterionTypes.Criterion{
+											Vulnerable: false,
+											CPE:        cpecriterionTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: &cpecriterionTypes.Criterion{
+									Vulnerable: true,
+									CPE:        cpecriterionTypes.CPE("cpe:2.3:o:vendor:firmware:*:*:*:*:*:*:*:*"),
+								},
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+			},
+			want: criteriaTypes.FilteredCriteria{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PruneCriteria("", tt.args.criteria)
+			got, err := vuls2.PruneCriteria(tt.args.ecosystem, tt.args.criteria)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
 				return
