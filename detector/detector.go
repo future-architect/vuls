@@ -297,8 +297,18 @@ func DetectCves(r *models.ScanResult, cpes []Cpe, cpeURIs []string, cveCnf confi
 		}
 	}
 
-	if len(cpes) > 0 {
-		if err := DetectCpeURIsCves(r, cpes, cveCnf, logOpts); err != nil {
+	// After the NVD strip inside DetectCpeURIsCves, UseJVN=false entries
+	// (the synthesised Apple CPEs, NVD-only by design) cannot contribute
+	// anything on the dictionary path — drop them up front so macOS scans
+	// with many synthesised CPEs don't pay a per-CPE lookup for no-ops.
+	jvnCpes := make([]Cpe, 0, len(cpes))
+	for _, c := range cpes {
+		if c.UseJVN {
+			jvnCpes = append(jvnCpes, c)
+		}
+	}
+	if len(jvnCpes) > 0 {
+		if err := DetectCpeURIsCves(r, jvnCpes, cveCnf, logOpts); err != nil {
 			return xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpeURIs, err)
 		}
 	}
