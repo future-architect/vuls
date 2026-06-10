@@ -1087,12 +1087,18 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							)
 							if cctype == models.Nvd {
 								for _, e := range v.Content.Exploit {
+									if e.Link == "" {
+										continue
+									}
 									exploits = append(exploits, models.Exploit{
 										ExploitType: models.ExploitTypeNVD,
 										URL:         e.Link,
 									})
 								}
 								for _, m := range v.Content.Mitigations {
+									if m.Description == "" {
+										continue
+									}
 									mitigations = append(mitigations, models.Mitigation{
 										CveContentType: models.Nvd,
 										URL:            m.Description,
