@@ -270,7 +270,7 @@ func preConvert(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, 
 // stay consistent with what the user configured, rather than leaking the
 // internal FS-with-wildcards representation.
 //
-// vuls/ normalises config CPEs to CPE 2.2 URI, so most inputs go through
+// vuls normalises config CPEs to CPE 2.2 URI, so most inputs go through
 // UnbindURI + BindToFS; entries already in FS form pass through. Unparseable
 // entries are dropped with a warning. Duplicate FS keys keep the first
 // user-supplied form (consistent with util.AppendIfMissing semantics).
@@ -759,10 +759,11 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 	return pruned, nil
 }
 
-// isVulnerableTrue reports whether a FilteredCriterion is a Version-typed
-// criterion with Vulnerable=true. Non-Version criteria (NoneExist, KB, CPE)
-// have no Vulnerable concept and are treated as vulnerable so the CPE-AND
-// relax in pruneCriteria leaves them in place.
+// isVulnerableTrue reports whether a FilteredCriterion carries
+// Vulnerable=true. Version and CPE criteria consult their Vulnerable field
+// (nil payloads default to true); the remaining types (NoneExist, KB) have
+// no Vulnerable concept and are treated as vulnerable so the CPE-AND relax
+// in pruneCriteria leaves them in place.
 func isVulnerableTrue(cn criterionTypes.FilteredCriterion) bool {
 	switch cn.Criterion.Type {
 	case criterionTypes.CriterionTypeVersion:
