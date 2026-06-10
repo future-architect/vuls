@@ -53,7 +53,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
-		// Collect the CPE URIs to check against vuls2. Sources, in order:
+		// Collect the CPE URIs to check. Sources, in order:
 		//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
 		//      that was captured at scan time and shipped in the result JSON.
 		//      Using the scan-time snapshot keeps detection coupled to the
@@ -61,7 +61,14 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		//      without re-loading config.toml.
 		//   2. OWASP DC XML, if configured.
 		//   3. Synthesised Apple CPEs for macOS scans.
+		//
+		// Two parallel views are kept:
+		//   - cpeURIs []string for vuls2.Detect (NVD CPE detection)
+		//   - cpes []Cpe for the go-cve-dictionary path (UseJVN flag matters:
+		//     user-supplied / OWASP CPEs consult JVN, synthesised Apple CPEs
+		//     are NVD-only and contribute nothing there once NVD is stripped)
 		cpeURIs, owaspDCXMLPath := []string{}, ""
+		cpes := []Cpe{}
 		if len(r.Container.ContainerID) == 0 {
 			cpeURIs = r.Config.Scan.Servers[r.ServerName].CpeNames
 			owaspDCXMLPath = r.Config.Scan.Servers[r.ServerName].OwaspDCXMLPath
@@ -81,8 +88,15 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 			cpeURIs = append(cpeURIs, extra...)
 		}
+		for _, uri := range cpeURIs {
+			cpes = append(cpes, Cpe{CpeURI: uri, UseJVN: true})
+		}
 
 		if slices.Contains([]string{constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer}, r.Family) {
+			appendApple := func(uri string) {
+				cpeURIs = append(cpeURIs, uri)
+				cpes = append(cpes, Cpe{CpeURI: uri, UseJVN: false})
+			}
 			var targets []string
 			if r.Release != "" {
 				switch r.Family {
@@ -96,7 +110,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 					targets = append(targets, "macos_server", "mac_os_server")
 				}
 				for _, t := range targets {
-					cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release))
+					appendApple(fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release))
 				}
 			}
 			for _, p := range r.Packages {
@@ -106,57 +120,63 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 				switch p.Repository {
 				case "com.apple.Safari":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.Music":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs,
-							fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t),
-							fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t),
-						)
+						appendApple(fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.mail":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.Terminal":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.shortcuts":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iCal":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iWork.Keynote":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iWork.Numbers":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.iWork.Pages":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t))
 					}
 				case "com.apple.dt.Xcode":
 					for _, t := range targets {
-						cpeURIs = append(cpeURIs, fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t))
+						appendApple(fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t))
 					}
 				}
 			}
 		}
 
+		// go-cve-dictionary CPE detection runs FIRST and contributes only
+		// non-NVD sources (JVN, Cisco, Paloalto, Fortinet, ...) — the NVD
+		// contribution is stripped inside DetectCpeURIsCves because vuls2
+		// is now the authority for NVD CPE detection. Running it before
+		// vuls2.Detect means vuls2's NVD content lands on a ScannedCves map
+		// that never contains go-cve-dictionary's NVD remnants, so the two
+		// paths cannot double-report the same source.
+		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+		}
+
 		// vuls2.Detect handles both OS-package and CPE detection in a single
 		// DB session, so it is called once per server (even when DetectPkgCves
 		// above was skipped because the family is pseudo/macOS/etc).
-		// The go-cve-dictionary-backed DetectCpeURIsCves call is intentionally
-		// dropped; the function itself is kept for now since we may want to
-		// restore it (or run a side-by-side fallback) later.
 		if err := vuls2.Detect(&r, cpeURIs, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE with vuls2: %w", err)
 		}
@@ -449,7 +469,14 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	return dict
 }
 
-// DetectCpeURIsCves detects CVEs of given CPE-URIs
+// DetectCpeURIsCves detects CVEs of given CPE-URIs via go-cve-dictionary,
+// contributing only non-NVD sources (JVN, Cisco, Paloalto, Fortinet, ...).
+// The NVD contribution of each detection is stripped before use: vuls2 is
+// the authority for NVD CPE detection (its DB carries the NVD feed with
+// cpematch-expanded criteria), so keeping go-cve-dictionary's NVD hits here
+// would double-report the same source with diverging match semantics.
+// Detections that were NVD-only disappear entirely — by design; vuls2
+// re-detects them from its own NVD data.
 func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
@@ -469,6 +496,15 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 		}
 
 		for _, detail := range details {
+			// Drop the NVD contribution (see function comment). After this,
+			// HasNvd() is always false: getMaxConfidence never returns an
+			// Nvd* confidence and the JVN advisory branch below no longer
+			// needs its !HasNvd() guard.
+			detail.Nvds = nil
+			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() && !detail.HasEuvd() && !detail.HasMitre() {
+				continue
+			}
+
 			advisories := []models.DistroAdvisory{}
 			if detail.HasCisco() {
 				for _, cisco := range detail.Ciscos {
@@ -519,7 +555,9 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 				}
 			}
 
-			if !detail.HasNvd() && detail.HasJvn() {
+			// NVD is always stripped above, so JVN advisories are emitted
+			// unconditionally (was: `if !detail.HasNvd() && detail.HasJvn()`).
+			if detail.HasJvn() {
 				for _, jvn := range detail.Jvns {
 					advisories = append(advisories, models.DistroAdvisory{
 						AdvisoryID:  jvn.JvnID,
