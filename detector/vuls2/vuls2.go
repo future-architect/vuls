@@ -992,10 +992,37 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
+							// Map content-level Exploit / Mitigations into the
+							// vuls0 models. Extractors lift detection-relevant
+							// NVD reference tags ("Exploit", "Mitigation") into
+							// these slots (Exploit.Link / Remediation.Description
+							// carry the reference URL); the classic gocve path
+							// derives the same entries in ConvertNvdToModel, so
+							// without this the vuls2-routed path would silently
+							// drop them.
+							var (
+								exploits    []models.Exploit
+								mitigations []models.Mitigation
+							)
+							for _, e := range v.Content.Exploit {
+								exploits = append(exploits, models.Exploit{
+									ExploitType: models.ExploitTypeNVD,
+									URL:         e.Link,
+								})
+							}
+							for _, m := range v.Content.Mitigations {
+								mitigations = append(mitigations, models.Mitigation{
+									CveContentType: cctype,
+									URL:            m.Description,
+								})
+							}
+
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
 								DistroAdvisories: fdas,
+								Exploits:         exploits,
+								Mitigations:      mitigations,
 								CveContents: models.NewCveContents(models.CveContent{
 									Type:           cctype,
 									CveID:          string(v.Content.ID),
@@ -1145,6 +1172,26 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	for _, cc := range []models.Confidences{a.Confidences, b.Confidences} {
 		for _, c := range cc {
 			info.Confidences.AppendIfMissing(c)
+		}
+	}
+
+	for _, es := range [][]models.Exploit{a.Exploits, b.Exploits} {
+		for _, e := range es {
+			if !slices.ContainsFunc(info.Exploits, func(x models.Exploit) bool {
+				return x.ExploitType == e.ExploitType && x.URL == e.URL && x.ID == e.ID
+			}) {
+				info.Exploits = append(info.Exploits, e)
+			}
+		}
+	}
+
+	for _, ms := range [][]models.Mitigation{a.Mitigations, b.Mitigations} {
+		for _, m := range ms {
+			if !slices.ContainsFunc(info.Mitigations, func(x models.Mitigation) bool {
+				return x.CveContentType == m.CveContentType && x.URL == m.URL && x.Mitigation == m.Mitigation
+			}) {
+				info.Mitigations = append(info.Mitigations, m)
+			}
 		}
 	}
 
