@@ -133,8 +133,25 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			for _, c := range vi.Confidences {
 				viBase.Confidences.AppendIfMissing(c)
 			}
+			// A CVE can be detected by both vuls2 entry points (Detect for
+			// OS packages, DetectCPEs for CPE URIs); dedup by SourceLink so
+			// the second pass does not duplicate an identical content entry.
 			for ccType, cc := range vi.CveContents {
-				viBase.CveContents[ccType] = append(viBase.CveContents[ccType], cc...)
+				for _, c := range cc {
+					if !slices.ContainsFunc(viBase.CveContents[ccType], func(x models.CveContent) bool {
+						return x.SourceLink == c.SourceLink
+					}) {
+						viBase.CveContents[ccType] = append(viBase.CveContents[ccType], c)
+					}
+				}
+			}
+			// CpeURIs must merge too: a CVE first registered by the package
+			// path would otherwise end up with an empty CpeURIs even though
+			// the CPE pass matched it against the configured CPE list.
+			for _, uri := range vi.CpeURIs {
+				if !slices.Contains(viBase.CpeURIs, uri) {
+					viBase.CpeURIs = append(viBase.CpeURIs, uri)
+				}
 			}
 			// Exploits / Mitigations must merge too: a CVE registered first
 			// by the go-cve-dictionary non-NVD path would otherwise silently
