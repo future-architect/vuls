@@ -495,10 +495,15 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 		}
 
 		for _, detail := range details {
+			// Remember whether NVD covered this CVE BEFORE stripping: the
+			// JVN advisory emission below intentionally skips CVEs that NVD
+			// also covers (the JVN advisory is redundant there), and that
+			// decision must reflect the original detection, not the
+			// post-strip state.
+			hadNvd := detail.HasNvd()
 			// Drop the NVD contribution (see function comment). After this,
-			// HasNvd() is always false: getMaxConfidence never returns an
-			// Nvd* confidence and the JVN advisory branch below no longer
-			// needs its !HasNvd() guard.
+			// HasNvd() is always false, so getMaxConfidence never returns
+			// an Nvd* confidence.
 			detail.Nvds = nil
 			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() && !detail.HasEuvd() && !detail.HasMitre() {
 				continue
@@ -554,9 +559,10 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 				}
 			}
 
-			// NVD is always stripped above, so JVN advisories are emitted
-			// unconditionally (was: `if !detail.HasNvd() && detail.HasJvn()`).
-			if detail.HasJvn() {
+			// JVN advisories are redundant for CVEs that NVD also covers;
+			// check the pre-strip NVD presence (hadNvd), since HasNvd() is
+			// always false after the strip above.
+			if !hadNvd && detail.HasJvn() {
 				for _, jvn := range detail.Jvns {
 					advisories = append(advisories, models.DistroAdvisory{
 						AdvisoryID:  jvn.JvnID,
