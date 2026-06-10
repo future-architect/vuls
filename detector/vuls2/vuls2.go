@@ -136,6 +136,23 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			for ccType, cc := range vi.CveContents {
 				viBase.CveContents[ccType] = append(viBase.CveContents[ccType], cc...)
 			}
+			// Exploits / Mitigations must merge too: a CVE registered first
+			// by the go-cve-dictionary non-NVD path would otherwise silently
+			// drop the vuls2-derived entries.
+			for _, e := range vi.Exploits {
+				if !slices.ContainsFunc(viBase.Exploits, func(x models.Exploit) bool {
+					return x.ExploitType == e.ExploitType && x.URL == e.URL && x.ID == e.ID
+				}) {
+					viBase.Exploits = append(viBase.Exploits, e)
+				}
+			}
+			for _, m := range vi.Mitigations {
+				if !slices.ContainsFunc(viBase.Mitigations, func(x models.Mitigation) bool {
+					return x.CveContentType == m.CveContentType && x.URL == m.URL && x.Mitigation == m.Mitigation
+				}) {
+					viBase.Mitigations = append(viBase.Mitigations, m)
+				}
+			}
 		}
 		r.ScannedCves[cveID] = viBase
 	}
@@ -292,10 +309,14 @@ func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string]string
 			}
 			fs = naming.BindToFS(wfn)
 		}
-		fsCPEs = append(fsCPEs, fs)
-		if _, exists := fsToOriginal[fs]; !exists {
-			fsToOriginal[fs] = u
+		// Dedup by FS form: the first user-supplied form wins both in the
+		// detection list and in the reverse map (re-detecting the same FS
+		// string would only repeat work and duplicate results).
+		if _, exists := fsToOriginal[fs]; exists {
+			continue
 		}
+		fsCPEs = append(fsCPEs, fs)
+		fsToOriginal[fs] = u
 	}
 	return fsCPEs, fsToOriginal
 }
