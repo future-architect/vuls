@@ -142,13 +142,16 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			// A CVE can be detected by both vuls2 entry points (Detect for
 			// OS packages, DetectCPEs for CPE URIs); dedup by SourceLink so
 			// the second pass does not duplicate an identical content entry.
+			// An empty SourceLink is not a usable identity — two distinct
+			// entries can both carry "" — so those are always appended.
 			for ccType, cc := range vi.CveContents {
 				for _, c := range cc {
-					if !slices.ContainsFunc(viBase.CveContents[ccType], func(x models.CveContent) bool {
+					if c.SourceLink != "" && slices.ContainsFunc(viBase.CveContents[ccType], func(x models.CveContent) bool {
 						return x.SourceLink == c.SourceLink
 					}) {
-						viBase.CveContents[ccType] = append(viBase.CveContents[ccType], c)
+						continue
 					}
+					viBase.CveContents[ccType] = append(viBase.CveContents[ccType], c)
 				}
 			}
 			// CpeURIs must merge too: a CVE first registered by the package
