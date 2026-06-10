@@ -47,11 +47,27 @@ import (
 // defaultRegistory is GitHub Container Registry for vuls2 db
 const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
 
-// Detect detects vulnerabilities (OS packages and CPE URIs) using the vuls2
-// database and fills ScanResult.ScannedCves. cpeURIs is the per-server CPE
-// list (CPE 2.2 URI or 2.3 FS) collected by the caller — typically from
-// ScanResult.Config.Scan.Servers[r.ServerName].CpeNames.
-func Detect(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// Detect detects OS-package vulnerabilities using the vuls2 database and
+// fills ScanResult.ScannedCves. CPE-URI detection lives in DetectCPEs so the
+// two paths can run at different points of the caller's flow (DetectPkgCves
+// for packages, the main Detect flow for CPEs) without double-detecting.
+func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+	return detectWith(r, nil, vuls2Conf, noProgress, false)
+}
+
+// DetectCPEs detects vulnerabilities for the given CPE URIs (CPE 2.2 URI or
+// 2.3 FS form — typically ScanResult.Config.Scan.Servers[...].CpeNames) using
+// the vuls2 database. OS-package / Microsoft-KB detection is suppressed here:
+// it already ran via Detect (DetectPkgCves), and running it twice would
+// duplicate AffectedPackages on merge.
+func DetectCPEs(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+	if len(cpeURIs) == 0 {
+		return nil
+	}
+	return detectWith(r, cpeURIs, vuls2Conf, noProgress, true)
+}
+
+func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool, cpeOnly bool) error {
 	if vuls2Conf.Repository == "" {
 		sv, err := session.SchemaVersion("boltdb")
 		if err != nil {
@@ -88,6 +104,12 @@ func Detect(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, 
 	config.Conf.Vuls2.Digest = metadata.Digest
 
 	vuls2Scanned, fsToOriginalCPE := preConvert(r, cpeURIs)
+	if cpeOnly {
+		// Suppress the OS-package / Microsoft-KB inputs so detect() only
+		// exercises the CPE path; packages were already detected via Detect.
+		vuls2Scanned.OSPackages = nil
+		vuls2Scanned.MicrosoftKB = scanTypes.MicrosoftKB{}
+	}
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {

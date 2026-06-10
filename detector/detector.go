@@ -174,10 +174,11 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpeURIs, err)
 		}
 
-		// vuls2.Detect handles both OS-package and CPE detection in a single
-		// DB session, so it is called once per server (even when DetectPkgCves
-		// above was skipped because the family is pseudo/macOS/etc).
-		if err := vuls2.Detect(&r, cpeURIs, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+		// CPE detection via the vuls2 library. OS-package detection already
+		// ran inside DetectPkgCves (vuls2.Detect), so this only exercises
+		// the CPE path — it also covers families DetectPkgCves skips
+		// (pseudo / macOS / ...), whose CPE lists still need checking.
+		if err := vuls2.DetectCPEs(&r, cpeURIs, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE with vuls2: %w", err)
 		}
 
@@ -293,11 +294,9 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
 			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine,
 			constant.Windows:
-			// vuls2-based pkg detection is performed by the outer vuls2.Detect
-			// call in the main Detect flow (where it is combined with CPE
-			// detection in one DB session). Windows joined the vuls2 path
-			// upstream (PR #2499) and gost was retired (no detectPkgsCvesWithGost
-			// branch); the unified outer call already covers all of these.
+			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
+			}
 		default:
 			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
 		}
