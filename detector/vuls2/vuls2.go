@@ -133,6 +133,12 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			for _, c := range vi.Confidences {
 				viBase.Confidences.AppendIfMissing(c)
 			}
+			// A pre-existing VulnInfo may carry a nil CveContents map (e.g.
+			// unmarshaled from a result JSON where cveContents was omitted);
+			// initialize before writing into it.
+			if viBase.CveContents == nil {
+				viBase.CveContents = models.CveContents{}
+			}
 			// A CVE can be detected by both vuls2 entry points (Detect for
 			// OS packages, DetectCPEs for CPE URIs); dedup by SourceLink so
 			// the second pass does not duplicate an identical content entry.
