@@ -47,10 +47,10 @@ import (
 // defaultRegistory is GitHub Container Registry for vuls2 db
 const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
 
-// Detect detects OS-package vulnerabilities using the vuls2 database and
-// fills ScanResult.ScannedCves. CPE-URI detection lives in DetectCPEs so the
-// two paths can run at different points of the caller's flow (DetectPkgCves
-// for packages, the main Detect flow for CPEs) without double-detecting.
+// Detect detects OS-package / Microsoft-KB vulnerabilities using the vuls2
+// database and fills ScanResult.ScannedCves. CPE-URI detection lives in
+// DetectCPEs so the two stages of detector.DetectCves can run separately
+// without double-detecting packages.
 func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	return detectWith(r, nil, vuls2Conf, noProgress, false)
 }
@@ -58,8 +58,8 @@ func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) e
 // DetectCPEs detects vulnerabilities for the given CPE URIs (CPE 2.2 URI or
 // 2.3 FS form — typically ScanResult.Config.Scan.Servers[...].CpeNames) using
 // the vuls2 database. OS-package / Microsoft-KB detection is suppressed here:
-// it already ran via Detect (DetectPkgCves), and running it twice would
-// duplicate AffectedPackages on merge.
+// it already ran via Detect earlier in detector.DetectCves, and running it
+// twice would duplicate AffectedPackages on merge.
 func DetectCPEs(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if len(cpeURIs) == 0 {
 		return nil
@@ -360,7 +360,10 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		detected[rootID] = base
 	}
 
-	if len(sr.OSPackages) > 0 {
+	// ospkg.Detect also covers Microsoft-KB detection, so gate on either
+	// input being present — a Windows scan can carry KBs without any OS
+	// packages (and DetectCPEs suppresses both, keeping the CPE pass pure).
+	if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
 		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
