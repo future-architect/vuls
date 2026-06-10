@@ -30,7 +30,9 @@ import (
 	vcSourcePackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/source"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
+	exploitTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/exploit"
 	referenceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/reference"
+	remediationTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/remediation"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	cvssV2Types "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
 	cvssV30Types "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v30"
@@ -3331,6 +3333,22 @@ func Test_postConvert(t *testing.T) {
 																}),
 															},
 														},
+														// NVD extractors lift "Exploit" / "Mitigation"
+														// reference tags into these content slots; the
+														// detector maps them to models.Exploit /
+														// models.Mitigation (NVD content only).
+														Mitigations: []remediationTypes.Remediation{
+															{
+																Source:      "nvd.nist.gov",
+																Description: "https://example.com/mitigation",
+															},
+														},
+														Exploit: []exploitTypes.Exploit{
+															{
+																Source: "nvd.nist.gov",
+																Link:   "https://example.com/exploit",
+															},
+														},
 														References: []referenceTypes.Reference{
 															{
 																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
@@ -3686,6 +3704,18 @@ func Test_postConvert(t *testing.T) {
 						},
 					},
 					CpeURIs: []string{"cpe:/a:vendor:product:0.0.0"},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeNVD,
+							URL:         "https://example.com/exploit",
+						},
+					},
+					Mitigations: []models.Mitigation{
+						{
+							CveContentType: models.Nvd,
+							URL:            "https://example.com/mitigation",
+						},
+					},
 					CveContents: models.CveContents{
 						models.RedHat: []models.CveContent{
 							{
