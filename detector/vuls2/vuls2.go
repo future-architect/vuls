@@ -613,9 +613,10 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		}
 	}
 	for _, vi := range vim {
-		// §2: keep nil when there are no affected packages so the JSON
-		// encoder emits `null` (matching the classic gocve path) instead
-		// of `[]`.
+		// §2: keep ps nil when there are no affected packages — skip the
+		// allocation and stay consistent with the in-memory convention that
+		// "not detected" is nil rather than an empty slice. (JSON output is
+		// unaffected either way: AffectedPackages carries omitempty.)
 		var ps models.PackageFixStatuses
 		if n := len(am[vi.CveID].packm); n > 0 {
 			ps = make(models.PackageFixStatuses, 0, n)
@@ -1034,28 +1035,33 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							}
 
 							// Map content-level Exploit / Mitigations into the
-							// vuls0 models. Extractors lift detection-relevant
-							// NVD reference tags ("Exploit", "Mitigation") into
-							// these slots (Exploit.Link / Remediation.Description
-							// carry the reference URL); the classic gocve path
-							// derives the same entries in ConvertNvdToModel, so
-							// without this the vuls2-routed path would silently
-							// drop them.
+							// vuls0 models — NVD content only. The NVD feed
+							// extractor lifts detection-relevant reference tags
+							// ("Exploit", "Mitigation") into these slots
+							// (Exploit.Link / Remediation.Description carry the
+							// reference URL), and the classic gocve path derives
+							// the same entries in ConvertNvdToModel. Other
+							// sources (e.g. Red Hat) also populate these slots
+							// but with different semantics; mapping them here
+							// would mis-label entries as ExploitTypeNVD, so they
+							// are intentionally left to their own renderers.
 							var (
 								exploits    []models.Exploit
 								mitigations []models.Mitigation
 							)
-							for _, e := range v.Content.Exploit {
-								exploits = append(exploits, models.Exploit{
-									ExploitType: models.ExploitTypeNVD,
-									URL:         e.Link,
-								})
-							}
-							for _, m := range v.Content.Mitigations {
-								mitigations = append(mitigations, models.Mitigation{
-									CveContentType: cctype,
-									URL:            m.Description,
-								})
+							if cctype == models.Nvd {
+								for _, e := range v.Content.Exploit {
+									exploits = append(exploits, models.Exploit{
+										ExploitType: models.ExploitTypeNVD,
+										URL:         e.Link,
+									})
+								}
+								for _, m := range v.Content.Mitigations {
+									mitigations = append(mitigations, models.Mitigation{
+										CveContentType: models.Nvd,
+										URL:            m.Description,
+									})
+								}
 							}
 
 							return models.VulnInfo{
