@@ -317,6 +317,13 @@ func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string]string
 	for _, u := range cpeURIs {
 		var fs string
 		if strings.HasPrefix(u, "cpe:2.3:") {
+			// Validate FS-form inputs too (the URI branch validates via
+			// UnbindURI); a malformed FS string would otherwise flow into
+			// vuls2 detection and fail at match time instead of here.
+			if _, err := naming.UnbindFS(u); err != nil {
+				logging.Log.Warnf("cannot unbind CPE FS %q: %v", u, err)
+				continue
+			}
 			fs = u
 		} else {
 			wfn, err := naming.UnbindURI(u)
