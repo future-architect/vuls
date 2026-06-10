@@ -90,7 +90,7 @@
       {
         "name": "France Telecom R\u0026D:ASM",
         "version": "3.3.1",
-        "purl": "pkg:maven/France%20Telecom%20R%26D/ASM@3.3.1",
+        "purl": "pkg:maven/France%20Telecom%20R\u0026D/ASM@3.3.1",
         "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/asm-3.3.1.jar",
         "digest": "sha1:1d5f20b4ea675e6fab6ab79f1cd60ec268ddc015"
       },
