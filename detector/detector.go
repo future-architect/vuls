@@ -63,14 +63,22 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		//   - cpes []Cpe for the go-cve-dictionary path (UseJVN flag matters:
 		//     user-supplied / OWASP CPEs consult JVN, synthesised Apple CPEs
 		//     are NVD-only and contribute nothing there once NVD is stripped)
+		// Prefer the scan-time snapshot; results produced by an older Vuls
+		// (or an external producer) may not embed config.scan.servers, so
+		// fall back to the report-time config.Conf.Servers in that case to
+		// keep CPE detection working for such inputs.
+		serverInfo, serverFound := r.Config.Scan.Servers[r.ServerName]
+		if !serverFound {
+			serverInfo, serverFound = config.Conf.Servers[r.ServerName]
+		}
 		cpeURIs, owaspDCXMLPath := []string{}, ""
 		cpes := []Cpe{}
-		if len(r.Container.ContainerID) == 0 {
-			cpeURIs = r.Config.Scan.Servers[r.ServerName].CpeNames
-			owaspDCXMLPath = r.Config.Scan.Servers[r.ServerName].OwaspDCXMLPath
-		} else {
-			if s, ok := r.Config.Scan.Servers[r.ServerName]; ok {
-				if con, ok := s.Containers[r.Container.Name]; ok {
+		if serverFound {
+			if len(r.Container.ContainerID) == 0 {
+				cpeURIs = serverInfo.CpeNames
+				owaspDCXMLPath = serverInfo.OwaspDCXMLPath
+			} else {
+				if con, ok := serverInfo.Containers[r.Container.Name]; ok {
 					cpeURIs = con.Cpes
 					owaspDCXMLPath = con.OwaspDCXMLPath
 				}
