@@ -19,6 +19,8 @@ import (
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
+	cpecriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion"
+	cpecRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion/range"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
@@ -38,6 +40,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/version"
 	"github.com/knqyf263/go-cpe/common"
 	"github.com/knqyf263/go-cpe/naming"
+	rpm "github.com/knqyf263/go-rpm-version"
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
@@ -888,7 +891,7 @@ func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCrit
 			}
 			var m []string
 			for i, qWFN := range qWFNs {
-				if attrEqual(qWFN, cWFN) {
+				if attrEqual(qWFN, cWFN) && vendorProductEligible(cn.Criterion.CPE, cWFN, qWFN) {
 					m = append(m, scanned.CPE[i])
 				}
 			}
@@ -916,6 +919,77 @@ func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCrit
 		}
 	}
 	return out, nil
+}
+
+// vendorProductEligible reports whether a scanned CPE that already matched a
+// criterion on part:vendor:product may be reported as VendorProductMatch. It
+// mirrors go-cve-dictionary's match() (db/db.go): VendorProductMatch is
+// reserved for "no version information" cases — a query without a concrete
+// version, or a criterion whose version is NA — and a range that cannot be
+// evaluated falls back to RPM-style comparison (with its documented
+// false-positive tolerance) rather than reporting unconditionally. A
+// comparison that confirms the query is OUTSIDE the range, or a concrete
+// criterion version differing from the query, is a definite miss and is not
+// reported at all.
+func vendorProductEligible(cr *cpecriterionTypes.Criterion, cWFN, qWFN common.WellFormedName) bool {
+	qv := qWFN.GetString(common.AttributeVersion)
+	switch qv {
+	case "ANY", "NA":
+		// Query carries no concrete version to compare.
+		return true
+	}
+
+	switch cv := cWFN.GetString(common.AttributeVersion); cv {
+	case "NA":
+		// Criterion explicitly says "no version" (e.g. junos:-).
+		return true
+	case "ANY":
+		// Wildcard criterion: judged by its Range below.
+	default:
+		// Concrete criterion version differing from the query (an equal one
+		// would have been accepted on the exact path) — definite miss.
+		return false
+	}
+
+	if cr.Range == nil {
+		// CPEMatches-only criterion (a no-narrowing one would have been
+		// accepted): the query is absent from the enumerated concrete
+		// forms — definite miss.
+		return false
+	}
+
+	// WFN attribute values are quoted (21\.4r3); compare on the raw form
+	// like go-cve-dictionary does.
+	return rangeVendorProductEligible(cr.Range, strings.ReplaceAll(qv, "\\", ""))
+}
+
+// rangeVendorProductEligible evaluates the range bounds against the query
+// version: a bound the comparator cannot evaluate (e.g. semver vs "21.4r3")
+// is re-tried with RPM-style comparison — go-cve-dictionary's matchRpmVer
+// fallback — and a bound that confirms out-of-range rejects the criterion.
+func rangeVendorProductEligible(r *cpecRangeTypes.Range, qv string) bool {
+	bounds := []struct {
+		s      string
+		reject func(int) bool
+	}{
+		{r.GreaterEqual, func(n int) bool { return n > 0 }},  // need bound <= v
+		{r.GreaterThan, func(n int) bool { return n >= 0 }},  // need bound <  v
+		{r.LessEqual, func(n int) bool { return n < 0 }},     // need bound >= v
+		{r.LessThan, func(n int) bool { return n <= 0 }},     // need bound >  v
+	}
+	for _, b := range bounds {
+		if b.s == "" {
+			continue
+		}
+		n, err := r.Type.Compare(b.s, qv)
+		if err != nil {
+			n = rpm.NewVersion(b.s).Compare(rpm.NewVersion(qv))
+		}
+		if b.reject(n) {
+			return false
+		}
+	}
+	return true
 }
 
 // pruneCriteria drops unaffected branches from a FilteredCriteria tree.
