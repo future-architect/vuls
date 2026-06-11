@@ -725,36 +725,36 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					ca, err := pruneCriteria(d.Ecosystem, fcond.Criteria)
-					if err != nil {
-						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
-					}
+					statuses, cpes, vpCpes, kbIDs, err := func() ([]packStatus, []string, []string, []string, error) {
+						if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
+							exact, vp, err := walkCPECriteria(fcond.Criteria, scanned)
+							if err != nil {
+								return nil, nil, nil, nil, xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
+							}
+							return nil, exact, vp, nil, nil
+						}
 
-					statuses, cpes, vpCpes, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
-					if err != nil {
-						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
-					}
-
-					// A condition with no detection signal at all gets one
-					// last chance — the VendorProductMatch fallback: a
-					// CPE-ecosystem condition with no accepted criterion
-					// still reached us because the detection index matched
-					// on part:vendor:product, so walk the raw (unpruned)
-					// criteria and collect the scanned CPEs that satisfy it
-					// at vendor:product level (see sourceData.vpCpes). If
-					// even that yields nothing, skip the condition WITHOUT
-					// registering it in m: the downstream walk treats
-					// presence in m as "this source detected something",
-					// and an empty entry would emit contents for an
-					// undetected CVE.
-					if len(statuses) == 0 && len(cpes) == 0 && len(vpCpes) == 0 && len(kbIDs) == 0 {
-						vpCpes, err = vendorProductCPEs(d.Ecosystem, fcond.Criteria, scanned)
+						ca, err := pruneCriteria(fcond.Criteria)
 						if err != nil {
-							return xerrors.Errorf("Failed to collect vendor:product matched CPEs. err: %w", err)
+							return nil, nil, nil, nil, xerrors.Errorf("Failed to prune criteria. err: %w", err)
 						}
-						if len(vpCpes) == 0 {
-							continue
+						statuses, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
+						if err != nil {
+							return nil, nil, nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 						}
+						return statuses, nil, nil, kbIDs, nil
+					}()
+					if err != nil {
+						return err
+					}
+
+					// A condition with no detection signal is skipped
+					// WITHOUT registering it in m: the downstream walk
+					// treats presence in m as "this source detected
+					// something", and an empty entry would emit contents
+					// for an undetected CVE.
+					if len(statuses) == 0 && len(cpes) == 0 && len(vpCpes) == 0 && len(kbIDs) == 0 {
+						continue
 					}
 
 					src := source{
@@ -768,9 +768,9 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					base := m[src]
 					base.packStatuses = append(base.packStatuses, statuses...)
 					base.cpes = append(base.cpes, cpes...)
-					for _, cpe := range vpCpes {
-						if !slices.Contains(base.vpCpes, cpe) {
-							base.vpCpes = append(base.vpCpes, cpe)
+					for _, vpCpe := range vpCpes {
+						if !slices.Contains(base.vpCpes, vpCpe) {
+							base.vpCpes = append(base.vpCpes, vpCpe)
 						}
 					}
 					base.kbIDs = append(base.kbIDs, kbIDs...)
@@ -789,50 +789,51 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 // with neither a Range nor enumerated CPEMatches to narrow it. An accept by
 // such a criterion says nothing about the scanned version, so the caller
 // reports it at VendorProductMatch instead of ExactVersionMatch.
-func versionUnrestricted(cr *ccTypes.Criterion) (bool, error) {
-	cWFN, err := naming.UnbindFS(string(cr.CPE))
-	if err != nil {
-		return false, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cr.CPE, err)
-	}
+func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool {
 	switch cWFN.GetString(common.AttributeVersion) {
 	case "NA":
-		return true, nil
+		return true
 	case "ANY":
-		return cr.Range == nil && len(cr.CPEMatches) == 0, nil
+		return cr.Range == nil && len(cr.CPEMatches) == 0
 	default:
-		return false, nil
+		return false
 	}
 }
 
-// vendorProductCPEs returns the scanned CPEs (FS form, as listed in
-// scanned.CPE) whose part:vendor:product attributes satisfy the given
-// criteria tree at the vendor:product level. Non-CPE ecosystems return nil.
+// walkCPECriteria evaluates a cpe-ecosystem condition directly on the RAW
+// (unpruned) FilteredCriteria tree and returns the scanned CPEs (FS form)
+// supporting it, split into the two confidence tiers of the CPE design:
+// exact (an accepted criterion with a version restriction) and
+// vendor:product (everything the condition can only confirm at
+// part:vendor:product level). Walking the raw tree keeps the whole CPE
+// evaluation — including go-cve-dictionary's fuzzy reporting rules — in one
+// place, and lets pruneCriteria / walkCriteria stay package/KB-only.
 //
-// It implements the VendorProductMatch fallback of the CPE confidence
-// design: vuls2-migrated sources report either ExactVersionMatch (the
-// criterion accepted: cpe / range / cpe_matches hit) or VendorProductMatch
-// (no accept, but the product itself appears in the vulnerability's
-// criteria). The tree walked here is the RAW FilteredCriteria — pruneCriteria
-// would have dropped exactly the no-accept criterions this fallback is
-// looking for. ANY attributes match anything, mirroring CPE name matching.
+// Per vulnerable=true CPE criterion (vulnerable=false environment/hardware
+// guards and other criterion types are neutral: they cannot be confirmed
+// from a CPE-only scan and never veto an AND — the historical
+// go-cve-dictionary behaviour existing users rely on):
 //
-// The walk re-evaluates the AND/OR structure with pruneCriteria's semantics,
-// just at vendor:product granularity instead of accepts: an AND node is
-// satisfied only when every relevant child is (so "product A AND product B"
-// does not fire when only A was scanned), an OR node when any child is.
-// Mirroring the CPE-AND relax, vulnerable=false criterions (environment /
-// hardware guards) and non-CPE criterion types are not relevant: they
-// cannot be confirmed from a CPE-only scan and never veto an AND.
-func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, error) {
-	if e != ecosystemTypes.EcosystemTypeCPE {
-		return nil, nil
-	}
-
+//   - accepted with a version restriction → exact tier
+//   - accepted without any version restriction (version NA, or ANY with
+//     neither Range nor CPEMatches): the accept says nothing about the
+//     scanned version → vendor:product tier
+//   - not accepted, but matching on part:vendor:product and not
+//     definitively missed (vendorProductEligible) → vendor:product tier
+//   - otherwise (concrete version mismatch, confirmed out of range,
+//     enumeration miss) → unsatisfied
+//
+// AND nodes require every relevant child to be satisfied and demote their
+// exact contributions when any leg holds only at vendor:product level (the
+// conjunction as a whole is then only vendor:product-confirmed); OR nodes
+// take any satisfied child as-is. ANY attributes match anything, mirroring
+// CPE name matching.
+func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, []string, error) {
 	qWFNs := make([]common.WellFormedName, 0, len(scanned.CPE))
 	for _, fs := range scanned.CPE {
 		qWFN, err := naming.UnbindFS(fs)
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to unbind scanned CPE %q. err: %w", fs, err)
+			return nil, nil, xerrors.Errorf("Failed to unbind scanned CPE %q. err: %w", fs, err)
 		}
 		qWFNs = append(qWFNs, qWFN)
 	}
@@ -850,20 +851,20 @@ func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCrit
 		return true
 	}
 
-	// walk returns (relevant, satisfied, matched): relevant reports whether
-	// the subtree contains any vulnerable=true CPE criterion at all (nodes
-	// without one are neutral and never veto an AND), satisfied whether the
-	// subtree holds at vendor:product level, and matched the scanned CPEs
-	// (FS form) supporting it.
-	var walk func(c criteriaTypes.FilteredCriteria) (bool, bool, []string, error)
-	walk = func(c criteriaTypes.FilteredCriteria) (bool, bool, []string, error) {
+	// walk returns (relevant, satisfied, exact, vp): relevant reports
+	// whether the subtree contains any vulnerable=true CPE criterion at all
+	// (nodes without one are neutral and never veto an AND), satisfied
+	// whether the subtree holds, and exact / vp the supporting scanned CPEs
+	// per confidence tier.
+	var walk func(c criteriaTypes.FilteredCriteria) (bool, bool, []string, []string, error)
+	walk = func(c criteriaTypes.FilteredCriteria) (bool, bool, []string, []string, error) {
 		relevant, satisfied := false, true
 		if c.Operator == criteriaTypes.CriteriaOperatorTypeOR {
 			satisfied = false
 		}
-		var matched []string
+		var exact, vp []string
 
-		consider := func(childRelevant, childSatisfied bool, childMatched []string) {
+		consider := func(childRelevant, childSatisfied bool, childExact, childVP []string) {
 			if !childRelevant {
 				return
 			}
@@ -872,23 +873,25 @@ func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCrit
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				if childSatisfied {
 					satisfied = true
-					matched = append(matched, childMatched...)
+					exact = append(exact, childExact...)
+					vp = append(vp, childVP...)
 				}
 			default: // AND
 				if !childSatisfied {
 					satisfied = false
 					return
 				}
-				matched = append(matched, childMatched...)
+				exact = append(exact, childExact...)
+				vp = append(vp, childVP...)
 			}
 		}
 
 		for _, child := range c.Criterias {
-			r, s, m, err := walk(child)
+			r, sat, ex, v, err := walk(child)
 			if err != nil {
-				return false, false, nil, err
+				return false, false, nil, nil, err
 			}
-			consider(r, s, m)
+			consider(r, sat, ex, v)
 		}
 		for _, cn := range c.Criterions {
 			if cn.Criterion.Type != criterionTypes.CriterionTypeCPE || cn.Criterion.CPE == nil || !cn.Criterion.CPE.Vulnerable {
@@ -896,38 +899,64 @@ func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCrit
 			}
 			cWFN, err := naming.UnbindFS(string(cn.Criterion.CPE.CPE))
 			if err != nil {
-				return false, false, nil, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cn.Criterion.CPE.CPE, err)
+				return false, false, nil, nil, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cn.Criterion.CPE.CPE, err)
 			}
+
+			if len(cn.Accepts.CPE) > 0 {
+				matched := make([]string, 0, len(cn.Accepts.CPE))
+				for _, index := range cn.Accepts.CPE {
+					if len(scanned.CPE) <= index {
+						return false, false, nil, nil, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+					}
+					matched = append(matched, scanned.CPE[index])
+				}
+				if versionUnrestricted(cn.Criterion.CPE, cWFN) {
+					consider(true, true, nil, matched)
+				} else {
+					consider(true, true, matched, nil)
+				}
+				continue
+			}
+
 			var m []string
 			for i, qWFN := range qWFNs {
 				if attrEqual(qWFN, cWFN) && vendorProductEligible(cn.Criterion.CPE, cWFN, qWFN) {
 					m = append(m, scanned.CPE[i])
 				}
 			}
-			consider(true, len(m) > 0, m)
+			consider(true, len(m) > 0, nil, m)
 		}
 
 		if !relevant || !satisfied {
-			return relevant, false, nil, nil
+			return relevant, false, nil, nil, nil
 		}
-		return true, true, matched, nil
+		if c.Operator != criteriaTypes.CriteriaOperatorTypeOR && len(vp) > 0 {
+			// A conjunction with a leg confirmed only at vendor:product
+			// level is only vendor:product-confirmed as a whole.
+			vp = append(vp, exact...)
+			exact = nil
+		}
+		return true, true, exact, vp, nil
 	}
 
-	relevant, satisfied, matched, err := walk(ca)
+	relevant, satisfied, exact, vp, err := walk(ca)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !relevant || !satisfied {
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	out := make([]string, 0, len(matched))
-	for _, fs := range matched {
-		if !slices.Contains(out, fs) {
-			out = append(out, fs)
+	dedup := func(in []string) []string {
+		out := make([]string, 0, len(in))
+		for _, fs := range in {
+			if !slices.Contains(out, fs) {
+				out = append(out, fs)
+			}
 		}
+		return out
 	}
-	return out, nil
+	return dedup(exact), dedup(vp), nil
 }
 
 // vendorProductEligible reports whether a scanned CPE that already matched a
@@ -1006,15 +1035,9 @@ func rangeVendorProductEligible(r *ccRangeTypes.Range, qv string) bool {
 // AND parents fail (return empty) if any required child is unaffected, OR
 // parents skip unaffected children. The vuls2 util.Detect step now passes
 // every condition through unconditionally — this function is the actual
-// AND/OR gate.
-//
-// For ecosystem == "cpe", AND nodes are relaxed: vulnerable=false subtrees
-// (environment / hardware guards, e.g. "vulnerable iff running on broadcom
-// hardware") are skipped before AND evaluation. They cannot be confirmed
-// from a CPE-only scan, and historical go-cve-dictionary behaviour — on
-// which existing vuls users rely — is to ignore them. Only vulnerable=true
-// children must satisfy the AND.
-func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
+// AND/OR gate. cpe-ecosystem conditions never come through here; they are
+// evaluated by walkCPECriteria on the raw tree instead.
+func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
 	pruned := criteriaTypes.FilteredCriteria{
 		Operator: c.Operator,
 		Criterias: func() []criteriaTypes.FilteredCriteria {
@@ -1031,13 +1054,8 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 		}(),
 	}
 
-	cpeAndRelax := e == ecosystemTypes.EcosystemTypeCPE && c.Operator == criteriaTypes.CriteriaOperatorTypeAND
-
 	for _, child := range c.Criterias {
-		if cpeAndRelax && !hasVulnerableCriterion(child) {
-			continue
-		}
-		child, err := pruneCriteria(e, child)
+		child, err := pruneCriteria(child)
 		if err != nil {
 			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("prune criteria: %w", err)
 		}
@@ -1057,9 +1075,6 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 	}
 
 	for _, cn := range c.Criterions {
-		if cpeAndRelax && !isVulnerable(cn) {
-			continue
-		}
 		isAffected, err := cn.Affected()
 		if err != nil {
 			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("criterion affected: %w", err)
@@ -1082,77 +1097,33 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 	return pruned, nil
 }
 
-// isVulnerable reports whether a FilteredCriterion carries
-// Vulnerable=true. Version and CPE criteria consult their Vulnerable field
-// (nil payloads default to true); the remaining types (NoneExist, KB) have
-// no Vulnerable concept and are treated as vulnerable so the CPE-AND relax
-// in pruneCriteria leaves them in place.
-func isVulnerable(cn criterionTypes.FilteredCriterion) bool {
-	switch cn.Criterion.Type {
-	case criterionTypes.CriterionTypeVersion:
-		if cn.Criterion.Version == nil {
-			return true
-		}
-		return cn.Criterion.Version.Vulnerable
-	case criterionTypes.CriterionTypeCPE:
-		if cn.Criterion.CPE == nil {
-			return true
-		}
-		return cn.Criterion.CPE.Vulnerable
-	default:
-		return true
-	}
-}
-
-// hasVulnerableCriterion reports whether the subtree contains any
-// vulnerable=true criterion. Used by pruneCriteria's CPE-AND relax to
-// distinguish env-only subtrees (drop) from vulnerable-product subtrees
-// (keep, evaluate normally).
-func hasVulnerableCriterion(c criteriaTypes.FilteredCriteria) bool {
-	for _, cn := range c.Criterions {
-		if isVulnerable(cn) {
-			return true
-		}
-	}
-	for _, ch := range c.Criterias {
-		if hasVulnerableCriterion(ch) {
-			return true
-		}
-	}
-	return false
-}
-
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, []string, []string, bool, error) {
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
 	var (
 		statuses []packStatus
-		cpes     []string
-		vpCpes   []string
 		kbIDs    []string
 	)
 	for _, child := range ca.Criterias {
-		ss, cs, vps, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
+		ss, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
-			return nil, nil, nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
 		if ignore {
 			switch ca.Operator {
 			case criteriaTypes.CriteriaOperatorTypeAND:
-				return nil, nil, nil, nil, ignore, nil
+				return nil, nil, ignore, nil
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return nil, nil, nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+				return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
 			}
 		}
 		statuses = append(statuses, ss...)
-		cpes = append(cpes, cs...)
-		vpCpes = append(vpCpes, vps...)
 		kbIDs = append(kbIDs, ks...)
 	}
 
 	for _, cn := range ca.Criterions {
 		if ignoreCriteria(e, sourceID, cn) {
-			return nil, nil, nil, nil, true, nil
+			return nil, nil, true, nil
 		}
 
 		switch cn.Criterion.Type {
@@ -1167,7 +1138,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 			fcn, err := filterCriterion(e, scanned, cn)
 			if err != nil {
-				return nil, nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+				return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
 			}
 
 			switch fcn.Criterion.Version.Package.Type {
@@ -1185,7 +1156,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 				for _, index := range fcn.Accepts.Version {
 					if len(scanned.OSPackages) <= index {
-						return nil, nil, nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+						return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 					}
 					statuses = append(statuses, packStatus{
 						rangeType: rangeType,
@@ -1204,41 +1175,6 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 				}
 			default:
 			}
-		case criterionTypes.CriterionTypeCPE:
-			if cn.Criterion.CPE == nil {
-				continue
-			}
-
-			fcn, err := filterCriterion(e, scanned, cn)
-			if err != nil {
-				return nil, nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
-			}
-
-			// An accept by a criterion that carries no version restriction
-			// at all does not deserve ExactVersionMatch: report it at
-			// VendorProductMatch instead, like go-cve-dictionary does. JVN
-			// CPE data is mostly such version=* criteria.
-			unrestricted, err := versionUnrestricted(cn.Criterion.CPE)
-			if err != nil {
-				return nil, nil, nil, nil, false, err
-			}
-
-			// Emit the SCANNED CPE form (preserves version) instead of
-			// the criterion's CPE (matched-spec, has `*` for version).
-			// postConvert maps these back to the user-supplied URI form.
-			for _, index := range fcn.Accepts.CPE {
-				if len(scanned.CPE) <= index {
-					return nil, nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
-				}
-				cpe := scanned.CPE[index]
-				if unrestricted {
-					if !slices.Contains(vpCpes, cpe) {
-						vpCpes = append(vpCpes, cpe)
-					}
-				} else if !slices.Contains(cpes, cpe) {
-					cpes = append(cpes, cpe)
-				}
-			}
 		case criterionTypes.CriterionTypeKB:
 			if cn.Criterion.KB == nil || (!cn.Accepts.KB.Covered && !cn.Accepts.KB.Unapplied) {
 				continue
@@ -1248,7 +1184,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			continue
 		}
 	}
-	return statuses, cpes, vpCpes, kbIDs, false, nil
+	return statuses, kbIDs, false, nil
 }
 
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {

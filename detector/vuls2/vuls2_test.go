@@ -9740,8 +9740,7 @@ func Test_postConvert(t *testing.T) {
 
 func Test_pruneCriteria(t *testing.T) {
 	type args struct {
-		ecosystem ecosystemTypes.Ecosystem
-		criteria  criteriaTypes.FilteredCriteria
+		criteria criteriaTypes.FilteredCriteria
 	}
 	tests := []struct {
 		name    string
@@ -10220,115 +10219,10 @@ func Test_pruneCriteria(t *testing.T) {
 				},
 			},
 		},
-		{
-			// CPE-AND relax: under ecosystem "cpe", vulnerable=false
-			// criteria (environment / hardware guards) and subtrees
-			// containing only such criteria are skipped before AND
-			// evaluation, so the guard cannot veto the vulnerable=true
-			// product criterion.
-			name: "cpe AND relax: env-only vulnerable=false guard is skipped",
-			args: args{
-				ecosystem: ecosystemTypes.EcosystemTypeCPE,
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterias: []criteriaTypes.FilteredCriteria{
-						{
-							Operator: criteriaTypes.CriteriaOperatorTypeOR,
-							Criterions: []criterionTypes.FilteredCriterion{
-								{
-									Criterion: criterionTypes.Criterion{
-										Type: criterionTypes.CriterionTypeCPE,
-										CPE: &ccTypes.Criterion{
-											Vulnerable: false,
-											CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
-										},
-									},
-								},
-							},
-						},
-					},
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: &ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:firmware:*:*:*:*:*:*:*:*"),
-								},
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
-				},
-			},
-			want: criteriaTypes.FilteredCriteria{
-				Operator:  criteriaTypes.CriteriaOperatorTypeAND,
-				Criterias: []criteriaTypes.FilteredCriteria{},
-				Criterions: []criterionTypes.FilteredCriterion{
-					{
-						Criterion: criterionTypes.Criterion{
-							Type: criterionTypes.CriterionTypeCPE,
-							CPE: &ccTypes.Criterion{
-								Vulnerable: true,
-								CPE:        ccTypes.CPE("cpe:2.3:o:vendor:firmware:*:*:*:*:*:*:*:*"),
-							},
-						},
-						Accepts: criterionTypes.AcceptQueries{
-							CPE: []int{0},
-						},
-					},
-				},
-			},
-		},
-		{
-			// Same shape under a non-CPE ecosystem: no relax, the guard
-			// subtree is evaluated normally, comes back empty (its only
-			// criterion has no accepts) and fails the whole AND.
-			name: "non-cpe ecosystem: vulnerable=false guard still fails the AND",
-			args: args{
-				ecosystem: ecosystemTypes.Ecosystem("debian:12"),
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterias: []criteriaTypes.FilteredCriteria{
-						{
-							Operator: criteriaTypes.CriteriaOperatorTypeOR,
-							Criterions: []criterionTypes.FilteredCriterion{
-								{
-									Criterion: criterionTypes.Criterion{
-										Type: criterionTypes.CriterionTypeCPE,
-										CPE: &ccTypes.Criterion{
-											Vulnerable: false,
-											CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
-										},
-									},
-								},
-							},
-						},
-					},
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: &ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:firmware:*:*:*:*:*:*:*:*"),
-								},
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
-				},
-			},
-			want: criteriaTypes.FilteredCriteria{},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PruneCriteria(tt.args.ecosystem, tt.args.criteria)
+			got, err := vuls2.PruneCriteria(tt.args.criteria)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
 				return
