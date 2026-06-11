@@ -1245,6 +1245,52 @@ func TestDistroAdvisories_AppendIfMissing(t *testing.T) {
 	}
 }
 
+func TestExploits_AppendIfMissing(t *testing.T) {
+	verified, unverified := true, false
+	tests := []struct {
+		name    string
+		es      Exploits
+		exploit Exploit
+		after   Exploits
+	}{
+		{
+			name:    "append when missing",
+			es:      Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a"}},
+			exploit: Exploit{ExploitType: ExploitTypeNVD, URL: "https://example.com/b"},
+			after: Exploits{
+				{ExploitType: ExploitTypeNVD, URL: "https://example.com/a"},
+				{ExploitType: ExploitTypeNVD, URL: "https://example.com/b"},
+			},
+		},
+		{
+			name:    "same key keeps first",
+			es:      Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Description: "first"}},
+			exploit: Exploit{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Description: "second"},
+			after:   Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Description: "first"}},
+		},
+		{
+			name:    "verified replaces unverified",
+			es:      Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a"}},
+			exploit: Exploit{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Verified: &verified},
+			after:   Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Verified: &verified}},
+		},
+		{
+			name:    "unverified does not replace verified",
+			es:      Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Verified: &verified, Description: "kept"}},
+			exploit: Exploit{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Verified: &unverified},
+			after:   Exploits{{ExploitType: ExploitTypeNVD, URL: "https://example.com/a", Verified: &verified, Description: "kept"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.es.AppendIfMissing(tt.exploit)
+			if !reflect.DeepEqual(tt.es, tt.after) {
+				t.Errorf("\nexpected: %v\n  actual: %v\n", tt.after, tt.es)
+			}
+		})
+	}
+}
+
 func TestVulnInfo_AttackVector(t *testing.T) {
 	type fields struct {
 		CveContents CveContents
