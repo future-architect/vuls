@@ -152,9 +152,16 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 			}
 			// CpeURIs must merge too: a CVE first registered by the package
 			// path would otherwise end up with an empty CpeURIs even though
-			// the CPE pass matched it against the configured CPE list. Only
-			// the CPE pass produces CpeURIs, so plain appending suffices.
-			viBase.CpeURIs = append(viBase.CpeURIs, vi.CpeURIs...)
+			// the CPE pass matched it against the configured CPE list.
+			// Dedup on append: the two vuls2 passes cannot both produce
+			// CpeURIs, but the go-cve-dictionary pass may already have
+			// registered the same user-supplied CPE on the same CVE (a CVE
+			// covered by both NVD and a vendor advisory source).
+			for _, uri := range vi.CpeURIs {
+				if !slices.Contains(viBase.CpeURIs, uri) {
+					viBase.CpeURIs = append(viBase.CpeURIs, uri)
+				}
+			}
 			// Exploits / Mitigations must merge too: a CVE registered first
 			// by the go-cve-dictionary non-NVD path would otherwise silently
 			// drop the vuls2-derived entries.
@@ -300,7 +307,9 @@ func preConvertPkgs(sr *models.ScanResult) scanTypes.ScanResult {
 // The CPE list is converted to the CPE 2.3 Formatted-String form vuls2
 // requires: vuls normalises config CPEs to CPE 2.2 URI, so most inputs go
 // through UnbindURI + BindToFS; entries already in FS form pass through, and
-// unparseable entries are dropped with a warning. The returned reverse map
+// an unparseable entry fails the conversion — config-sourced CPEs were
+// already validated at config-load time, so it signals an unvalidated
+// caller input. The returned reverse map
 // (FS string -> user-supplied forms) is consumed by postConvert to restore
 // the user's input in VulnInfo.CpeURIs rather than leaking the internal
 // FS-with-wildcards representation.
