@@ -171,20 +171,8 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			// Exploits / Mitigations must merge too: a CVE registered first
 			// by the go-cve-dictionary non-NVD path would otherwise silently
 			// drop the vuls2-derived entries.
-			for _, e := range vi.Exploits {
-				if !slices.ContainsFunc(viBase.Exploits, func(x models.Exploit) bool {
-					return x.ExploitType == e.ExploitType && x.URL == e.URL && x.ID == e.ID
-				}) {
-					viBase.Exploits = append(viBase.Exploits, e)
-				}
-			}
-			for _, m := range vi.Mitigations {
-				if !slices.ContainsFunc(viBase.Mitigations, func(x models.Mitigation) bool {
-					return x.CveContentType == m.CveContentType && x.URL == m.URL && x.Mitigation == m.Mitigation
-				}) {
-					viBase.Mitigations = append(viBase.Mitigations, m)
-				}
-			}
+			viBase.Exploits = appendMissingExploits(viBase.Exploits, vi.Exploits)
+			viBase.Mitigations = appendMissingMitigations(viBase.Mitigations, vi.Mitigations)
 		}
 		r.ScannedCves[cveID] = viBase
 	}
@@ -1514,6 +1502,34 @@ func comparePack(a, b pack) (int, error) {
 	return r, nil
 }
 
+// appendMissingExploits / appendMissingMitigations dedup-append entries by
+// their natural identity keys — (ExploitType, URL, ID) and (CveContentType,
+// URL, Mitigation) respectively. models.Exploit / models.Mitigation have no
+// Equal of their own, and a full-struct comparison would treat entries
+// differing only in enrichment payload (Description, pointer fields) as
+// distinct, re-introducing the duplicates this dedup exists to remove.
+func appendMissingExploits(base []models.Exploit, extra []models.Exploit) []models.Exploit {
+	for _, e := range extra {
+		if !slices.ContainsFunc(base, func(x models.Exploit) bool {
+			return x.ExploitType == e.ExploitType && x.URL == e.URL && x.ID == e.ID
+		}) {
+			base = append(base, e)
+		}
+	}
+	return base
+}
+
+func appendMissingMitigations(base []models.Mitigation, extra []models.Mitigation) []models.Mitigation {
+	for _, m := range extra {
+		if !slices.ContainsFunc(base, func(x models.Mitigation) bool {
+			return x.CveContentType == m.CveContentType && x.URL == m.URL && x.Mitigation == m.Mitigation
+		}) {
+			base = append(base, m)
+		}
+	}
+	return base
+}
+
 func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	if a.CveID != b.CveID {
 		return models.VulnInfo{}, xerrors.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
@@ -1530,25 +1546,8 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 		}
 	}
 
-	for _, es := range [][]models.Exploit{a.Exploits, b.Exploits} {
-		for _, e := range es {
-			if !slices.ContainsFunc(info.Exploits, func(x models.Exploit) bool {
-				return x.ExploitType == e.ExploitType && x.URL == e.URL && x.ID == e.ID
-			}) {
-				info.Exploits = append(info.Exploits, e)
-			}
-		}
-	}
-
-	for _, ms := range [][]models.Mitigation{a.Mitigations, b.Mitigations} {
-		for _, m := range ms {
-			if !slices.ContainsFunc(info.Mitigations, func(x models.Mitigation) bool {
-				return x.CveContentType == m.CveContentType && x.URL == m.URL && x.Mitigation == m.Mitigation
-			}) {
-				info.Mitigations = append(info.Mitigations, m)
-			}
-		}
-	}
+	info.Exploits = appendMissingExploits(info.Exploits, slices.Concat(a.Exploits, b.Exploits))
+	info.Mitigations = appendMissingMitigations(info.Mitigations, slices.Concat(a.Mitigations, b.Mitigations))
 
 	am := make(map[string]models.DistroAdvisory)
 	for _, as := range []models.DistroAdvisories{a.DistroAdvisories, b.DistroAdvisories} {
