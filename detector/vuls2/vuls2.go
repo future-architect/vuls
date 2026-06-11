@@ -19,8 +19,8 @@ import (
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
-	cpecriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion"
-	cpecRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion/range"
+	ccTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion"
+	ccRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion/range"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
@@ -802,7 +802,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 // with neither a Range nor enumerated CPEMatches to narrow it. An accept by
 // such a criterion says nothing about the scanned version, so the caller
 // reports it at VendorProductMatch instead of ExactVersionMatch.
-func versionUnrestricted(cr *cpecriterionTypes.Criterion) (bool, error) {
+func versionUnrestricted(cr *ccTypes.Criterion) (bool, error) {
 	cWFN, err := naming.UnbindFS(string(cr.CPE))
 	if err != nil {
 		return false, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cr.CPE, err)
@@ -953,7 +953,7 @@ func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCrit
 // comparison that confirms the query is OUTSIDE the range, or a concrete
 // criterion version differing from the query, is a definite miss and is not
 // reported at all.
-func vendorProductEligible(cr *cpecriterionTypes.Criterion, cWFN, qWFN common.WellFormedName) bool {
+func vendorProductEligible(cr *ccTypes.Criterion, cWFN, qWFN common.WellFormedName) bool {
 	qv := qWFN.GetString(common.AttributeVersion)
 	switch qv {
 	case "ANY", "NA":
@@ -989,7 +989,7 @@ func vendorProductEligible(cr *cpecriterionTypes.Criterion, cWFN, qWFN common.We
 // version: a bound the comparator cannot evaluate (e.g. semver vs "21.4r3")
 // is re-tried with RPM-style comparison — go-cve-dictionary's matchRpmVer
 // fallback — and a bound that confirms out-of-range rejects the criterion.
-func rangeVendorProductEligible(r *cpecRangeTypes.Range, qv string) bool {
+func rangeVendorProductEligible(r *ccRangeTypes.Range, qv string) bool {
 	bounds := []struct {
 		s      string
 		reject func(int) bool
