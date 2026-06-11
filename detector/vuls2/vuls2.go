@@ -171,7 +171,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 			// by the go-cve-dictionary non-NVD path would otherwise silently
 			// drop the vuls2-derived entries.
 			for _, e := range vi.Exploits {
-				viBase.Exploits.AppendIfMissing(e)
+				viBase.Exploits.AppendOrReplace(e)
 			}
 			for _, m := range vi.Mitigations {
 				viBase.Mitigations.AppendIfMissing(m)
@@ -1559,7 +1559,7 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 
 	for _, e := range slices.Concat(a.Exploits, b.Exploits) {
-		info.Exploits.AppendIfMissing(e)
+		info.Exploits.AppendOrReplace(e)
 	}
 	for _, m := range slices.Concat(a.Mitigations, b.Mitigations) {
 		info.Mitigations.AppendIfMissing(m)

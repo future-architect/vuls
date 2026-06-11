@@ -1245,7 +1245,7 @@ func TestDistroAdvisories_AppendIfMissing(t *testing.T) {
 	}
 }
 
-func TestExploits_AppendIfMissing(t *testing.T) {
+func TestExploits_AppendOrReplace(t *testing.T) {
 	verified, unverified := true, false
 	tests := []struct {
 		name    string
