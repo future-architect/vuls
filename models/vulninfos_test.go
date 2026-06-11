@@ -1283,7 +1283,7 @@ func TestExploits_AppendOrReplace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.es.AppendIfMissing(tt.exploit)
+			tt.es.AppendOrReplace(tt.exploit)
 			if !reflect.DeepEqual(tt.es, tt.after) {
 				t.Errorf("\nexpected: %v\n  actual: %v\n", tt.after, tt.es)
 			}
