@@ -735,13 +735,18 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
 
-					// VendorProductMatch fallback: a CPE-ecosystem condition
-					// with no accepted criterion still reached us because the
-					// detection index matched on part:vendor:product. Walk the
-					// raw (unpruned) criteria and collect the scanned CPEs
-					// that share part:vendor:product with a vulnerable=true
-					// CPE criterion; they are reported with the low
-					// VendorProductMatch confidence (see sourceData.vpCpes).
+					// A condition with no detection signal at all gets one
+					// last chance — the VendorProductMatch fallback: a
+					// CPE-ecosystem condition with no accepted criterion
+					// still reached us because the detection index matched
+					// on part:vendor:product, so walk the raw (unpruned)
+					// criteria and collect the scanned CPEs that satisfy it
+					// at vendor:product level (see sourceData.vpCpes). If
+					// even that yields nothing, skip the condition WITHOUT
+					// registering it in m: the downstream walk treats
+					// presence in m as "this source detected something",
+					// and an empty entry would emit contents for an
+					// undetected CVE.
 					if len(statuses) == 0 && len(cpes) == 0 && len(vpCpes) == 0 && len(kbIDs) == 0 {
 						vpCpes, err = vendorProductCPEs(d.Ecosystem, fcond.Criteria, scanned)
 						if err != nil {
