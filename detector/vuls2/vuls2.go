@@ -381,33 +381,30 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
+	// Fetch Vulnerability/Advisory data narrowed to the detecting
+	// ecosystem / datasources, as master always did: pulling other
+	// ecosystems' or RootIDs' contents is EnrichVulnInfos' job, not
+	// detection's.
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData, len(detections))
 	for rootID, d := range detections {
-		detected[rootID] = detectTypes.VulnerabilityData{
-			ID:         rootID,
-			Detections: []detectTypes.VulnerabilityDataDetection{d},
-		}
-	}
-
-	// Fetch Vulnerability/Advisory data once per RootID WITHOUT narrowing by
-	// ecosystem/datasource, mirroring vuls2's pkg/detect.detect: a RootID's
-	// contents can span ecosystems beyond the detecting one (the packages
-	// pass and the CPE pass of the same report flag overlapping RootIDs),
-	// and the downstream walk only emits contents for sources that actually
-	// detected something.
-	for rootID, base := range detected {
 		avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
 			Contents: []dbTypes.FilterContentType{
 				dbTypes.FilterContentTypeAdvisories,
 				dbTypes.FilterContentTypeVulnerabilities,
 			},
+			RootIDs:     []dataTypes.RootID{rootID},
+			Ecosystems:  []ecosystemTypes.Ecosystem{d.Ecosystem},
+			DataSources: slices.Collect(maps.Keys(d.Contents)),
 		})
 		if err != nil {
 			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
 		}
-		base.Advisories = avs.Advisories
-		base.Vulnerabilities = avs.Vulnerabilities
-		detected[rootID] = base
+		detected[rootID] = detectTypes.VulnerabilityData{
+			ID:              rootID,
+			Detections:      []detectTypes.VulnerabilityDataDetection{d},
+			Advisories:      avs.Advisories,
+			Vulnerabilities: avs.Vulnerabilities,
+		}
 	}
 
 	var sourceIDs []sourceTypes.SourceID
@@ -467,14 +464,15 @@ type sourceData struct {
 	detectableCveIDs []string
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
+	kbIDs            []string
 	cpes             []string
-	// vpCpes holds scanned CPEs that did NOT satisfy any criterion
-	// (no accept) but share part:vendor:product with a vulnerable=true CPE
-	// criterion of this source's detection. They are reported with the
-	// low VendorProductMatch confidence instead of ExactVersionMatch —
-	// the vuls2 replacement for go-cve-dictionary's fuzzy CPE reporting.
+	// vpCpes holds scanned CPEs the condition could only confirm at
+	// part:vendor:product level — unrestricted accepts and the
+	// vendor:product fallback (see walkCPECriteria). They are reported
+	// with the low VendorProductMatch confidence instead of
+	// ExactVersionMatch — the vuls2 replacement for go-cve-dictionary's
+	// fuzzy CPE reporting.
 	vpCpes []string
-	kbIDs  []string
 }
 
 type rootTag struct {
@@ -515,9 +513,9 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 
 	type affected struct {
 		packm  map[string]pack
+		kbIDs  []string
 		cpes   []string
 		vpCpes []string
-		kbIDs  []string
 	}
 
 	am := make(map[string]affected)
@@ -586,6 +584,17 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				}
 			}
 
+			if len(vd.kbIDs) > 0 {
+				for _, kbID := range vd.kbIDs {
+					if !slices.Contains(base.kbIDs, kbID) {
+						base.kbIDs = append(base.kbIDs, kbID)
+					}
+				}
+				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
+					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
+				}
+			}
+
 			if len(vd.cpes) > 0 {
 				for _, cpe := range vd.cpes {
 					if !slices.Contains(base.cpes, cpe) {
@@ -601,17 +610,6 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				for _, cpe := range vd.vpCpes {
 					if !slices.Contains(base.vpCpes, cpe) {
 						base.vpCpes = append(base.vpCpes, cpe)
-					}
-				}
-				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
-					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
-				}
-			}
-
-			if len(vd.kbIDs) > 0 {
-				for _, kbID := range vd.kbIDs {
-					if !slices.Contains(base.kbIDs, kbID) {
-						base.kbIDs = append(base.kbIDs, kbID)
 					}
 				}
 				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
@@ -725,13 +723,13 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					statuses, cpes, vpCpes, kbIDs, err := func() ([]packStatus, []string, []string, []string, error) {
+					statuses, kbIDs, cpes, vpCpes, err := func() ([]packStatus, []string, []string, []string, error) {
 						if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
 							exact, vp, err := walkCPECriteria(fcond.Criteria, scanned)
 							if err != nil {
 								return nil, nil, nil, nil, xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 							}
-							return nil, exact, vp, nil, nil
+							return nil, nil, exact, vp, nil
 						}
 
 						ca, err := pruneCriteria(fcond.Criteria)
@@ -742,7 +740,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						if err != nil {
 							return nil, nil, nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 						}
-						return statuses, nil, nil, kbIDs, nil
+						return statuses, kbIDs, nil, nil, nil
 					}()
 					if err != nil {
 						return err
@@ -753,7 +751,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// treats presence in m as "this source detected
 					// something", and an empty entry would emit contents
 					// for an undetected CVE.
-					if len(statuses) == 0 && len(cpes) == 0 && len(vpCpes) == 0 && len(kbIDs) == 0 {
+					if len(statuses) == 0 && len(kbIDs) == 0 && len(cpes) == 0 && len(vpCpes) == 0 {
 						continue
 					}
 
@@ -767,13 +765,13 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					}
 					base := m[src]
 					base.packStatuses = append(base.packStatuses, statuses...)
+					base.kbIDs = append(base.kbIDs, kbIDs...)
 					base.cpes = append(base.cpes, cpes...)
 					for _, vpCpe := range vpCpes {
 						if !slices.Contains(base.vpCpes, vpCpe) {
 							base.vpCpes = append(base.vpCpes, vpCpe)
 						}
 					}
-					base.kbIDs = append(base.kbIDs, kbIDs...)
 					m[src] = base
 				}
 			}
