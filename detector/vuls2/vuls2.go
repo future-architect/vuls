@@ -681,7 +681,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		// Restore the user-supplied CPE form (URI or FS) instead of
 		// leaking the matched FS-with-wildcards form. Unknown FS keys
 		// pass through verbatim (defensive — should not occur because
-		// walkCriteria sources cpes from scanned.CPE). Exact-match CPEs
+		// walkCPECriteria sources cpes from scanned.CPE). Exact-match CPEs
 		// take precedence; the vendor:product fallback CPEs only fill
 		// CpeURIs when the CVE has no exact match at all.
 		cpes := am[vi.CveID].cpes
@@ -736,7 +736,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						if err != nil {
 							return nil, nil, nil, nil, xerrors.Errorf("Failed to prune criteria. err: %w", err)
 						}
-						statuses, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
+						statuses, kbIDs, _, err := walkPkgCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
 						if err != nil {
 							return nil, nil, nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 						}
@@ -805,7 +805,7 @@ func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool
 // vendor:product (everything the condition can only confirm at
 // part:vendor:product level). Walking the raw tree keeps the whole CPE
 // evaluation — including go-cve-dictionary's fuzzy reporting rules — in one
-// place, and lets pruneCriteria / walkCriteria stay package/KB-only.
+// place, and lets pruneCriteria / walkPkgCriteria stay package/KB-only.
 //
 // Per vulnerable=true CPE criterion (vulnerable=false environment/hardware
 // guards and other criterion types are neutral: they cannot be confirmed
@@ -1095,13 +1095,13 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	return pruned, nil
 }
 
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
+func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
 	var (
 		statuses []packStatus
 		kbIDs    []string
 	)
 	for _, child := range ca.Criterias {
-		ss, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
+		ss, ks, ignore, err := walkPkgCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
 			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
