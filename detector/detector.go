@@ -472,11 +472,12 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 //
 //  1. go-cve-dictionary contributes the non-NVD sources (JVN, Vulncheck,
 //     Cisco, Paloalto, Fortinet, ...). The NVD contribution of each
-//     detection is stripped before use: vuls2 is the authority for NVD CPE
-//     detection (its DB carries the NVD feed with cpematch-expanded
-//     criteria), so keeping go-cve-dictionary's NVD hits here would
-//     double-report the same source with diverging match semantics.
-//     Detections that were NVD-only disappear — vuls2 re-detects them.
+//     detection is excluded: vuls2 is the authority for NVD CPE detection
+//     (its DB carries the NVD feed with cpematch-expanded criteria), so
+//     keeping go-cve-dictionary's NVD hits here would double-report the
+//     same source with diverging match semantics. NVD-only detections are
+//     skipped — vuls2 re-detects them — and the NVD content is dropped
+//     just before confidence selection.
 //     The Cpe.UseJVN flag is passed through to the dictionary lookup
 //     unchanged: UseJVN=false excludes JVN only; NVD / Vulncheck / vendor
 //     sources still apply. Callers set the flag per CPE (the report flow
@@ -523,16 +524,10 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 		}
 
 		for _, detail := range details {
-			// Remember whether NVD covered this CVE BEFORE stripping: the
-			// JVN advisory emission below intentionally skips CVEs that NVD
-			// also covers (the JVN advisory is redundant there), and that
-			// decision must reflect the original detection, not the
-			// post-strip state.
-			hadNvd := detail.HasNvd()
-			// Drop the NVD contribution (see function comment). After this,
-			// HasNvd() is always false, so getMaxConfidence never returns
-			// an Nvd* confidence.
-			detail.Nvds = nil
+			// Skip detections carried by no dictionary-remaining source:
+			// vuls2-migrated sources (NVD, so far) are excluded from this
+			// list, so NVD-only detections disappear here — vuls2 re-detects
+			// them from its own data.
 			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() && !detail.HasEuvd() && !detail.HasMitre() {
 				continue
 			}
@@ -587,10 +582,8 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 				}
 			}
 
-			// JVN advisories are redundant for CVEs that NVD also covers;
-			// check the pre-strip NVD presence (hadNvd), since HasNvd() is
-			// always false after the strip above.
-			if !hadNvd && detail.HasJvn() {
+			// JVN advisories are redundant for CVEs that NVD also covers.
+			if !detail.HasNvd() && detail.HasJvn() {
 				for _, jvn := range detail.Jvns {
 					advisories = append(advisories, models.DistroAdvisory{
 						AdvisoryID:  jvn.JvnID,
@@ -601,6 +594,13 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 				}
 			}
 
+			// Drop the vuls2-migrated sources only now, just before
+			// confidence selection: getMaxConfidence must not return their
+			// confidences (vuls2 reports those itself), but everything above
+			// (the skip gate, advisory synthesis) wants the original
+			// detection. Deferring the strip keeps the earlier logic free of
+			// per-source "had*" flags as more sources migrate to vuls2.
+			detail.Nvds = nil
 			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
