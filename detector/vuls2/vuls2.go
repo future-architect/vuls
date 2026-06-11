@@ -947,6 +947,9 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 	}
 
 	dedup := func(in []string) []string {
+		if len(in) == 0 {
+			return nil
+		}
 		out := make([]string, 0, len(in))
 		for _, fs := range in {
 			if !slices.Contains(out, fs) {

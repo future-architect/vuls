@@ -8,6 +8,9 @@ var (
 	PostConvert    = postConvert
 	PruneCriteria  = pruneCriteria
 	Enrich         = enrich
+
+	WalkCPECriteria            = walkCPECriteria
+	RangeVendorProductEligible = rangeVendorProductEligible
 )
 
 type Source source
