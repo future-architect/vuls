@@ -62,11 +62,8 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Server mode passes no CPE list (nil cpes / cpeURIs): the CPE paths
-	// inside DetectCves are no-ops and only OS-package detection plus its
-	// post-processing run, preserving the historical server-mode behaviour.
-	if err := detector.DetectCves(&r, nil, nil, config.Conf.CveDict, config.Conf.LogOpts, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-		logging.Log.Errorf("Failed to detect CVEs: %+v", err)
+	if err := detector.DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}

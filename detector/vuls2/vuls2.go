@@ -47,18 +47,19 @@ import (
 // defaultRegistory is GitHub Container Registry for vuls2 db
 const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
 
-// Detect detects OS-package / Microsoft-KB vulnerabilities using the vuls2
-// database and fills ScanResult.ScannedCves. CPE-URI detection lives in
-// DetectCPEs so the two stages of detector.DetectCves can run separately
-// without double-detecting packages.
-func Detect(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// DetectPkgs detects OS-package / Microsoft-KB vulnerabilities using the
+// vuls2 database and fills ScanResult.ScannedCves. CPE-URI detection lives
+// in DetectCPEs so the two paths (detector.DetectPkgCves for packages,
+// detector.DetectCpeURIsCves for CPEs) can run separately without
+// double-detecting packages.
+func DetectPkgs(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	return detectWith(r, nil, vuls2Conf, noProgress, false)
 }
 
 // DetectCPEs detects vulnerabilities for the given CPE URIs (CPE 2.2 URI or
 // 2.3 FS form — typically ScanResult.Config.Scan.Servers[...].CpeNames) using
 // the vuls2 database. OS-package / Microsoft-KB detection is suppressed here:
-// it already ran via Detect earlier in detector.DetectCves, and running it
+// it already ran via DetectPkgs (detector.DetectPkgCves), and running it
 // twice would duplicate AffectedPackages on merge.
 func DetectCPEs(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if len(cpeURIs) == 0 {

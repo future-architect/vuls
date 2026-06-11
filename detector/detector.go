@@ -49,6 +49,10 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
+		if err := DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+		}
+
 		// Collect the CPE URIs to check. Sources, in order:
 		//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
 		//      that was captured at scan time and shipped in the result JSON.
@@ -58,11 +62,9 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		//   2. OWASP DC XML, if configured.
 		//   3. Synthesised Apple CPEs for macOS scans.
 		//
-		// Two parallel views are kept:
-		//   - cpeURIs []string for vuls2.DetectCPEs (NVD CPE detection)
-		//   - cpes []Cpe for the go-cve-dictionary path (UseJVN flag matters:
-		//     user-supplied / OWASP CPEs consult JVN, synthesised Apple CPEs
-		//     are NVD-only and contribute nothing there once NVD is stripped)
+		// The []Cpe view carries the UseJVN flag: user-supplied / OWASP CPEs
+		// consult JVN, synthesised Apple CPEs do not (JVN excluded; NVD /
+		// Vulncheck / vendor sources still apply).
 		// Prefer the scan-time snapshot; results produced by an older Vuls
 		// (or an external producer) may not embed config.scan.servers, so
 		// fall back to the report-time config.Conf.Servers in that case to
@@ -98,7 +100,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 		if slices.Contains([]string{constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer}, r.Family) {
 			appendApple := func(uri string) {
-				cpeURIs = append(cpeURIs, uri)
 				cpes = append(cpes, Cpe{CpeURI: uri, UseJVN: false})
 			}
 			var targets []string
@@ -167,8 +168,8 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 		}
 
-		if err := DetectCves(&r, cpes, cpeURIs, config.Conf.CveDict, config.Conf.LogOpts, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVEs: %w", err)
+		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+			return nil, xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpes, err)
 		}
 
 		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
@@ -275,53 +276,25 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	return rs, nil
 }
 
-// DetectCves detects OS-package CVEs and CPE-URI CVEs in one place so every
-// caller (the report flow and server mode) shares the same pipeline.
-//
-//   - OS packages / Microsoft KB: vuls2.Detect, gated by family support.
-//   - CPE URIs: go-cve-dictionary first (DetectCpeURIsCves — non-NVD sources
-//     only, the NVD contribution is stripped there because vuls2 is the
-//     authority for NVD CPE detection), then vuls2.DetectCPEs. Running the
-//     dictionary path first means vuls2's NVD content lands on a ScannedCves
-//     map that never contains go-cve-dictionary's NVD remnants, so the two
-//     paths cannot double-report the same source. The CPE path has no family
-//     gate — families the package path skips (pseudo / macOS / ...) still
-//     get their CPE lists checked.
-//
-// Callers that have no CPE list (e.g. server mode today) pass nil cpes /
-// cpeURIs and get the package detection plus post-processing only.
-func DetectCves(r *models.ScanResult, cpes []Cpe, cpeURIs []string, cveCnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// DetectPkgCves detects OS-package / Microsoft-KB CVEs via the vuls2
+// library (family-gated) and applies the FixState / ListenPortStats
+// post-processing. It keeps the master-era name, signature and calling
+// convention so library consumers that drive detection as
+// DetectPkgCves -> DetectCpeURIsCves keep working; CPE-URI detection
+// lives in DetectCpeURIsCves.
+func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
 		case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
 			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine,
 			constant.Windows:
-			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
+			if err := vuls2.DetectPkgs(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
 		default:
 			return xerrors.Errorf("Unsupported detection methods for %s", r.Family)
 		}
-	}
-
-	// After the NVD strip inside DetectCpeURIsCves, UseJVN=false entries
-	// (the synthesised Apple CPEs, NVD-only by design) cannot contribute
-	// anything on the dictionary path — drop them up front so macOS scans
-	// with many synthesised CPEs don't pay a per-CPE lookup for no-ops.
-	jvnCpes := make([]Cpe, 0, len(cpes))
-	for _, c := range cpes {
-		if c.UseJVN {
-			jvnCpes = append(jvnCpes, c)
-		}
-	}
-	if len(jvnCpes) > 0 {
-		if err := DetectCpeURIsCves(r, jvnCpes, cveCnf, logOpts); err != nil {
-			return xerrors.Errorf("Failed to detect CVE of `%v`: %w", cpeURIs, err)
-		}
-	}
-	if err := vuls2.DetectCPEs(r, cpeURIs, vuls2Conf, noProgress); err != nil {
-		return xerrors.Errorf("Failed to detect CVE with vuls2: %w", err)
 	}
 
 	for i, v := range r.ScannedCves {
@@ -490,15 +463,44 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	return dict
 }
 
-// DetectCpeURIsCves detects CVEs of given CPE-URIs via go-cve-dictionary,
-// contributing only non-NVD sources (JVN, Cisco, Paloalto, Fortinet, ...).
-// The NVD contribution of each detection is stripped before use: vuls2 is
-// the authority for NVD CPE detection (its DB carries the NVD feed with
-// cpematch-expanded criteria), so keeping go-cve-dictionary's NVD hits here
-// would double-report the same source with diverging match semantics.
-// Detections that were NVD-only disappear entirely — by design; vuls2
-// re-detects them from its own NVD data.
-func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+// DetectCpeURIsCves detects CVEs of given CPE-URIs. It is the complete CPE
+// detection pipeline (it keeps the master-era name and calling convention so
+// library consumers that drive detection as DetectPkgCves ->
+// DetectCpeURIsCves keep working):
+//
+//  1. go-cve-dictionary contributes the non-NVD sources (JVN, Vulncheck,
+//     Cisco, Paloalto, Fortinet, ...). The NVD contribution of each
+//     detection is stripped before use: vuls2 is the authority for NVD CPE
+//     detection (its DB carries the NVD feed with cpematch-expanded
+//     criteria), so keeping go-cve-dictionary's NVD hits here would
+//     double-report the same source with diverging match semantics.
+//     Detections that were NVD-only disappear — vuls2 re-detects them.
+//     The Cpe.UseJVN flag is passed through to the dictionary lookup
+//     unchanged: UseJVN=false (synthesised Apple CPEs) excludes JVN only;
+//     NVD / Vulncheck / vendor sources still apply.
+//  2. vuls2 detects against its NVD CPE data for every entry, regardless
+//     of UseJVN.
+func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+	if len(cpes) == 0 {
+		return nil
+	}
+
+	if err := detectCpeURIsCvesWithGoCVEDictionary(r, cpes, cnf, logOpts); err != nil {
+		return xerrors.Errorf("Failed to detect CVEs with go-cve-dictionary. err: %w", err)
+	}
+
+	cpeURIs := make([]string, 0, len(cpes))
+	for _, c := range cpes {
+		cpeURIs = append(cpeURIs, c.CpeURI)
+	}
+	if err := vuls2.DetectCPEs(r, cpeURIs, vuls2Conf, noProgress); err != nil {
+		return xerrors.Errorf("Failed to detect CVEs with vuls2. err: %w", err)
+	}
+
+	return nil
+}
+
+func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
 		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
