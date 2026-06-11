@@ -1010,8 +1010,10 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		// fallback (no accepted criterion anywhere) reports the low
 		// *VendorProductMatch confidence (score 10) — the vuls2 counterpart
 		// of go-cve-dictionary's VendorProductMatch — instead of the
-		// exact-match one.
-		if len(sd.cpes) == 0 && len(sd.packStatuses) == 0 && len(sd.kbIDs) == 0 && len(sd.vpCpes) > 0 {
+		// exact-match one. cpes and vpCpes are the only detection signals a
+		// cpe-ecosystem source can carry (packStatuses / kbIDs come from
+		// Version / KB criteria, which never appear under this ecosystem).
+		if len(sd.cpes) == 0 && len(sd.vpCpes) > 0 {
 			switch s {
 			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 				return models.NvdVendorProductMatch
