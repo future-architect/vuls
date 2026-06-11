@@ -140,7 +140,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 			// A CVE can be detected by both vuls2 entry points (DetectPkgs
 			// for OS packages, DetectCPEs for CPE URIs). Today the two
 			// passes never produce the same CveContents type — distro types
-			// vs nvd — so plain appending cannot duplicate an entry. If a
+			// vs cpe types — so plain appending cannot duplicate an entry. If a
 			// future source makes the types overlap, this will need a
 			// smarter merge (note that SourceLink is no identity: vuls2
 			// derives it from just the type and CVE ID).
@@ -289,37 +289,26 @@ func preConvertPkgs(sr *models.ScanResult) scanTypes.ScanResult {
 }
 
 // preConvertCPEs builds the vuls2-shape ScanResult carrying only the CPE
-// list for DetectCPEs, plus a reverse map from each CPE 2.3 FS string (the
-// form vuls2 uses internally) back to the user-supplied CPE form (URI or
-// FS). The map is consumed by postConvert to restore the user-supplied form
-// in VulnInfo.CpeURIs. The OS-package / Microsoft-KB inputs stay empty so
-// detect() only exercises the CPE path — packages were already detected via
+// list for DetectCPEs — the OS-package / Microsoft-KB inputs stay empty so
+// detect() only exercises the CPE path; packages were already detected via
 // DetectPkgs, and converting them again would duplicate AffectedPackages on
 // merge.
-func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string][]string) {
-	fsCPEs, fsToOriginal := toFSCPEs(cpeURIs)
-	scanned := preConvertBase(sr)
-	scanned.CPE = fsCPEs
-	return scanned, fsToOriginal
-}
-
-// toFSCPEs returns the input list converted to CPE 2.3 Formatted-String form
-// (which vuls2 requires) along with a reverse map from each FS string back to
-// the user-supplied form (CPE 2.2 URI or CPE 2.3 FS). The reverse map lets
-// postConvert restore the user-supplied form in VulnInfo.CpeURIs so reports
-// stay consistent with what the user configured, rather than leaking the
-// internal FS-with-wildcards representation.
 //
-// vuls normalises config CPEs to CPE 2.2 URI, so most inputs go through
-// UnbindURI + BindToFS; entries already in FS form pass through. Unparseable
-// entries are dropped with a warning. Duplicate FS keys keep the first
-// user-supplied form (consistent with util.AppendIfMissing semantics).
-func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string][]string) {
+// The CPE list is converted to the CPE 2.3 Formatted-String form vuls2
+// requires: vuls normalises config CPEs to CPE 2.2 URI, so most inputs go
+// through UnbindURI + BindToFS; entries already in FS form pass through, and
+// unparseable entries are dropped with a warning. The returned reverse map
+// (FS string -> user-supplied forms) is consumed by postConvert to restore
+// the user's input in VulnInfo.CpeURIs rather than leaking the internal
+// FS-with-wildcards representation.
+func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string][]string) {
+	scanned := preConvertBase(sr)
 	if len(cpeURIs) == 0 {
-		return nil, nil
+		return scanned, nil
 	}
-	fsCPEs = make([]string, 0, len(cpeURIs))
-	fsToOriginal = make(map[string][]string, len(cpeURIs))
+
+	fsCPEs := make([]string, 0, len(cpeURIs))
+	fsToOriginal := make(map[string][]string, len(cpeURIs))
 	for _, u := range cpeURIs {
 		var fs string
 		if strings.HasPrefix(u, "cpe:2.3:") {
@@ -352,7 +341,9 @@ func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string][]stri
 			fsToOriginal[fs] = append(fsToOriginal[fs], u)
 		}
 	}
-	return fsCPEs, fsToOriginal
+
+	scanned.CPE = fsCPEs
+	return scanned, fsToOriginal
 }
 
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
