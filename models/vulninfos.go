@@ -920,7 +920,7 @@ type Exploit struct {
 // Exploits is a list of Exploit
 type Exploits []Exploit
 
-// AppendIfMissing appends exploit to the list if missing. Identity is the
+// AppendOrReplace appends exploit to the list if missing. Identity is the
 // natural key (ExploitType, URL, ID); entries differing only in enrichment
 // payload (Description, pointer fields) are considered the same exploit.
 // As the one exception, a verified incoming entry replaces an unverified
