@@ -24,7 +24,9 @@ import (
 	cvemodels "github.com/vulsio/go-cve-dictionary/models"
 )
 
-// Cpe :
+// Cpe holds a CPE to check plus the UseJVN flag, which callers (the report
+// flow or external library consumers) set per CPE: UseJVN=false excludes the
+// JVN contribution only — NVD / Vulncheck / vendor sources still apply.
 type Cpe struct {
 	CpeURI string
 	UseJVN bool
@@ -476,8 +478,10 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 //     double-report the same source with diverging match semantics.
 //     Detections that were NVD-only disappear — vuls2 re-detects them.
 //     The Cpe.UseJVN flag is passed through to the dictionary lookup
-//     unchanged: UseJVN=false (synthesised Apple CPEs) excludes JVN only;
-//     NVD / Vulncheck / vendor sources still apply.
+//     unchanged: UseJVN=false excludes JVN only; NVD / Vulncheck / vendor
+//     sources still apply. Callers set the flag per CPE (the report flow
+//     sets it false for the synthesised Apple CPEs; library consumers set
+//     it on their own terms).
 //  2. vuls2 detects against its NVD CPE data for every entry, regardless
 //     of UseJVN.
 func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
