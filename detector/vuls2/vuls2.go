@@ -108,7 +108,8 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 	vuls2Scanned, fsToOriginalCPE := preConvert(r, cpeURIs)
 	if cpeOnly {
 		// Suppress the OS-package / Microsoft-KB inputs so detect() only
-		// exercises the CPE path; packages were already detected via Detect.
+		// exercises the CPE path; packages were already detected via
+		// DetectPkgs.
 		vuls2Scanned.OSPackages = nil
 		vuls2Scanned.MicrosoftKB = scanTypes.MicrosoftKB{}
 	}
@@ -141,8 +142,8 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			if viBase.CveContents == nil {
 				viBase.CveContents = models.CveContents{}
 			}
-			// A CVE can be detected by both vuls2 entry points (Detect for
-			// OS packages, DetectCPEs for CPE URIs); dedup by SourceLink so
+			// A CVE can be detected by both vuls2 entry points (DetectPkgs
+			// for OS packages, DetectCPEs for CPE URIs); dedup by SourceLink so
 			// the second pass does not duplicate an identical content entry.
 			// An empty SourceLink is not a usable identity — two distinct
 			// entries can both carry "" — so those are always appended.
