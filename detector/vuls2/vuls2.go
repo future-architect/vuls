@@ -378,7 +378,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		return nil, nil
 	}()
 	if err != nil {
-		return detectTypes.DetectResult{}, err
+		return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
 	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData, len(detections))
