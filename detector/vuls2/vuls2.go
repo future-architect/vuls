@@ -1364,18 +1364,9 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							// A source whose only detection signal is the
-							// vendor:product fallback (no accepted criterion
-							// anywhere) reports the low VendorProductMatch
-							// confidence instead of the exact-match one.
-							confidence := toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)
-							if len(sd.cpes) == 0 && len(sd.packStatuses) == 0 && len(sd.kbIDs) == 0 && len(sd.vpCpes) > 0 {
-								confidence = toVuls0VendorProductConfidence(src.Segment.Ecosystem, src.SourceID)
-							}
-
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
-								Confidences:      models.Confidences{confidence},
+								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
@@ -1463,7 +1454,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 				vinfo := models.VulnInfo{
 					CveID:            da.AdvisoryID,
-					Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
+					Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, m[src])},
 					DistroAdvisories: models.DistroAdvisories{da},
 					CveContents: models.NewCveContents(models.CveContent{
 						Type:         cctype,

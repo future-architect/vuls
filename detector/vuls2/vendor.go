@@ -1001,43 +1001,37 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 	return cvss2, cvss3, cvss4
 }
 
-// toVuls0VendorProductConfidence returns the confidence for a CPE detection
-// whose only signal is the part:vendor:product index match (no criterion
-// accepted) — the vuls2 counterpart of go-cve-dictionary's
-// *VendorProductMatch (score 10). Non-CPE ecosystems never take the
-// vendor:product fallback path; fall through to the regular confidence
-// defensively.
-func toVuls0VendorProductConfidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models.Confidence {
-	et, _, _ := strings.Cut(string(e), ":")
-	if et != ecosystemTypes.EcosystemTypeCPE {
-		return toVuls0Confidence(e, s)
-	}
-
-	switch s {
-	case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
-		return models.NvdVendorProductMatch
-	case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
-		return models.JvnVendorProductMatch
-	case sourceTypes.Fortinet:
-		return models.FortinetVendorProductMatch
-	case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
-		return models.PaloaltoVendorProductMatch
-	case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
-		return models.CiscoVendorProductMatch
-	default:
-		return models.Confidence{
-			Score:           0,
-			DetectionMethod: models.DetectionMethod("unknown"),
-			SortOrder:       100,
-		}
-	}
-}
-
-func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models.Confidence {
+func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd sourceData) models.Confidence {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
 	case ecosystemTypes.EcosystemTypeCPE:
+		// A source whose only detection signal is the part:vendor:product
+		// fallback (no accepted criterion anywhere) reports the low
+		// *VendorProductMatch confidence (score 10) — the vuls2 counterpart
+		// of go-cve-dictionary's VendorProductMatch — instead of the
+		// exact-match one.
+		if len(sd.cpes) == 0 && len(sd.packStatuses) == 0 && len(sd.kbIDs) == 0 && len(sd.vpCpes) > 0 {
+			switch s {
+			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
+				return models.NvdVendorProductMatch
+			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+				return models.JvnVendorProductMatch
+			case sourceTypes.Fortinet:
+				return models.FortinetVendorProductMatch
+			case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
+				return models.PaloaltoVendorProductMatch
+			case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
+				return models.CiscoVendorProductMatch
+			default:
+				return models.Confidence{
+					Score:           0,
+					DetectionMethod: models.DetectionMethod("unknown"),
+					SortOrder:       100,
+				}
+			}
+		}
+
 		switch s {
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
