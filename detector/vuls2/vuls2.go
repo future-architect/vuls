@@ -972,10 +972,10 @@ func rangeVendorProductEligible(r *cpecRangeTypes.Range, qv string) bool {
 		s      string
 		reject func(int) bool
 	}{
-		{r.GreaterEqual, func(n int) bool { return n > 0 }},  // need bound <= v
-		{r.GreaterThan, func(n int) bool { return n >= 0 }},  // need bound <  v
-		{r.LessEqual, func(n int) bool { return n < 0 }},     // need bound >= v
-		{r.LessThan, func(n int) bool { return n <= 0 }},     // need bound >  v
+		{r.GreaterEqual, func(n int) bool { return n > 0 }}, // need bound <= v
+		{r.GreaterThan, func(n int) bool { return n >= 0 }}, // need bound <  v
+		{r.LessEqual, func(n int) bool { return n < 0 }},    // need bound >= v
+		{r.LessThan, func(n int) bool { return n <= 0 }},    // need bound >  v
 	}
 	for _, b := range bounds {
 		if b.s == "" {
