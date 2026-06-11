@@ -1026,7 +1026,7 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 	cpeAndRelax := e == ecosystemTypes.EcosystemTypeCPE && c.Operator == criteriaTypes.CriteriaOperatorTypeAND
 
 	for _, child := range c.Criterias {
-		if cpeAndRelax && !hasVulnerableTrueCriterion(child) {
+		if cpeAndRelax && !hasVulnerableCriterion(child) {
 			continue
 		}
 		child, err := pruneCriteria(e, child)
@@ -1049,7 +1049,7 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 	}
 
 	for _, cn := range c.Criterions {
-		if cpeAndRelax && !isVulnerableTrue(cn) {
+		if cpeAndRelax && !isVulnerable(cn) {
 			continue
 		}
 		isAffected, err := cn.Affected()
@@ -1074,12 +1074,12 @@ func pruneCriteria(e ecosystemTypes.Ecosystem, c criteriaTypes.FilteredCriteria)
 	return pruned, nil
 }
 
-// isVulnerableTrue reports whether a FilteredCriterion carries
+// isVulnerable reports whether a FilteredCriterion carries
 // Vulnerable=true. Version and CPE criteria consult their Vulnerable field
 // (nil payloads default to true); the remaining types (NoneExist, KB) have
 // no Vulnerable concept and are treated as vulnerable so the CPE-AND relax
 // in pruneCriteria leaves them in place.
-func isVulnerableTrue(cn criterionTypes.FilteredCriterion) bool {
+func isVulnerable(cn criterionTypes.FilteredCriterion) bool {
 	switch cn.Criterion.Type {
 	case criterionTypes.CriterionTypeVersion:
 		if cn.Criterion.Version == nil {
@@ -1096,18 +1096,18 @@ func isVulnerableTrue(cn criterionTypes.FilteredCriterion) bool {
 	}
 }
 
-// hasVulnerableTrueCriterion reports whether the subtree contains any
+// hasVulnerableCriterion reports whether the subtree contains any
 // vulnerable=true criterion. Used by pruneCriteria's CPE-AND relax to
 // distinguish env-only subtrees (drop) from vulnerable-product subtrees
 // (keep, evaluate normally).
-func hasVulnerableTrueCriterion(c criteriaTypes.FilteredCriteria) bool {
+func hasVulnerableCriterion(c criteriaTypes.FilteredCriteria) bool {
 	for _, cn := range c.Criterions {
-		if isVulnerableTrue(cn) {
+		if isVulnerable(cn) {
 			return true
 		}
 	}
 	for _, ch := range c.Criterias {
-		if hasVulnerableTrueCriterion(ch) {
+		if hasVulnerableCriterion(ch) {
 			return true
 		}
 	}
