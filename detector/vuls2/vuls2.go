@@ -874,13 +874,14 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 					exact = append(exact, childExact...)
 					vp = append(vp, childVP...)
 				}
-			default: // AND
+			case criteriaTypes.CriteriaOperatorTypeAND:
 				if !childSatisfied {
 					satisfied = false
 					return
 				}
 				exact = append(exact, childExact...)
 				vp = append(vp, childVP...)
+			default: // unreachable: criteria operators are only AND / OR
 			}
 		}
 
