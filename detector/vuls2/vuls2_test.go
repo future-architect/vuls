@@ -583,7 +583,12 @@ func Test_preConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _ := vuls2.PreConvert(tt.args.sr, nil, tt.args.cpeOnly)
+			var got scanTypes.ScanResult
+			if tt.args.cpeOnly {
+				got, _ = vuls2.PreConvertCPEs(tt.args.sr, nil)
+			} else {
+				got = vuls2.PreConvertPkgs(tt.args.sr)
+			}
 			if diff := gocmp.Diff(got, tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
 				t.Errorf("preConvert() mismatch (-got +want):\n%s", diff)
 			}
@@ -595,7 +600,7 @@ func Test_postConvert(t *testing.T) {
 	type args struct {
 		scanned         scanTypes.ScanResult
 		detected        detectTypes.DetectResult
-		fsToOriginalCPE map[string]string
+		fsToOriginalCPE map[string][]string
 	}
 	tests := []struct {
 		name    string
@@ -3263,9 +3268,10 @@ func Test_postConvert(t *testing.T) {
 					},
 				},
 				// The detection ran on the FS form; the reverse map restores
-				// the user-supplied CPE 2.2 URI in VulnInfo.CpeURIs.
-				fsToOriginalCPE: map[string]string{
-					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": "cpe:/a:vendor:product:0.0.0",
+				// every user-supplied form in VulnInfo.CpeURIs — here the
+				// same CPE was configured in both URI and FS form.
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0", "cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
 				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
@@ -3739,7 +3745,7 @@ func Test_postConvert(t *testing.T) {
 							Description: "description",
 						},
 					},
-					CpeURIs: []string{"cpe:/a:vendor:product:0.0.0"},
+					CpeURIs: []string{"cpe:/a:vendor:product:0.0.0", "cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
 					Exploits: []models.Exploit{
 						{
 							ExploitType: models.ExploitTypeNVD,
@@ -3903,8 +3909,8 @@ func Test_postConvert(t *testing.T) {
 						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
 					},
 				},
-				fsToOriginalCPE: map[string]string{
-					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": "cpe:/a:vendor:product:9.9.9",
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
 				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
@@ -4055,8 +4061,8 @@ func Test_postConvert(t *testing.T) {
 						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
 					},
 				},
-				fsToOriginalCPE: map[string]string{
-					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": "cpe:/a:vendor:producta:9.9.9",
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
 				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
@@ -4137,9 +4143,9 @@ func Test_postConvert(t *testing.T) {
 						"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*",
 					},
 				},
-				fsToOriginalCPE: map[string]string{
-					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": "cpe:/a:vendor:producta:9.9.9",
-					"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*": "cpe:/a:vendor:productb:8.8.8",
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
+					"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*": {"cpe:/a:vendor:productb:8.8.8"},
 				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
@@ -4244,8 +4250,8 @@ func Test_postConvert(t *testing.T) {
 						"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*",
 					},
 				},
-				fsToOriginalCPE: map[string]string{
-					"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*": "cpe:/o:vendor:product:21.4r3",
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*": {"cpe:/o:vendor:product:21.4r3"},
 				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{

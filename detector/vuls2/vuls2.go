@@ -57,7 +57,7 @@ const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
 // detector.DetectCpeURIsCves for CPEs) can run separately without
 // double-detecting packages.
 func DetectPkgs(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
-	return detectWith(r, nil, vuls2Conf, noProgress, false)
+	return detectWith(r, preConvertPkgs(r), nil, vuls2Conf, noProgress)
 }
 
 // DetectCPEs detects vulnerabilities for the given CPE URIs (CPE 2.2 URI or
@@ -69,10 +69,11 @@ func DetectCPEs(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 	if len(cpeURIs) == 0 {
 		return nil
 	}
-	return detectWith(r, cpeURIs, vuls2Conf, noProgress, true)
+	vuls2Scanned, fsToOriginalCPE := preConvertCPEs(r, cpeURIs)
+	return detectWith(r, vuls2Scanned, fsToOriginalCPE, vuls2Conf, noProgress)
 }
 
-func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Conf, noProgress bool, cpeOnly bool) error {
+func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOriginalCPE map[string][]string, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if vuls2Conf.Repository == "" {
 		sv, err := session.SchemaVersion("boltdb")
 		if err != nil {
@@ -107,8 +108,6 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 		return xerrors.Errorf("Failed to get metadata. err: %w", err)
 	}
 	config.Conf.Vuls2.Digest = metadata.Digest
-
-	vuls2Scanned, fsToOriginalCPE := preConvert(r, cpeURIs, cpeOnly)
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
@@ -171,8 +170,12 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 			// Exploits / Mitigations must merge too: a CVE registered first
 			// by the go-cve-dictionary non-NVD path would otherwise silently
 			// drop the vuls2-derived entries.
-			viBase.Exploits = appendMissingExploits(viBase.Exploits, vi.Exploits)
-			viBase.Mitigations = appendMissingMitigations(viBase.Mitigations, vi.Mitigations)
+			for _, e := range vi.Exploits {
+				viBase.Exploits.AppendIfMissing(e)
+			}
+			for _, m := range vi.Mitigations {
+				viBase.Mitigations.AppendIfMissing(m)
+			}
 		}
 		r.ScannedCves[cveID] = viBase
 	}
@@ -226,47 +229,9 @@ func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgres
 	return nil
 }
 
-// preConvert builds the vuls2-shape ScanResult and also returns a reverse map
-// from each CPE 2.3 FS string (the form vuls2 uses internally) back to the
-// user-supplied CPE form (URI or FS). The map is consumed by postConvert to
-// restore the user-supplied form in VulnInfo.CpeURIs.
-//
-// cpeOnly suppresses the OS-package / Microsoft-KB inputs so detect() only
-// exercises the CPE path — packages were already detected via DetectPkgs,
-// and converting them again would duplicate AffectedPackages on merge.
-func preConvert(sr *models.ScanResult, cpeURIs []string, cpeOnly bool) (scanTypes.ScanResult, map[string]string) {
-	pkgs := make(map[string]scanTypes.OSPackage)
-	if !cpeOnly {
-		for _, p := range sr.SrcPackages {
-			if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
-				continue
-			}
-			for _, bn := range p.BinaryNames {
-				pkgs[bn] = scanTypes.OSPackage{
-					SrcName:    p.Name,
-					SrcVersion: p.Version,
-				}
-			}
-		}
-		for _, p := range sr.Packages {
-			if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
-				continue
-			}
-			base := pkgs[p.Name]
-			base.Name = p.Name
-			base.Version = preConvertBinaryVersion(sr.Family, p.Version)
-			base.Release = p.Release
-			base.NewVersion = p.NewVersion
-			base.NewRelease = p.NewRelease
-			base.Arch = p.Arch
-			base.Repository = p.Repository
-			base.ModularityLabel = p.ModularityLabel
-			pkgs[p.Name] = base
-		}
-	}
-
-	fsCPEs, fsToOriginal := toFSCPEs(cpeURIs)
-
+// preConvertBase builds the vuls2-shape ScanResult fields shared by both
+// detection inputs (server identity, family/release mapping, kernel).
+func preConvertBase(sr *models.ScanResult) scanTypes.ScanResult {
 	return scanTypes.ScanResult{
 		JSONVersion: 0,
 		ServerName:  sr.ServerName,
@@ -278,35 +243,79 @@ func preConvert(sr *models.ScanResult, cpeURIs []string, cpeOnly bool) (scanType
 			Version:        sr.RunningKernel.Version,
 			RebootRequired: sr.RunningKernel.RebootRequired,
 		},
-		OSPackages: func() []scanTypes.OSPackage {
-			if cpeOnly {
-				return nil
-			}
-			ps := slices.Collect(maps.Values(pkgs))
-			// For Windows, include the OS release as a synthetic package so that
-			// kernel-version-based detection can report the correct release name.
-			if sr.Family == constant.Windows && sr.RunningKernel.Version != "" {
-				ps = append(ps, scanTypes.OSPackage{
-					Name:    toVuls2Release(sr.Family, sr.Release),
-					Version: sr.RunningKernel.Version,
-				})
-			}
-			return ps
-		}(),
-		MicrosoftKB: func() scanTypes.MicrosoftKB {
-			if cpeOnly || sr.WindowsKB == nil {
-				return scanTypes.MicrosoftKB{}
-			}
-			return scanTypes.MicrosoftKB{
-				Applied:   sr.WindowsKB.Applied,
-				Unapplied: sr.WindowsKB.Unapplied,
-			}
-		}(),
-		CPE: fsCPEs,
 
 		ScannedAt: time.Now(),
 		ScannedBy: version.String(),
-	}, fsToOriginal
+	}
+}
+
+// preConvertPkgs builds the vuls2-shape ScanResult carrying the OS-package /
+// Microsoft-KB inputs for DetectPkgs. The CPE list stays empty — CPE
+// detection is DetectCPEs' job (see preConvertCPEs).
+func preConvertPkgs(sr *models.ScanResult) scanTypes.ScanResult {
+	pkgs := make(map[string]scanTypes.OSPackage)
+	for _, p := range sr.SrcPackages {
+		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+			continue
+		}
+		for _, bn := range p.BinaryNames {
+			pkgs[bn] = scanTypes.OSPackage{
+				SrcName:    p.Name,
+				SrcVersion: p.Version,
+			}
+		}
+	}
+	for _, p := range sr.Packages {
+		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+			continue
+		}
+		base := pkgs[p.Name]
+		base.Name = p.Name
+		base.Version = preConvertBinaryVersion(sr.Family, p.Version)
+		base.Release = p.Release
+		base.NewVersion = p.NewVersion
+		base.NewRelease = p.NewRelease
+		base.Arch = p.Arch
+		base.Repository = p.Repository
+		base.ModularityLabel = p.ModularityLabel
+		pkgs[p.Name] = base
+	}
+
+	scanned := preConvertBase(sr)
+	scanned.OSPackages = func() []scanTypes.OSPackage {
+		ps := slices.Collect(maps.Values(pkgs))
+		// For Windows, include the OS release as a synthetic package so that
+		// kernel-version-based detection can report the correct release name.
+		if sr.Family == constant.Windows && sr.RunningKernel.Version != "" {
+			ps = append(ps, scanTypes.OSPackage{
+				Name:    toVuls2Release(sr.Family, sr.Release),
+				Version: sr.RunningKernel.Version,
+			})
+		}
+		return ps
+	}()
+	if sr.WindowsKB != nil {
+		scanned.MicrosoftKB = scanTypes.MicrosoftKB{
+			Applied:   sr.WindowsKB.Applied,
+			Unapplied: sr.WindowsKB.Unapplied,
+		}
+	}
+	return scanned
+}
+
+// preConvertCPEs builds the vuls2-shape ScanResult carrying only the CPE
+// list for DetectCPEs, plus a reverse map from each CPE 2.3 FS string (the
+// form vuls2 uses internally) back to the user-supplied CPE form (URI or
+// FS). The map is consumed by postConvert to restore the user-supplied form
+// in VulnInfo.CpeURIs. The OS-package / Microsoft-KB inputs stay empty so
+// detect() only exercises the CPE path — packages were already detected via
+// DetectPkgs, and converting them again would duplicate AffectedPackages on
+// merge.
+func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string][]string) {
+	fsCPEs, fsToOriginal := toFSCPEs(cpeURIs)
+	scanned := preConvertBase(sr)
+	scanned.CPE = fsCPEs
+	return scanned, fsToOriginal
 }
 
 // toFSCPEs returns the input list converted to CPE 2.3 Formatted-String form
@@ -320,12 +329,12 @@ func preConvert(sr *models.ScanResult, cpeURIs []string, cpeOnly bool) (scanType
 // UnbindURI + BindToFS; entries already in FS form pass through. Unparseable
 // entries are dropped with a warning. Duplicate FS keys keep the first
 // user-supplied form (consistent with util.AppendIfMissing semantics).
-func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string]string) {
+func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string][]string) {
 	if len(cpeURIs) == 0 {
 		return nil, nil
 	}
 	fsCPEs = make([]string, 0, len(cpeURIs))
-	fsToOriginal = make(map[string]string, len(cpeURIs))
+	fsToOriginal = make(map[string][]string, len(cpeURIs))
 	for _, u := range cpeURIs {
 		var fs string
 		if strings.HasPrefix(u, "cpe:2.3:") {
@@ -345,14 +354,18 @@ func toFSCPEs(cpeURIs []string) (fsCPEs []string, fsToOriginal map[string]string
 			}
 			fs = naming.BindToFS(wfn)
 		}
-		// Dedup by FS form: the first user-supplied form wins both in the
-		// detection list and in the reverse map (re-detecting the same FS
-		// string would only repeat work and duplicate results).
-		if _, exists := fsToOriginal[fs]; exists {
-			continue
+		// Dedup the DETECTION list by FS form — re-detecting the same FS
+		// string would only repeat work — but keep every distinct
+		// user-supplied form in the reverse map: the map exists to restore
+		// the user's input in VulnInfo.CpeURIs, and a user listing the same
+		// CPE in both URI and FS form expects both back (matching the
+		// classic per-input go-cve-dictionary behaviour).
+		if _, exists := fsToOriginal[fs]; !exists {
+			fsCPEs = append(fsCPEs, fs)
 		}
-		fsCPEs = append(fsCPEs, fs)
-		fsToOriginal[fs] = u
+		if !slices.Contains(fsToOriginal[fs], u) {
+			fsToOriginal[fs] = append(fsToOriginal[fs], u)
+		}
 	}
 	return fsCPEs, fsToOriginal
 }
@@ -507,7 +520,7 @@ type packStatus struct {
 // VulnInfo.CpeURIs so the report shows the user-supplied CPE rather than
 // the internal FS-with-wildcards form. Nil / missing keys fall back to
 // the FS string as-is.
-func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string]string) (models.VulnInfos, error) {
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string) (models.VulnInfos, error) {
 	m := make(map[source]sourceData)
 
 	if err := walkVulnerabilityDetections(m, scanned, detected.Detected); err != nil {
@@ -698,8 +711,8 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		if len(cpes) > 0 {
 			out := make([]string, 0, len(cpes))
 			for _, fs := range cpes {
-				if orig, ok := fsToOriginalCPE[fs]; ok {
-					out = append(out, orig)
+				if origs, ok := fsToOriginalCPE[fs]; ok {
+					out = append(out, origs...)
 				} else {
 					out = append(out, fs)
 				}
@@ -1502,34 +1515,6 @@ func comparePack(a, b pack) (int, error) {
 	return r, nil
 }
 
-// appendMissingExploits / appendMissingMitigations dedup-append entries by
-// their natural identity keys — (ExploitType, URL, ID) and (CveContentType,
-// URL, Mitigation) respectively. models.Exploit / models.Mitigation have no
-// Equal of their own, and a full-struct comparison would treat entries
-// differing only in enrichment payload (Description, pointer fields) as
-// distinct, re-introducing the duplicates this dedup exists to remove.
-func appendMissingExploits(base []models.Exploit, extra []models.Exploit) []models.Exploit {
-	for _, e := range extra {
-		if !slices.ContainsFunc(base, func(x models.Exploit) bool {
-			return x.ExploitType == e.ExploitType && x.URL == e.URL && x.ID == e.ID
-		}) {
-			base = append(base, e)
-		}
-	}
-	return base
-}
-
-func appendMissingMitigations(base []models.Mitigation, extra []models.Mitigation) []models.Mitigation {
-	for _, m := range extra {
-		if !slices.ContainsFunc(base, func(x models.Mitigation) bool {
-			return x.CveContentType == m.CveContentType && x.URL == m.URL && x.Mitigation == m.Mitigation
-		}) {
-			base = append(base, m)
-		}
-	}
-	return base
-}
-
 func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	if a.CveID != b.CveID {
 		return models.VulnInfo{}, xerrors.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
@@ -1546,8 +1531,12 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 		}
 	}
 
-	info.Exploits = appendMissingExploits(info.Exploits, slices.Concat(a.Exploits, b.Exploits))
-	info.Mitigations = appendMissingMitigations(info.Mitigations, slices.Concat(a.Mitigations, b.Mitigations))
+	for _, e := range slices.Concat(a.Exploits, b.Exploits) {
+		info.Exploits.AppendIfMissing(e)
+	}
+	for _, m := range slices.Concat(a.Mitigations, b.Mitigations) {
+		info.Mitigations.AppendIfMissing(m)
+	}
 
 	am := make(map[string]models.DistroAdvisory)
 	for _, as := range []models.DistroAdvisories{a.DistroAdvisories, b.DistroAdvisories} {
