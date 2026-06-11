@@ -138,35 +138,20 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 				viBase.CveContents = models.CveContents{}
 			}
 			// A CVE can be detected by both vuls2 entry points (DetectPkgs
-			// for OS packages, DetectCPEs for CPE URIs); dedup by SourceLink so
-			// the second pass does not duplicate an identical content entry.
-			// An empty SourceLink is not a usable identity — two distinct
-			// entries can both carry "" — so those are always appended.
+			// for OS packages, DetectCPEs for CPE URIs). Today the two
+			// passes never produce the same CveContents type — distro types
+			// vs nvd — so plain appending cannot duplicate an entry. If a
+			// future source makes the types overlap, this will need a
+			// smarter merge (note that SourceLink is no identity: vuls2
+			// derives it from just the type and CVE ID).
 			for ccType, cc := range vi.CveContents {
-				seen := make(map[string]struct{}, len(viBase.CveContents[ccType]))
-				for _, x := range viBase.CveContents[ccType] {
-					if x.SourceLink != "" {
-						seen[x.SourceLink] = struct{}{}
-					}
-				}
-				for _, c := range cc {
-					if c.SourceLink != "" {
-						if _, ok := seen[c.SourceLink]; ok {
-							continue
-						}
-						seen[c.SourceLink] = struct{}{}
-					}
-					viBase.CveContents[ccType] = append(viBase.CveContents[ccType], c)
-				}
+				viBase.CveContents[ccType] = append(viBase.CveContents[ccType], cc...)
 			}
 			// CpeURIs must merge too: a CVE first registered by the package
 			// path would otherwise end up with an empty CpeURIs even though
-			// the CPE pass matched it against the configured CPE list.
-			for _, uri := range vi.CpeURIs {
-				if !slices.Contains(viBase.CpeURIs, uri) {
-					viBase.CpeURIs = append(viBase.CpeURIs, uri)
-				}
-			}
+			// the CPE pass matched it against the configured CPE list. Only
+			// the CPE pass produces CpeURIs, so plain appending suffices.
+			viBase.CpeURIs = append(viBase.CpeURIs, vi.CpeURIs...)
 			// Exploits / Mitigations must merge too: a CVE registered first
 			// by the go-cve-dictionary non-NVD path would otherwise silently
 			// drop the vuls2-derived entries.
