@@ -101,9 +101,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		}
 
 		if slices.Contains([]string{constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer}, r.Family) {
-			appendApple := func(uri string) {
-				cpes = append(cpes, Cpe{CpeURI: uri, UseJVN: false})
-			}
 			var targets []string
 			if r.Release != "" {
 				switch r.Family {
@@ -117,54 +114,41 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 					targets = append(targets, "macos_server", "mac_os_server")
 				}
 				for _, t := range targets {
-					appendApple(fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release))
+					cpes = append(cpes, Cpe{CpeURI: fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release), UseJVN: false})
 				}
 			}
 			for _, p := range r.Packages {
 				if p.Version == "" {
 					continue
 				}
+				var products []string
 				switch p.Repository {
 				case "com.apple.Safari":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"safari"}
 				case "com.apple.Music":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t))
-						appendApple(fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"music", "apple_music"}
 				case "com.apple.mail":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"mail"}
 				case "com.apple.Terminal":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"terminal"}
 				case "com.apple.shortcuts":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"shortcuts"}
 				case "com.apple.iCal":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"ical"}
 				case "com.apple.iWork.Keynote":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"keynote"}
 				case "com.apple.iWork.Numbers":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"numbers"}
 				case "com.apple.iWork.Pages":
-					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t))
-					}
+					products = []string{"pages"}
 				case "com.apple.dt.Xcode":
+					products = []string{"xcode"}
+				default:
+					continue
+				}
+				for _, product := range products {
 					for _, t := range targets {
-						appendApple(fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t))
+						cpes = append(cpes, Cpe{CpeURI: fmt.Sprintf("cpe:/a:apple:%s:%s::~~~%s~~", product, p.Version, t), UseJVN: false})
 					}
 				}
 			}
