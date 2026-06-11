@@ -69,7 +69,10 @@ func DetectCPEs(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 	if len(cpeURIs) == 0 {
 		return nil
 	}
-	vuls2Scanned, fsToOriginalCPE := preConvertCPEs(r, cpeURIs)
+	vuls2Scanned, fsToOriginalCPE, err := preConvertCPEs(r, cpeURIs)
+	if err != nil {
+		return xerrors.Errorf("Failed to convert CPEs. err: %w", err)
+	}
 	return detectWith(r, vuls2Scanned, fsToOriginalCPE, vuls2Conf, noProgress)
 }
 
@@ -301,10 +304,10 @@ func preConvertPkgs(sr *models.ScanResult) scanTypes.ScanResult {
 // (FS string -> user-supplied forms) is consumed by postConvert to restore
 // the user's input in VulnInfo.CpeURIs rather than leaking the internal
 // FS-with-wildcards representation.
-func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string][]string) {
+func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string][]string, error) {
 	scanned := preConvertBase(sr)
 	if len(cpeURIs) == 0 {
-		return scanned, nil
+		return scanned, nil, nil
 	}
 
 	fsCPEs := make([]string, 0, len(cpeURIs))
@@ -313,18 +316,18 @@ func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResu
 		var fs string
 		if strings.HasPrefix(u, "cpe:2.3:") {
 			// Validate FS-form inputs too (the URI branch validates via
-			// UnbindURI); a malformed FS string would otherwise flow into
-			// vuls2 detection and fail at match time instead of here.
+			// UnbindURI). Config-sourced CPEs were already validated at
+			// config-load time (toCpeURI), so a failure here means an
+			// unvalidated input — propagate it instead of silently
+			// detecting nothing for that CPE.
 			if _, err := naming.UnbindFS(u); err != nil {
-				logging.Log.Warnf("cannot unbind CPE FS %q: %v", u, err)
-				continue
+				return scanTypes.ScanResult{}, nil, xerrors.Errorf("Failed to unbind CPE FS %q. err: %w", u, err)
 			}
 			fs = u
 		} else {
 			wfn, err := naming.UnbindURI(u)
 			if err != nil {
-				logging.Log.Warnf("cannot unbind CPE URI %q: %v", u, err)
-				continue
+				return scanTypes.ScanResult{}, nil, xerrors.Errorf("Failed to unbind CPE URI %q. err: %w", u, err)
 			}
 			fs = naming.BindToFS(wfn)
 		}
@@ -343,7 +346,7 @@ func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResu
 	}
 
 	scanned.CPE = fsCPEs
-	return scanned, fsToOriginal
+	return scanned, fsToOriginal, nil
 }
 
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {

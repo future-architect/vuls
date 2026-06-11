@@ -585,7 +585,7 @@ func Test_preConvert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var got scanTypes.ScanResult
 			if tt.args.cpeOnly {
-				got, _ = vuls2.PreConvertCPEs(tt.args.sr, nil)
+				got, _, _ = vuls2.PreConvertCPEs(tt.args.sr, nil)
 			} else {
 				got = vuls2.PreConvertPkgs(tt.args.sr)
 			}
