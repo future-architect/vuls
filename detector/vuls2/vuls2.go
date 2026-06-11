@@ -350,48 +350,51 @@ func preConvertCPEs(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResu
 }
 
 func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
-	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData)
-
-	// addDetection merges one detection into the per-RootID accumulator. New
-	// RootIDs accumulate their detections first; the Vulnerability/Advisory
-	// fetch happens once per RootID after BOTH detection paths have run.
-	addDetection := func(rootID dataTypes.RootID, d detectTypes.VulnerabilityDataDetection) {
-		base, ok := detected[rootID]
-		if !ok {
-			base = detectTypes.VulnerabilityData{ID: rootID}
-		}
-		base.Detections = append(base.Detections, d)
-		detected[rootID] = base
+	// The two entry points feed exclusive inputs: preConvertPkgs converts
+	// OS packages / Microsoft KB only, preConvertCPEs the CPE list only.
+	// Receiving both means a caller bypassed them.
+	if len(sr.CPE) > 0 && (len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0) {
+		return detectTypes.DetectResult{}, xerrors.Errorf("ScanResult carries both CPE and OS-package / Microsoft-KB inputs; DetectPkgs and DetectCPEs feed them exclusively")
 	}
 
-	// ospkg.Detect also covers Microsoft-KB detection, so gate on either
-	// input being present — a Windows scan can carry KBs without any OS
-	// packages (and DetectCPEs suppresses both, keeping the CPE pass pure).
-	if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
-		m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
-		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+	detections, err := func() (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, error) {
+		if len(sr.CPE) > 0 {
+			m, err := cpe.Detect(sesh.Storage(), sr, runtime.NumCPU())
+			if err != nil {
+				return nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
+			}
+			return m, nil
 		}
-		for rootID, d := range m {
-			addDetection(rootID, d)
+		// ospkg.Detect also covers Microsoft-KB detection, so gate on
+		// either input being present — a Windows scan can carry KBs
+		// without any OS packages.
+		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
+			m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
+			if err != nil {
+				return nil, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+			}
+			return m, nil
 		}
+		return nil, nil
+	}()
+	if err != nil {
+		return detectTypes.DetectResult{}, err
 	}
 
-	if len(sr.CPE) > 0 {
-		m, err := cpe.Detect(sesh.Storage(), sr, runtime.NumCPU())
-		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect cpe. err: %w", err)
-		}
-		for rootID, d := range m {
-			addDetection(rootID, d)
+	detected := make(map[dataTypes.RootID]detectTypes.VulnerabilityData, len(detections))
+	for rootID, d := range detections {
+		detected[rootID] = detectTypes.VulnerabilityData{
+			ID:         rootID,
+			Detections: []detectTypes.VulnerabilityDataDetection{d},
 		}
 	}
 
 	// Fetch Vulnerability/Advisory data once per RootID WITHOUT narrowing by
-	// ecosystem/datasource: a RootID can be flagged via multiple detection
-	// paths (OS package + CPE) whose contents span different ecosystems, and
-	// narrowing the filter to the first detection's ecosystem would drop the
-	// content the other path needs. Mirrors vuls2's pkg/detect.detect.
+	// ecosystem/datasource, mirroring vuls2's pkg/detect.detect: a RootID's
+	// contents can span ecosystems beyond the detecting one (the packages
+	// pass and the CPE pass of the same report flag overlapping RootIDs),
+	// and the downstream walk only emits contents for sources that actually
+	// detected something.
 	for rootID, base := range detected {
 		avs, err := sesh.GetVulnerabilityData(rootID, dbTypes.Filter{
 			Contents: []dbTypes.FilterContentType{
@@ -662,7 +665,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		}
 	}
 	for _, vi := range vim {
-		// §2: keep ps nil when there are no affected packages — skip the
+		// Keep ps nil when there are no affected packages — skip the
 		// allocation and stay consistent with the in-memory convention that
 		// "not detected" is nil rather than an empty slice. (JSON output is
 		// unaffected either way: AffectedPackages carries omitempty.)
@@ -677,7 +680,7 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 			vi.AffectedPackages = ps
 		}
 
-		// §3: restore the user-supplied CPE form (URI or FS) instead of
+		// Restore the user-supplied CPE form (URI or FS) instead of
 		// leaking the matched FS-with-wildcards form. Unknown FS keys
 		// pass through verbatim (defensive — should not occur because
 		// walkCriteria sources cpes from scanned.CPE). Exact-match CPEs
