@@ -53,7 +53,8 @@ import (
 
 func Test_preConvert(t *testing.T) {
 	type args struct {
-		sr *models.ScanResult
+		sr      *models.ScanResult
+		cpeOnly bool
 	}
 	tests := []struct {
 		name string
@@ -544,10 +545,44 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			// cpeOnly suppresses the OS-package / Microsoft-KB inputs even
+			// when the scan result carries them (the CPE pass runs after
+			// DetectPkgs already handled packages).
+			name: "cpeOnly suppresses packages and KB",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "win-server",
+					Family:     "windows",
+					Release:    "Windows Server 2019",
+					RunningKernel: models.Kernel{
+						Version: "10.0.17763.1234",
+					},
+					Packages: models.Packages{
+						"package1": {Name: "package1", Version: "0.0.1"},
+					},
+					WindowsKB: &models.WindowsKB{
+						Applied:   []string{"0000001"},
+						Unapplied: []string{"0000002"},
+					},
+				},
+				cpeOnly: true,
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "win-server",
+				Family:      ecosystemTypes.EcosystemTypeMicrosoft,
+				Release:     "Windows Server 2019",
+
+				Kernel: scanTypes.Kernel{
+					Version: "10.0.17763.1234",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _ := vuls2.PreConvert(tt.args.sr, nil)
+			got, _ := vuls2.PreConvert(tt.args.sr, nil, tt.args.cpeOnly)
 			if diff := gocmp.Diff(got, tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
 				t.Errorf("preConvert() mismatch (-got +want):\n%s", diff)
 			}

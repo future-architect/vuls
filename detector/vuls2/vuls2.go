@@ -105,14 +105,7 @@ func detectWith(r *models.ScanResult, cpeURIs []string, vuls2Conf config.Vuls2Co
 	}
 	config.Conf.Vuls2.Digest = metadata.Digest
 
-	vuls2Scanned, fsToOriginalCPE := preConvert(r, cpeURIs)
-	if cpeOnly {
-		// Suppress the OS-package / Microsoft-KB inputs so detect() only
-		// exercises the CPE path; packages were already detected via
-		// DetectPkgs.
-		vuls2Scanned.OSPackages = nil
-		vuls2Scanned.MicrosoftKB = scanTypes.MicrosoftKB{}
-	}
+	vuls2Scanned, fsToOriginalCPE := preConvert(r, cpeURIs, cpeOnly)
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
@@ -246,33 +239,39 @@ func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgres
 // from each CPE 2.3 FS string (the form vuls2 uses internally) back to the
 // user-supplied CPE form (URI or FS). The map is consumed by postConvert to
 // restore the user-supplied form in VulnInfo.CpeURIs.
-func preConvert(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, map[string]string) {
+//
+// cpeOnly suppresses the OS-package / Microsoft-KB inputs so detect() only
+// exercises the CPE path — packages were already detected via DetectPkgs,
+// and converting them again would duplicate AffectedPackages on merge.
+func preConvert(sr *models.ScanResult, cpeURIs []string, cpeOnly bool) (scanTypes.ScanResult, map[string]string) {
 	pkgs := make(map[string]scanTypes.OSPackage)
-	for _, p := range sr.SrcPackages {
-		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
-			continue
-		}
-		for _, bn := range p.BinaryNames {
-			pkgs[bn] = scanTypes.OSPackage{
-				SrcName:    p.Name,
-				SrcVersion: p.Version,
+	if !cpeOnly {
+		for _, p := range sr.SrcPackages {
+			if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+				continue
+			}
+			for _, bn := range p.BinaryNames {
+				pkgs[bn] = scanTypes.OSPackage{
+					SrcName:    p.Name,
+					SrcVersion: p.Version,
+				}
 			}
 		}
-	}
-	for _, p := range sr.Packages {
-		if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
-			continue
+		for _, p := range sr.Packages {
+			if sr.Family == constant.Raspbian && models.IsRaspbianPackage(p.Name, p.Version) {
+				continue
+			}
+			base := pkgs[p.Name]
+			base.Name = p.Name
+			base.Version = preConvertBinaryVersion(sr.Family, p.Version)
+			base.Release = p.Release
+			base.NewVersion = p.NewVersion
+			base.NewRelease = p.NewRelease
+			base.Arch = p.Arch
+			base.Repository = p.Repository
+			base.ModularityLabel = p.ModularityLabel
+			pkgs[p.Name] = base
 		}
-		base := pkgs[p.Name]
-		base.Name = p.Name
-		base.Version = preConvertBinaryVersion(sr.Family, p.Version)
-		base.Release = p.Release
-		base.NewVersion = p.NewVersion
-		base.NewRelease = p.NewRelease
-		base.Arch = p.Arch
-		base.Repository = p.Repository
-		base.ModularityLabel = p.ModularityLabel
-		pkgs[p.Name] = base
 	}
 
 	fsCPEs, fsToOriginal := toFSCPEs(cpeURIs)
@@ -289,6 +288,9 @@ func preConvert(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, 
 			RebootRequired: sr.RunningKernel.RebootRequired,
 		},
 		OSPackages: func() []scanTypes.OSPackage {
+			if cpeOnly {
+				return nil
+			}
 			ps := slices.Collect(maps.Values(pkgs))
 			// For Windows, include the OS release as a synthetic package so that
 			// kernel-version-based detection can report the correct release name.
@@ -301,7 +303,7 @@ func preConvert(sr *models.ScanResult, cpeURIs []string) (scanTypes.ScanResult, 
 			return ps
 		}(),
 		MicrosoftKB: func() scanTypes.MicrosoftKB {
-			if sr.WindowsKB == nil {
+			if cpeOnly || sr.WindowsKB == nil {
 				return scanTypes.MicrosoftKB{}
 			}
 			return scanTypes.MicrosoftKB{
