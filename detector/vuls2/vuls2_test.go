@@ -3852,6 +3852,143 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// No criterion accepts (the scanned version is outside every
+			// range), but the detection reached us because the index matched
+			// on part:vendor:product — the CVE is reported with the low
+			// NvdVendorProductMatch confidence. Criterions with a different
+			// vendor:product or with vulnerable=false (hardware guards) do
+			// not contribute.
+			name: "cpe vendor:product fallback",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string]string{
+					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": "cpe:/a:vendor:product:9.9.9",
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0003",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0003"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0003",
+														Title:       "title",
+														Description: "description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															// same vendor:product, no accept -> fallback hit
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(cpecriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: cpecriterionTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															// different vendor:product -> no contribution
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(cpecriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: cpecriterionTypes.CPE("cpe:2.3:a:othervendor:otherproduct:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															// vulnerable=false (hardware guard) -> excluded
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(cpecriterionTypes.Criterion{
+																	Vulnerable: false,
+																	CPE:        cpecriterionTypes.CPE("cpe:2.3:h:vendor:product:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0003": {
+					CveID:       "CVE-2025-0003",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:       models.Nvd,
+								CveID:      "CVE-2025-0003",
+								Title:      "title",
+								Summary:    "description",
+								SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
+								References: models.References{
+									{
+										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
+										Source: "NVD",
+										RefID:  "CVE-2025-0003",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "redhat ignore pattern",
 			args: args{
 				scanned: scanTypes.ScanResult{

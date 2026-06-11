@@ -36,6 +36,7 @@ import (
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	"github.com/MaineK00n/vuls2/pkg/version"
+	"github.com/knqyf263/go-cpe/common"
 	"github.com/knqyf263/go-cpe/naming"
 
 	"github.com/future-architect/vuls/config"
@@ -478,7 +479,13 @@ type sourceData struct {
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
 	cpes             []string
-	kbIDs            []string
+	// vpCpes holds scanned CPEs that did NOT satisfy any criterion
+	// (no accept) but share part:vendor:product with a vulnerable=true CPE
+	// criterion of this source's detection. They are reported with the
+	// low VendorProductMatch confidence instead of ExactVersionMatch —
+	// the vuls2 replacement for go-cve-dictionary's fuzzy CPE reporting.
+	vpCpes []string
+	kbIDs  []string
 }
 
 type rootTag struct {
@@ -518,9 +525,10 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	}
 
 	type affected struct {
-		packm map[string]pack
-		cpes  []string
-		kbIDs []string
+		packm  map[string]pack
+		cpes   []string
+		vpCpes []string
+		kbIDs  []string
 	}
 
 	am := make(map[string]affected)
@@ -593,6 +601,17 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				for _, cpe := range vd.cpes {
 					if !slices.Contains(base.cpes, cpe) {
 						base.cpes = append(base.cpes, cpe)
+					}
+				}
+				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
+					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
+				}
+			}
+
+			if len(vd.vpCpes) > 0 {
+				for _, cpe := range vd.vpCpes {
+					if !slices.Contains(base.vpCpes, cpe) {
+						base.vpCpes = append(base.vpCpes, cpe)
 					}
 				}
 				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
@@ -675,8 +694,14 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		// §3: restore the user-supplied CPE form (URI or FS) instead of
 		// leaking the matched FS-with-wildcards form. Unknown FS keys
 		// pass through verbatim (defensive — should not occur because
-		// walkCriteria sources cpes from scanned.CPE).
-		if cpes := am[vi.CveID].cpes; len(cpes) > 0 {
+		// walkCriteria sources cpes from scanned.CPE). Exact-match CPEs
+		// take precedence; the vendor:product fallback CPEs only fill
+		// CpeURIs when the CVE has no exact match at all.
+		cpes := am[vi.CveID].cpes
+		if len(cpes) == 0 {
+			cpes = am[vi.CveID].vpCpes
+		}
+		if len(cpes) > 0 {
 			out := make([]string, 0, len(cpes))
 			for _, fs := range cpes {
 				if orig, ok := fsToOriginalCPE[fs]; ok {
@@ -720,8 +745,23 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
+
+					// VendorProductMatch fallback: a CPE-ecosystem condition
+					// with no accepted criterion still reached us because the
+					// detection index matched on part:vendor:product. Walk the
+					// raw (unpruned) criteria and collect the scanned CPEs
+					// that share part:vendor:product with a vulnerable=true
+					// CPE criterion; they are reported with the low
+					// VendorProductMatch confidence (see sourceData.vpCpes).
+					var vpCpes []string
 					if len(statuses) == 0 && len(cpes) == 0 && len(kbIDs) == 0 {
-						continue
+						vpCpes, err = vendorProductCPEs(d.Ecosystem, fcond.Criteria, scanned)
+						if err != nil {
+							return xerrors.Errorf("Failed to collect vendor:product matched CPEs. err: %w", err)
+						}
+						if len(vpCpes) == 0 {
+							continue
+						}
 					}
 
 					src := source{
@@ -735,6 +775,11 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					base := m[src]
 					base.packStatuses = append(base.packStatuses, statuses...)
 					base.cpes = append(base.cpes, cpes...)
+					for _, cpe := range vpCpes {
+						if !slices.Contains(base.vpCpes, cpe) {
+							base.vpCpes = append(base.vpCpes, cpe)
+						}
+					}
 					base.kbIDs = append(base.kbIDs, kbIDs...)
 					m[src] = base
 				}
@@ -742,6 +787,78 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		}
 	}
 	return nil
+}
+
+// vendorProductCPEs returns the scanned CPEs (FS form, as listed in
+// scanned.CPE) whose part:vendor:product attributes match those of a
+// vulnerable=true CPE criterion in the given criteria tree. Non-CPE
+// ecosystems return nil.
+//
+// It implements the VendorProductMatch fallback of the CPE confidence
+// design: vuls2-migrated sources report either ExactVersionMatch (the
+// criterion accepted: cpe / range / cpe_matches hit) or VendorProductMatch
+// (no accept, but the product itself appears in the vulnerability's
+// criteria). The tree walked here is the RAW FilteredCriteria — pruneCriteria
+// would have dropped exactly the no-accept criterions this fallback is
+// looking for. ANY attributes match anything, mirroring CPE name matching.
+func vendorProductCPEs(e ecosystemTypes.Ecosystem, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, error) {
+	if e != ecosystemTypes.EcosystemTypeCPE {
+		return nil, nil
+	}
+
+	var crWFNs []common.WellFormedName
+	var collect func(c criteriaTypes.FilteredCriteria) error
+	collect = func(c criteriaTypes.FilteredCriteria) error {
+		for _, child := range c.Criterias {
+			if err := collect(child); err != nil {
+				return err
+			}
+		}
+		for _, cn := range c.Criterions {
+			if cn.Criterion.Type != criterionTypes.CriterionTypeCPE || cn.Criterion.CPE == nil || !cn.Criterion.CPE.Vulnerable {
+				continue
+			}
+			wfn, err := naming.UnbindFS(string(cn.Criterion.CPE.CPE))
+			if err != nil {
+				return xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cn.Criterion.CPE.CPE, err)
+			}
+			crWFNs = append(crWFNs, wfn)
+		}
+		return nil
+	}
+	if err := collect(ca); err != nil {
+		return nil, err
+	}
+	if len(crWFNs) == 0 {
+		return nil, nil
+	}
+
+	attrEqual := func(a, b common.WellFormedName) bool {
+		for _, attr := range []string{common.AttributePart, common.AttributeVendor, common.AttributeProduct} {
+			av, bv := a.GetString(attr), b.GetString(attr)
+			if av == "ANY" || bv == "ANY" {
+				continue
+			}
+			if av != bv {
+				return false
+			}
+		}
+		return true
+	}
+
+	var matched []string
+	for _, fs := range scanned.CPE {
+		qWFN, err := naming.UnbindFS(fs)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to unbind scanned CPE %q. err: %w", fs, err)
+		}
+		if slices.ContainsFunc(crWFNs, func(c common.WellFormedName) bool { return attrEqual(qWFN, c) }) {
+			if !slices.Contains(matched, fs) {
+				matched = append(matched, fs)
+			}
+		}
+	}
+	return matched, nil
 }
 
 // pruneCriteria drops unaffected branches from a FilteredCriteria tree.
@@ -1042,7 +1159,8 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							Segment:  segment,
 						}
 
-						if _, ok := m[src]; !ok {
+						sd, ok := m[src]
+						if !ok {
 							continue
 						}
 
@@ -1114,9 +1232,18 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
+							// A source whose only detection signal is the
+							// vendor:product fallback (no accepted criterion
+							// anywhere) reports the low VendorProductMatch
+							// confidence instead of the exact-match one.
+							confidence := toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)
+							if len(sd.cpes) == 0 && len(sd.packStatuses) == 0 && len(sd.kbIDs) == 0 && len(sd.vpCpes) > 0 {
+								confidence = toVuls0VendorProductConfidence(src.Segment.Ecosystem, src.SourceID)
+							}
+
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
-								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID)},
+								Confidences:      models.Confidences{confidence},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
