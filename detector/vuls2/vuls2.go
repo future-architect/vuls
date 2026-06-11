@@ -748,7 +748,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						return xerrors.Errorf("Failed to prune criteria. err: %w", err)
 					}
 
-					statuses, cpes, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
+					statuses, cpes, vpCpes, kbIDs, _, err := walkCriteria(d.Ecosystem, sourceID, ca, fcond.Tag, scanned)
 					if err != nil {
 						return xerrors.Errorf("Failed to walk criteria. err: %w", err)
 					}
@@ -760,8 +760,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// that share part:vendor:product with a vulnerable=true
 					// CPE criterion; they are reported with the low
 					// VendorProductMatch confidence (see sourceData.vpCpes).
-					var vpCpes []string
-					if len(statuses) == 0 && len(cpes) == 0 && len(kbIDs) == 0 {
+					if len(statuses) == 0 && len(cpes) == 0 && len(vpCpes) == 0 && len(kbIDs) == 0 {
 						vpCpes, err = vendorProductCPEs(d.Ecosystem, fcond.Criteria, scanned)
 						if err != nil {
 							return xerrors.Errorf("Failed to collect vendor:product matched CPEs. err: %w", err)
@@ -794,6 +793,28 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		}
 	}
 	return nil
+}
+
+// versionUnrestricted reports whether a CPE criterion carries no version
+// restriction at all: its CPE version attribute is NA (cpecriterion.Accept
+// short-circuits NA to accept without any version check, mirroring
+// go-cve-dictionary's "criterion without version info" rule), or it is ANY
+// with neither a Range nor enumerated CPEMatches to narrow it. An accept by
+// such a criterion says nothing about the scanned version, so the caller
+// reports it at VendorProductMatch instead of ExactVersionMatch.
+func versionUnrestricted(cr *cpecriterionTypes.Criterion) (bool, error) {
+	cWFN, err := naming.UnbindFS(string(cr.CPE))
+	if err != nil {
+		return false, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cr.CPE, err)
+	}
+	switch cWFN.GetString(common.AttributeVersion) {
+	case "NA":
+		return true, nil
+	case "ANY":
+		return cr.Range == nil && len(cr.CPEMatches) == 0, nil
+	default:
+		return false, nil
+	}
 }
 
 // vendorProductCPEs returns the scanned CPEs (FS form, as listed in
@@ -1114,35 +1135,37 @@ func hasVulnerableCriterion(c criteriaTypes.FilteredCriteria) bool {
 	return false
 }
 
-func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, []string, bool, error) {
+func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, []string, []string, bool, error) {
 	var (
 		statuses []packStatus
 		cpes     []string
+		vpCpes   []string
 		kbIDs    []string
 	)
 	for _, child := range ca.Criterias {
-		ss, cs, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
+		ss, cs, vps, ks, ignore, err := walkCriteria(e, sourceID, child, tag, scanned)
 		if err != nil {
-			return nil, nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+			return nil, nil, nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 		}
 		if ignore {
 			switch ca.Operator {
 			case criteriaTypes.CriteriaOperatorTypeAND:
-				return nil, nil, nil, ignore, nil
+				return nil, nil, nil, nil, ignore, nil
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				continue
 			default:
-				return nil, nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+				return nil, nil, nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
 			}
 		}
 		statuses = append(statuses, ss...)
 		cpes = append(cpes, cs...)
+		vpCpes = append(vpCpes, vps...)
 		kbIDs = append(kbIDs, ks...)
 	}
 
 	for _, cn := range ca.Criterions {
 		if ignoreCriteria(e, sourceID, cn) {
-			return nil, nil, nil, true, nil
+			return nil, nil, nil, nil, true, nil
 		}
 
 		switch cn.Criterion.Type {
@@ -1157,7 +1180,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 			fcn, err := filterCriterion(e, scanned, cn)
 			if err != nil {
-				return nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+				return nil, nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
 			}
 
 			switch fcn.Criterion.Version.Package.Type {
@@ -1175,7 +1198,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 				for _, index := range fcn.Accepts.Version {
 					if len(scanned.OSPackages) <= index {
-						return nil, nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+						return nil, nil, nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
 					}
 					statuses = append(statuses, packStatus{
 						rangeType: rangeType,
@@ -1201,7 +1224,16 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 
 			fcn, err := filterCriterion(e, scanned, cn)
 			if err != nil {
-				return nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+				return nil, nil, nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+			}
+
+			// An accept by a criterion that carries no version restriction
+			// at all does not deserve ExactVersionMatch: report it at
+			// VendorProductMatch instead, like go-cve-dictionary does. JVN
+			// CPE data is mostly such version=* criteria.
+			unrestricted, err := versionUnrestricted(cn.Criterion.CPE)
+			if err != nil {
+				return nil, nil, nil, nil, false, err
 			}
 
 			// Emit the SCANNED CPE form (preserves version) instead of
@@ -1209,10 +1241,14 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			// postConvert maps these back to the user-supplied URI form.
 			for _, index := range fcn.Accepts.CPE {
 				if len(scanned.CPE) <= index {
-					return nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+					return nil, nil, nil, nil, false, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 				}
 				cpe := scanned.CPE[index]
-				if !slices.Contains(cpes, cpe) {
+				if unrestricted {
+					if !slices.Contains(vpCpes, cpe) {
+						vpCpes = append(vpCpes, cpe)
+					}
+				} else if !slices.Contains(cpes, cpe) {
 					cpes = append(cpes, cpe)
 				}
 			}
@@ -1225,7 +1261,7 @@ func walkCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca 
 			continue
 		}
 	}
-	return statuses, cpes, kbIDs, false, nil
+	return statuses, cpes, vpCpes, kbIDs, false, nil
 }
 
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
