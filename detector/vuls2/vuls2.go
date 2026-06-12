@@ -879,7 +879,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		qWFNs = append(qWFNs, qWFN)
 	}
 
-	attrEqual := func(a, b common.WellFormedName) bool {
+	pvpEqual := func(a, b common.WellFormedName) bool {
 		for _, attr := range []string{common.AttributePart, common.AttributeVendor, common.AttributeProduct} {
 			av, bv := a.GetString(attr), b.GetString(attr)
 			if av == "ANY" || bv == "ANY" {
@@ -962,7 +962,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 
 			var m []string
 			for i, qWFN := range qWFNs {
-				if attrEqual(qWFN, cWFN) && vendorProductEligible(cn.Criterion.CPE, cWFN, qWFN) {
+				if pvpEqual(qWFN, cWFN) && vendorProductEligible(cn.Criterion.CPE, cWFN, qWFN) {
 					m = append(m, scanned.CPE[i])
 				}
 			}
