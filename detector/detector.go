@@ -557,11 +557,16 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 		}
 
 		for _, detail := range details {
-			// Skip detections carried by no dictionary-remaining source:
-			// vuls2-migrated sources (NVD, so far) are excluded from this
-			// list, so NVD-only detections disappear here — vuls2 re-detects
-			// them from its own data.
-			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() && !detail.HasEuvd() && !detail.HasMitre() {
+			// Skip detections carried by no dictionary-remaining DETECTION
+			// source. The list mirrors go-cve-dictionary's GetByCpeURI
+			// admission gate minus the vuls2-migrated sources (NVD, so
+			// far), so NVD-only detections disappear here — vuls2
+			// re-detects them from its own data. EUVD / MITRE contents can
+			// ride along on a detail but are never a detection basis
+			// (gocve neither matches nor admits on them, and
+			// getMaxConfidence has no tier for them), so they do not keep
+			// a detail alive.
+			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() {
 				continue
 			}
 
