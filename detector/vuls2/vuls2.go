@@ -905,7 +905,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		}
 		var exact, vp []string
 
-		consider := func(childRelevant, childSatisfied bool, childExact, childVP []string) {
+		foldChild := func(childRelevant, childSatisfied bool, childExact, childVP []string) {
 			if !childRelevant {
 				return
 			}
@@ -933,7 +933,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 			if err != nil {
 				return false, false, nil, nil, err
 			}
-			consider(r, sat, ex, v)
+			foldChild(r, sat, ex, v)
 		}
 		for _, cn := range c.Criterions {
 			if cn.Criterion.Type != criterionTypes.CriterionTypeCPE || cn.Criterion.CPE == nil || !cn.Criterion.CPE.Vulnerable {
@@ -953,9 +953,9 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 					matched = append(matched, scanned.CPE[index])
 				}
 				if versionUnrestricted(cn.Criterion.CPE, cWFN) {
-					consider(true, true, nil, matched)
+					foldChild(true, true, nil, matched)
 				} else {
-					consider(true, true, matched, nil)
+					foldChild(true, true, matched, nil)
 				}
 				continue
 			}
@@ -966,7 +966,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 					m = append(m, scanned.CPE[i])
 				}
 			}
-			consider(true, len(m) > 0, nil, m)
+			foldChild(true, len(m) > 0, nil, m)
 		}
 
 		if !relevant || !satisfied {
