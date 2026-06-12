@@ -1033,7 +1033,16 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		}
 		return out
 	}
-	return dedup(exact), dedup(vp), nil
+	exact = dedup(exact)
+	vp = dedup(vp)
+
+	// The tiers are exclusive per scanned CPE: one confirmed at exact level
+	// (e.g. by another OR leg) does not also report at vendor:product level.
+	vp = slices.DeleteFunc(vp, func(fs string) bool { return slices.Contains(exact, fs) })
+	if len(vp) == 0 {
+		vp = nil
+	}
+	return exact, vp, nil
 }
 
 // vendorProductEligible reports whether a scanned CPE that already matched a
