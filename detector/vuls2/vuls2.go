@@ -498,6 +498,12 @@ type source struct {
 }
 
 type sourceData struct {
+	// detectableCveIDs whitelists which of this source's vulninfos
+	// postConvert may emit. vulninfos is content-driven — an advisory
+	// RootID carries every CVE under it, detected or not — and the pack
+	// aggregation picks ONE winning source per CVE/package via
+	// comparePack, so only the CVEs backed by a detection signal here
+	// (and, for packages, only on the winning source) are listed.
 	detectableCveIDs []string
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
