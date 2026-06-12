@@ -10423,49 +10423,6 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 //   - nothing: definitive misses (concrete version mismatch, confirmed out
 //     of range, enumeration miss) — gocve never reported these either
 func Test_walkCPECriteria(t *testing.T) {
-	// cn builds a vulnerable=true CPE criterion; accepts carries the
-	// scanned.CPE indexes the detect step accepted (nil = no accept).
-	cn := func(cpe string, rng *ccRangeTypes.Range, matches []ccTypes.CPE, accepts []int) criterionTypes.FilteredCriterion {
-		return criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{
-				Type: criterionTypes.CriterionTypeCPE,
-				CPE: &ccTypes.Criterion{
-					Vulnerable: true,
-					CPE:        ccTypes.CPE(cpe),
-					Range:      rng,
-					CPEMatches: matches,
-				},
-			},
-			Accepts: criterionTypes.AcceptQueries{CPE: accepts},
-		}
-	}
-	guard := func(cpe string) criterionTypes.FilteredCriterion {
-		c := cn(cpe, nil, nil, nil)
-		c.Criterion.CPE.Vulnerable = false
-		return c
-	}
-	or := func(cns ...criterionTypes.FilteredCriterion) criteriaTypes.FilteredCriteria {
-		return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: cns}
-	}
-	and := func(cns ...criterionTypes.FilteredCriterion) criteriaTypes.FilteredCriteria {
-		return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeAND, Criterions: cns}
-	}
-	semverLT := func(v string) *ccRangeTypes.Range {
-		return &ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: v}
-	}
-
-	const (
-		scanned990    = "cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"
-		scannedJunos  = "cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"
-		scannedNoVer  = "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"
-		crConcrete990 = "cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"
-		crConcrete100 = "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"
-		crAny         = "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"
-		crAnyOS       = "cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"
-		crNA          = "cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"
-		crOther       = "cpe:2.3:a:othervendor:otherproduct:1.0:*:*:*:*:*:*:*"
-	)
-
 	type args struct {
 		criteria criteriaTypes.FilteredCriteria
 		scanned  []string
@@ -10476,130 +10433,403 @@ func Test_walkCPECriteria(t *testing.T) {
 		wantExact []string
 		wantVP    []string
 	}{
-		// --- accepted criteria ---
 		{
+			// --- accepted criteria ---
 			name: "accepted with version restriction (concrete version) -> exact",
 			args: args{
-				criteria: or(cn(crConcrete990, nil, nil, []int{0})),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantExact: []string{scanned990},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "accepted with version restriction (in-range) -> exact",
 			args: args{
-				criteria: or(cn(crAny, semverLT("10.0"), nil, []int{0})),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+									Range: new(ccRangeTypes.Range{
+										Type:     ccRangeTypes.RangeTypeSEMVER,
+										LessThan: "10.0",
+									}),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantExact: []string{scanned990},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "accepted without any version restriction (bare ANY, the JVN shape) -> vendor:product",
 			args: args{
-				criteria: or(cn(crAny, nil, nil, []int{0})),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{scanned990},
+			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "accepted via the version=NA short-circuit -> vendor:product",
 			args: args{
-				criteria: or(cn(crNA, nil, nil, []int{0})),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{scanned990},
+			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
-		// --- not accepted, but not definitively missed ---
 		{
+			// --- not accepted, but not definitively missed ---
 			name: "no accept, criterion version NA -> vendor:product",
 			args: args{
-				criteria: or(cn(crNA, nil, nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{scanned990},
+			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "no accept, query without version -> vendor:product",
 			args: args{
-				criteria: or(cn(crConcrete100, nil, nil, nil)),
-				scanned:  []string{scannedNoVer},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{scannedNoVer},
+			wantVP: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "no accept, range incomparable but RPM-in-range (junos 21.4r3 < 22.2) -> vendor:product",
 			args: args{
-				criteria: or(cn(crAnyOS, semverLT("22.2"), nil, nil)),
-				scanned:  []string{scannedJunos},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
+									Range: new(ccRangeTypes.Range{
+										Type:     ccRangeTypes.RangeTypeSEMVER,
+										LessThan: "22.2",
+									}),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{scannedJunos},
+			wantVP: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
 		},
-		// --- definitive misses: report nothing ---
 		{
+			// --- definitive misses: report nothing ---
 			name: "no accept, concrete version mismatch -> nothing",
 			args: args{
-				criteria: or(cn(crConcrete100, nil, nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
 		{
 			name: "no accept, confirmed out of range -> nothing",
 			args: args{
-				criteria: or(cn(crAny, semverLT("5.0"), nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+									Range: new(ccRangeTypes.Range{
+										Type:     ccRangeTypes.RangeTypeSEMVER,
+										LessThan: "5.0",
+									}),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
 		{
 			name: "no accept, range incomparable and RPM-out-of-range -> nothing",
 			args: args{
-				criteria: or(cn(crAnyOS, semverLT("21.0"), nil, nil)),
-				scanned:  []string{scannedJunos},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
+									Range: new(ccRangeTypes.Range{
+										Type:     ccRangeTypes.RangeTypeSEMVER,
+										LessThan: "21.0",
+									}),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
 			},
 		},
 		{
 			name: "no accept, enumeration (CPEMatches-only) miss -> nothing",
 			args: args{
-				criteria: or(cn(crAny, nil, []ccTypes.CPE{ccTypes.CPE(crConcrete100)}, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+									CPEMatches: []ccTypes.CPE{ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*")},
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
 		{
 			name: "different vendor:product -> nothing",
 			args: args{
-				criteria: or(cn(crOther, nil, nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:othervendor:otherproduct:1.0:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
 		{
 			name: "vulnerable=false guard alone -> nothing",
 			args: args{
-				criteria: or(guard(crNA)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: false,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
-		// --- AND / OR structure ---
 		{
+			// --- AND / OR structure ---
 			name: "OR(exact, vendor:product) keeps both tiers",
 			args: args{
-				criteria: or(cn(crConcrete990, nil, nil, []int{0}), cn(crNA, nil, nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantExact: []string{scanned990},
-			wantVP:    []string{scanned990},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+			wantVP:    []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "AND(exact, vendor:product) demotes the conjunction to vendor:product",
 			args: args{
-				criteria: and(cn(crConcrete990, nil, nil, []int{0}), cn(crNA, nil, nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{scanned990},
+			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "AND(exact, definitive miss) reports nothing",
 			args: args{
-				criteria: and(cn(crConcrete990, nil, nil, []int{0}), cn(crConcrete100, nil, nil, nil)),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
 		{
@@ -10611,16 +10841,48 @@ func Test_walkCPECriteria(t *testing.T) {
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
 					Criterias: []criteriaTypes.FilteredCriteria{
-						or(
-							guard("cpe:2.3:h:vendor:hardware1:-:*:*:*:*:*:*:*"),
-							guard("cpe:2.3:h:vendor:hardware2:-:*:*:*:*:*:*:*"),
-						),
+						criteriaTypes.FilteredCriteria{
+							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeCPE,
+										CPE: new(ccTypes.Criterion{
+											Vulnerable: false,
+											CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware1:-:*:*:*:*:*:*:*"),
+										}),
+									},
+								},
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeCPE,
+										CPE: new(ccTypes.Criterion{
+											Vulnerable: false,
+											CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware2:-:*:*:*:*:*:*:*"),
+										}),
+									},
+								},
+							},
+						},
 					},
-					Criterions: []criterionTypes.FilteredCriterion{cn(crConcrete990, nil, nil, []int{0})},
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
 				},
-				scanned: []string{scanned990},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantExact: []string{scanned990},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			// A tree whose every node empties out in the prune pass
@@ -10631,19 +10893,57 @@ func Test_walkCPECriteria(t *testing.T) {
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
 					Criterias: []criteriaTypes.FilteredCriteria{
-						and(guard(crNA)),
+						criteriaTypes.FilteredCriteria{
+							Operator: criteriaTypes.CriteriaOperatorTypeAND,
+							Criterions: []criterionTypes.FilteredCriterion{
+								{
+									Criterion: criterionTypes.Criterion{
+										Type: criterionTypes.CriterionTypeCPE,
+										CPE: new(ccTypes.Criterion{
+											Vulnerable: false,
+											CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+										}),
+									},
+								},
+							},
+						},
 					},
 				},
-				scanned: []string{scanned990},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
 		{
 			name: "AND with a vulnerable=false guard: the guard is neutral",
 			args: args{
-				criteria: and(cn(crConcrete990, nil, nil, []int{0}), guard("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*")),
-				scanned:  []string{scanned990},
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: false,
+									CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
+								}),
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantExact: []string{scanned990},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 	}
 	for _, tt := range tests {
