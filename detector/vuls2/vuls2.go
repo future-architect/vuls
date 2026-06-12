@@ -152,6 +152,13 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 // aggregate fields mergeVulnInfo does not handle (AffectedPackages,
 // CpeURIs, WindowsKBFixedIns — postConvert fills those after its own merge).
 func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
+	// A caller-provided result may carry a nil ScannedCves map (e.g. a
+	// zero-value ScanResult from a library consumer); initialize before
+	// writing into it.
+	if r.ScannedCves == nil {
+		r.ScannedCves = models.VulnInfos{}
+	}
+
 	for cveID, vi := range vulnInfos {
 		viBase, found := r.ScannedCves[cveID]
 		if !found {

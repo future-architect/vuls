@@ -512,6 +512,13 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 // carried by migrated sources alone skipped entirely — to avoid
 // double-reporting the same source with diverging match semantics.
 func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+	// A caller-provided result may carry a nil ScannedCves map (e.g. a
+	// zero-value ScanResult from a library consumer); initialize before the
+	// detection paths write into it.
+	if r.ScannedCves == nil {
+		r.ScannedCves = models.VulnInfos{}
+	}
+
 	if len(cpes) == 0 {
 		return nil
 	}

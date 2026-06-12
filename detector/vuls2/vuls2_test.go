@@ -10313,6 +10313,27 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 		want models.VulnInfos
 	}{
 		{
+			// A zero-value ScanResult from a library consumer carries a nil
+			// ScannedCves map; the merge initializes it instead of
+			// panicking on assignment.
+			name: "nil ScannedCves map is initialized",
+			args: args{
+				r: models.ScanResult{},
+				vulnInfos: models.VulnInfos{
+					"CVE-2025-1000": {
+						CveID:       "CVE-2025-1000",
+						Confidences: models.Confidences{models.NvdExactVersionMatch},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-1000": {
+					CveID:       "CVE-2025-1000",
+					Confidences: models.Confidences{models.NvdExactVersionMatch},
+				},
+			},
+		},
+		{
 			name: "new CVE is registered as-is",
 			args: args{
 				r: models.ScanResult{ScannedCves: models.VulnInfos{}},
