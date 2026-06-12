@@ -10534,6 +10534,30 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
+		{
+			name: "accepted with a version-less query -> vendor:product",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: new(ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
+								}),
+							},
+							Accepts: criterionTypes.AcceptQueries{
+								CPE: []int{0},
+							},
+						},
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+			},
+			wantVP: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+		},
 		// --- not accepted, but not definitively missed ---
 		{
 			name: "no accept, criterion version NA -> vendor:product",
@@ -10555,27 +10579,6 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-		},
-		{
-			name: "no accept, query without version -> vendor:product",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
-			},
-			wantVP: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "no accept, range incomparable but RPM-in-range (junos 21.4r3 < 22.2) -> vendor:product",

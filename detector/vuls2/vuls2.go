@@ -963,18 +963,33 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 			}
 
 			if len(cn.Accepts.CPE) > 0 {
-				matched := make([]string, 0, len(cn.Accepts.CPE))
+				// An accept confirms the version only when BOTH sides carry
+				// version information: a version-unrestricted criterion
+				// accepts on attributes alone, and cpecriterion.Accept
+				// short-circuits a version-less (ANY/NA) query to true
+				// before any version check. Either way the accept says
+				// nothing about the scanned version, so those land in the
+				// vendor:product tier — go-cve-dictionary never rated
+				// no-version-information matches higher either.
+				unrestricted := versionUnrestricted(cn.Criterion.CPE, cWFN)
+				var exactMatched, vpMatched []string
 				for _, index := range cn.Accepts.CPE {
 					if len(scanned.CPE) <= index {
 						return false, nil, nil, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 					}
-					matched = append(matched, scanned.CPE[index])
+					switch {
+					case unrestricted:
+						vpMatched = append(vpMatched, scanned.CPE[index])
+					default:
+						switch qWFNs[index].GetString(common.AttributeVersion) {
+						case "ANY", "NA":
+							vpMatched = append(vpMatched, scanned.CPE[index])
+						default:
+							exactMatched = append(exactMatched, scanned.CPE[index])
+						}
+					}
 				}
-				if versionUnrestricted(cn.Criterion.CPE, cWFN) {
-					foldChild(true, nil, matched)
-				} else {
-					foldChild(true, matched, nil)
-				}
+				foldChild(true, exactMatched, vpMatched)
 				continue
 			}
 
