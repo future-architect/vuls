@@ -128,6 +128,15 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 			viBase = vi
 		} else {
 			viBase.AffectedPackages = append(viBase.AffectedPackages, vi.AffectedPackages...)
+			// WindowsKBFixedIns merges like the other per-path outputs: a
+			// CVE first registered by the CPE pass (or already present in
+			// the input ScannedCves) would otherwise lose the KB numbers
+			// the package/KB pass detected.
+			for _, kb := range vi.WindowsKBFixedIns {
+				if !slices.Contains(viBase.WindowsKBFixedIns, kb) {
+					viBase.WindowsKBFixedIns = append(viBase.WindowsKBFixedIns, kb)
+				}
+			}
 			for _, da := range vi.DistroAdvisories {
 				viBase.DistroAdvisories.AppendIfMissing(&da)
 			}
@@ -239,8 +248,8 @@ func preConvertBase(sr *models.ScanResult) scanTypes.ScanResult {
 			RebootRequired: sr.RunningKernel.RebootRequired,
 		},
 
-		ScannedAt: time.Now(),
-		ScannedBy: version.String(),
+		ScannedAt: sr.ScannedAt,
+		ScannedBy: sr.ScannedBy,
 	}
 }
 
