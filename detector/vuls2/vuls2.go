@@ -122,6 +122,21 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
 
+	mergeIntoScannedCves(r, vulnInfos)
+
+	logging.Log.Infof("%s: %d CVEs are detected with vuls2", r.FormatServerName(), len(vulnInfos))
+
+	return nil
+}
+
+// mergeIntoScannedCves merges vuls2-detected VulnInfos into the scan
+// result's ScannedCves. A new CVE is registered as-is; for a CVE that is
+// already present (registered by the other vuls2 pass, by the
+// go-cve-dictionary pass, or carried in a caller-provided result), every
+// field the vuls2 postConvert produces is merged — the remaining VulnInfo
+// fields are owned by enrichment / other detectors and never appear in
+// vuls2 output.
+func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 	for cveID, vi := range vulnInfos {
 		viBase, found := r.ScannedCves[cveID]
 		if !found {
@@ -183,10 +198,6 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		}
 		r.ScannedCves[cveID] = viBase
 	}
-
-	logging.Log.Infof("%s: %d CVEs are detected with vuls2", r.FormatServerName(), len(vulnInfos))
-
-	return nil
 }
 
 // EnrichVulnInfos enriches all ScannedCves in the ScanResult with additional vulnerability data

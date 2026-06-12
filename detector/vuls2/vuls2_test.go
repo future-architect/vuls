@@ -10234,6 +10234,107 @@ func Test_pruneCriteria(t *testing.T) {
 	}
 }
 
+func Test_mergeIntoScannedCves(t *testing.T) {
+	verified := true
+	tests := []struct {
+		name      string
+		scanned   models.VulnInfos
+		vulnInfos models.VulnInfos
+		want      models.VulnInfos
+	}{
+		{
+			name:    "new CVE is registered as-is",
+			scanned: models.VulnInfos{},
+			vulnInfos: models.VulnInfos{
+				"CVE-2025-1001": {
+					CveID:             "CVE-2025-1001",
+					Confidences:       models.Confidences{models.NvdExactVersionMatch},
+					CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
+					WindowsKBFixedIns: []string{"KB5000001"},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-1001": {
+					CveID:             "CVE-2025-1001",
+					Confidences:       models.Confidences{models.NvdExactVersionMatch},
+					CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
+					WindowsKBFixedIns: []string{"KB5000001"},
+				},
+			},
+		},
+		{
+			// Every field the vuls2 postConvert produces merges into a CVE
+			// that another pass registered first: KB numbers and packages
+			// append (KB dedups), advisories / confidences / mitigations
+			// append-if-missing, a verified exploit replaces its unverified
+			// duplicate, CveContents starts from a nil map (a result JSON
+			// with cveContents omitted), and CpeURIs dedups against the
+			// go-cve-dictionary pass.
+			name: "merge into an already-registered CVE",
+			scanned: models.VulnInfos{
+				"CVE-2025-1002": {
+					CveID:             "CVE-2025-1002",
+					Confidences:       models.Confidences{models.JvnVendorProductMatch},
+					CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
+					WindowsKBFixedIns: []string{"KB5000001"},
+					DistroAdvisories:  models.DistroAdvisories{{AdvisoryID: "JVNDB-2025-000001"}},
+					Exploits:          models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit"}},
+					Mitigations:       models.Mitigations{{CveContentType: models.Nvd, URL: "https://example.com/mitigation"}},
+					CveContents:       nil,
+				},
+			},
+			vulnInfos: models.VulnInfos{
+				"CVE-2025-1002": {
+					CveID:             "CVE-2025-1002",
+					Confidences:       models.Confidences{models.NvdExactVersionMatch},
+					AffectedPackages:  models.PackageFixStatuses{{Name: "package1", FixedIn: "1.1"}},
+					CpeURIs:           []string{"cpe:/a:vendor:product:1.0", "cpe:/a:vendor:product:2.0"},
+					WindowsKBFixedIns: []string{"KB5000001", "KB5000002"},
+					DistroAdvisories:  models.DistroAdvisories{{AdvisoryID: "KB5000002", Description: "Microsoft Knowledge Base"}},
+					Exploits:          models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit", Verified: &verified}},
+					Mitigations: models.Mitigations{
+						{CveContentType: models.Nvd, URL: "https://example.com/mitigation"},
+						{CveContentType: models.Nvd, URL: "https://example.com/mitigation2"},
+					},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{{Type: models.Nvd, CveID: "CVE-2025-1002"}},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-1002": {
+					CveID:             "CVE-2025-1002",
+					Confidences:       models.Confidences{models.JvnVendorProductMatch, models.NvdExactVersionMatch},
+					AffectedPackages:  models.PackageFixStatuses{{Name: "package1", FixedIn: "1.1"}},
+					CpeURIs:           []string{"cpe:/a:vendor:product:1.0", "cpe:/a:vendor:product:2.0"},
+					WindowsKBFixedIns: []string{"KB5000001", "KB5000002"},
+					DistroAdvisories: models.DistroAdvisories{
+						{AdvisoryID: "JVNDB-2025-000001"},
+						{AdvisoryID: "KB5000002", Description: "Microsoft Knowledge Base"},
+					},
+					Exploits: models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit", Verified: &verified}},
+					Mitigations: models.Mitigations{
+						{CveContentType: models.Nvd, URL: "https://example.com/mitigation"},
+						{CveContentType: models.Nvd, URL: "https://example.com/mitigation2"},
+					},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{{Type: models.Nvd, CveID: "CVE-2025-1002"}},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := models.ScanResult{ScannedCves: tt.scanned}
+			vuls2.MergeIntoScannedCves(&r, tt.vulnInfos)
+			if diff := gocmp.Diff(r.ScannedCves, tt.want); diff != "" {
+				t.Errorf("mergeIntoScannedCves() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
 // Test_walkCPECriteria documents the CPE confidence-tier rules as a table,
 // one case per rule. The rules replicate the observable behaviour of
 // go-cve-dictionary's CPE matching (db/db.go match() and the JVN-style

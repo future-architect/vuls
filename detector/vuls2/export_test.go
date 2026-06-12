@@ -11,6 +11,7 @@ var (
 
 	WalkCPECriteria            = walkCPECriteria
 	RangeVendorProductEligible = rangeVendorProductEligible
+	MergeIntoScannedCves       = mergeIntoScannedCves
 )
 
 type Source source
