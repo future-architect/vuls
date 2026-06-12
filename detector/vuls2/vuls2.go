@@ -841,7 +841,7 @@ func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool
 // scan cannot evaluate removed: criterions other than vulnerable=true CPE
 // ones (vulnerable=false environment/hardware guards, other criterion
 // types) and child criterias left empty by that removal. Unlike
-// pruneCriteria, which gates on detect-time accepts for the package/KB
+// prunePkgCriteria, which gates on detect-time accepts for the package/KB
 // path, this prunes purely on evaluability — accepts are judged later by
 // walkCPECriteria's collecting walk.
 func pruneCPECriteria(c criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCriteria {
@@ -869,7 +869,7 @@ func pruneCPECriteria(c criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCr
 // vendor:product (everything the condition can only confirm at
 // part:vendor:product level). Walking the raw tree keeps the whole CPE
 // evaluation — including go-cve-dictionary's fuzzy reporting rules — in one
-// place, and lets pruneCriteria / walkPkgCriteria stay package/KB-only.
+// place, and lets prunePkgCriteria / walkPkgCriteria stay package/KB-only.
 //
 // Anything a CPE-only scan cannot evaluate — vulnerable=false
 // environment/hardware guards and other criterion types — is removed by a
@@ -1116,14 +1116,14 @@ func rangeVendorProductEligible(r *ccRangeTypes.Range, qv string) bool {
 	return true
 }
 
-// pruneCriteria drops unaffected branches from a FilteredCriteria tree.
+// prunePkgCriteria drops unaffected branches from a FilteredCriteria tree.
 //
 // AND parents fail (return empty) if any required child is unaffected, OR
 // parents skip unaffected children. The vuls2 util.Detect step now passes
 // every condition through unconditionally — this function is the actual
 // AND/OR gate. cpe-ecosystem conditions never come through here; they are
 // evaluated by walkCPECriteria on the raw tree instead.
-func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
+func prunePkgCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
 	pruned := criteriaTypes.FilteredCriteria{
 		Operator: c.Operator,
 		Criterias: func() []criteriaTypes.FilteredCriteria {
@@ -1141,7 +1141,7 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	}
 
 	for _, child := range c.Criterias {
-		child, err := pruneCriteria(child)
+		child, err := prunePkgCriteria(child)
 		if err != nil {
 			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("prune criteria: %w", err)
 		}
@@ -1183,113 +1183,114 @@ func pruneCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCrit
 	return pruned, nil
 }
 
-// walkPkgCriteria evaluates a package/KB condition: pruneCriteria drops the
+// walkPkgCriteria evaluates a package/KB condition: prunePkgCriteria drops the
 // branches whose criterions did not accept (the AND/OR gate over detect-time
 // accepts), then the pruned tree is walked for package statuses and KB IDs.
 // The cpe-ecosystem counterpart is walkCPECriteria, which prunes on
 // evaluability instead and judges accepts during its own walk.
 func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, error) {
-	pruned, err := pruneCriteria(ca)
+	pruned, err := prunePkgCriteria(ca)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed to prune criteria. err: %w", err)
 	}
-	statuses, kbIDs, _, err := walkPrunedPkgCriteria(e, sourceID, pruned, tag, scanned)
+
+	var walk func(ca criteriaTypes.FilteredCriteria) ([]packStatus, []string, bool, error)
+	walk = func(ca criteriaTypes.FilteredCriteria) ([]packStatus, []string, bool, error) {
+		var (
+			statuses []packStatus
+			kbIDs    []string
+		)
+		for _, child := range ca.Criterias {
+			ss, ks, ignore, err := walk(child)
+			if err != nil {
+				return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+			}
+			if ignore {
+				switch ca.Operator {
+				case criteriaTypes.CriteriaOperatorTypeAND:
+					return nil, nil, ignore, nil
+				case criteriaTypes.CriteriaOperatorTypeOR:
+					continue
+				default:
+					return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
+				}
+			}
+			statuses = append(statuses, ss...)
+			kbIDs = append(kbIDs, ks...)
+		}
+
+		for _, cn := range ca.Criterions {
+			if ignoreCriteria(e, sourceID, cn) {
+				return nil, nil, true, nil
+			}
+
+			switch cn.Criterion.Type {
+			case criterionTypes.CriterionTypeVersion:
+				if cn.Criterion.Version == nil {
+					continue
+				}
+
+				if ignoreCriterion(e, cn, tag) {
+					continue
+				}
+
+				fcn, err := filterCriterion(e, scanned, cn)
+				if err != nil {
+					return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
+				}
+
+				switch fcn.Criterion.Version.Package.Type {
+				case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
+					if !fcn.Criterion.Version.Vulnerable {
+						continue
+					}
+
+					rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
+						if fcn.Criterion.Version.Affected == nil {
+							return vcAffectedRangeTypes.RangeTypeUnknown, ""
+						}
+						return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
+					}()
+
+					for _, index := range fcn.Accepts.Version {
+						if len(scanned.OSPackages) <= index {
+							return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+						}
+						statuses = append(statuses, packStatus{
+							rangeType: rangeType,
+							status: models.PackageFixStatus{
+								Name: affectedPackageName(e, scanned.OSPackages[index]),
+								FixState: func() string {
+									if fcn.Criterion.Version.FixStatus == nil {
+										return ""
+									}
+									return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
+								}(),
+								FixedIn:     fixedIn,
+								NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
+							},
+						})
+					}
+				default:
+				}
+			case criterionTypes.CriterionTypeKB:
+				if cn.Criterion.KB == nil || (!cn.Accepts.KB.Covered && !cn.Accepts.KB.Unapplied) {
+					continue
+				}
+				kbIDs = append(kbIDs, cn.Criterion.KB.KBID)
+			default:
+				continue
+			}
+		}
+		return statuses, kbIDs, false, nil
+	}
+
+	statuses, kbIDs, _, err := walk(pruned)
 	if err != nil {
 		return nil, nil, err
 	}
 	return statuses, kbIDs, nil
 }
-
-func walkPrunedPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, bool, error) {
-	var (
-		statuses []packStatus
-		kbIDs    []string
-	)
-	for _, child := range ca.Criterias {
-		ss, ks, ignore, err := walkPrunedPkgCriteria(e, sourceID, child, tag, scanned)
-		if err != nil {
-			return nil, nil, false, xerrors.Errorf("Failed to walk criteria. err: %w", err)
-		}
-		if ignore {
-			switch ca.Operator {
-			case criteriaTypes.CriteriaOperatorTypeAND:
-				return nil, nil, ignore, nil
-			case criteriaTypes.CriteriaOperatorTypeOR:
-				continue
-			default:
-				return nil, nil, false, xerrors.Errorf("unexpected operator: %s", ca.Operator)
-			}
-		}
-		statuses = append(statuses, ss...)
-		kbIDs = append(kbIDs, ks...)
-	}
-
-	for _, cn := range ca.Criterions {
-		if ignoreCriteria(e, sourceID, cn) {
-			return nil, nil, true, nil
-		}
-
-		switch cn.Criterion.Type {
-		case criterionTypes.CriterionTypeVersion:
-			if cn.Criterion.Version == nil {
-				continue
-			}
-
-			if ignoreCriterion(e, cn, tag) {
-				continue
-			}
-
-			fcn, err := filterCriterion(e, scanned, cn)
-			if err != nil {
-				return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
-			}
-
-			switch fcn.Criterion.Version.Package.Type {
-			case vcPackageTypes.PackageTypeBinary, vcPackageTypes.PackageTypeSource:
-				if !fcn.Criterion.Version.Vulnerable {
-					continue
-				}
-
-				rangeType, fixedIn := func() (vcAffectedRangeTypes.RangeType, string) {
-					if fcn.Criterion.Version.Affected == nil {
-						return vcAffectedRangeTypes.RangeTypeUnknown, ""
-					}
-					return fcn.Criterion.Version.Affected.Type, selectFixedIn(fcn.Criterion.Version.Affected.Type, fcn.Criterion.Version.Affected.Fixed)
-				}()
-
-				for _, index := range fcn.Accepts.Version {
-					if len(scanned.OSPackages) <= index {
-						return nil, nil, false, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
-					}
-					statuses = append(statuses, packStatus{
-						rangeType: rangeType,
-						status: models.PackageFixStatus{
-							Name: affectedPackageName(e, scanned.OSPackages[index]),
-							FixState: func() string {
-								if fcn.Criterion.Version.FixStatus == nil {
-									return ""
-								}
-								return fixState(e, sourceID, fcn.Criterion.Version.FixStatus.Vendor)
-							}(),
-							FixedIn:     fixedIn,
-							NotFixedYet: fcn.Criterion.Version.FixStatus == nil || fcn.Criterion.Version.FixStatus.Class != vcFixStatusTypes.ClassFixed,
-						},
-					})
-				}
-			default:
-			}
-		case criterionTypes.CriterionTypeKB:
-			if cn.Criterion.KB == nil || (!cn.Accepts.KB.Covered && !cn.Accepts.KB.Unapplied) {
-				continue
-			}
-			kbIDs = append(kbIDs, cn.Criterion.KB.KBID)
-		default:
-			continue
-		}
-	}
-	return statuses, kbIDs, false, nil
-}
-
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
 	for _, vd := range vds {
 		am := make(map[source]models.DistroAdvisories)

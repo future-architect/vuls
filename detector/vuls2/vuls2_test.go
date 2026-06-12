@@ -9805,7 +9805,7 @@ func Test_postConvert(t *testing.T) {
 	}
 }
 
-func Test_pruneCriteria(t *testing.T) {
+func Test_prunePkgCriteria(t *testing.T) {
 	type args struct {
 		criteria criteriaTypes.FilteredCriteria
 	}
@@ -10289,13 +10289,13 @@ func Test_pruneCriteria(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PruneCriteria(tt.args.criteria)
+			got, err := vuls2.PrunePkgCriteria(tt.args.criteria)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("pruneCriteria() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("prunePkgCriteria() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if diff := gocmp.Diff(got, tt.want); diff != "" {
-				t.Errorf("pruneCriteria() mismatch (-got +want):\n%s", diff)
+				t.Errorf("prunePkgCriteria() mismatch (-got +want):\n%s", diff)
 			}
 		})
 	}
