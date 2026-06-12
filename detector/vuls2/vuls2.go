@@ -124,7 +124,14 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 
 	mergeIntoScannedCves(r, vulnInfos)
 
-	logging.Log.Infof("%s: %d CVEs are detected with vuls2", r.FormatServerName(), len(vulnInfos))
+	// detectWith runs once per entry point (DetectPkgs, DetectCPEs); name
+	// the pass so the two log lines of one report run stay tellable apart.
+	logging.Log.Infof("%s: %d CVEs are detected with vuls2 (%s)", r.FormatServerName(), len(vulnInfos), func() string {
+		if len(vuls2Scanned.CPE) > 0 {
+			return "cpe"
+		}
+		return "os packages"
+	}())
 
 	return nil
 }
