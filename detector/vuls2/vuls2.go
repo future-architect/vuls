@@ -136,6 +136,14 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 // field the vuls2 postConvert produces is merged — the remaining VulnInfo
 // fields are owned by enrichment / other detectors and never appear in
 // vuls2 output.
+//
+// Not to be confused with mergeVulnInfo, which merges WITHIN one vuls2 run:
+// this function merges ACROSS passes and sources, so the existing entry may
+// not come from vuls2 at all. It therefore assumes nothing about
+// vuls2-internal markers (no Optional["vuls2-sources"]), only dedup-appends
+// (never picks a winner between conflicting contents), and also carries the
+// aggregate fields mergeVulnInfo does not handle (AffectedPackages,
+// CpeURIs, WindowsKBFixedIns — postConvert fills those after its own merge).
 func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 	for cveID, vi := range vulnInfos {
 		viBase, found := r.ScannedCves[cveID]
@@ -1496,6 +1504,17 @@ func comparePack(a, b pack) (int, error) {
 	return r, nil
 }
 
+// mergeVulnInfo merges two VulnInfos for the same CVE WITHIN one vuls2 run:
+// postConvert builds one VulnInfo per detecting source segment (e.g. RHEL
+// CSAF and VEX, redhat:9 and epel:9) and folds them together here.
+//
+// Not to be confused with mergeIntoScannedCves, which merges across passes
+// and sources at the detectWith level. Both inputs here are vuls2-produced,
+// so a same-type CveContents conflict is RESOLVED — the entry whose
+// Optional["vuls2-sources"] ranks higher wins (and the marker is required:
+// non-vuls2 input is an error). Only content-level fields are handled;
+// AffectedPackages / CpeURIs / WindowsKBFixedIns are aggregated separately
+// by postConvert after this merge.
 func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	if a.CveID != b.CveID {
 		return models.VulnInfo{}, xerrors.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
