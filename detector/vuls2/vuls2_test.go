@@ -10737,7 +10737,10 @@ func Test_walkCPECriteria(t *testing.T) {
 		},
 		// --- AND / OR structure ---
 		{
-			name: "OR(exact, vendor:product) keeps both tiers",
+			// The same scanned CPE satisfies one leg at exact level and
+			// another at vendor:product level — the tiers are exclusive
+			// per CPE, so exact wins.
+			name: "OR(exact, vendor:product): exact wins for the same CPE",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -10768,7 +10771,6 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			wantVP:    []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "AND(exact, vendor:product) demotes the conjunction to vendor:product",
