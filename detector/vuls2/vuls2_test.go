@@ -10433,8 +10433,8 @@ func Test_walkCPECriteria(t *testing.T) {
 		wantExact []string
 		wantVP    []string
 	}{
+		// --- accepted criteria ---
 		{
-			// --- accepted criteria ---
 			name: "accepted with version restriction (concrete version) -> exact",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
@@ -10534,8 +10534,8 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
+		// --- not accepted, but not definitively missed ---
 		{
-			// --- not accepted, but not definitively missed ---
 			name: "no accept, criterion version NA -> vendor:product",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
@@ -10602,8 +10602,8 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantVP: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
 		},
+		// --- definitive misses: report nothing ---
 		{
-			// --- definitive misses: report nothing ---
 			name: "no accept, concrete version mismatch -> nothing",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
@@ -10732,8 +10732,8 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
+		// --- AND / OR structure ---
 		{
-			// --- AND / OR structure ---
 			name: "OR(exact, vendor:product) keeps both tiers",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
