@@ -1006,10 +1006,22 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 
 	switch et {
 	case ecosystemTypes.EcosystemTypeCPE:
+		// CPE confidences are two-valued: *ExactVersionMatch (100) or
+		// *VendorProductMatch (10). go-cve-dictionary's middle tier,
+		// *RoughVersionMatch (80), is deliberately retired: it marked
+		// matches whose versions semver could not compare and that only an
+		// RPM-style comparison placed in range — a fallback go-cve-
+		// dictionary itself documented as false-positive-prone — yet its
+		// score 80 sailed past downstream low-confidence cutoffs (which
+		// typically drop score <= 10) as if it were a solid match. Those
+		// fuzzy hits now surface as VendorProductMatch, honestly low and
+		// filterable, while cpematch-expanded criteria give most products a
+		// true exact match instead.
+		//
 		// A source whose only detection signal is the part:vendor:product
 		// fallback (no accepted criterion anywhere) reports the low
-		// *VendorProductMatch confidence (score 10) — the vuls2 counterpart
-		// of go-cve-dictionary's VendorProductMatch — instead of the
+		// *VendorProductMatch confidence — the vuls2 counterpart of
+		// go-cve-dictionary's VendorProductMatch — instead of the
 		// exact-match one. cpes and vpCpes are the only detection signals a
 		// cpe-ecosystem source can carry (packStatuses / kbIDs come from
 		// Version / KB criteria, which never appear under this ecosystem).
