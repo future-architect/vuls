@@ -10494,6 +10494,37 @@ func Test_walkCPECriteria(t *testing.T) {
 			scanned:  []string{scanned990},
 		},
 		{
+			// A nested subtree that holds only guards empties out in the
+			// prune pass and is removed from its AND parent entirely —
+			// the conjunction is then judged on the remaining leg alone.
+			name: "AND survives its guard-only subtree emptying out",
+			criteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeAND,
+				Criterias: []criteriaTypes.FilteredCriteria{
+					or(
+						guard("cpe:2.3:h:vendor:hardware1:-:*:*:*:*:*:*:*"),
+						guard("cpe:2.3:h:vendor:hardware2:-:*:*:*:*:*:*:*"),
+					),
+				},
+				Criterions: []criterionTypes.FilteredCriterion{cn(crConcrete990, nil, nil, []int{0})},
+			},
+			scanned:   []string{scanned990},
+			wantExact: []string{scanned990},
+		},
+		{
+			// A tree whose every node empties out in the prune pass
+			// reports nothing — the top-level emptiness check, not a
+			// default operator value, decides.
+			name: "tree that empties out entirely reports nothing",
+			criteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{
+					and(guard(crNA)),
+				},
+			},
+			scanned: []string{scanned990},
+		},
+		{
 			name:      "AND with a vulnerable=false guard: the guard is neutral",
 			criteria:  and(cn(crConcrete990, nil, nil, []int{0}), guard("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*")),
 			scanned:   []string{scanned990},

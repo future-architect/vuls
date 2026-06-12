@@ -841,6 +841,31 @@ func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool
 	}
 }
 
+// pruneCPECriteria returns the criteria tree with everything a CPE-only
+// scan cannot evaluate removed: criterions other than vulnerable=true CPE
+// ones (vulnerable=false environment/hardware guards, other criterion
+// types) and child criterias left empty by that removal. Unlike
+// pruneCriteria, which gates on detect-time accepts for the package/KB
+// path, this prunes purely on evaluability — accepts are judged later by
+// walkCPECriteria's collecting walk.
+func pruneCPECriteria(c criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCriteria {
+	pruned := criteriaTypes.FilteredCriteria{Operator: c.Operator}
+	for _, child := range c.Criterias {
+		child = pruneCPECriteria(child)
+		if len(child.Criterias) == 0 && len(child.Criterions) == 0 {
+			continue
+		}
+		pruned.Criterias = append(pruned.Criterias, child)
+	}
+	for _, cn := range c.Criterions {
+		if cn.Criterion.Type != criterionTypes.CriterionTypeCPE || cn.Criterion.CPE == nil || !cn.Criterion.CPE.Vulnerable {
+			continue
+		}
+		pruned.Criterions = append(pruned.Criterions, cn)
+	}
+	return pruned
+}
+
 // walkCPECriteria evaluates a cpe-ecosystem condition directly on the RAW
 // (unpruned) FilteredCriteria tree and returns the scanned CPEs (FS form)
 // supporting it, split into the two confidence tiers of the CPE design:
@@ -850,10 +875,11 @@ func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool
 // evaluation — including go-cve-dictionary's fuzzy reporting rules — in one
 // place, and lets pruneCriteria / walkPkgCriteria stay package/KB-only.
 //
-// Per vulnerable=true CPE criterion (vulnerable=false environment/hardware
-// guards and other criterion types are neutral: they cannot be confirmed
-// from a CPE-only scan and never veto an AND — the historical
-// go-cve-dictionary behaviour existing users rely on):
+// Anything a CPE-only scan cannot evaluate — vulnerable=false
+// environment/hardware guards and other criterion types — is removed by a
+// prune pass first, so it never vetoes an AND (the historical
+// go-cve-dictionary behaviour existing users rely on). Each remaining
+// criterion is then classified:
 //
 //   - accepted with a version restriction → exact tier
 //   - accepted without any version restriction (version NA, or ANY with
@@ -870,6 +896,15 @@ func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool
 // take any satisfied child as-is. ANY attributes match anything, mirroring
 // CPE name matching.
 func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, []string, error) {
+	// Pass 1: prune everything a CPE-only scan cannot evaluate, so the
+	// collecting walk below sees evaluatable criterions only and plain
+	// two-valued AND/OR logic suffices (no neutrality tracking). An empty
+	// result means the condition carries nothing to evaluate at all.
+	ca = pruneCPECriteria(ca)
+	if len(ca.Criterias) == 0 && len(ca.Criterions) == 0 {
+		return nil, nil, nil
+	}
+
 	qWFNs := make([]common.WellFormedName, 0, len(scanned.CPE))
 	for _, fs := range scanned.CPE {
 		qWFN, err := naming.UnbindFS(fs)
@@ -892,24 +927,14 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		return true
 	}
 
-	// walk returns (relevant, satisfied, exact, vp): relevant reports
-	// whether the subtree contains any vulnerable=true CPE criterion at all
-	// (nodes without one are neutral and never veto an AND), satisfied
-	// whether the subtree holds, and exact / vp the supporting scanned CPEs
-	// per confidence tier.
-	var walk func(c criteriaTypes.FilteredCriteria) (bool, bool, []string, []string, error)
-	walk = func(c criteriaTypes.FilteredCriteria) (bool, bool, []string, []string, error) {
-		relevant, satisfied := false, true
-		if c.Operator == criteriaTypes.CriteriaOperatorTypeOR {
-			satisfied = false
-		}
+	// Pass 2: walk returns (satisfied, exact, vp) — whether the subtree
+	// holds, and the supporting scanned CPEs per confidence tier.
+	var walk func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error)
+	walk = func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error) {
+		satisfied := c.Operator != criteriaTypes.CriteriaOperatorTypeOR
 		var exact, vp []string
 
-		foldChild := func(childRelevant, childSatisfied bool, childExact, childVP []string) {
-			if !childRelevant {
-				return
-			}
-			relevant = true
+		foldChild := func(childSatisfied bool, childExact, childVP []string) {
 			switch c.Operator {
 			case criteriaTypes.CriteriaOperatorTypeOR:
 				if childSatisfied {
@@ -929,33 +954,30 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		}
 
 		for _, child := range c.Criterias {
-			r, sat, ex, v, err := walk(child)
+			sat, ex, v, err := walk(child)
 			if err != nil {
-				return false, false, nil, nil, err
+				return false, nil, nil, err
 			}
-			foldChild(r, sat, ex, v)
+			foldChild(sat, ex, v)
 		}
 		for _, cn := range c.Criterions {
-			if cn.Criterion.Type != criterionTypes.CriterionTypeCPE || cn.Criterion.CPE == nil || !cn.Criterion.CPE.Vulnerable {
-				continue
-			}
 			cWFN, err := naming.UnbindFS(string(cn.Criterion.CPE.CPE))
 			if err != nil {
-				return false, false, nil, nil, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cn.Criterion.CPE.CPE, err)
+				return false, nil, nil, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cn.Criterion.CPE.CPE, err)
 			}
 
 			if len(cn.Accepts.CPE) > 0 {
 				matched := make([]string, 0, len(cn.Accepts.CPE))
 				for _, index := range cn.Accepts.CPE {
 					if len(scanned.CPE) <= index {
-						return false, false, nil, nil, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
+						return false, nil, nil, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 					}
 					matched = append(matched, scanned.CPE[index])
 				}
 				if versionUnrestricted(cn.Criterion.CPE, cWFN) {
-					foldChild(true, true, nil, matched)
+					foldChild(true, nil, matched)
 				} else {
-					foldChild(true, true, matched, nil)
+					foldChild(true, matched, nil)
 				}
 				continue
 			}
@@ -966,11 +988,11 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 					m = append(m, scanned.CPE[i])
 				}
 			}
-			foldChild(true, len(m) > 0, nil, m)
+			foldChild(len(m) > 0, nil, m)
 		}
 
-		if !relevant || !satisfied {
-			return relevant, false, nil, nil, nil
+		if !satisfied {
+			return false, nil, nil, nil
 		}
 		if c.Operator != criteriaTypes.CriteriaOperatorTypeOR && len(vp) > 0 {
 			// A conjunction with a leg confirmed only at vendor:product
@@ -978,17 +1000,16 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 			vp = append(vp, exact...)
 			exact = nil
 		}
-		return true, true, exact, vp, nil
+		return true, exact, vp, nil
 	}
 
-	relevant, satisfied, exact, vp, err := walk(ca)
+	satisfied, exact, vp, err := walk(ca)
 	if err != nil {
 		return nil, nil, err
 	}
-	if !relevant || !satisfied {
+	if !satisfied {
 		return nil, nil, nil
 	}
-
 	dedup := func(in []string) []string {
 		if len(in) == 0 {
 			return nil
