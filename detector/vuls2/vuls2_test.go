@@ -52,10 +52,9 @@ import (
 	"github.com/future-architect/vuls/models"
 )
 
-func Test_preConvert(t *testing.T) {
+func Test_preConvertPkgs(t *testing.T) {
 	type args struct {
-		sr      *models.ScanResult
-		cpeOnly bool
+		sr *models.ScanResult
 	}
 	tests := []struct {
 		name string
@@ -546,11 +545,34 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := vuls2.PreConvertPkgs(tt.args.sr)
+			if diff := gocmp.Diff(got, tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
+				t.Errorf("preConvertPkgs() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_preConvertCPEs(t *testing.T) {
+	type args struct {
+		sr      *models.ScanResult
+		cpeURIs []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    scanTypes.ScanResult
+		wantMap map[string][]string
+		wantErr bool
+	}{
 		{
-			// cpeOnly suppresses the OS-package / Microsoft-KB inputs even
-			// when the scan result carries them (the CPE pass runs after
-			// DetectPkgs already handled packages).
-			name: "cpeOnly suppresses packages and KB",
+			// The OS-package / Microsoft-KB inputs stay empty even when the
+			// scan result carries them — the CPE pass runs after
+			// DetectPkgs already handled packages.
+			name: "suppresses packages and KB",
 			args: args{
 				sr: &models.ScanResult{
 					ServerName: "win-server",
@@ -567,7 +589,6 @@ func Test_preConvert(t *testing.T) {
 						Unapplied: []string{"0000002"},
 					},
 				},
-				cpeOnly: true,
 			},
 			want: scanTypes.ScanResult{
 				JSONVersion: 0,
@@ -580,17 +601,66 @@ func Test_preConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			// URI inputs convert to the CPE 2.3 FS form vuls2 requires, FS
+			// inputs pass through, and inputs normalising to the same FS
+			// dedup in the detection list while the reverse map keeps every
+			// user-supplied form for CpeURIs restoration.
+			name: "converts URIs to FS and keeps every user form in the reverse map",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "cpe-server",
+					Family:     "pseudo",
+				},
+				cpeURIs: []string{
+					"cpe:/a:vendor:product:1.0",
+					"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*",
+					"cpe:/a:vendor:other:2.0",
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "cpe-server",
+				Family:      ecosystemTypes.Ecosystem("pseudo"),
+				CPE: []string{
+					"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*",
+					"cpe:2.3:a:vendor:other:2.0:*:*:*:*:*:*:*",
+				},
+			},
+			wantMap: map[string][]string{
+				"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:1.0", "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+				"cpe:2.3:a:vendor:other:2.0:*:*:*:*:*:*:*":   {"cpe:/a:vendor:other:2.0"},
+			},
+		},
+		{
+			// Config-sourced CPEs were validated at config-load time, so an
+			// unparseable entry signals an unvalidated caller input and
+			// fails the conversion instead of silently detecting nothing.
+			name: "unparseable CPE returns an error",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "cpe-server",
+					Family:     "pseudo",
+				},
+				cpeURIs: []string{"cpe:/o:cisco:ios:15.1(4)m3"},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got scanTypes.ScanResult
-			if tt.args.cpeOnly {
-				got, _, _ = vuls2.PreConvertCPEs(tt.args.sr, nil)
-			} else {
-				got = vuls2.PreConvertPkgs(tt.args.sr)
+			got, gotMap, err := vuls2.PreConvertCPEs(tt.args.sr, tt.args.cpeURIs)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("preConvertCPEs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if diff := gocmp.Diff(got, tt.want, gocmpopts.IgnoreFields(scanTypes.ScanResult{}, "ScannedAt", "ScannedBy")); diff != "" {
-				t.Errorf("preConvert() mismatch (-got +want):\n%s", diff)
+				t.Errorf("preConvertCPEs() mismatch (-got +want):\n%s", diff)
+			}
+			if diff := gocmp.Diff(gotMap, tt.wantMap); diff != "" {
+				t.Errorf("preConvertCPEs() reverse map mismatch (-got +want):\n%s", diff)
 			}
 		})
 	}
