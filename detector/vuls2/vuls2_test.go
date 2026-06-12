@@ -10982,16 +10982,118 @@ func Test_rangeVendorProductEligible(t *testing.T) {
 		args args
 		want bool
 	}{
-		{name: "lt: inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "10.0"}, qv: "9.9.9"}, want: true},
-		{name: "lt: outside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "5.0"}, qv: "9.9.9"}, want: false},
-		{name: "le: boundary inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessEqual: "9.9.9"}, qv: "9.9.9"}, want: true},
-		{name: "lt: boundary outside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "9.9.9"}, qv: "9.9.9"}, want: false},
-		{name: "ge: inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "9.9.9"}, qv: "9.9.9"}, want: true},
-		{name: "gt: boundary outside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterThan: "9.9.9"}, qv: "9.9.9"}, want: false},
-		{name: "ge+lt window: inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "5.0", LessThan: "10.0"}, qv: "9.9.9"}, want: true},
-		{name: "ge+lt window: below", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "5.0", LessThan: "10.0"}, qv: "1.0"}, want: false},
-		{name: "incomparable query, RPM fallback in-range (21.4r3 < 22.2)", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "22.2"}, qv: "21.4r3"}, want: true},
-		{name: "incomparable query, RPM fallback out-of-range (21.4r3 >= 21.0)", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "21.0"}, qv: "21.4r3"}, want: false},
+		{
+			name: "lt: inside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:     ccRangeTypes.RangeTypeSEMVER,
+					LessThan: "10.0",
+				},
+				qv: "9.9.9",
+			},
+			want: true,
+		},
+		{
+			name: "lt: outside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:     ccRangeTypes.RangeTypeSEMVER,
+					LessThan: "5.0",
+				},
+				qv: "9.9.9",
+			},
+			want: false,
+		},
+		{
+			name: "le: boundary inside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:      ccRangeTypes.RangeTypeSEMVER,
+					LessEqual: "9.9.9",
+				},
+				qv: "9.9.9",
+			},
+			want: true,
+		},
+		{
+			name: "lt: boundary outside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:     ccRangeTypes.RangeTypeSEMVER,
+					LessThan: "9.9.9",
+				},
+				qv: "9.9.9",
+			},
+			want: false,
+		},
+		{
+			name: "ge: inside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:         ccRangeTypes.RangeTypeSEMVER,
+					GreaterEqual: "9.9.9",
+				},
+				qv: "9.9.9",
+			},
+			want: true,
+		},
+		{
+			name: "gt: boundary outside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:        ccRangeTypes.RangeTypeSEMVER,
+					GreaterThan: "9.9.9",
+				},
+				qv: "9.9.9",
+			},
+			want: false,
+		},
+		{
+			name: "ge+lt window: inside",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:         ccRangeTypes.RangeTypeSEMVER,
+					GreaterEqual: "5.0",
+					LessThan:     "10.0",
+				},
+				qv: "9.9.9",
+			},
+			want: true,
+		},
+		{
+			name: "ge+lt window: below",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:         ccRangeTypes.RangeTypeSEMVER,
+					GreaterEqual: "5.0",
+					LessThan:     "10.0",
+				},
+				qv: "1.0",
+			},
+			want: false,
+		},
+		{
+			name: "incomparable query, RPM fallback in-range (21.4r3 < 22.2)",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:     ccRangeTypes.RangeTypeSEMVER,
+					LessThan: "22.2",
+				},
+				qv: "21.4r3",
+			},
+			want: true,
+		},
+		{
+			name: "incomparable query, RPM fallback out-of-range (21.4r3 >= 21.0)",
+			args: args{
+				r: ccRangeTypes.Range{
+					Type:     ccRangeTypes.RangeTypeSEMVER,
+					LessThan: "21.0",
+				},
+				qv: "21.4r3",
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
