@@ -10846,7 +10846,7 @@ func Test_walkCPECriteria(t *testing.T) {
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
 					Criterias: []criteriaTypes.FilteredCriteria{
-						criteriaTypes.FilteredCriteria{
+						{
 							Operator: criteriaTypes.CriteriaOperatorTypeOR,
 							Criterions: []criterionTypes.FilteredCriterion{
 								{
@@ -10898,7 +10898,7 @@ func Test_walkCPECriteria(t *testing.T) {
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
 					Criterias: []criteriaTypes.FilteredCriteria{
-						criteriaTypes.FilteredCriteria{
+						{
 							Operator: criteriaTypes.CriteriaOperatorTypeAND,
 							Criterions: []criterionTypes.FilteredCriterion{
 								{
