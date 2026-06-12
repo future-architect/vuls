@@ -10303,21 +10303,26 @@ func Test_pruneCriteria(t *testing.T) {
 
 func Test_mergeIntoScannedCves(t *testing.T) {
 	verified := true
-	tests := []struct {
-		name      string
-		scanned   models.VulnInfos
+	type args struct {
+		r         models.ScanResult
 		vulnInfos models.VulnInfos
-		want      models.VulnInfos
+	}
+	tests := []struct {
+		name string
+		args args
+		want models.VulnInfos
 	}{
 		{
-			name:    "new CVE is registered as-is",
-			scanned: models.VulnInfos{},
-			vulnInfos: models.VulnInfos{
-				"CVE-2025-1001": {
-					CveID:             "CVE-2025-1001",
-					Confidences:       models.Confidences{models.NvdExactVersionMatch},
-					CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
-					WindowsKBFixedIns: []string{"KB5000001"},
+			name: "new CVE is registered as-is",
+			args: args{
+				r: models.ScanResult{ScannedCves: models.VulnInfos{}},
+				vulnInfos: models.VulnInfos{
+					"CVE-2025-1001": {
+						CveID:             "CVE-2025-1001",
+						Confidences:       models.Confidences{models.NvdExactVersionMatch},
+						CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
+						WindowsKBFixedIns: []string{"KB5000001"},
+					},
 				},
 			},
 			want: models.VulnInfos{
@@ -10338,33 +10343,35 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 			// with cveContents omitted), and CpeURIs dedups against the
 			// go-cve-dictionary pass.
 			name: "merge into an already-registered CVE",
-			scanned: models.VulnInfos{
-				"CVE-2025-1002": {
-					CveID:             "CVE-2025-1002",
-					Confidences:       models.Confidences{models.JvnVendorProductMatch},
-					CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
-					WindowsKBFixedIns: []string{"KB5000001"},
-					DistroAdvisories:  models.DistroAdvisories{{AdvisoryID: "JVNDB-2025-000001"}},
-					Exploits:          models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit"}},
-					Mitigations:       models.Mitigations{{CveContentType: models.Nvd, URL: "https://example.com/mitigation"}},
-					CveContents:       nil,
-				},
-			},
-			vulnInfos: models.VulnInfos{
-				"CVE-2025-1002": {
-					CveID:             "CVE-2025-1002",
-					Confidences:       models.Confidences{models.NvdExactVersionMatch},
-					AffectedPackages:  models.PackageFixStatuses{{Name: "package1", FixedIn: "1.1"}},
-					CpeURIs:           []string{"cpe:/a:vendor:product:1.0", "cpe:/a:vendor:product:2.0"},
-					WindowsKBFixedIns: []string{"KB5000001", "KB5000002"},
-					DistroAdvisories:  models.DistroAdvisories{{AdvisoryID: "KB5000002", Description: "Microsoft Knowledge Base"}},
-					Exploits:          models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit", Verified: &verified}},
-					Mitigations: models.Mitigations{
-						{CveContentType: models.Nvd, URL: "https://example.com/mitigation"},
-						{CveContentType: models.Nvd, URL: "https://example.com/mitigation2"},
+			args: args{
+				r: models.ScanResult{ScannedCves: models.VulnInfos{
+					"CVE-2025-1002": {
+						CveID:             "CVE-2025-1002",
+						Confidences:       models.Confidences{models.JvnVendorProductMatch},
+						CpeURIs:           []string{"cpe:/a:vendor:product:1.0"},
+						WindowsKBFixedIns: []string{"KB5000001"},
+						DistroAdvisories:  models.DistroAdvisories{{AdvisoryID: "JVNDB-2025-000001"}},
+						Exploits:          models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit"}},
+						Mitigations:       models.Mitigations{{CveContentType: models.Nvd, URL: "https://example.com/mitigation"}},
+						CveContents:       nil,
 					},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{{Type: models.Nvd, CveID: "CVE-2025-1002"}},
+				}},
+				vulnInfos: models.VulnInfos{
+					"CVE-2025-1002": {
+						CveID:             "CVE-2025-1002",
+						Confidences:       models.Confidences{models.NvdExactVersionMatch},
+						AffectedPackages:  models.PackageFixStatuses{{Name: "package1", FixedIn: "1.1"}},
+						CpeURIs:           []string{"cpe:/a:vendor:product:1.0", "cpe:/a:vendor:product:2.0"},
+						WindowsKBFixedIns: []string{"KB5000001", "KB5000002"},
+						DistroAdvisories:  models.DistroAdvisories{{AdvisoryID: "KB5000002", Description: "Microsoft Knowledge Base"}},
+						Exploits:          models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit", Verified: &verified}},
+						Mitigations: models.Mitigations{
+							{CveContentType: models.Nvd, URL: "https://example.com/mitigation"},
+							{CveContentType: models.Nvd, URL: "https://example.com/mitigation2"},
+						},
+						CveContents: models.CveContents{
+							models.Nvd: []models.CveContent{{Type: models.Nvd, CveID: "CVE-2025-1002"}},
+						},
 					},
 				},
 			},
@@ -10393,8 +10400,8 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := models.ScanResult{ScannedCves: tt.scanned}
-			vuls2.MergeIntoScannedCves(&r, tt.vulnInfos)
+			r := tt.args.r
+			vuls2.MergeIntoScannedCves(&r, tt.args.vulnInfos)
 			if diff := gocmp.Diff(r.ScannedCves, tt.want); diff != "" {
 				t.Errorf("mergeIntoScannedCves() mismatch (-got +want):\n%s", diff)
 			}
@@ -10459,123 +10466,160 @@ func Test_walkCPECriteria(t *testing.T) {
 		crOther       = "cpe:2.3:a:othervendor:otherproduct:1.0:*:*:*:*:*:*:*"
 	)
 
+	type args struct {
+		criteria criteriaTypes.FilteredCriteria
+		scanned  []string
+	}
 	tests := []struct {
 		name      string
-		criteria  criteriaTypes.FilteredCriteria
-		scanned   []string
+		args      args
 		wantExact []string
 		wantVP    []string
 	}{
 		// --- accepted criteria ---
 		{
-			name:      "accepted with version restriction (concrete version) -> exact",
-			criteria:  or(cn(crConcrete990, nil, nil, []int{0})),
-			scanned:   []string{scanned990},
+			name: "accepted with version restriction (concrete version) -> exact",
+			args: args{
+				criteria: or(cn(crConcrete990, nil, nil, []int{0})),
+				scanned:  []string{scanned990},
+			},
 			wantExact: []string{scanned990},
 		},
 		{
-			name:      "accepted with version restriction (in-range) -> exact",
-			criteria:  or(cn(crAny, semverLT("10.0"), nil, []int{0})),
-			scanned:   []string{scanned990},
+			name: "accepted with version restriction (in-range) -> exact",
+			args: args{
+				criteria: or(cn(crAny, semverLT("10.0"), nil, []int{0})),
+				scanned:  []string{scanned990},
+			},
 			wantExact: []string{scanned990},
 		},
 		{
-			name:     "accepted without any version restriction (bare ANY, the JVN shape) -> vendor:product",
-			criteria: or(cn(crAny, nil, nil, []int{0})),
-			scanned:  []string{scanned990},
-			wantVP:   []string{scanned990},
+			name: "accepted without any version restriction (bare ANY, the JVN shape) -> vendor:product",
+			args: args{
+				criteria: or(cn(crAny, nil, nil, []int{0})),
+				scanned:  []string{scanned990},
+			},
+			wantVP: []string{scanned990},
 		},
 		{
-			name:     "accepted via the version=NA short-circuit -> vendor:product",
-			criteria: or(cn(crNA, nil, nil, []int{0})),
-			scanned:  []string{scanned990},
-			wantVP:   []string{scanned990},
+			name: "accepted via the version=NA short-circuit -> vendor:product",
+			args: args{
+				criteria: or(cn(crNA, nil, nil, []int{0})),
+				scanned:  []string{scanned990},
+			},
+			wantVP: []string{scanned990},
 		},
 		// --- not accepted, but not definitively missed ---
 		{
-			name:     "no accept, criterion version NA -> vendor:product",
-			criteria: or(cn(crNA, nil, nil, nil)),
-			scanned:  []string{scanned990},
-			wantVP:   []string{scanned990},
+			name: "no accept, criterion version NA -> vendor:product",
+			args: args{
+				criteria: or(cn(crNA, nil, nil, nil)),
+				scanned:  []string{scanned990},
+			},
+			wantVP: []string{scanned990},
 		},
 		{
-			name:     "no accept, query without version -> vendor:product",
-			criteria: or(cn(crConcrete100, nil, nil, nil)),
-			scanned:  []string{scannedNoVer},
-			wantVP:   []string{scannedNoVer},
+			name: "no accept, query without version -> vendor:product",
+			args: args{
+				criteria: or(cn(crConcrete100, nil, nil, nil)),
+				scanned:  []string{scannedNoVer},
+			},
+			wantVP: []string{scannedNoVer},
 		},
 		{
-			name:     "no accept, range incomparable but RPM-in-range (junos 21.4r3 < 22.2) -> vendor:product",
-			criteria: or(cn(crAnyOS, semverLT("22.2"), nil, nil)),
-			scanned:  []string{scannedJunos},
-			wantVP:   []string{scannedJunos},
+			name: "no accept, range incomparable but RPM-in-range (junos 21.4r3 < 22.2) -> vendor:product",
+			args: args{
+				criteria: or(cn(crAnyOS, semverLT("22.2"), nil, nil)),
+				scanned:  []string{scannedJunos},
+			},
+			wantVP: []string{scannedJunos},
 		},
 		// --- definitive misses: report nothing ---
 		{
-			name:     "no accept, concrete version mismatch -> nothing",
-			criteria: or(cn(crConcrete100, nil, nil, nil)),
-			scanned:  []string{scanned990},
+			name: "no accept, concrete version mismatch -> nothing",
+			args: args{
+				criteria: or(cn(crConcrete100, nil, nil, nil)),
+				scanned:  []string{scanned990},
+			},
 		},
 		{
-			name:     "no accept, confirmed out of range -> nothing",
-			criteria: or(cn(crAny, semverLT("5.0"), nil, nil)),
-			scanned:  []string{scanned990},
+			name: "no accept, confirmed out of range -> nothing",
+			args: args{
+				criteria: or(cn(crAny, semverLT("5.0"), nil, nil)),
+				scanned:  []string{scanned990},
+			},
 		},
 		{
-			name:     "no accept, range incomparable and RPM-out-of-range -> nothing",
-			criteria: or(cn(crAnyOS, semverLT("21.0"), nil, nil)),
-			scanned:  []string{scannedJunos},
+			name: "no accept, range incomparable and RPM-out-of-range -> nothing",
+			args: args{
+				criteria: or(cn(crAnyOS, semverLT("21.0"), nil, nil)),
+				scanned:  []string{scannedJunos},
+			},
 		},
 		{
-			name:     "no accept, enumeration (CPEMatches-only) miss -> nothing",
-			criteria: or(cn(crAny, nil, []ccTypes.CPE{ccTypes.CPE(crConcrete100)}, nil)),
-			scanned:  []string{scanned990},
+			name: "no accept, enumeration (CPEMatches-only) miss -> nothing",
+			args: args{
+				criteria: or(cn(crAny, nil, []ccTypes.CPE{ccTypes.CPE(crConcrete100)}, nil)),
+				scanned:  []string{scanned990},
+			},
 		},
 		{
-			name:     "different vendor:product -> nothing",
-			criteria: or(cn(crOther, nil, nil, nil)),
-			scanned:  []string{scanned990},
+			name: "different vendor:product -> nothing",
+			args: args{
+				criteria: or(cn(crOther, nil, nil, nil)),
+				scanned:  []string{scanned990},
+			},
 		},
 		{
-			name:     "vulnerable=false guard alone -> nothing",
-			criteria: or(guard(crNA)),
-			scanned:  []string{scanned990},
+			name: "vulnerable=false guard alone -> nothing",
+			args: args{
+				criteria: or(guard(crNA)),
+				scanned:  []string{scanned990},
+			},
 		},
 		// --- AND / OR structure ---
 		{
-			name:      "OR(exact, vendor:product) keeps both tiers",
-			criteria:  or(cn(crConcrete990, nil, nil, []int{0}), cn(crNA, nil, nil, nil)),
-			scanned:   []string{scanned990},
+			name: "OR(exact, vendor:product) keeps both tiers",
+			args: args{
+				criteria: or(cn(crConcrete990, nil, nil, []int{0}), cn(crNA, nil, nil, nil)),
+				scanned:  []string{scanned990},
+			},
 			wantExact: []string{scanned990},
 			wantVP:    []string{scanned990},
 		},
 		{
-			name:     "AND(exact, vendor:product) demotes the conjunction to vendor:product",
-			criteria: and(cn(crConcrete990, nil, nil, []int{0}), cn(crNA, nil, nil, nil)),
-			scanned:  []string{scanned990},
-			wantVP:   []string{scanned990},
+			name: "AND(exact, vendor:product) demotes the conjunction to vendor:product",
+			args: args{
+				criteria: and(cn(crConcrete990, nil, nil, []int{0}), cn(crNA, nil, nil, nil)),
+				scanned:  []string{scanned990},
+			},
+			wantVP: []string{scanned990},
 		},
 		{
-			name:     "AND(exact, definitive miss) reports nothing",
-			criteria: and(cn(crConcrete990, nil, nil, []int{0}), cn(crConcrete100, nil, nil, nil)),
-			scanned:  []string{scanned990},
+			name: "AND(exact, definitive miss) reports nothing",
+			args: args{
+				criteria: and(cn(crConcrete990, nil, nil, []int{0}), cn(crConcrete100, nil, nil, nil)),
+				scanned:  []string{scanned990},
+			},
 		},
 		{
 			// A nested subtree that holds only guards empties out in the
 			// prune pass and is removed from its AND parent entirely —
 			// the conjunction is then judged on the remaining leg alone.
 			name: "AND survives its guard-only subtree emptying out",
-			criteria: criteriaTypes.FilteredCriteria{
-				Operator: criteriaTypes.CriteriaOperatorTypeAND,
-				Criterias: []criteriaTypes.FilteredCriteria{
-					or(
-						guard("cpe:2.3:h:vendor:hardware1:-:*:*:*:*:*:*:*"),
-						guard("cpe:2.3:h:vendor:hardware2:-:*:*:*:*:*:*:*"),
-					),
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterias: []criteriaTypes.FilteredCriteria{
+						or(
+							guard("cpe:2.3:h:vendor:hardware1:-:*:*:*:*:*:*:*"),
+							guard("cpe:2.3:h:vendor:hardware2:-:*:*:*:*:*:*:*"),
+						),
+					},
+					Criterions: []criterionTypes.FilteredCriterion{cn(crConcrete990, nil, nil, []int{0})},
 				},
-				Criterions: []criterionTypes.FilteredCriterion{cn(crConcrete990, nil, nil, []int{0})},
+				scanned: []string{scanned990},
 			},
-			scanned:   []string{scanned990},
 			wantExact: []string{scanned990},
 		},
 		{
@@ -10583,24 +10627,28 @@ func Test_walkCPECriteria(t *testing.T) {
 			// reports nothing — the top-level emptiness check, not a
 			// default operator value, decides.
 			name: "tree that empties out entirely reports nothing",
-			criteria: criteriaTypes.FilteredCriteria{
-				Operator: criteriaTypes.CriteriaOperatorTypeOR,
-				Criterias: []criteriaTypes.FilteredCriteria{
-					and(guard(crNA)),
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Criterias: []criteriaTypes.FilteredCriteria{
+						and(guard(crNA)),
+					},
 				},
+				scanned: []string{scanned990},
 			},
-			scanned: []string{scanned990},
 		},
 		{
-			name:      "AND with a vulnerable=false guard: the guard is neutral",
-			criteria:  and(cn(crConcrete990, nil, nil, []int{0}), guard("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*")),
-			scanned:   []string{scanned990},
+			name: "AND with a vulnerable=false guard: the guard is neutral",
+			args: args{
+				criteria: and(cn(crConcrete990, nil, nil, []int{0}), guard("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*")),
+				scanned:  []string{scanned990},
+			},
 			wantExact: []string{scanned990},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exact, vp, err := vuls2.WalkCPECriteria(tt.criteria, scanTypes.ScanResult{CPE: tt.scanned})
+			exact, vp, err := vuls2.WalkCPECriteria(tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned})
 			if err != nil {
 				t.Fatalf("walkCPECriteria() error = %v", err)
 			}
@@ -10620,26 +10668,29 @@ func Test_walkCPECriteria(t *testing.T) {
 // go-cve-dictionary's matchRpmVer fallback, false-positive tolerance
 // included.
 func Test_rangeVendorProductEligible(t *testing.T) {
+	type args struct {
+		r  ccRangeTypes.Range
+		qv string
+	}
 	tests := []struct {
 		name string
-		r    ccRangeTypes.Range
-		qv   string
+		args args
 		want bool
 	}{
-		{name: "lt: inside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "10.0"}, qv: "9.9.9", want: true},
-		{name: "lt: outside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "5.0"}, qv: "9.9.9", want: false},
-		{name: "le: boundary inside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessEqual: "9.9.9"}, qv: "9.9.9", want: true},
-		{name: "lt: boundary outside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "9.9.9"}, qv: "9.9.9", want: false},
-		{name: "ge: inside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "9.9.9"}, qv: "9.9.9", want: true},
-		{name: "gt: boundary outside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterThan: "9.9.9"}, qv: "9.9.9", want: false},
-		{name: "ge+lt window: inside", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "5.0", LessThan: "10.0"}, qv: "9.9.9", want: true},
-		{name: "ge+lt window: below", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "5.0", LessThan: "10.0"}, qv: "1.0", want: false},
-		{name: "incomparable query, RPM fallback in-range (21.4r3 < 22.2)", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "22.2"}, qv: "21.4r3", want: true},
-		{name: "incomparable query, RPM fallback out-of-range (21.4r3 >= 21.0)", r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "21.0"}, qv: "21.4r3", want: false},
+		{name: "lt: inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "10.0"}, qv: "9.9.9"}, want: true},
+		{name: "lt: outside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "5.0"}, qv: "9.9.9"}, want: false},
+		{name: "le: boundary inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessEqual: "9.9.9"}, qv: "9.9.9"}, want: true},
+		{name: "lt: boundary outside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "9.9.9"}, qv: "9.9.9"}, want: false},
+		{name: "ge: inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "9.9.9"}, qv: "9.9.9"}, want: true},
+		{name: "gt: boundary outside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterThan: "9.9.9"}, qv: "9.9.9"}, want: false},
+		{name: "ge+lt window: inside", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "5.0", LessThan: "10.0"}, qv: "9.9.9"}, want: true},
+		{name: "ge+lt window: below", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, GreaterEqual: "5.0", LessThan: "10.0"}, qv: "1.0"}, want: false},
+		{name: "incomparable query, RPM fallback in-range (21.4r3 < 22.2)", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "22.2"}, qv: "21.4r3"}, want: true},
+		{name: "incomparable query, RPM fallback out-of-range (21.4r3 >= 21.0)", args: args{r: ccRangeTypes.Range{Type: ccRangeTypes.RangeTypeSEMVER, LessThan: "21.0"}, qv: "21.4r3"}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := vuls2.RangeVendorProductEligible(&tt.r, tt.qv); got != tt.want {
+			if got := vuls2.RangeVendorProductEligible(&tt.args.r, tt.args.qv); got != tt.want {
 				t.Errorf("rangeVendorProductEligible() = %v, want %v", got, tt.want)
 			}
 		})
