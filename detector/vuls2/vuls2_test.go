@@ -3801,803 +3801,6 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// A cpe-ecosystem-only result: a version-restricted criterion
-			// accepts -> ExactVersionMatch, the NVD content-level Exploit /
-			// Mitigations slots map to models.Exploit / models.Mitigation,
-			// and CpeURIs restores every user-supplied form (here the same
-			// CPE was configured in both URI and FS form).
-			name: "cpe exact accept with exploit/mitigation lift",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0", "cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0001",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0001",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0001"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0001",
-														Title:       "title",
-														Description: "description",
-														Severity: []severityTypes.Severity{
-															{
-																Type: severityTypes.SeverityTypeCVSSv31,
-																CVSSv31: new(cvssV31Types.CVSSv31{
-																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
-																	BaseScore:             5.5,
-																	BaseSeverity:          "MEDIUM",
-																	TemporalScore:         5.5,
-																	TemporalSeverity:      "MEDIUM",
-																	EnvironmentalScore:    5.5,
-																	EnvironmentalSeverity: "MEDIUM",
-																}),
-															},
-														},
-														// NVD extractors lift "Exploit" / "Mitigation"
-														// reference tags into these content slots; the
-														// detector maps them to models.Exploit /
-														// models.Mitigation (NVD content only).
-														Mitigations: []remediationTypes.Remediation{
-															{
-																Source:      "nvd.nist.gov",
-																Description: "https://example.com/mitigation",
-															},
-														},
-														Exploit: []exploitTypes.Exploit{
-															{
-																Source: "nvd.nist.gov",
-																Link:   "https://example.com/exploit",
-															},
-														},
-														References: []referenceTypes.Reference{
-															{
-																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
-															},
-														},
-														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnknown,
-																	}),
-																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
-																}),
-															},
-															Accepts: criterionTypes.AcceptQueries{
-																CPE: []int{0},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{
-				"CVE-2025-0001": {
-					CveID:       "CVE-2025-0001",
-					Confidences: models.Confidences{models.NvdExactVersionMatch},
-					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0", "cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
-					Exploits: []models.Exploit{
-						{
-							ExploitType: models.ExploitTypeNVD,
-							URL:         "https://example.com/exploit",
-						},
-					},
-					Mitigations: []models.Mitigation{
-						{
-							CveContentType: models.Nvd,
-							URL:            "https://example.com/mitigation",
-						},
-					},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{
-							{
-								Type:          models.Nvd,
-								CveID:         "CVE-2025-0001",
-								Title:         "title",
-								Summary:       "description",
-								Cvss3Score:    5.5,
-								Cvss3Vector:   "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
-								Cvss3Severity: "MEDIUM",
-								SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
-								References: models.References{
-									{
-										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
-										Source: "NVD",
-										RefID:  "CVE-2025-0001",
-									},
-								},
-								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			// No criterion accepts, but a vulnerable=true criterion with no
-			// version information (version NA) matched on
-			// part:vendor:product — the CVE is reported with the low
-			// NvdVendorProductMatch confidence (mirroring
-			// go-cve-dictionary's VendorProductMatch). Criterions with a
-			// different vendor:product, with vulnerable=false (hardware
-			// guards), or whose range confirms the query is out of range do
-			// not contribute.
-			name: "cpe vendor:product fallback",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0003",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0003",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0003"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0003",
-														Title:       "title",
-														Description: "description",
-														References: []referenceTypes.Reference{
-															{
-																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
-															},
-														},
-														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															// same vendor:product, version NA -> fallback hit
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnknown,
-																	}),
-																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-														{
-															// same vendor:product but the range confirms the
-															// scanned 9.9.9 is out of range -> no contribution
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnknown,
-																	}),
-																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-																	Range: new(ccRangeTypes.Range{
-																		Type:     ccRangeTypes.RangeTypeSEMVER,
-																		LessThan: "5.0",
-																	}),
-																}),
-															},
-														},
-														{
-															// different vendor:product -> no contribution
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnknown,
-																	}),
-																	CPE: ccTypes.CPE("cpe:2.3:a:othervendor:otherproduct:0.0.0:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-														{
-															// vulnerable=false (hardware guard) -> excluded
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: false,
-																	CPE:        ccTypes.CPE("cpe:2.3:h:vendor:product:-:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{
-				"CVE-2025-0003": {
-					CveID:       "CVE-2025-0003",
-					Confidences: models.Confidences{models.NvdVendorProductMatch},
-					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{
-							{
-								Type:       models.Nvd,
-								CveID:      "CVE-2025-0003",
-								Title:      "title",
-								Summary:    "description",
-								SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
-								References: models.References{
-									{
-										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
-										Source: "NVD",
-										RefID:  "CVE-2025-0003",
-									},
-								},
-								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			// The vendor:product fallback honours AND structure: a CVE whose
-			// configuration requires product A AND product B is not reported
-			// when only A was scanned.
-			name: "cpe vendor:product fallback, unsatisfied AND",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0004",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0004",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0004"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0004",
-														Title:       "title",
-														Description: "description",
-														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeAND,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:productb:-:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{},
-		},
-		{
-			// The detection reached us via the part:vendor:product index,
-			// but every criterion is a definite miss (a concrete version
-			// differing from the scanned one / a range the scanned version
-			// is confirmed outside of). Neither the exact path nor the
-			// fallback yields a signal, so the condition is not registered
-			// at all — without that gate the CVE's content would be emitted
-			// for an undetected CVE.
-			name: "cpe vendor:product fallback, definitive misses report nothing",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0007",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0007",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0007"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0007",
-														Title:       "title",
-														Description: "description",
-														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															// concrete version differing from the scanned one
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-														{
-															// range that confirms 9.9.9 is out of range
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-																	Range: new(ccRangeTypes.Range{
-																		Type:     ccRangeTypes.RangeTypeSEMVER,
-																		LessThan: "5.0",
-																	}),
-																}),
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{},
-		},
-		{
-			// Same AND configuration with both products scanned: the fallback
-			// fires and reports both CPEs at VendorProductMatch.
-			name: "cpe vendor:product fallback, satisfied AND",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
-						"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
-					"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*": {"cpe:/a:vendor:productb:8.8.8"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0004",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0004",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0004"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0004",
-														Title:       "title",
-														Description: "description",
-														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeAND,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:productb:-:*:*:*:*:*:*:*"),
-																}),
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{
-				"CVE-2025-0004": {
-					CveID:       "CVE-2025-0004",
-					Confidences: models.Confidences{models.NvdVendorProductMatch},
-					CpeURIs:     []string{"cpe:/a:vendor:producta:9.9.9", "cpe:/a:vendor:productb:8.8.8"},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{
-							{
-								Type:         models.Nvd,
-								CveID:        "CVE-2025-0004",
-								Title:        "title",
-								Summary:      "description",
-								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0004",
-								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			// A criterion with no version restriction at all (version=*,
-			// no Range, no CPEMatches — the typical JVN CPE shape) accepts
-			// on attribute match alone; such an accept says nothing about
-			// the scanned version, so the CVE is reported at
-			// VendorProductMatch, not ExactVersionMatch.
-			name: "cpe unrestricted criterion accept -> VendorProductMatch",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0006",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0006",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0006"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0006",
-														Title:       "title",
-														Description: "description",
-														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-																}),
-															},
-															Accepts: criterionTypes.AcceptQueries{
-																CPE: []int{0},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{
-				"CVE-2025-0006": {
-					CveID:       "CVE-2025-0006",
-					Confidences: models.Confidences{models.NvdVendorProductMatch},
-					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{
-							{
-								Type:         models.Nvd,
-								CveID:        "CVE-2025-0006",
-								Title:        "title",
-								Summary:      "description",
-								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0006",
-								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0006\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			// The scanned version (21.4r3, the juniper joined form) cannot
-			// be compared by the range's semver comparator; mirroring
-			// go-cve-dictionary's matchRpmVer fallback, the bound is
-			// re-evaluated RPM-style (21.4r3 < 22.2 holds) and the CVE is
-			// reported at VendorProductMatch instead of disappearing.
-			name: "cpe vendor:product fallback, range incomparable -> rpm fallback",
-			args: args{
-				scanned: scanTypes.ScanResult{
-					CPE: []string{
-						"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*",
-					},
-				},
-				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*": {"cpe:/o:vendor:product:21.4r3"},
-				},
-				detected: detectTypes.DetectResult{
-					Detected: []detectTypes.VulnerabilityData{
-						{
-							ID: "CVE-2025-0005",
-							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
-								{
-									ID: "CVE-2025-0005",
-									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-										sourceTypes.NVDAPICVE: {
-											dataTypes.RootID("CVE-2025-0005"): {
-												{
-													Content: vulnerabilityContentTypes.Content{
-														ID:          "CVE-2025-0005",
-														Title:       "title",
-														Description: "description",
-														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
-													},
-													Segments: []segmentTypes.Segment{
-														{
-															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Detections: []detectTypes.VulnerabilityDataDetection{
-								{
-									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-										sourceTypes.NVDAPICVE: {
-											{
-												Criteria: criteriaTypes.FilteredCriteria{
-													Operator: criteriaTypes.CriteriaOperatorTypeOR,
-													Criterions: []criterionTypes.FilteredCriterion{
-														{
-															Criterion: criterionTypes.Criterion{
-																Type: criterionTypes.CriterionTypeCPE,
-																CPE: new(ccTypes.Criterion{
-																	Vulnerable: true,
-																	CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
-																	Range: new(ccRangeTypes.Range{
-																		Type:     ccRangeTypes.RangeTypeSEMVER,
-																		LessThan: "22.2",
-																	}),
-																}),
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: models.VulnInfos{
-				"CVE-2025-0005": {
-					CveID:       "CVE-2025-0005",
-					Confidences: models.Confidences{models.NvdVendorProductMatch},
-					CpeURIs:     []string{"cpe:/o:vendor:product:21.4r3"},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{
-							{
-								Type:         models.Nvd,
-								CveID:        "CVE-2025-0005",
-								Title:        "title",
-								Summary:      "description",
-								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0005",
-								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0005\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "redhat ignore pattern",
 			args: args{
 				scanned: scanTypes.ScanResult{
@@ -9778,6 +8981,803 @@ func Test_postConvert(t *testing.T) {
 								Optional: map[string]string{
 									"exploit":       "Publicly Disclosed:No;Exploited:No;Latest Software Release:Exploitation Less Likely",
 									"vuls2-sources": `[{"root_id":"CVE-2025-21235","source_id":"microsoft-cvrf","segment":{"ecosystem":"microsoft"}}]`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// A cpe-ecosystem-only result: a version-restricted criterion
+			// accepts -> ExactVersionMatch, the NVD content-level Exploit /
+			// Mitigations slots map to models.Exploit / models.Mitigation,
+			// and CpeURIs restores every user-supplied form (here the same
+			// CPE was configured in both URI and FS form).
+			name: "cpe exact accept with exploit/mitigation lift",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0", "cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0001",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             5.5,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5.5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5.5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														// NVD extractors lift "Exploit" / "Mitigation"
+														// reference tags into these content slots; the
+														// detector maps them to models.Exploit /
+														// models.Mitigation (NVD content only).
+														Mitigations: []remediationTypes.Remediation{
+															{
+																Source:      "nvd.nist.gov",
+																Description: "https://example.com/mitigation",
+															},
+														},
+														Exploit: []exploitTypes.Exploit{
+															{
+																Source: "nvd.nist.gov",
+																Link:   "https://example.com/exploit",
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0001": {
+					CveID:       "CVE-2025-0001",
+					Confidences: models.Confidences{models.NvdExactVersionMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0", "cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"},
+					Exploits: []models.Exploit{
+						{
+							ExploitType: models.ExploitTypeNVD,
+							URL:         "https://example.com/exploit",
+						},
+					},
+					Mitigations: []models.Mitigation{
+						{
+							CveContentType: models.Nvd,
+							URL:            "https://example.com/mitigation",
+						},
+					},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:          models.Nvd,
+								CveID:         "CVE-2025-0001",
+								Title:         "title",
+								Summary:       "description",
+								Cvss3Score:    5.5,
+								Cvss3Vector:   "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
+								References: models.References{
+									{
+										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0001",
+										Source: "NVD",
+										RefID:  "CVE-2025-0001",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// No criterion accepts, but a vulnerable=true criterion with no
+			// version information (version NA) matched on
+			// part:vendor:product — the CVE is reported with the low
+			// NvdVendorProductMatch confidence (mirroring
+			// go-cve-dictionary's VendorProductMatch). Criterions with a
+			// different vendor:product, with vulnerable=false (hardware
+			// guards), or whose range confirms the query is out of range do
+			// not contribute.
+			name: "cpe vendor:product fallback",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0003",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0003"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0003",
+														Title:       "title",
+														Description: "description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															// same vendor:product, version NA -> fallback hit
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															// same vendor:product but the range confirms the
+															// scanned 9.9.9 is out of range -> no contribution
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+																	Range: new(ccRangeTypes.Range{
+																		Type:     ccRangeTypes.RangeTypeSEMVER,
+																		LessThan: "5.0",
+																	}),
+																}),
+															},
+														},
+														{
+															// different vendor:product -> no contribution
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:othervendor:otherproduct:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															// vulnerable=false (hardware guard) -> excluded
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: false,
+																	CPE:        ccTypes.CPE("cpe:2.3:h:vendor:product:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0003": {
+					CveID:       "CVE-2025-0003",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:       models.Nvd,
+								CveID:      "CVE-2025-0003",
+								Title:      "title",
+								Summary:    "description",
+								SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
+								References: models.References{
+									{
+										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0003",
+										Source: "NVD",
+										RefID:  "CVE-2025-0003",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// The vendor:product fallback honours AND structure: a CVE whose
+			// configuration requires product A AND product B is not reported
+			// when only A was scanned.
+			name: "cpe vendor:product fallback, unsatisfied AND",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0004",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0004",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0004"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0004",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeAND,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:productb:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
+			// The detection reached us via the part:vendor:product index,
+			// but every criterion is a definite miss (a concrete version
+			// differing from the scanned one / a range the scanned version
+			// is confirmed outside of). Neither the exact path nor the
+			// fallback yields a signal, so the condition is not registered
+			// at all — without that gate the CVE's content would be emitted
+			// for an undetected CVE.
+			name: "cpe vendor:product fallback, definitive misses report nothing",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0007",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0007",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0007"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0007",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															// concrete version differing from the scanned one
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															// range that confirms 9.9.9 is out of range
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+																	Range: new(ccRangeTypes.Range{
+																		Type:     ccRangeTypes.RangeTypeSEMVER,
+																		LessThan: "5.0",
+																	}),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
+			// Same AND configuration with both products scanned: the fallback
+			// fires and reports both CPEs at VendorProductMatch.
+			name: "cpe vendor:product fallback, satisfied AND",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
+						"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
+					"cpe:2.3:a:vendor:productb:8.8.8:*:*:*:*:*:*:*": {"cpe:/a:vendor:productb:8.8.8"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0004",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0004",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0004"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0004",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeAND,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:productb:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0004": {
+					CveID:       "CVE-2025-0004",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:producta:9.9.9", "cpe:/a:vendor:productb:8.8.8"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0004",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0004",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// A criterion with no version restriction at all (version=*,
+			// no Range, no CPEMatches — the typical JVN CPE shape) accepts
+			// on attribute match alone; such an accept says nothing about
+			// the scanned version, so the CVE is reported at
+			// VendorProductMatch, not ExactVersionMatch.
+			name: "cpe unrestricted criterion accept -> VendorProductMatch",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0006",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0006",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0006"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0006",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0006": {
+					CveID:       "CVE-2025-0006",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0006",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0006",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0006\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// The scanned version (21.4r3, the juniper joined form) cannot
+			// be compared by the range's semver comparator; mirroring
+			// go-cve-dictionary's matchRpmVer fallback, the bound is
+			// re-evaluated RPM-style (21.4r3 < 22.2 holds) and the CVE is
+			// reported at VendorProductMatch instead of disappearing.
+			name: "cpe vendor:product fallback, range incomparable -> rpm fallback",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*": {"cpe:/o:vendor:product:21.4r3"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0005",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0005",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0005"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0005",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
+																	Range: new(ccRangeTypes.Range{
+																		Type:     ccRangeTypes.RangeTypeSEMVER,
+																		LessThan: "22.2",
+																	}),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0005": {
+					CveID:       "CVE-2025-0005",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/o:vendor:product:21.4r3"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0005",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0005",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0005\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
 								},
 							},
 						},
