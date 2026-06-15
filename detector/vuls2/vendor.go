@@ -1050,9 +1050,13 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
-			// JVN carries no version data at all (every JVN criterion is
-			// version=*), so even an exact-tier "all versions" match is only
-			// vendor:product confident — JVN never reaches ExactVersionMatch.
+			// Currently unreachable: JVN is not a vuls2 CPE source yet
+			// (go-cve-dictionary serves it and assigns JvnVendorProductMatch
+			// there). If JVN moves into the vuls2 DB, reaching the exact tier
+			// means a version=* "all versions" match, which is legitimately
+			// exact — but there is no JvnExactVersionMatch constant today, so
+			// revisit this then. JvnVendorProductMatch is a harmless
+			// placeholder until that migration.
 			return models.JvnVendorProductMatch
 		case sourceTypes.Fortinet:
 			return models.FortinetExactVersionMatch
