@@ -780,23 +780,24 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
-					statuses, kbIDs, cpes, vpCpes, err := func() ([]packStatus, []string, []string, []string, error) {
-						if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
-							exact, vp, err := walkCPECriteria(fcond.Criteria, scanned)
-							if err != nil {
-								return nil, nil, nil, nil, xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
-							}
-							return nil, nil, exact, vp, nil
-						}
-
-						statuses, kbIDs, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
+					var (
+						statuses []packStatus
+						kbIDs    []string
+						cpes     []string
+						vpCpes   []string
+					)
+					if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
+						exact, vp, err := walkCPECriteria(fcond.Criteria, scanned)
 						if err != nil {
-							return nil, nil, nil, nil, xerrors.Errorf("Failed to walk pkg criteria. err: %w", err)
+							return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 						}
-						return statuses, kbIDs, nil, nil, nil
-					}()
-					if err != nil {
-						return err
+						cpes, vpCpes = exact, vp
+					} else {
+						s, k, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
+						if err != nil {
+							return xerrors.Errorf("Failed to walk pkg criteria. err: %w", err)
+						}
+						statuses, kbIDs = s, k
 					}
 
 					// A condition with no detection signal is skipped
