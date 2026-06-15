@@ -948,7 +948,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		for _, child := range c.Criterias {
 			sat, ex, v, err := walk(child)
 			if err != nil {
-				return false, nil, nil, err
+				return false, nil, nil, xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 			}
 			foldChild(sat, ex, v)
 		}
