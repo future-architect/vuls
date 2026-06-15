@@ -920,18 +920,12 @@ type Exploit struct {
 // Exploits is a list of Exploit
 type Exploits []Exploit
 
-// AppendOrReplace appends exploit to the list if missing. Identity is the
+// AppendIfMissing appends exploit to the list if missing. Identity is the
 // natural key (ExploitType, URL, ID); entries differing only in enrichment
 // payload (Description, pointer fields) are considered the same exploit.
-// As the one exception, a verified incoming entry replaces an unverified
-// existing one — the verified report is the better representative of the
-// same exploit, and keeping first-wins there would discard that signal.
-func (es *Exploits) AppendOrReplace(exploit Exploit) {
-	for i, e := range *es {
+func (es *Exploits) AppendIfMissing(exploit Exploit) {
+	for _, e := range *es {
 		if e.ExploitType == exploit.ExploitType && e.URL == exploit.URL && e.ID == exploit.ID {
-			if exploit.Verified != nil && *exploit.Verified && (e.Verified == nil || !*e.Verified) {
-				(*es)[i] = exploit
-			}
 			return
 		}
 	}

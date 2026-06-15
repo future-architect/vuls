@@ -10356,11 +10356,10 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 		{
 			// Every field the vuls2 postConvert produces merges into a CVE
 			// that another pass registered first: KB numbers and packages
-			// append (KB dedups), advisories / confidences / mitigations
-			// append-if-missing, a verified exploit replaces its unverified
-			// duplicate, CveContents starts from a nil map (a result JSON
-			// with cveContents omitted), and CpeURIs dedups against the
-			// go-cve-dictionary pass.
+			// append (KB dedups), advisories / confidences / exploits /
+			// mitigations append-if-missing, CveContents starts from a nil
+			// map (a result JSON with cveContents omitted), and CpeURIs
+			// dedups against the go-cve-dictionary pass.
 			name: "merge into an already-registered CVE",
 			args: args{
 				r: models.ScanResult{ScannedCves: models.VulnInfos{
@@ -10394,6 +10393,9 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 					},
 				},
 			},
+			// AppendIfMissing keeps the first entry per natural key, so the
+			// pre-existing exploit (no Verified) wins over the incoming
+			// Verified duplicate.
 			want: models.VulnInfos{
 				"CVE-2025-1002": {
 					CveID:             "CVE-2025-1002",
@@ -10405,7 +10407,7 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 						{AdvisoryID: "JVNDB-2025-000001"},
 						{AdvisoryID: "KB5000002", Description: "Microsoft Knowledge Base"},
 					},
-					Exploits: models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit", Verified: &verified}},
+					Exploits: models.Exploits{{ExploitType: models.ExploitTypeNVD, URL: "https://example.com/exploit"}},
 					Mitigations: models.Mitigations{
 						{CveContentType: models.Nvd, URL: "https://example.com/mitigation"},
 						{CveContentType: models.Nvd, URL: "https://example.com/mitigation2"},
