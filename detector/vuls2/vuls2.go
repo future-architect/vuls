@@ -833,24 +833,6 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 	return nil
 }
 
-// versionUnrestricted reports whether a CPE criterion carries no version
-// restriction at all: its CPE version attribute is NA (cpecriterion.Accept
-// short-circuits NA to accept without any version check, mirroring
-// go-cve-dictionary's "criterion without version info" rule), or it is ANY
-// with neither a Range nor enumerated CPEMatches to narrow it. An accept by
-// such a criterion says nothing about the scanned version, so the caller
-// reports it at VendorProductMatch instead of ExactVersionMatch.
-func versionUnrestricted(cr *ccTypes.Criterion, cWFN common.WellFormedName) bool {
-	switch cWFN.GetString(common.AttributeVersion) {
-	case "NA":
-		return true
-	case "ANY":
-		return cr.Range == nil && len(cr.CPEMatches) == 0
-	default:
-		return false
-	}
-}
-
 // pruneCPECriteria returns the criteria tree with everything a CPE-only
 // scan cannot evaluate removed: criterions other than vulnerable=true CPE
 // ones (vulnerable=false environment/hardware guards, other criterion
@@ -977,24 +959,32 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 			}
 
 			if len(cn.Accepts.CPE) > 0 {
-				// An accept confirms the version only when BOTH sides carry
-				// version information: a version-unrestricted criterion
-				// accepts on attributes alone, and cpecriterion.Accept
-				// short-circuits a version-less (ANY/NA) query to true
-				// before any version check. Either way the accept says
-				// nothing about the scanned version, so those land in the
-				// vendor:product tier — go-cve-dictionary never rated
-				// no-version-information matches higher either.
-				unrestricted := versionUnrestricted(cn.Criterion.CPE, cWFN)
+				cv := cWFN.GetString(common.AttributeVersion)
+				// version=* with no Range and no CPEMatches states that every
+				// version of the product is affected, so the match is exact
+				// regardless of the scanned version. (A source that never
+				// carries version data — JVN — is still reported at
+				// vendor:product by toVuls0Confidence, which maps it down
+				// from whichever tier it lands in here.)
+				allVersions := cv == "ANY" && cn.Criterion.CPE.Range == nil && len(cn.Criterion.CPE.CPEMatches) == 0
 				var exactMatched, vpMatched []string
 				for _, index := range cn.Accepts.CPE {
 					if len(scanned.CPE) <= index {
 						return false, nil, nil, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 					}
 					switch {
-					case unrestricted:
+					case allVersions:
+						exactMatched = append(exactMatched, scanned.CPE[index])
+					case cv == "NA":
+						// The criterion has no version concept — it confirms
+						// the product, not a version → vendor:product only.
 						vpMatched = append(vpMatched, scanned.CPE[index])
 					default:
+						// A version-restricted criterion (concrete version /
+						// range / cpematches) accepted; cpecriterion.Accept
+						// short-circuits a version-less (ANY/NA) query to true
+						// before any version check, so such a query confirms
+						// nothing about the version → vendor:product.
 						switch qWFNs[index].GetString(common.AttributeVersion) {
 						case "ANY", "NA":
 							vpMatched = append(vpMatched, scanned.CPE[index])

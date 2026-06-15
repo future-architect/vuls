@@ -9585,12 +9585,10 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// A criterion with no version restriction at all (version=*,
-			// no Range, no CPEMatches — the typical JVN CPE shape) accepts
-			// on attribute match alone; such an accept says nothing about
-			// the scanned version, so the CVE is reported at
-			// VendorProductMatch, not ExactVersionMatch.
-			name: "cpe unrestricted criterion accept -> VendorProductMatch",
+			// An NVD criterion with version=* and no Range / CPEMatches
+			// states every version is affected, so it is a real exact
+			// match (NvdExactVersionMatch), not vendor:product.
+			name: "cpe version=* criterion accept -> ExactVersionMatch",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9663,7 +9661,7 @@ func Test_postConvert(t *testing.T) {
 			want: models.VulnInfos{
 				"CVE-2025-0006": {
 					CveID:       "CVE-2025-0006",
-					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					Confidences: models.Confidences{models.NvdExactVersionMatch},
 					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
 					CveContents: models.CveContents{
 						models.Nvd: []models.CveContent{
@@ -9677,6 +9675,105 @@ func Test_postConvert(t *testing.T) {
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
 									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0006\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// Same version=* shape, but a JVN source. JVN never carries
+			// version data (every JVN criterion is version=*), so the
+			// "all versions" match is reported at JvnVendorProductMatch,
+			// not exact — toVuls0Confidence maps JVN down from the exact
+			// tier it lands in.
+			name: "cpe version=* criterion accept, JVN source -> VendorProductMatch",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0007",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0007",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedDetail: {
+											dataTypes.RootID("CVE-2025-0007"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0007",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedDetail: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0007": {
+					CveID:       "CVE-2025-0007",
+					Confidences: models.Confidences{models.JvnVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:9.9.9"},
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:         models.Jvn,
+								CveID:        "CVE-2025-0007",
+								Title:        "title",
+								Summary:      "description",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0007\",\"source_id\":\"jvn-feed-detail\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
 								},
 							},
 						},
@@ -10508,7 +10605,11 @@ func Test_walkCPECriteria(t *testing.T) {
 			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "accepted without any version restriction (bare ANY, the JVN shape) -> vendor:product",
+			// version=* with no Range and no CPEMatches means "every version
+			// affected", so the match is exact regardless of the scanned
+			// version. (For a source that never carries version data — JVN —
+			// toVuls0Confidence maps it back down to vendor:product.)
+			name: "accepted version=* (all versions) -> exact",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -10529,7 +10630,7 @@ func Test_walkCPECriteria(t *testing.T) {
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "accepted via the version=NA short-circuit -> vendor:product",

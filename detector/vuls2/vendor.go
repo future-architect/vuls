@@ -1050,6 +1050,9 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+			// JVN carries no version data at all (every JVN criterion is
+			// version=*), so even an exact-tier "all versions" match is only
+			// vendor:product confident — JVN never reaches ExactVersionMatch.
 			return models.JvnVendorProductMatch
 		case sourceTypes.Fortinet:
 			return models.FortinetExactVersionMatch
