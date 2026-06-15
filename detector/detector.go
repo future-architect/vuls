@@ -443,6 +443,15 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
+				// go-cve-dictionary is the NVD content authority during the
+				// transition; drop any nvd CveContents the vuls2 CPE path
+				// pre-filled so its single entry does not duplicate gocve's
+				// per-source set. (They share the NVD SourceLink, so a
+				// SourceLink dedup cannot tell them apart without also
+				// collapsing gocve's own per-CVSS-source entries.)
+				if len(nvds) > 0 {
+					delete(vinfo.CveContents, models.Nvd)
+				}
 				for _, con := range nvds {
 					if !con.Empty() {
 						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
@@ -466,8 +475,14 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
 				vinfo.AlertDict = alerts
-				vinfo.Exploits = append(vinfo.Exploits, exploits...)
-				vinfo.Mitigations = append(vinfo.Mitigations, mitigations...)
+				// AppendIfMissing: the vuls2 CPE path may have already added
+				// these same NVD-derived exploits/mitigations.
+				for _, e := range exploits {
+					vinfo.Exploits.AppendIfMissing(e)
+				}
+				for _, m := range mitigations {
+					vinfo.Mitigations.AppendIfMissing(m)
+				}
 				r.ScannedCves[cveID] = vinfo
 				break
 			}

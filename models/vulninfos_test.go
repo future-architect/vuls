@@ -1307,9 +1307,9 @@ func TestMitigations_AppendIfMissing(t *testing.T) {
 			after: Mitigations{{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
 		},
 		{
-			name:  "different mitigation text is a distinct entry",
-			ms:    Mitigations{{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
-			args:  args{mitigation: Mitigation{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "second"}},
+			name: "different mitigation text is a distinct entry",
+			ms:   Mitigations{{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
+			args: args{mitigation: Mitigation{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "second"}},
 			after: Mitigations{
 				{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"},
 				{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "second"},
