@@ -1281,6 +1281,51 @@ func TestExploits_AppendIfMissing(t *testing.T) {
 	}
 }
 
+func TestMitigations_AppendIfMissing(t *testing.T) {
+	type args struct {
+		mitigation Mitigation
+	}
+	tests := []struct {
+		name  string
+		ms    Mitigations
+		args  args
+		after Mitigations
+	}{
+		{
+			name: "append when missing",
+			ms:   Mitigations{{CveContentType: Nvd, URL: "https://example.com/a"}},
+			args: args{mitigation: Mitigation{CveContentType: Nvd, URL: "https://example.com/b"}},
+			after: Mitigations{
+				{CveContentType: Nvd, URL: "https://example.com/a"},
+				{CveContentType: Nvd, URL: "https://example.com/b"},
+			},
+		},
+		{
+			name:  "same key keeps first",
+			ms:    Mitigations{{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
+			args:  args{mitigation: Mitigation{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
+			after: Mitigations{{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
+		},
+		{
+			name:  "different mitigation text is a distinct entry",
+			ms:    Mitigations{{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"}},
+			args:  args{mitigation: Mitigation{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "second"}},
+			after: Mitigations{
+				{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "first"},
+				{CveContentType: Nvd, URL: "https://example.com/a", Mitigation: "second"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.ms.AppendIfMissing(tt.args.mitigation)
+			if !reflect.DeepEqual(tt.ms, tt.after) {
+				t.Errorf("\nexpected: %v\n  actual: %v\n", tt.after, tt.ms)
+			}
+		})
+	}
+}
+
 func TestVulnInfo_AttackVector(t *testing.T) {
 	type fields struct {
 		CveContents CveContents
