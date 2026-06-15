@@ -1021,7 +1021,7 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 
 	satisfied, exact, vp, err := walk(ca)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 	}
 	if !satisfied {
 		return nil, nil, nil
@@ -1292,7 +1292,7 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 
 	statuses, kbIDs, _, err := walk(pruned)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 	}
 	return statuses, kbIDs, nil
 }
