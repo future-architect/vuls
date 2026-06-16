@@ -9683,12 +9683,14 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// The scanned version (21.4r3, the juniper joined form) cannot
-			// be compared by the range's semver comparator; mirroring
-			// go-cve-dictionary's matchRpmVer fallback, the bound is
-			// re-evaluated RPM-style (21.4r3 < 22.2 holds) and the CVE is
-			// reported at VendorProductMatch instead of disappearing.
-			name: "cpe vendor:product fallback, range incomparable -> rpm fallback",
+			// The scanned version (21.4r3, the juniper joined form) cannot be
+			// compared by the range's semver comparator and is not in the
+			// criterion's CPEMatches, so it is not detected — the RPM
+			// fallback (which only produced the retired RoughVersionMatch) is
+			// gone. A detect-side query normalizer that splits the joined form
+			// into version "21.4" / update "r3" is the intended fix; the
+			// well-formed query would match "21.4 < 22.2" at Exact instead.
+			name: "cpe non-semver query against a range -> not detected",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9759,29 +9761,7 @@ func Test_postConvert(t *testing.T) {
 					},
 				},
 			},
-			want: models.VulnInfos{
-				"CVE-2025-0005": {
-					CveID:       "CVE-2025-0005",
-					Confidences: models.Confidences{models.NvdVendorProductMatch},
-					CpeURIs:     []string{"cpe:/o:vendor:product:21.4r3"},
-					CveContents: models.CveContents{
-						models.Nvd: []models.CveContent{
-							{
-								Type:         models.Nvd,
-								CveID:        "CVE-2025-0005",
-								Title:        "title",
-								Summary:      "description",
-								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0005",
-								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
-								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0005\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
-								},
-							},
-						},
-					},
-				},
-			},
+			want: models.VulnInfos{},
 		},
 	}
 	for _, tt := range tests {
@@ -10605,31 +10585,6 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
-		{
-			name: "no accept, range incomparable but RPM-in-range (junos 21.4r3 < 22.2) -> vendor:product",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
-									Range: new(ccRangeTypes.Range{
-										Type:     ccRangeTypes.RangeTypeSEMVER,
-										LessThan: "22.2",
-									}),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
-			},
-			wantVP: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
-		},
 		// --- definitive misses: report nothing ---
 		{
 			name: "no accept, concrete version mismatch -> nothing",
@@ -10676,7 +10631,13 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 		},
 		{
-			name: "no accept, range incomparable and RPM-out-of-range -> nothing",
+			// A non-semver query (the juniper joined form "21.4r3") cannot be
+			// range-compared, so it is a miss regardless of where the bound
+			// sits — no RPM-comparison fallback. The well-formed query
+			// (version "21.4", update "r3") would evaluate "21.4 < 22.2" as
+			// plain semver and match at Exact; splitting it is the detect-side
+			// query normalizer's job, not this matcher's.
+			name: "no accept, non-semver query against a range -> nothing",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -10689,7 +10650,7 @@ func Test_walkCPECriteria(t *testing.T) {
 									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
 									Range: new(ccRangeTypes.Range{
 										Type:     ccRangeTypes.RangeTypeSEMVER,
-										LessThan: "21.0",
+										LessThan: "22.2",
 									}),
 								}),
 							},
@@ -10987,143 +10948,6 @@ func Test_walkCPECriteria(t *testing.T) {
 			}
 			if diff := gocmp.Diff(vp, tt.wantVP); diff != "" {
 				t.Errorf("vendor:product mismatch (-got +want):\n%s", diff)
-			}
-		})
-	}
-}
-
-// Test_rangeVendorProductEligible pins the bound-by-bound behaviour: a bound
-// the range's comparator can evaluate rejects on a confirmed out-of-range,
-// and an incomparable pair falls back to RPM-style comparison —
-// go-cve-dictionary's matchRpmVer fallback, false-positive tolerance
-// included.
-func Test_rangeVendorProductEligible(t *testing.T) {
-	type args struct {
-		r  ccRangeTypes.Range
-		qv string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "lt: inside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:     ccRangeTypes.RangeTypeSEMVER,
-					LessThan: "10.0",
-				},
-				qv: "9.9.9",
-			},
-			want: true,
-		},
-		{
-			name: "lt: outside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:     ccRangeTypes.RangeTypeSEMVER,
-					LessThan: "5.0",
-				},
-				qv: "9.9.9",
-			},
-			want: false,
-		},
-		{
-			name: "le: boundary inside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:      ccRangeTypes.RangeTypeSEMVER,
-					LessEqual: "9.9.9",
-				},
-				qv: "9.9.9",
-			},
-			want: true,
-		},
-		{
-			name: "lt: boundary outside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:     ccRangeTypes.RangeTypeSEMVER,
-					LessThan: "9.9.9",
-				},
-				qv: "9.9.9",
-			},
-			want: false,
-		},
-		{
-			name: "ge: inside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:         ccRangeTypes.RangeTypeSEMVER,
-					GreaterEqual: "9.9.9",
-				},
-				qv: "9.9.9",
-			},
-			want: true,
-		},
-		{
-			name: "gt: boundary outside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:        ccRangeTypes.RangeTypeSEMVER,
-					GreaterThan: "9.9.9",
-				},
-				qv: "9.9.9",
-			},
-			want: false,
-		},
-		{
-			name: "ge+lt window: inside",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:         ccRangeTypes.RangeTypeSEMVER,
-					GreaterEqual: "5.0",
-					LessThan:     "10.0",
-				},
-				qv: "9.9.9",
-			},
-			want: true,
-		},
-		{
-			name: "ge+lt window: below",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:         ccRangeTypes.RangeTypeSEMVER,
-					GreaterEqual: "5.0",
-					LessThan:     "10.0",
-				},
-				qv: "1.0",
-			},
-			want: false,
-		},
-		{
-			name: "incomparable query, RPM fallback in-range (21.4r3 < 22.2)",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:     ccRangeTypes.RangeTypeSEMVER,
-					LessThan: "22.2",
-				},
-				qv: "21.4r3",
-			},
-			want: true,
-		},
-		{
-			name: "incomparable query, RPM fallback out-of-range (21.4r3 >= 21.0)",
-			args: args{
-				r: ccRangeTypes.Range{
-					Type:     ccRangeTypes.RangeTypeSEMVER,
-					LessThan: "21.0",
-				},
-				qv: "21.4r3",
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := vuls2.RangeVendorProductEligible(&tt.args.r, tt.args.qv); got != tt.want {
-				t.Errorf("rangeVendorProductEligible() = %v, want %v", got, tt.want)
 			}
 		})
 	}

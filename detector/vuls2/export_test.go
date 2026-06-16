@@ -9,9 +9,8 @@ var (
 	PrunePkgCriteria = prunePkgCriteria
 	Enrich           = enrich
 
-	WalkCPECriteria            = walkCPECriteria
-	RangeVendorProductEligible = rangeVendorProductEligible
-	MergeIntoScannedCves       = mergeIntoScannedCves
+	WalkCPECriteria      = walkCPECriteria
+	MergeIntoScannedCves = mergeIntoScannedCves
 )
 
 type Source source
