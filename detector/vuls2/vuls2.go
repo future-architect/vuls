@@ -36,7 +36,6 @@ import (
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	"github.com/MaineK00n/vuls2/pkg/version"
-	"github.com/knqyf263/go-cpe/common"
 	"github.com/knqyf263/go-cpe/naming"
 
 	"github.com/future-architect/vuls/config"
@@ -784,7 +783,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						vpCpes   []string
 					)
 					if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
-						exact, vp, err := walkCPECriteria(fcond.Criteria, scanned)
+						exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned)
 						if err != nil {
 							return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 						}
@@ -856,36 +855,29 @@ func pruneCPECriteria(c criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCr
 	return pruned
 }
 
-// walkCPECriteria evaluates a cpe-ecosystem condition directly on the RAW
-// (unpruned) FilteredCriteria tree and returns the scanned CPEs (FS form)
-// supporting it, split into the two confidence tiers of the CPE design:
-// exact (an accepted criterion with a version restriction) and
-// vendor:product (everything the condition can only confirm at
-// part:vendor:product level). Walking the raw tree keeps the whole CPE
-// evaluation — including go-cve-dictionary's fuzzy reporting rules — in one
-// place, and lets prunePkgCriteria / walkPkgCriteria stay package/KB-only.
+// walkCPECriteria projects a cpe-ecosystem condition onto vuls0's flat result.
+// All CPE match semantics — WFN attribute matching, range/cpematch evaluation,
+// and the exact vs version-unconfirmed quality judgement — already happened in
+// vuls-data-update's cpecriterion.Match; this function only reads the resulting
+// AcceptQueries.CPE indices and folds the supporting scanned CPEs (FS form) up
+// the AND/OR tree into vuls0's two confidence tiers: exact and vendor:product.
 //
 // Anything a CPE-only scan cannot evaluate — vulnerable=false
 // environment/hardware guards and other criterion types — is removed by a
 // prune pass first, so it never vetoes an AND (the historical
-// go-cve-dictionary behaviour existing users rely on). Each remaining
-// criterion is then classified:
+// go-cve-dictionary behaviour existing users rely on).
 //
-//   - accepted with a version restriction → exact tier
-//   - accepted without any version restriction (version NA, or ANY with
-//     neither Range nor CPEMatches): the accept says nothing about the
-//     scanned version → vendor:product tier
-//   - not accepted, but matching on part:vendor:product and not
-//     definitively missed (vendorProductEligible) → vendor:product tier
-//   - otherwise (concrete version mismatch, confirmed out of range,
-//     enumeration miss) → unsatisfied
+//   - Accepts.CPE.Exact (version-confirmed match) → exact tier
+//   - Accepts.CPE.VersionUnconfirmed (accepted, but no version confirmation)
+//     → vendor:product tier
 //
 // AND nodes require every relevant child to be satisfied and demote their
 // exact contributions when any leg holds only at vendor:product level (the
-// conjunction as a whole is then only vendor:product-confirmed); OR nodes
-// take any satisfied child as-is. ANY attributes match anything, mirroring
-// CPE name matching.
-func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, []string, error) {
+// conjunction as a whole is then only vendor:product-confirmed); OR nodes take
+// any satisfied child as-is. Finally, a CPE source that carries no version
+// data at all (JVN) is reported at vendor:product regardless of the projected
+// tier — that is a source-semantics decision, kept here in vuls0.
+func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, []string, error) {
 	// Pass 1: prune everything a CPE-only scan cannot evaluate, so the
 	// collecting walk below sees evaluatable criterions only and plain
 	// two-valued AND/OR logic suffices (no neutrality tracking). An empty
@@ -895,26 +887,11 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 		return nil, nil, nil
 	}
 
-	qWFNs := make([]common.WellFormedName, 0, len(scanned.CPE))
-	for _, fs := range scanned.CPE {
-		qWFN, err := naming.UnbindFS(fs)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("Failed to unbind scanned CPE %q. err: %w", fs, err)
+	scannedCPE := func(index int) (string, error) {
+		if index < 0 || len(scanned.CPE) <= index {
+			return "", xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 		}
-		qWFNs = append(qWFNs, qWFN)
-	}
-
-	pvpEqual := func(a, b common.WellFormedName) bool {
-		for _, attr := range []string{common.AttributePart, common.AttributeVendor, common.AttributeProduct} {
-			av, bv := a.GetString(attr), b.GetString(attr)
-			if av == "ANY" || bv == "ANY" {
-				continue
-			}
-			if av != bv {
-				return false
-			}
-		}
-		return true
+		return scanned.CPE[index], nil
 	}
 
 	// Pass 2: walk returns (satisfied, exact, vp) — whether the subtree
@@ -951,57 +928,22 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 			foldChild(sat, ex, v)
 		}
 		for _, cn := range c.Criterions {
-			cWFN, err := naming.UnbindFS(string(cn.Criterion.CPE.CPE))
-			if err != nil {
-				return false, nil, nil, xerrors.Errorf("Failed to unbind criterion CPE %q. err: %w", cn.Criterion.CPE.CPE, err)
-			}
-
-			if len(cn.Accepts.CPE) > 0 {
-				cv := cWFN.GetString(common.AttributeVersion)
-				// version=* with no Range and no CPEMatches states that every
-				// version of the product is affected, so the match is exact
-				// regardless of the scanned version. (A source that never
-				// carries version data — JVN — is still reported at
-				// vendor:product by toVuls0Confidence, which maps it down
-				// from whichever tier it lands in here.)
-				allVersions := cv == "ANY" && cn.Criterion.CPE.Range == nil && len(cn.Criterion.CPE.CPEMatches) == 0
-				var exactMatched, vpMatched []string
-				for _, index := range cn.Accepts.CPE {
-					if len(scanned.CPE) <= index {
-						return false, nil, nil, xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
-					}
-					switch {
-					case allVersions:
-						exactMatched = append(exactMatched, scanned.CPE[index])
-					case cv == "NA":
-						// The criterion has no version concept — it confirms
-						// the product, not a version → vendor:product only.
-						vpMatched = append(vpMatched, scanned.CPE[index])
-					default:
-						// A version-restricted criterion (concrete version /
-						// range / cpematches) accepted; cpecriterion.Accept
-						// short-circuits a version-less (ANY/NA) query to true
-						// before any version check, so such a query confirms
-						// nothing about the version → vendor:product.
-						switch qWFNs[index].GetString(common.AttributeVersion) {
-						case "ANY", "NA":
-							vpMatched = append(vpMatched, scanned.CPE[index])
-						default:
-							exactMatched = append(exactMatched, scanned.CPE[index])
-						}
-					}
+			var exactMatched, vpMatched []string
+			for _, index := range cn.Accepts.CPE.Exact {
+				fs, err := scannedCPE(index)
+				if err != nil {
+					return false, nil, nil, err
 				}
-				foldChild(true, exactMatched, vpMatched)
-				continue
+				exactMatched = append(exactMatched, fs)
 			}
-
-			var m []string
-			for i, qWFN := range qWFNs {
-				if pvpEqual(qWFN, cWFN) && vendorProductEligible(cWFN, qWFN) {
-					m = append(m, scanned.CPE[i])
+			for _, index := range cn.Accepts.CPE.VersionUnconfirmed {
+				fs, err := scannedCPE(index)
+				if err != nil {
+					return false, nil, nil, err
 				}
+				vpMatched = append(vpMatched, fs)
 			}
-			foldChild(len(m) > 0, nil, m)
+			foldChild(len(exactMatched) > 0 || len(vpMatched) > 0, exactMatched, vpMatched)
 		}
 
 		if !satisfied {
@@ -1023,6 +965,16 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 	if !satisfied {
 		return nil, nil, nil
 	}
+
+	// JVN carries no version data, so even an exact-tier projection only
+	// confirms the product. Demote before dedup so the tier-exclusion below
+	// sees the final tiers. This is a source-semantics call, not a CPE-match
+	// one, so it lives in vuls0 rather than the source-agnostic matcher.
+	if isJVNCPESource(sourceID) {
+		vp = append(vp, exact...)
+		exact = nil
+	}
+
 	dedup := func(in []string) []string {
 		if len(in) == 0 {
 			return nil
@@ -1047,30 +999,17 @@ func walkCPECriteria(ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanRe
 	return exact, vp, nil
 }
 
-// vendorProductEligible reports whether a scanned CPE that already matched a
-// criterion on part:vendor:product may be reported as VendorProductMatch even
-// though the criterion did not accept. Mirroring go-cve-dictionary's match(),
-// this is reserved for the "no version information to compare" cases: a query
-// without a concrete version (ANY/NA), or a criterion whose version is NA.
-//
-// A wildcard (ANY) or concrete criterion that did not accept is a genuine
-// version mismatch, not a vendor:product hit. go-cve-dictionary kept some of
-// those via a non-semver RPM-comparison fallback, but that fallback only
-// compensates for a malformed query representation rather than rescuing any
-// NVD-known affected version: given a correctly formed query the matcher
-// reaches every affected version at ExactVersionMatch on its own. The juniper
-// case is illustrative — a scan of "21.4r3" cannot be range-compared, but the
-// well-formed CPE (version "21.4", update "r3") evaluates "21.4 < 22.2" as
-// plain semver and matches at Exact. Splitting such joined version strings is
-// a detect-side query-normalizer responsibility, not the matcher's; the fuzzy
-// RPM fallback (which only ever produced the retired RoughVersionMatch tier)
-// is therefore omitted here.
-func vendorProductEligible(cWFN, qWFN common.WellFormedName) bool {
-	switch qWFN.GetString(common.AttributeVersion) {
-	case "ANY", "NA":
+// isJVNCPESource reports whether a CPE-ecosystem detection from this source
+// carries no version data and must therefore be reported at vendor:product
+// regardless of the projected match quality. JVN's CPE entries are all
+// version=ANY with no range; add any future JVN CPE source here.
+func isJVNCPESource(sourceID sourceTypes.SourceID) bool {
+	switch sourceID {
+	case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 		return true
+	default:
+		return false
 	}
-	return cWFN.GetString(common.AttributeVersion) == "NA"
 }
 
 // prunePkgCriteria drops unaffected branches from a FilteredCriteria tree.

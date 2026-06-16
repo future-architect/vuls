@@ -9088,7 +9088,7 @@ func Test_postConvert(t *testing.T) {
 																}),
 															},
 															Accepts: criterionTypes.AcceptQueries{
-																CPE: []int{0},
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
 															},
 														},
 													},
@@ -9149,15 +9149,14 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// No criterion accepts, but a vulnerable=true criterion with no
-			// version information (version NA) matched on
-			// part:vendor:product — the CVE is reported with the low
-			// NvdVendorProductMatch confidence (mirroring
-			// go-cve-dictionary's VendorProductMatch). Criterions with a
-			// different vendor:product, with vulnerable=false (hardware
-			// guards), or whose range confirms the query is out of range do
-			// not contribute.
-			name: "cpe vendor:product fallback",
+			// A criterion accepted the query only at version-unconfirmed
+			// quality (the upstream matcher could not confirm the scanned
+			// version is affected), so the CVE is reported with the low
+			// NvdVendorProductMatch confidence. Criterions that did not accept
+			// — different vendor:product, vulnerable=false hardware guards, or
+			// a range the query fell outside — carry empty Accepts and do not
+			// contribute.
+			name: "cpe version-unconfirmed accept -> vendor:product",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9210,7 +9209,7 @@ func Test_postConvert(t *testing.T) {
 													Operator: criteriaTypes.CriteriaOperatorTypeOR,
 													Criterions: []criterionTypes.FilteredCriterion{
 														{
-															// same vendor:product, version NA -> fallback hit
+															// accepted at version-unconfirmed quality -> vendor:product
 															Criterion: criterionTypes.Criterion{
 																Type: criterionTypes.CriterionTypeCPE,
 																CPE: new(ccTypes.Criterion{
@@ -9220,6 +9219,9 @@ func Test_postConvert(t *testing.T) {
 																	}),
 																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
 																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
 															},
 														},
 														{
@@ -9306,10 +9308,10 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// The vendor:product fallback honours AND structure: a CVE whose
-			// configuration requires product A AND product B is not reported
-			// when only A was scanned.
-			name: "cpe vendor:product fallback, unsatisfied AND",
+			// Projection honours AND structure: a CVE whose configuration
+			// requires product A AND product B is not reported when only A was
+			// scanned (A's leg accepted, but B's leg did not).
+			name: "cpe version-unconfirmed accept, unsatisfied AND",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9364,6 +9366,9 @@ func Test_postConvert(t *testing.T) {
 																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
 																}),
 															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
 														},
 														{
 															Criterion: criterionTypes.Criterion{
@@ -9388,14 +9393,13 @@ func Test_postConvert(t *testing.T) {
 			want: models.VulnInfos{},
 		},
 		{
-			// The detection reached us via the part:vendor:product index,
-			// but every criterion is a definite miss (a concrete version
-			// differing from the scanned one / a range the scanned version
-			// is confirmed outside of). Neither the exact path nor the
-			// fallback yields a signal, so the condition is not registered
-			// at all — without that gate the CVE's content would be emitted
-			// for an undetected CVE.
-			name: "cpe vendor:product fallback, definitive misses report nothing",
+			// The detection reached us via the part:vendor:product index, but
+			// no criterion accepted (every one carries empty Accepts — concrete
+			// version mismatch, out of range, enumeration miss upstream). The
+			// condition yields no signal, so it is not registered at all —
+			// without that gate the CVE's content would be emitted for an
+			// undetected CVE.
+			name: "cpe no accepted criterion, report nothing",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9480,9 +9484,10 @@ func Test_postConvert(t *testing.T) {
 			want: models.VulnInfos{},
 		},
 		{
-			// Same AND configuration with both products scanned: the fallback
-			// fires and reports both CPEs at VendorProductMatch.
-			name: "cpe vendor:product fallback, satisfied AND",
+			// Both AND legs accept at version-unconfirmed quality with both
+			// products scanned: the conjunction is satisfied and reports both
+			// CPEs at VendorProductMatch.
+			name: "cpe version-unconfirmed accept, satisfied AND",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9539,6 +9544,9 @@ func Test_postConvert(t *testing.T) {
 																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
 																}),
 															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
 														},
 														{
 															Criterion: criterionTypes.Criterion{
@@ -9547,6 +9555,9 @@ func Test_postConvert(t *testing.T) {
 																	Vulnerable: true,
 																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:productb:-:*:*:*:*:*:*:*"),
 																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{1}},
 															},
 														},
 													},
@@ -9644,7 +9655,7 @@ func Test_postConvert(t *testing.T) {
 																}),
 															},
 															Accepts: criterionTypes.AcceptQueries{
-																CPE: []int{0},
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
 															},
 														},
 													},
@@ -10410,21 +10421,32 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 	}
 }
 
-// Test_walkCPECriteria documents the CPE confidence-tier rules as a table,
-// one case per rule. The rules replicate the observable behaviour of
-// go-cve-dictionary's CPE matching (db/db.go match() and the JVN-style
-// part:vendor:product handling) so that, once go-cve-dictionary is archived,
-// this table — not its source — is the reference:
-//
-//   - exact tier: a criterion with a version restriction accepted
-//   - vendor:product tier: the condition only confirms part:vendor:product —
-//     an accept by a version-unrestricted criterion, a criterion/query
-//     without version information (NA/ANY), or a range only RPM comparison
-//     can place in-range (gocve's matchRpmVer fallback, formerly Rough)
-//   - nothing: definitive misses (concrete version mismatch, confirmed out
-//     of range, enumeration miss) — gocve never reported these either
+// Test_walkCPECriteria covers the projection of a cpe-ecosystem condition onto
+// vuls0's exact / vendor:product tiers. All CPE match-quality judgement now
+// happens upstream (cpecriterion.Match -> AcceptQueries.CPE.Exact /
+// VersionUnconfirmed); this function only folds those pre-classified indices
+// up the AND/OR tree, applies the JVN source demotion, and de-duplicates with
+// exact taking precedence over vendor:product for the same scanned CPE.
 func Test_walkCPECriteria(t *testing.T) {
+	// cpeCriterion builds a vulnerable CPE FilteredCriterion whose accepted
+	// query indices are pre-classified by tier. The criterion CPE string is
+	// irrelevant to projection (only the Vulnerable flag matters, for pruning).
+	cpeCriterion := func(exact, versionUnconfirmed []int) criterionTypes.FilteredCriterion {
+		return criterionTypes.FilteredCriterion{
+			Criterion: criterionTypes.Criterion{
+				Type: criterionTypes.CriterionTypeCPE,
+				CPE: new(ccTypes.Criterion{
+					Vulnerable: true,
+					CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+				}),
+			},
+			Accepts: criterionTypes.AcceptQueries{
+				CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: versionUnconfirmed},
+			},
+		}
+	}
 	type args struct {
+		sourceID sourceTypes.SourceID
 		criteria criteriaTypes.FilteredCriteria
 		scanned  []string
 	}
@@ -10434,493 +10456,132 @@ func Test_walkCPECriteria(t *testing.T) {
 		wantExact []string
 		wantVP    []string
 	}{
-		// --- accepted criteria ---
 		{
-			name: "accepted with version restriction (concrete version) -> exact",
+			name: "exact-quality index -> exact tier",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "accepted with version restriction (in-range) -> exact",
+			name: "version-unconfirmed index -> vendor:product tier",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-									Range: new(ccRangeTypes.Range{
-										Type:     ccRangeTypes.RangeTypeSEMVER,
-										LessThan: "10.0",
-									}),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-		},
-		{
-			// version=* with no Range and no CPEMatches means "every version
-			// affected", so the match is exact regardless of the scanned
-			// version. (For a source that never carries version data — JVN —
-			// toVuls0Confidence maps it back down to vendor:product.)
-			name: "accepted version=* (all versions) -> exact",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-		},
-		{
-			name: "accepted via the version=NA short-circuit -> vendor:product",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion(nil, []int{0})},
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "accepted with a version-less query -> vendor:product",
+			name: "OR unions exact and vendor:product across legs",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
 					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
+						cpeCriterion([]int{0}, nil),
+						cpeCriterion(nil, []int{1}),
 					},
 				},
-				scanned: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:other:2.0:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+			wantVP:    []string{"cpe:2.3:a:vendor:other:2.0:*:*:*:*:*:*:*"},
 		},
-		// --- not accepted, but not definitively missed ---
 		{
-			name: "no accept, criterion version NA -> vendor:product",
+			name: "AND of exact-only legs -> exact",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
 					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
+						cpeCriterion([]int{0}, nil),
+						cpeCriterion([]int{1}, nil),
 					},
 				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 		},
-		// --- definitive misses: report nothing ---
 		{
-			name: "no accept, concrete version mismatch -> nothing",
+			name: "AND with a vendor:product leg demotes the whole conjunction",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
 					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
+						cpeCriterion([]int{0}, nil),
+						cpeCriterion(nil, []int{1}),
 					},
 				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
+			},
+			wantVP: []string{"cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+		},
+		{
+			name: "AND with an unsatisfied leg -> nothing",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Criterions: []criterionTypes.FilteredCriterion{
+						cpeCriterion([]int{0}, nil),
+						cpeCriterion(nil, nil),
+					},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 			},
 		},
 		{
-			name: "no accept, confirmed out of range -> nothing",
+			name: "same scanned CPE in exact and vendor:product -> exact wins",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
 					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-									Range: new(ccRangeTypes.Range{
-										Type:     ccRangeTypes.RangeTypeSEMVER,
-										LessThan: "5.0",
-									}),
-								}),
-							},
-						},
+						cpeCriterion([]int{0}, nil),
+						cpeCriterion(nil, []int{0}),
 					},
 				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 		},
 		{
-			// A non-semver query (the juniper joined form "21.4r3") cannot be
-			// range-compared, so it is a miss regardless of where the bound
-			// sits — no RPM-comparison fallback. The well-formed query
-			// (version "21.4", update "r3") would evaluate "21.4 < 22.2" as
-			// plain semver and match at Exact; splitting it is the detect-side
-			// query normalizer's job, not this matcher's.
-			name: "no accept, non-semver query against a range -> nothing",
+			name: "NVD source keeps exact",
 			args: args{
+				sourceID: sourceTypes.NVDFeedCVEv2,
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:o:vendor:product:*:*:*:*:*:*:*:*"),
-									Range: new(ccRangeTypes.Range{
-										Type:     ccRangeTypes.RangeTypeSEMVER,
-										LessThan: "22.2",
-									}),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:o:vendor:product:21.4r3:*:*:*:*:*:*:*"},
-			},
-		},
-		{
-			name: "no accept, enumeration (CPEMatches-only) miss -> nothing",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
-									CPEMatches: []ccTypes.CPE{ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*")},
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-		},
-		{
-			name: "different vendor:product -> nothing",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:othervendor:otherproduct:1.0:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-		},
-		{
-			name: "vulnerable=false guard alone -> nothing",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: false,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-		},
-		// --- AND / OR structure ---
-		{
-			// The same scanned CPE satisfies one leg at exact level and
-			// another at vendor:product level — the tiers are exclusive
-			// per CPE, so exact wins.
-			name: "OR(exact, vendor:product): exact wins for the same CPE",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND(exact, vendor:product) demotes the conjunction to vendor:product",
+			// JVN carries no version data, so even an exact-quality projection
+			// only confirms part:vendor:product. This is a source-semantics
+			// demotion that lives in vuls0, not in the source-agnostic matcher.
+			name: "JVN source demotes exact to vendor:product",
 			args: args{
+				sourceID: sourceTypes.JVNFeedRSS,
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND(exact, definitive miss) reports nothing",
+			name: "vulnerable=false guard is pruned, sibling exact survives",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
 					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-		},
-		{
-			// A nested subtree that holds only guards empties out in the
-			// prune pass and is removed from its AND parent entirely —
-			// the conjunction is then judged on the remaining leg alone.
-			name: "AND survives its guard-only subtree emptying out",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterias: []criteriaTypes.FilteredCriteria{
-						{
-							Operator: criteriaTypes.CriteriaOperatorTypeOR,
-							Criterions: []criterionTypes.FilteredCriterion{
-								{
-									Criterion: criterionTypes.Criterion{
-										Type: criterionTypes.CriterionTypeCPE,
-										CPE: new(ccTypes.Criterion{
-											Vulnerable: false,
-											CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware1:-:*:*:*:*:*:*:*"),
-										}),
-									},
-								},
-								{
-									Criterion: criterionTypes.Criterion{
-										Type: criterionTypes.CriterionTypeCPE,
-										CPE: new(ccTypes.Criterion{
-											Vulnerable: false,
-											CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware2:-:*:*:*:*:*:*:*"),
-										}),
-									},
-								},
-							},
-						},
-					},
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-		},
-		{
-			// A tree whose every node empties out in the prune pass
-			// reports nothing — the top-level emptiness check, not a
-			// default operator value, decides.
-			name: "tree that empties out entirely reports nothing",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeOR,
-					Criterias: []criteriaTypes.FilteredCriteria{
-						{
-							Operator: criteriaTypes.CriteriaOperatorTypeAND,
-							Criterions: []criterionTypes.FilteredCriterion{
-								{
-									Criterion: criterionTypes.Criterion{
-										Type: criterionTypes.CriterionTypeCPE,
-										CPE: new(ccTypes.Criterion{
-											Vulnerable: false,
-											CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
-										}),
-									},
-								},
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-		},
-		{
-			name: "AND with a vulnerable=false guard: the guard is neutral",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterions: []criterionTypes.FilteredCriterion{
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: true,
-									CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"),
-								}),
-							},
-							Accepts: criterionTypes.AcceptQueries{
-								CPE: []int{0},
-							},
-						},
+						cpeCriterion([]int{0}, nil),
 						{
 							Criterion: criterionTypes.Criterion{
 								Type: criterionTypes.CriterionTypeCPE,
@@ -10936,10 +10597,17 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
+		{
+			name: "empty condition -> nothing",
+			args: args{
+				criteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR},
+				scanned:  []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exact, vp, err := vuls2.WalkCPECriteria(tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned})
+			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned})
 			if err != nil {
 				t.Fatalf("walkCPECriteria() error = %v", err)
 			}
