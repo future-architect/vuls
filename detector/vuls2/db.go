@@ -31,6 +31,16 @@ func newDBConfig(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Config, 
 	}
 
 	if willDownload {
+		// Remove the existing db before fetching. fetch.Fetch downloads into a temp
+		// file alongside vuls2Conf.Path and renames it over the old db at the end, so
+		// keeping the old db around would temporarily double the disk usage. The old
+		// db is never reused on this path: shouldDownload has already read its metadata
+		// above, and if the fetch fails vuls2.Detect fails without reading the db while
+		// the next run re-downloads (the db is now absent, and even if it remained its
+		// metadata is unchanged so shouldDownload stays true).
+		if err := os.Remove(vuls2Conf.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, xerrors.Errorf("Failed to remove old vuls2 db before fetching. path: %s, err: %w", vuls2Conf.Path, err)
+		}
 		logging.Log.Infof("Fetching vuls2 db. repository: %s", vuls2Conf.Repository)
 		if err := fetch.Fetch(fetch.WithRepository(vuls2Conf.Repository), fetch.WithDBPath(vuls2Conf.Path), fetch.WithNoProgress(noProgress)); err != nil {
 			return nil, xerrors.Errorf("Failed to fetch vuls2 db. err: %w", err)
