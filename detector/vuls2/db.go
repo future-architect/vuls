@@ -22,6 +22,10 @@ var (
 		wd, _ := os.Getwd()
 		return filepath.Join(wd, "vuls.db")
 	}()
+
+	// fetchDB fetches the vuls2 db into the configured path. It is a package-level
+	// variable so that tests can replace the network fetch with a stub.
+	fetchDB = fetch.Fetch
 )
 
 func newDBConfig(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Config, error) {
@@ -42,7 +46,7 @@ func newDBConfig(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Config, 
 			return nil, xerrors.Errorf("Failed to remove old vuls2 db before fetching. path: %s, err: %w", vuls2Conf.Path, err)
 		}
 		logging.Log.Infof("Fetching vuls2 db. repository: %s", vuls2Conf.Repository)
-		if err := fetch.Fetch(fetch.WithRepository(vuls2Conf.Repository), fetch.WithDBPath(vuls2Conf.Path), fetch.WithNoProgress(noProgress)); err != nil {
+		if err := fetchDB(fetch.WithRepository(vuls2Conf.Repository), fetch.WithDBPath(vuls2Conf.Path), fetch.WithNoProgress(noProgress)); err != nil {
 			return nil, xerrors.Errorf("Failed to fetch vuls2 db. err: %w", err)
 		}
 	}

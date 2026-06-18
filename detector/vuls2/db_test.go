@@ -1,6 +1,8 @@
 package vuls2_test
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -8,6 +10,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/MaineK00n/vuls2/pkg/db/fetch"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
 	"github.com/MaineK00n/vuls2/pkg/db/session/types"
 	"github.com/future-architect/vuls/config"
@@ -148,6 +151,46 @@ func Test_shouldDownload(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_newDBConfig_removesOldDBBeforeFetch(t *testing.T) {
+	d := t.TempDir()
+	path := filepath.Join(d, "vuls.db")
+
+	// Pre-create a stale db so that shouldDownload returns true (willDownload).
+	if err := putMetadata(types.Metadata{
+		LastModified:  *parse("2024-01-02T00:00:00Z"),
+		Downloaded:    parse("2024-01-02T00:00:00Z"),
+		SchemaVersion: schemaVersionBoltDB(t),
+	}, path); err != nil {
+		t.Fatalf("putMetadata (old db) err = %v", err)
+	}
+
+	var called, removedBeforeFetch bool
+	restore := vuls2.SetFetchDB(func(_ ...fetch.Option) error {
+		called = true
+		// The old db must already be gone by the time fetch runs.
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			removedBeforeFetch = true
+		}
+		// Simulate a successful fetch by writing a fresh, valid db at the path.
+		return putMetadata(types.Metadata{
+			LastModified:  *parse("2024-01-02T00:00:00Z"),
+			Downloaded:    parse("2024-01-02T00:00:00Z"),
+			SchemaVersion: schemaVersionBoltDB(t),
+		}, path)
+	})
+	defer restore()
+
+	if _, err := vuls2.NewDBConfig(config.Vuls2Conf{Path: path}, true); err != nil {
+		t.Fatalf("NewDBConfig() err = %v", err)
+	}
+	if !called {
+		t.Fatal("fetchDB was not called")
+	}
+	if !removedBeforeFetch {
+		t.Error("old db was not removed before fetch")
+	}
 }
 
 func putMetadata(metadata types.Metadata, path string) error {
