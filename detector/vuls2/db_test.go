@@ -158,9 +158,11 @@ func Test_newDBConfig_removesOldDBBeforeFetch(t *testing.T) {
 	path := filepath.Join(d, "vuls.db")
 
 	// Pre-create a stale db so that shouldDownload returns true (willDownload).
+	// Use a time relative to now since newDBConfig compares against time.Now().
+	stale := time.Now().Add(-8 * time.Hour)
 	if err := putMetadata(types.Metadata{
-		LastModified:  *parse("2024-01-02T00:00:00Z"),
-		Downloaded:    parse("2024-01-02T00:00:00Z"),
+		LastModified:  stale,
+		Downloaded:    &stale,
 		SchemaVersion: schemaVersionBoltDB(t),
 	}, path); err != nil {
 		t.Fatalf("putMetadata (old db) err = %v", err)
@@ -174,9 +176,10 @@ func Test_newDBConfig_removesOldDBBeforeFetch(t *testing.T) {
 			removedBeforeFetch = true
 		}
 		// Simulate a successful fetch by writing a fresh, valid db at the path.
+		fresh := time.Now()
 		return putMetadata(types.Metadata{
-			LastModified:  *parse("2024-01-02T00:00:00Z"),
-			Downloaded:    parse("2024-01-02T00:00:00Z"),
+			LastModified:  fresh,
+			Downloaded:    &fresh,
 			SchemaVersion: schemaVersionBoltDB(t),
 		}, path)
 	})
