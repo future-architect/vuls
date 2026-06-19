@@ -160,7 +160,13 @@ func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 		if !found {
 			viBase = vi
 		} else {
-			viBase.AffectedPackages = append(viBase.AffectedPackages, vi.AffectedPackages...)
+			// Store() keeps one row per package name (last write wins), so a
+			// base already carrying package statuses — a caller-provided
+			// ScannedCves, or a prior detection pass — does not accumulate
+			// duplicate/contradictory rows for the same package.
+			for _, p := range vi.AffectedPackages {
+				viBase.AffectedPackages = viBase.AffectedPackages.Store(p)
+			}
 			// WindowsKBFixedIns merges like the other per-path outputs: a
 			// CVE first registered by the CPE pass (or already present in
 			// the input ScannedCves) would otherwise lose the KB numbers
