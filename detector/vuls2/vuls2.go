@@ -1787,9 +1787,10 @@ func toReference(ref string) models.Reference {
 	}
 }
 
-// enrich adds vulnerability data from specific enrichment sources (KEV, RedHat CVE)
-// to the already-detected VulnInfos. This replaces gost.FillCVEsWithRedHat and also
-// provides cross-source enrichment (e.g., RedHat CVE data for Debian-detected CVEs).
+// enrich adds vulnerability data from specific enrichment sources (KEV, RedHat
+// CVE, NVD) to the already-detected VulnInfos. This replaces gost.FillCVEsWithRedHat
+// and the NVD slice of FillCvesWithGoCVEDictionary, and also provides cross-source
+// enrichment (e.g., RedHat CVE / NVD data for Debian-detected CVEs).
 func enrich(sesh *session.Session, vim models.VulnInfos) error {
 	for cveID, vi := range vim {
 		vd, err := sesh.GetVulnerabilityDataByVulnerabilityID(vulnerabilityContentTypes.VulnerabilityID(cveID), dbTypes.Filter{
@@ -1805,6 +1806,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 				sourceTypes.ExploitInTheWild,
 				sourceTypes.ExploitTrickest,
 				sourceTypes.Metasploit,
+				sourceTypes.NVDFeedCVEv2,
 				sourceTypes.NucleiRepository,
 				sourceTypes.RedHatCVE,
 				sourceTypes.VulnCheckKEV,

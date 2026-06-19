@@ -1166,6 +1166,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				vi.KEVs = append(vi.KEVs, enrichVulnerabilityKEV(sourceID, rootMap)...)
 			case sourceTypes.RedHatCVE:
 				enrichRedHatCVE(vi, rootMap)
+			case sourceTypes.NVDFeedCVEv2:
+				enrichNVD(vi, rootMap)
 			case sourceTypes.Metasploit:
 				enrichMetasploit(vi, rootMap)
 			case sourceTypes.ExploitExploitDB, sourceTypes.ExploitGitHub, sourceTypes.ExploitInTheWild, sourceTypes.ExploitTrickest, sourceTypes.NucleiRepository:
@@ -1251,6 +1253,83 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 				Cvss40Vector:   cvss40.Vector,
 				Cvss40Severity: cvss40.Severity,
 				SourceLink:     sourceLink,
+				References:     rs,
+				CweIDs: func() []string {
+					var cs []string //nolint:prealloc
+					for _, cwe := range v.Content.CWE {
+						cs = append(cs, cwe.CWE...)
+					}
+					return cs
+				}(),
+				Published: func() time.Time {
+					if v.Content.Published != nil {
+						return *v.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if v.Content.Modified != nil {
+						return *v.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
+		}
+	}
+}
+
+// enrichNVD adds NVD data as CveContent. It mirrors the NVD branch of the CPE
+// detection path (see postConvert) so a CVE detected by another source carries
+// the same single nvd CveContent — plus NVD exploits/mitigations — that an
+// NVD-detected CVE gets. The guard skips CVEs the NVD CPE detection already
+// filled, leaving that authoritative single entry in place.
+func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	if _, ok := vi.CveContents[models.Nvd]; ok {
+		return
+	}
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
+
+			var rs models.References
+			for _, r := range v.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			for _, e := range v.Content.Exploit {
+				if e.Link == "" {
+					continue
+				}
+				vi.Exploits.AppendIfMissing(models.Exploit{
+					ExploitType: models.ExploitTypeNVD,
+					URL:         e.Link,
+				})
+			}
+			for _, m := range v.Content.Mitigations {
+				if m.Description == "" {
+					continue
+				}
+				vi.Mitigations.AppendIfMissing(models.Mitigation{
+					CveContentType: models.Nvd,
+					URL:            m.Description,
+				})
+			}
+
+			vi.CveContents[models.Nvd] = append(vi.CveContents[models.Nvd], models.CveContent{
+				Type:           models.Nvd,
+				CveID:          string(v.Content.ID),
+				Title:          v.Content.Title,
+				Summary:        v.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     cveContentSourceLink(models.Nvd, v),
 				References:     rs,
 				CweIDs: func() []string {
 					var cs []string //nolint:prealloc
