@@ -9,6 +9,7 @@ import (
 	"maps"
 	"net/url"
 	"path"
+	"reflect"
 	"runtime"
 	"slices"
 	"strings"
@@ -183,14 +184,23 @@ func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 				viBase.CveContents = models.CveContents{}
 			}
 			// A CVE can be detected by both vuls2 entry points (DetectPkgs
-			// for OS packages, DetectCPEs for CPE URIs). Today the two
-			// passes never produce the same CveContents type — distro types
-			// vs cpe types — so plain appending cannot duplicate an entry. If a
-			// future source makes the types overlap, this will need a
-			// smarter merge (note that SourceLink is no identity: vuls2
-			// derives it from just the type and CVE ID).
-			for ccType, cc := range vi.CveContents {
-				viBase.CveContents[ccType] = append(viBase.CveContents[ccType], cc...)
+			// for OS packages, DetectCPEs for CPE URIs); those two passes
+			// never produce the same CveContents type (distro types vs cpe
+			// types), so they cannot collide with each other. A caller-provided
+			// base (or the go-cve-dictionary pass) may however already carry
+			// the same type for this CVE, so dedup identical entries on append.
+			// Equality is full-content (SourceLink is no identity: vuls2 derives
+			// it from just the type and CVE ID); genuinely different contents of
+			// the same type are both kept, since picking a winner between
+			// conflicting sources is out of scope here.
+			for ccType, ccs := range vi.CveContents {
+				for _, cc := range ccs {
+					if !slices.ContainsFunc(viBase.CveContents[ccType], func(e models.CveContent) bool {
+						return reflect.DeepEqual(e, cc)
+					}) {
+						viBase.CveContents[ccType] = append(viBase.CveContents[ccType], cc)
+					}
+				}
 			}
 			// CpeURIs must merge too: a CVE first registered by the package
 			// path would otherwise end up with an empty CpeURIs even though
