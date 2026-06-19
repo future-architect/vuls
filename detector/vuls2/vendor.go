@@ -1018,14 +1018,14 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		// filterable, while cpematch-expanded criteria give most products a
 		// true exact match instead.
 		//
-		// A source whose only detection signal is the part:vendor:product
-		// fallback (no accepted criterion anywhere) reports the low
-		// *VendorProductMatch confidence — the vuls2 counterpart of
-		// go-cve-dictionary's VendorProductMatch — instead of the
-		// exact-match one. cpes and vpCpes are the only detection signals a
-		// cpe-ecosystem source can carry (packStatuses / kbIDs come from
-		// Version / KB criteria, which never appear under this ecosystem).
-		if len(sd.cpes) == 0 && len(sd.vpCpes) > 0 {
+		// A source whose every CPE accept is version-unconfirmed (vpCpes
+		// populated but exactCpes empty) reports the low *VendorProductMatch
+		// confidence — the vuls2 counterpart of go-cve-dictionary's
+		// VendorProductMatch — instead of the exact-match one. exactCpes and
+		// vpCpes are the only detection signals a cpe-ecosystem source can
+		// carry (packStatuses / kbIDs come from Version / KB criteria, which
+		// never appear under this ecosystem).
+		if len(sd.exactCpes) == 0 && len(sd.vpCpes) > 0 {
 			switch s {
 			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 				return models.NvdVendorProductMatch
@@ -1052,7 +1052,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			// Unreachable: walkCPECriteria demotes every JVN match to the
 			// vendor:product tier (isJVNCPESource), so a JVN source never
-			// carries exact-tier cpes and always lands in the
+			// carries exact-tier CPEs and always lands in the
 			// VendorProductMatch branch above. Mapped to JvnVendorProductMatch
 			// for safety should that demotion ever change.
 			return models.JvnVendorProductMatch

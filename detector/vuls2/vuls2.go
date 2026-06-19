@@ -518,13 +518,16 @@ type sourceData struct {
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
 	kbIDs            []string
-	cpes             []string
-	// vpCpes holds scanned CPEs the condition could only confirm at
-	// part:vendor:product level — unrestricted accepts and the
-	// vendor:product fallback (see walkCPECriteria). They are reported
-	// with the low VendorProductMatch confidence instead of
-	// ExactVersionMatch — the vuls2 replacement for go-cve-dictionary's
-	// fuzzy CPE reporting.
+	// exactCpes holds scanned CPEs the criterion accepted at Exact quality
+	// (Accepts.CPE.Exact) — the version was confirmed. They are reported with
+	// the high ExactVersionMatch confidence.
+	exactCpes []string
+	// vpCpes holds scanned CPEs the criterion accepted only at
+	// VersionUnconfirmed quality (Accepts.CPE.VersionUnconfirmed) — the
+	// version could not be pinned (e.g. a version=NA criterion, or a
+	// version=NA query). They are reported with the low VendorProductMatch
+	// confidence instead of ExactVersionMatch — the vuls2 replacement for
+	// go-cve-dictionary's fuzzy CPE reporting.
 	vpCpes []string
 }
 
@@ -546,6 +549,18 @@ type packStatus struct {
 	status    models.PackageFixStatus
 }
 
+// appendMissing appends each element of src to dst, skipping values already
+// present (order-preserving). The slice-wise companion to util.AppendIfMissing,
+// used to accumulate scanned-CPE / KB lists across conditions and sources.
+func appendMissing(dst, src []string) []string {
+	for _, s := range src {
+		if !slices.Contains(dst, s) {
+			dst = append(dst, s)
+		}
+	}
+	return dst
+}
+
 // postConvert assembles VulnInfos from the vuls2 detect result.
 //
 // fsToOriginalCPE maps each CPE 2.3 FS string in scanned.CPE back to the
@@ -565,10 +580,10 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	}
 
 	type affected struct {
-		packm  map[string]pack
-		kbIDs  []string
-		cpes   []string
-		vpCpes []string
+		packm     map[string]pack
+		kbIDs     []string
+		exactCpes []string
+		vpCpes    []string
 	}
 
 	am := make(map[string]affected)
@@ -637,34 +652,14 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				}
 			}
 
-			if len(vd.kbIDs) > 0 {
-				for _, kbID := range vd.kbIDs {
-					if !slices.Contains(base.kbIDs, kbID) {
-						base.kbIDs = append(base.kbIDs, kbID)
-					}
-				}
-				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
-					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
-				}
-			}
+			base.kbIDs = appendMissing(base.kbIDs, vd.kbIDs)
+			base.exactCpes = appendMissing(base.exactCpes, vd.exactCpes)
+			base.vpCpes = appendMissing(base.vpCpes, vd.vpCpes)
 
-			if len(vd.cpes) > 0 {
-				for _, cpe := range vd.cpes {
-					if !slices.Contains(base.cpes, cpe) {
-						base.cpes = append(base.cpes, cpe)
-					}
-				}
-				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
-					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
-				}
-			}
-
-			if len(vd.vpCpes) > 0 {
-				for _, cpe := range vd.vpCpes {
-					if !slices.Contains(base.vpCpes, cpe) {
-						base.vpCpes = append(base.vpCpes, cpe)
-					}
-				}
+			// A KB/CPE detection signal marks this CVE emittable. packStatuses
+			// are deliberately excluded — packages are gated separately through
+			// comparePack's per-source winner selection.
+			if len(vd.kbIDs) > 0 || len(vd.exactCpes) > 0 || len(vd.vpCpes) > 0 {
 				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
 					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
 				}
@@ -735,9 +730,9 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 		// leaking the matched FS-with-wildcards form. Unknown FS keys
 		// pass through verbatim (defensive — should not occur because
 		// walkCPECriteria sources cpes from scanned.CPE). Exact-match CPEs
-		// take precedence; the vendor:product fallback CPEs only fill
-		// CpeURIs when the CVE has no exact match at all.
-		cpes := am[vi.CveID].cpes
+		// take precedence; the version-unconfirmed CPEs only fill CpeURIs
+		// when the CVE has no exact match at all.
+		cpes := am[vi.CveID].exactCpes
 		if len(cpes) == 0 {
 			cpes = am[vi.CveID].vpCpes
 		}
@@ -777,17 +772,17 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
 					var (
-						statuses []packStatus
-						kbIDs    []string
-						cpes     []string
-						vpCpes   []string
+						statuses  []packStatus
+						kbIDs     []string
+						exactCpes []string
+						vpCpes    []string
 					)
 					if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
 						exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned)
 						if err != nil {
 							return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 						}
-						cpes, vpCpes = exact, vp
+						exactCpes, vpCpes = exact, vp
 					} else {
 						s, k, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
 						if err != nil {
@@ -801,7 +796,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// treats presence in m as "this source detected
 					// something", and an empty entry would emit contents
 					// for an undetected CVE.
-					if len(statuses) == 0 && len(kbIDs) == 0 && len(cpes) == 0 && len(vpCpes) == 0 {
+					if len(statuses) == 0 && len(kbIDs) == 0 && len(exactCpes) == 0 && len(vpCpes) == 0 {
 						continue
 					}
 
@@ -814,14 +809,12 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						},
 					}
 					base := m[src]
+					// Plain appends here; postConvert owns de-duplication when
+					// it accumulates these across a CVE's sources.
 					base.packStatuses = append(base.packStatuses, statuses...)
 					base.kbIDs = append(base.kbIDs, kbIDs...)
-					base.cpes = append(base.cpes, cpes...)
-					for _, vpCpe := range vpCpes {
-						if !slices.Contains(base.vpCpes, vpCpe) {
-							base.vpCpes = append(base.vpCpes, vpCpe)
-						}
-					}
+					base.exactCpes = append(base.exactCpes, exactCpes...)
+					base.vpCpes = append(base.vpCpes, vpCpes...)
 					m[src] = base
 				}
 			}
@@ -975,20 +968,8 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 		exact = nil
 	}
 
-	dedup := func(in []string) []string {
-		if len(in) == 0 {
-			return nil
-		}
-		out := make([]string, 0, len(in))
-		for _, fs := range in {
-			if !slices.Contains(out, fs) {
-				out = append(out, fs)
-			}
-		}
-		return out
-	}
-	exact = dedup(exact)
-	vp = dedup(vp)
+	exact = appendMissing(nil, exact)
+	vp = appendMissing(nil, vp)
 
 	// The tiers are exclusive per scanned CPE: one confirmed at exact level
 	// (e.g. by another OR leg) does not also report at vendor:product level.
