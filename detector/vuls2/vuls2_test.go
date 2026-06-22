@@ -10759,6 +10759,92 @@ func Test_enrich(t *testing.T) {
 			},
 		},
 		{
+			name: "enrich with nvd-feed-cve-v2 data (no pre-existing nvd content)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2014-0160": models.VulnInfo{
+						CveID:       "CVE-2014-0160",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2014-0160": models.VulnInfo{
+					CveID: "CVE-2014-0160",
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:          models.Nvd,
+								CveID:         "CVE-2014-0160",
+								Title:         "OpenSSL Heartbleed",
+								Summary:       "The TLS and DTLS implementations in OpenSSL 1.0.1 before 1.0.1g do not properly handle Heartbeat Extension packets, which allows remote attackers to obtain sensitive information from process memory, aka the Heartbleed bug.",
+								Cvss3Score:    7.5,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+								Cvss3Severity: "HIGH",
+								SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-2014-0160",
+								References: models.References{
+									{Link: "http://www.us-cert.gov/ncas/alerts/TA14-098A", Source: "MISC"},
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2014-0160", Source: "NVD", RefID: "CVE-2014-0160"},
+								},
+								CweIDs:       []string{"CWE-125"},
+								Published:    time.Date(2014, 4, 7, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2014, 4, 8, 0, 0, 0, 0, time.UTC),
+							},
+						},
+					},
+					Exploits: []models.Exploit{
+						{ExploitType: models.ExploitTypeNVD, URL: "https://www.exploit-db.com/exploits/32764"},
+					},
+					Mitigations: []models.Mitigation{
+						{CveContentType: models.Nvd, URL: "Upgrade to OpenSSL 1.0.1g or later."},
+					},
+					AlertDict: models.AlertDict{
+						USCERT: []models.Alert{
+							{URL: "http://www.us-cert.gov/ncas/alerts/TA14-098A", Title: "US-CERT-TA14-098A", Team: "uscert"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "preserve existing nvd CveContent (hasContent) but still derive US-CERT",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2014-0160": models.VulnInfo{
+						CveID: "CVE-2014-0160",
+						CveContents: models.CveContents{
+							models.Nvd: []models.CveContent{
+								{
+									Type:  models.Nvd,
+									CveID: "CVE-2014-0160",
+									Title: "from-cpe-detection",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2014-0160": models.VulnInfo{
+					CveID: "CVE-2014-0160",
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:  models.Nvd,
+								CveID: "CVE-2014-0160",
+								Title: "from-cpe-detection",
+							},
+						},
+					},
+					AlertDict: models.AlertDict{
+						USCERT: []models.Alert{
+							{URL: "http://www.us-cert.gov/ncas/alerts/TA14-098A", Title: "US-CERT-TA14-098A", Team: "uscert"},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "enrich with cisa-kev data",
 			args: args{
 				vim: models.VulnInfos{
