@@ -443,10 +443,11 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
-				// NVD CveContent (and its exploits/mitigations) is now provided
-				// by the vuls2 detection/enrich path (see vuls2.enrichNVD), so
-				// go-cve-dictionary no longer fills it here. NVD cert alerts are
-				// still sourced from gocve below (fillCertAlerts).
+				// NVD CveContent (and its exploits/mitigations and US-CERT
+				// alerts) is now provided by the vuls2 detection/enrich path
+				// (see vuls2.enrichNVD), so go-cve-dictionary no longer fills it
+				// here. JP-CERT alerts stay here — they come from JVN, which is
+				// not migrated.
 				for _, con := range vulnchecks {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
@@ -464,7 +465,9 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				for _, con := range mitres {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
-				vinfo.AlertDict = alerts
+				// Set only JP-CERT; US-CERT is filled by the vuls2 enrich path
+				// (vuls2.EnrichVulnInfos runs before this) and must be preserved.
+				vinfo.AlertDict.JPCERT = alerts.JPCERT
 				r.ScannedCves[cveID] = vinfo
 				break
 			}
@@ -473,17 +476,10 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 	return nil
 }
 
+// fillCertAlerts derives JP-CERT alerts from go-cve-dictionary's JVN data.
+// US-CERT alerts are derived from NVD references by the vuls2 enrich path
+// (see vuls2.enrichNVD); JVN is not migrated, so JP-CERT stays here.
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
-	for _, nvd := range cvedetail.Nvds {
-		for _, cert := range nvd.Certs {
-			dict.USCERT = append(dict.USCERT, models.Alert{
-				URL:   cert.Link,
-				Title: cert.Title,
-				Team:  "uscert",
-			})
-		}
-	}
-
 	for _, jvn := range cvedetail.Jvns {
 		for _, cert := range jvn.Certs {
 			dict.JPCERT = append(dict.JPCERT, models.Alert{

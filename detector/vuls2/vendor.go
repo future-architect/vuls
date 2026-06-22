@@ -1281,14 +1281,37 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 // enrichNVD adds NVD data as CveContent. It mirrors the NVD branch of the CPE
 // detection path (see postConvert) so a CVE detected by another source carries
 // the same single nvd CveContent — plus NVD exploits/mitigations — that an
-// NVD-detected CVE gets. The guard skips CVEs the NVD CPE detection already
-// filled, leaving that authoritative single entry in place.
+// NVD-detected CVE gets. When the NVD CPE detection already filled that
+// CveContent, the content/exploits/mitigations are left in place; US-CERT
+// alerts are still derived here either way, since the detection path does not
+// populate AlertDict.
 func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
-	if _, ok := vi.CveContents[models.Nvd]; ok {
-		return
-	}
+	_, hasContent := vi.CveContents[models.Nvd]
 	for _, vulns := range rootMap {
 		for _, v := range vulns {
+			// US-CERT alerts: an NVD reference whose URL contains "us-cert"
+			// (mirrors go-cve-dictionary's NvdCert derivation). Done regardless
+			// of hasContent — the CPE detection path fills nvd CveContent but
+			// not AlertDict, so this is the single place US-CERT is produced.
+			for _, r := range v.Content.References {
+				if !strings.HasPrefix(r.URL, "http") || !strings.Contains(r.URL, "us-cert") {
+					continue
+				}
+				ss := strings.Split(r.URL, "/")
+				alert := models.Alert{
+					Team:  "uscert",
+					URL:   r.URL,
+					Title: fmt.Sprintf("US-CERT-%s", ss[len(ss)-1]),
+				}
+				if !slices.ContainsFunc(vi.AlertDict.USCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
+					vi.AlertDict.USCERT = append(vi.AlertDict.USCERT, alert)
+				}
+			}
+
+			if hasContent {
+				continue
+			}
+
 			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
 
 			var rs models.References
