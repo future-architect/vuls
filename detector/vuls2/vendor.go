@@ -1184,6 +1184,8 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 			switch sourceID {
 			case sourceTypes.ENISAKEV:
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
+			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+				enrichJVN(vi, rootMap)
 			}
 		}
 	}
@@ -1376,6 +1378,99 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 			})
 		}
 	}
+}
+
+// enrichJVN adds JVN data as CveContent and JP-CERT alerts. Unlike NVD — whose
+// rich content lives in the vulnerability and is read by enrichNVD — JVN keeps
+// title/summary/CVSS/CWE in the *advisory* (the vulnerability is a thin CVE
+// stub), so this reads advisory roots. It mirrors enrichNVD's contract: when a
+// jvn CveContent is already present it is left in place, but JP-CERT alerts are
+// derived either way, since the detection path does not populate AlertDict.
+//
+// JP-CERT alerts: go-cve-dictionary identified them by the JVN RSS reference
+// source "JPCERT-AT" and fetched the page <title>; the extractor drops both the
+// source label and the title (references are flattened to source
+// "jvndb.jvn.jp" with no name), so we identify by URL (jpcert.or.jp/at/...) and
+// synthesise the title from it, the same way enrichNVD handles US-CERT.
+func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
+	_, hasContent := vi.CveContents[models.Jvn]
+	for _, advisories := range rootMap {
+		for _, a := range advisories {
+			for _, r := range a.Content.References {
+				if !strings.HasPrefix(r.URL, "http") || !strings.Contains(r.URL, "jpcert.or.jp/at/") {
+					continue
+				}
+				ss := strings.Split(r.URL, "/")
+				alert := models.Alert{
+					Team:  "jpcert",
+					URL:   r.URL,
+					Title: fmt.Sprintf("JPCERT-%s", strings.TrimSuffix(ss[len(ss)-1], ".html")),
+				}
+				if !slices.ContainsFunc(vi.AlertDict.JPCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
+					vi.AlertDict.JPCERT = append(vi.AlertDict.JPCERT, alert)
+				}
+			}
+
+			if hasContent {
+				continue
+			}
+
+			cvss2, cvss3, cvss40 := enrichCvss(a.Content.Severity)
+
+			var rs models.References
+			for _, r := range a.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			vi.CveContents[models.Jvn] = append(vi.CveContents[models.Jvn], models.CveContent{
+				Type:           models.Jvn,
+				CveID:          vi.CveID,
+				Title:          a.Content.Title,
+				Summary:        a.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     jvnSourceLink(string(a.Content.ID)),
+				References:     rs,
+				CweIDs: func() []string {
+					var cs []string //nolint:prealloc
+					for _, cwe := range a.Content.CWE {
+						cs = append(cs, cwe.CWE...)
+					}
+					return cs
+				}(),
+				Published: func() time.Time {
+					if a.Content.Published != nil {
+						return *a.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if a.Content.Modified != nil {
+						return *a.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
+		}
+	}
+}
+
+// jvnSourceLink builds the JVNDB advisory page URL from a JVNDB-ID
+// (e.g. JVNDB-2023-001570 -> https://jvndb.jvn.jp/ja/contents/2023/JVNDB-2023-001570.html),
+// mirroring go-cve-dictionary's JvnLink (the extractor does not preserve it).
+func jvnSourceLink(jvndbID string) string {
+	parts := strings.Split(jvndbID, "-")
+	if len(parts) < 3 {
+		return ""
+	}
+	return fmt.Sprintf("https://jvndb.jvn.jp/ja/contents/%s/%s.html", parts[1], jvndbID)
 }
 
 // enrichVulnerabilityKEV extracts KEV data from vulnerability content and maps it to models.KEV.

@@ -1370,6 +1370,15 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							return xerrors.Errorf("Failed to create vuln info. err: %w", err)
 						}
 
+						// JVN's rich CveContent lives in the advisory, not the sparse
+						// vulnerability stub the generic CPE path reads above, so the jvn
+						// content built here carries no title/CVSS/CWE. Drop it and let the
+						// enrich path (enrichJVN, which reads the advisory) supply the real
+						// content — its "already present" guard would otherwise skip it. The
+						// detection signal (confidence + JVNDB DistroAdvisory) stays. No-op
+						// for non-JVN sources, which never key a jvn content here.
+						delete(vinfo.CveContents, models.Jvn)
+
 						base := m[src]
 						if base.vulninfos == nil {
 							base.vulninfos = make(models.VulnInfos)
@@ -1805,6 +1814,8 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 				sourceTypes.ExploitGitHub,
 				sourceTypes.ExploitInTheWild,
 				sourceTypes.ExploitTrickest,
+				sourceTypes.JVNFeedDetail,
+				sourceTypes.JVNFeedRSS,
 				sourceTypes.Metasploit,
 				sourceTypes.NVDFeedCVEv2,
 				sourceTypes.NucleiRepository,

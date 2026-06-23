@@ -1,0 +1,109 @@
+{
+  "id": "JVNDB-2023-001570",
+  "advisories": [
+    {
+      "content": {
+        "id": "JVNDB-2023-001570",
+        "title": "Azure Service Connector におけるセキュリティ機能を回避される脆弱性",
+        "description": "Azure Service Connector には、セキュリティ機能を回避される脆弱性が存在します。\r\n\r\n",
+        "severity": [
+          {
+            "type": "cvss_v30",
+            "source": "jvndb.jvn.jp",
+            "cvss_v30": {
+              "vector": "CVSS:3.0/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+              "base_score": 7.5,
+              "base_severity": "HIGH",
+              "temporal_score": 7.5,
+              "temporal_severity": "HIGH",
+              "environmental_score": 7.5,
+              "environmental_severity": "HIGH"
+            }
+          }
+        ],
+        "cwe": [
+          {
+            "source": "jvndb.jvn.jp",
+            "cwe": [
+              "CWE-noinfo"
+            ]
+          }
+        ],
+        "references": [
+          {
+            "source": "jvndb.jvn.jp",
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-28300"
+          },
+          {
+            "source": "jvndb.jvn.jp",
+            "url": "https://www.cve.org/CVERecord?id=CVE-2023-28300"
+          },
+          {
+            "source": "jvndb.jvn.jp",
+            "url": "https://www.ipa.go.jp/security/security-alert/2023/0412-ms.html"
+          },
+          {
+            "source": "jvndb.jvn.jp",
+            "url": "https://www.jpcert.or.jp/at/2023/at230007.html"
+          }
+        ],
+        "published": "2023-04-24T11:43:00+09:00",
+        "modified": "2023-04-24T11:43:00+09:00"
+      },
+      "segments": [
+        {
+          "ecosystem": "cpe"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "content": {
+        "id": "CVE-2023-28300",
+        "references": [
+          {
+            "source": "jvndb.jvn.jp",
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-28300"
+          },
+          {
+            "source": "jvndb.jvn.jp",
+            "url": "https://www.cve.org/CVERecord?id=CVE-2023-28300"
+          }
+        ]
+      },
+      "segments": [
+        {
+          "ecosystem": "cpe"
+        }
+      ]
+    }
+  ],
+  "detections": [
+    {
+      "ecosystem": "cpe",
+      "conditions": [
+        {
+          "criteria": {
+            "operator": "OR",
+            "criterions": [
+              {
+                "type": "cpe",
+                "cpe": {
+                  "vulnerable": true,
+                  "cpe": "cpe:2.3:a:microsoft:azure_service_connector:*:*:*:*:*:*:*:*"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "data_source": {
+    "id": "jvn-feed-rss",
+    "raws": [
+      "vuls-data-raw-jvn-feed-rss/2023/JVNDB-2023-001570.json"
+    ]
+  }
+}

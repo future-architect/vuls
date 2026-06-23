@@ -11161,6 +11161,56 @@ func Test_enrich(t *testing.T) {
 				},
 			},
 		},
+		{
+			// JVN content lives in the advisory (not the vulnerability), so
+			// enrichJVN reads advisory roots and builds the jvn CveContent;
+			// the JP-CERT alert is derived from the jpcert.or.jp/at/ reference.
+			name: "enrich with jvn (advisory-sourced content + JP-CERT alert)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2023-28300": models.VulnInfo{
+						CveID: "CVE-2023-28300",
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2023-28300": models.VulnInfo{
+					CveID: "CVE-2023-28300",
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:          models.Jvn,
+								CveID:         "CVE-2023-28300",
+								Title:         "Azure Service Connector におけるセキュリティ機能を回避される脆弱性",
+								Summary:       "Azure Service Connector には、セキュリティ機能を回避される脆弱性が存在します。\r\n\r\n",
+								Cvss3Score:    7.5,
+								Cvss3Vector:   "CVSS:3.0/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H",
+								Cvss3Severity: "HIGH",
+								SourceLink:    "https://jvndb.jvn.jp/ja/contents/2023/JVNDB-2023-001570.html",
+								References: models.References{
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2023-28300", Source: "NVD", RefID: "CVE-2023-28300"},
+									{Link: "https://www.cve.org/CVERecord?id=CVE-2023-28300", Source: "CVE", RefID: "CVE-2023-28300"},
+									{Link: "https://www.ipa.go.jp/security/security-alert/2023/0412-ms.html", Source: "MISC"},
+									{Link: "https://www.jpcert.or.jp/at/2023/at230007.html", Source: "MISC"},
+								},
+								CweIDs:       []string{"CWE-noinfo"},
+								Published:    time.Date(2023, time.April, 24, 2, 43, 0, 0, time.UTC),
+								LastModified: time.Date(2023, time.April, 24, 2, 43, 0, 0, time.UTC),
+							},
+						},
+					},
+					AlertDict: models.AlertDict{
+						JPCERT: []models.Alert{
+							{
+								Team:  "jpcert",
+								URL:   "https://www.jpcert.or.jp/at/2023/at230007.html",
+								Title: "JPCERT-at230007",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	c := session.Config{Type: "boltdb", Path: filepath.Join(t.TempDir(), "enrich-test.db")}
