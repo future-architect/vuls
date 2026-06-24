@@ -1177,14 +1177,71 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 	}
 }
 
-// enrichAdvisories enriches VulnInfo with advisory-based data (KEV).
+// enrichAdvisories enriches VulnInfo with advisory-based data (KEV, EUVD).
 func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDataAdvisory) {
 	for _, a := range advisories {
 		for sourceID, rootMap := range a.Contents {
 			switch sourceID {
 			case sourceTypes.ENISAKEV:
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
+			case sourceTypes.ENISAEUVDList:
+				enrichEuvd(vi, rootMap)
 			}
+		}
+	}
+}
+
+// enrichEuvd adds ENISA EUVD (European Union Vulnerability Database) data as CveContent.
+// The EUVD record is stored in advisory content keyed by the EUVD root ID (e.g. EUVD-2025-0001),
+// and is associated with a CVE through the EUVD entry's vulnerability aliases.
+func enrichEuvd(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
+	if len(vi.CveContents[models.Euvd]) > 0 {
+		return
+	}
+	for rootID, advisories := range rootMap {
+		for _, a := range advisories {
+			// The canonical EUVD record is the advisory whose ID matches the EUVD root ID.
+			// Other advisories under the same root are alias references (GHSA/PYSEC/MAL) without content.
+			if string(a.Content.ID) != string(rootID) {
+				continue
+			}
+
+			cvss2, cvss3, cvss40 := enrichCvss(a.Content.Severity)
+
+			var rs models.References
+			for _, r := range a.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			vi.CveContents[models.Euvd] = append(vi.CveContents[models.Euvd], models.CveContent{
+				Type:           models.Euvd,
+				CveID:          vi.CveID,
+				Title:          string(a.Content.ID),
+				Summary:        a.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     fmt.Sprintf("https://euvd.enisa.europa.eu/vulnerability/%s", a.Content.ID),
+				References:     rs,
+				Published: func() time.Time {
+					if a.Content.Published != nil {
+						return *a.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if a.Content.Modified != nil {
+						return *a.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
 		}
 	}
 }

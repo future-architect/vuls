@@ -1800,6 +1800,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 			},
 			DataSources: []sourceTypes.SourceID{
 				sourceTypes.CISAKEV,
+				sourceTypes.ENISAEUVDList,
 				sourceTypes.ENISAKEV,
 				sourceTypes.ExploitExploitDB,
 				sourceTypes.ExploitGitHub,
