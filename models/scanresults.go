@@ -421,6 +421,7 @@ func (r *ScanResult) SortForJSONOutput() {
 		slices.SortFunc(v.AlertDict.JPCERT, func(a, b Alert) int {
 			return cmp.Compare(a.Title, b.Title)
 		})
+		slices.Sort(v.CTIs)
 		r.ScannedCves[k] = v
 	}
 }
