@@ -2094,7 +2094,6 @@ func enrichCTI(sesh *session.Session, r *models.ScanResult) error {
 				vi.CTIs = append(vi.CTIs, id)
 			}
 		}
-		slices.Sort(vi.CTIs)
 
 		r.ScannedCves[cveID] = vi
 	}
