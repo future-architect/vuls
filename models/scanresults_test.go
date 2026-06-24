@@ -551,58 +551,34 @@ func TestScanResult_Sort(t *testing.T) {
 }
 
 func TestCWEDict_Get(t *testing.T) {
-	const (
-		mitre306    = "https://cwe.mitre.org/data/definitions/CWE-306.html"
-		mitre79     = "https://cwe.mitre.org/data/definitions/CWE-79.html"
-		jvn306      = "http://jvndb.jvn.jp/ja/cwe/CWE-306.html"
-		jvn79       = "http://jvndb.jvn.jp/ja/cwe/CWE-79.html"
-		nameEn306   = "Missing Authentication for Critical Function"
-		nameJa306Ja = "重要な機能に対する認証の欠如"
-	)
-	dict := CWEDict{
-		// fully populated entry — both languages + rankings
-		"306": CWEDictEntry{
-			En:                 &cwe.CWE{CWEID: "306", Name: nameEn306, Lang: "en"},
-			Ja:                 &cwe.CWE{CWEID: "306", Name: nameJa306Ja, Lang: "ja"},
-			OwaspTopTens:       map[string]string{"2021": "7"},
-			CweTopTwentyfives:  map[string]string{"2024": "11"},
-			SansTopTwentyfives: map[string]string{"2011": "11"},
-		},
-		// JVN miss: En only, Ja stays nil (the post-Ja-pre-seed-drop shape)
-		"79": CWEDictEntry{
-			En:                 &cwe.CWE{CWEID: "79", Name: "Cross-site Scripting", Lang: "en"},
-			OwaspTopTens:       map[string]string{},
-			CweTopTwentyfives:  map[string]string{},
-			SansTopTwentyfives: map[string]string{},
-		},
-		// pathological: Ja non-nil but Name=="" — should still trigger the
-		// en fallback because Get's "ja" branch checks Name != "" not just
-		// Ja != nil.
-		"22": CWEDictEntry{
-			En:                 &cwe.CWE{CWEID: "22", Name: "Path Traversal", Lang: "en"},
-			Ja:                 &cwe.CWE{CWEID: "22", Lang: "ja"},
-			OwaspTopTens:       map[string]string{},
-			CweTopTwentyfives:  map[string]string{},
-			SansTopTwentyfives: map[string]string{},
-		},
+	type args struct {
+		cweID string
+		lang  string
 	}
-
 	tests := []struct {
 		name      string
-		cweID     string
-		lang      string
+		c         CWEDict
+		args      args
 		wantName  string
-		wantURL   string
+		wantUrl   string
 		wantOwasp map[string]AttentionCWE
 		wantCwe25 map[string]AttentionCWE
 		wantSans  map[string]AttentionCWE
 	}{
 		{
-			name:     "en/populated returns En name + mitre URL",
-			cweID:    "CWE-306",
-			lang:     "en",
-			wantName: nameEn306,
-			wantURL:  mitre306,
+			name: "en/populated returns En name + mitre URL",
+			c: CWEDict{
+				"306": {
+					En:                 &cwe.CWE{CWEID: "306", Name: "Missing Authentication for Critical Function", Lang: "en"},
+					Ja:                 &cwe.CWE{CWEID: "306", Name: "重要な機能に対する認証の欠如", Lang: "ja"},
+					OwaspTopTens:       map[string]string{"2021": "7"},
+					CweTopTwentyfives:  map[string]string{"2024": "11"},
+					SansTopTwentyfives: map[string]string{"2011": "11"},
+				},
+			},
+			args:     args{cweID: "CWE-306", lang: "en"},
+			wantName: "Missing Authentication for Critical Function",
+			wantUrl:  "https://cwe.mitre.org/data/definitions/CWE-306.html",
 			wantOwasp: map[string]AttentionCWE{"2021": {
 				Rank: "7",
 				URL:  cwe.OwaspTopTenURLsEn["2021"]["7"],
@@ -617,11 +593,19 @@ func TestCWEDict_Get(t *testing.T) {
 			}},
 		},
 		{
-			name:     "ja/Ja-populated returns Ja name + JVN URL",
-			cweID:    "CWE-306",
-			lang:     "ja",
-			wantName: nameJa306Ja,
-			wantURL:  jvn306,
+			name: "ja/Ja-populated returns Ja name + JVN URL",
+			c: CWEDict{
+				"306": {
+					En:                 &cwe.CWE{CWEID: "306", Name: "Missing Authentication for Critical Function", Lang: "en"},
+					Ja:                 &cwe.CWE{CWEID: "306", Name: "重要な機能に対する認証の欠如", Lang: "ja"},
+					OwaspTopTens:       map[string]string{"2021": "7"},
+					CweTopTwentyfives:  map[string]string{"2024": "11"},
+					SansTopTwentyfives: map[string]string{"2011": "11"},
+				},
+			},
+			args:     args{cweID: "CWE-306", lang: "ja"},
+			wantName: "重要な機能に対する認証の欠如",
+			wantUrl:  "http://jvndb.jvn.jp/ja/cwe/CWE-306.html",
 			wantOwasp: map[string]AttentionCWE{"2021": {
 				Rank: "7",
 				URL:  cwe.OwaspTopTenURLsJa["2021"]["7"],
@@ -636,69 +620,82 @@ func TestCWEDict_Get(t *testing.T) {
 			}},
 		},
 		{
-			name:      "ja/Ja-nil falls back to En name + mitre URL",
-			cweID:     "CWE-79",
-			lang:      "ja",
+			name: "ja/Ja-nil falls back to En name + mitre URL",
+			c: CWEDict{
+				"79": {
+					En:                 &cwe.CWE{CWEID: "79", Name: "Cross-site Scripting", Lang: "en"},
+					OwaspTopTens:       map[string]string{},
+					CweTopTwentyfives:  map[string]string{},
+					SansTopTwentyfives: map[string]string{},
+				},
+			},
+			args:      args{cweID: "CWE-79", lang: "ja"},
 			wantName:  "Cross-site Scripting",
-			wantURL:   mitre79,
+			wantUrl:   "https://cwe.mitre.org/data/definitions/CWE-79.html",
 			wantOwasp: map[string]AttentionCWE{},
 			wantCwe25: map[string]AttentionCWE{},
 			wantSans:  map[string]AttentionCWE{},
 		},
 		{
-			name:      "ja/Ja-non-nil-empty-Name falls back to En name + mitre URL",
-			cweID:     "CWE-22",
-			lang:      "ja",
+			name: "ja/Ja-non-nil-empty-Name falls back to En name + mitre URL",
+			c: CWEDict{
+				"22": {
+					En:                 &cwe.CWE{CWEID: "22", Name: "Path Traversal", Lang: "en"},
+					Ja:                 &cwe.CWE{CWEID: "22", Lang: "ja"},
+					OwaspTopTens:       map[string]string{},
+					CweTopTwentyfives:  map[string]string{},
+					SansTopTwentyfives: map[string]string{},
+				},
+			},
+			args:      args{cweID: "CWE-22", lang: "ja"},
 			wantName:  "Path Traversal",
-			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-22.html",
+			wantUrl:   "https://cwe.mitre.org/data/definitions/CWE-22.html",
 			wantOwasp: map[string]AttentionCWE{},
 			wantCwe25: map[string]AttentionCWE{},
 			wantSans:  map[string]AttentionCWE{},
 		},
 		{
-			name:     "id without CWE- prefix resolves the same entry",
-			cweID:    "306",
-			lang:     "en",
-			wantName: nameEn306,
+			name: "id without CWE- prefix resolves the same entry",
+			c: CWEDict{
+				"306": {
+					En:                 &cwe.CWE{CWEID: "306", Name: "Missing Authentication for Critical Function", Lang: "en"},
+					OwaspTopTens:       map[string]string{},
+					CweTopTwentyfives:  map[string]string{},
+					SansTopTwentyfives: map[string]string{},
+				},
+			},
+			args:     args{cweID: "306", lang: "en"},
+			wantName: "Missing Authentication for Critical Function",
 			// Get uses the raw input when formatting URL, so the result keeps
 			// the input form — documented quirk of the existing API surface.
-			wantURL: "https://cwe.mitre.org/data/definitions/306.html",
-			wantOwasp: map[string]AttentionCWE{"2021": {
-				Rank: "7",
-				URL:  cwe.OwaspTopTenURLsEn["2021"]["7"],
-			}},
-			wantCwe25: map[string]AttentionCWE{"2024": {
-				Rank: "11",
-				URL:  cwe.CweTopTwentyfiveURLs["2024"],
-			}},
-			wantSans: map[string]AttentionCWE{"2011": {
-				Rank: "11",
-				URL:  cwe.SansTopTwentyfiveURLs["2011"],
-			}},
+			wantUrl:   "https://cwe.mitre.org/data/definitions/306.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
 		},
 		{
-			name:  "missing entry returns all zero values",
-			cweID: "CWE-999999",
-			lang:  "en",
+			name: "missing entry returns all zero values",
+			c:    CWEDict{},
+			args: args{cweID: "CWE-999999", lang: "en"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotName, gotURL, gotOwasp, gotCwe25, gotSans := dict.Get(tt.cweID, tt.lang)
+			gotName, gotUrl, gotOwasp, gotCwe25, gotSans := tt.c.Get(tt.args.cweID, tt.args.lang)
 			if gotName != tt.wantName {
-				t.Errorf("name = %q, want %q", gotName, tt.wantName)
+				t.Errorf("CWEDict.Get() gotName = %v, want %v", gotName, tt.wantName)
 			}
-			if gotURL != tt.wantURL {
-				t.Errorf("url = %q, want %q", gotURL, tt.wantURL)
+			if gotUrl != tt.wantUrl {
+				t.Errorf("CWEDict.Get() gotUrl = %v, want %v", gotUrl, tt.wantUrl)
 			}
 			if !reflect.DeepEqual(gotOwasp, tt.wantOwasp) {
-				t.Errorf("owasp = %+v, want %+v", gotOwasp, tt.wantOwasp)
+				t.Errorf("CWEDict.Get() gotOwasp = %v, want %v", gotOwasp, tt.wantOwasp)
 			}
 			if !reflect.DeepEqual(gotCwe25, tt.wantCwe25) {
-				t.Errorf("cwe25 = %+v, want %+v", gotCwe25, tt.wantCwe25)
+				t.Errorf("CWEDict.Get() gotCwe25 = %v, want %v", gotCwe25, tt.wantCwe25)
 			}
 			if !reflect.DeepEqual(gotSans, tt.wantSans) {
-				t.Errorf("sans = %+v, want %+v", gotSans, tt.wantSans)
+				t.Errorf("CWEDict.Get() gotSans = %v, want %v", gotSans, tt.wantSans)
 			}
 		})
 	}
