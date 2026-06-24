@@ -560,7 +560,7 @@ func TestCWEDict_Get(t *testing.T) {
 		c         CWEDict
 		args      args
 		wantName  string
-		wantUrl   string
+		wantURL   string
 		wantOwasp map[string]AttentionCWE
 		wantCwe25 map[string]AttentionCWE
 		wantSans  map[string]AttentionCWE
@@ -578,7 +578,7 @@ func TestCWEDict_Get(t *testing.T) {
 			},
 			args:     args{cweID: "CWE-306", lang: "en"},
 			wantName: "Missing Authentication for Critical Function",
-			wantUrl:  "https://cwe.mitre.org/data/definitions/CWE-306.html",
+			wantURL:  "https://cwe.mitre.org/data/definitions/CWE-306.html",
 			wantOwasp: map[string]AttentionCWE{"2021": {
 				Rank: "7",
 				URL:  cwe.OwaspTopTenURLsEn["2021"]["7"],
@@ -605,7 +605,7 @@ func TestCWEDict_Get(t *testing.T) {
 			},
 			args:     args{cweID: "CWE-306", lang: "ja"},
 			wantName: "重要な機能に対する認証の欠如",
-			wantUrl:  "http://jvndb.jvn.jp/ja/cwe/CWE-306.html",
+			wantURL:  "http://jvndb.jvn.jp/ja/cwe/CWE-306.html",
 			wantOwasp: map[string]AttentionCWE{"2021": {
 				Rank: "7",
 				URL:  cwe.OwaspTopTenURLsJa["2021"]["7"],
@@ -631,7 +631,7 @@ func TestCWEDict_Get(t *testing.T) {
 			},
 			args:      args{cweID: "CWE-79", lang: "ja"},
 			wantName:  "Cross-site Scripting",
-			wantUrl:   "https://cwe.mitre.org/data/definitions/CWE-79.html",
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-79.html",
 			wantOwasp: map[string]AttentionCWE{},
 			wantCwe25: map[string]AttentionCWE{},
 			wantSans:  map[string]AttentionCWE{},
@@ -649,7 +649,7 @@ func TestCWEDict_Get(t *testing.T) {
 			},
 			args:      args{cweID: "CWE-22", lang: "ja"},
 			wantName:  "Path Traversal",
-			wantUrl:   "https://cwe.mitre.org/data/definitions/CWE-22.html",
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-22.html",
 			wantOwasp: map[string]AttentionCWE{},
 			wantCwe25: map[string]AttentionCWE{},
 			wantSans:  map[string]AttentionCWE{},
@@ -668,7 +668,7 @@ func TestCWEDict_Get(t *testing.T) {
 			wantName: "Missing Authentication for Critical Function",
 			// Get uses the raw input when formatting URL, so the result keeps
 			// the input form — documented quirk of the existing API surface.
-			wantUrl:   "https://cwe.mitre.org/data/definitions/306.html",
+			wantURL:   "https://cwe.mitre.org/data/definitions/306.html",
 			wantOwasp: map[string]AttentionCWE{},
 			wantCwe25: map[string]AttentionCWE{},
 			wantSans:  map[string]AttentionCWE{},
@@ -681,12 +681,12 @@ func TestCWEDict_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotName, gotUrl, gotOwasp, gotCwe25, gotSans := tt.c.Get(tt.args.cweID, tt.args.lang)
+			gotName, gotURL, gotOwasp, gotCwe25, gotSans := tt.c.Get(tt.args.cweID, tt.args.lang)
 			if gotName != tt.wantName {
 				t.Errorf("CWEDict.Get() gotName = %v, want %v", gotName, tt.wantName)
 			}
-			if gotUrl != tt.wantUrl {
-				t.Errorf("CWEDict.Get() gotUrl = %v, want %v", gotUrl, tt.wantUrl)
+			if gotURL != tt.wantURL {
+				t.Errorf("CWEDict.Get() gotURL = %v, want %v", gotURL, tt.wantURL)
 			}
 			if !reflect.DeepEqual(gotOwasp, tt.wantOwasp) {
 				t.Errorf("CWEDict.Get() gotOwasp = %v, want %v", gotOwasp, tt.wantOwasp)
