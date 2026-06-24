@@ -13,6 +13,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -1013,11 +1014,21 @@ func detailLines() (string, error) {
 	uniqCweIDs := vinfo.CveContents.UniqCweIDs(r.Family)
 	cwes := []models.CWEDictEntry{}
 	for _, cweID := range uniqCweIDs {
-		if after, ok := strings.CutPrefix(cweID.Value, "CWE-"); ok {
-			if dict, ok := r.CWEDict[after]; ok {
-				cwes = append(cwes, dict)
-			}
+		after, ok := strings.CutPrefix(cweID.Value, "CWE-")
+		if !ok {
+			continue
 		}
+		if dict, ok := r.CWEDict[after]; ok {
+			cwes = append(cwes, dict)
+			continue
+		}
+		// Soft-miss fallback: vuls2 catalog had no record for this id but
+		// the CVE still references it, so emit an id-only stub so the CWE
+		// line stays visible in the panel (.En.CWEID and the mitre URL it
+		// builds render fine; .En.Name is empty).
+		cwes = append(cwes, models.CWEDictEntry{
+			En: &cwe.CWE{CWEID: after, Lang: "en"},
+		})
 	}
 
 	data := dataForTmpl{

@@ -249,7 +249,7 @@ func cvssColor(cvssScore float64) string {
 	}
 }
 
-func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]models.CWEDictEntry, packs models.Packages) string {
+func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict models.CWEDict, packs models.Packages) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
