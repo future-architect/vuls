@@ -259,9 +259,9 @@ type VulnInfo struct {
 	AffectedPackages     PackageFixStatuses   `json:"affectedPackages,omitempty"`
 	DistroAdvisories     DistroAdvisories     `json:"distroAdvisories,omitempty"` // for Amazon, RHEL, Fedora, FreeBSD, Microsoft
 	CveContents          CveContents          `json:"cveContents,omitempty"`
-	Exploits             []Exploit            `json:"exploits,omitempty"`
+	Exploits             Exploits             `json:"exploits,omitempty"`
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
-	Mitigations          []Mitigation         `json:"mitigations,omitempty"`
+	Mitigations          Mitigations          `json:"mitigations,omitempty"`
 	KEVs                 []KEV                `json:"kevs,omitempty"`
 	Ctis                 []string             `json:"ctis,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitzero"`
@@ -917,6 +917,21 @@ type Exploit struct {
 	GHDBURL      *string     `json:"ghdbURL,omitempty"`
 }
 
+// Exploits is a list of Exploit
+type Exploits []Exploit
+
+// AppendIfMissing appends exploit to the list if missing. Identity is the
+// natural key (ExploitType, URL, ID); entries differing only in enrichment
+// payload (Description, pointer fields) are considered the same exploit.
+func (es *Exploits) AppendIfMissing(exploit Exploit) {
+	for _, e := range *es {
+		if e.ExploitType == exploit.ExploitType && e.URL == exploit.URL && e.ID == exploit.ID {
+			return
+		}
+	}
+	*es = append(*es, exploit)
+}
+
 // Metasploit :
 type Metasploit struct {
 	Name        string   `json:"name"`
@@ -930,6 +945,20 @@ type Mitigation struct {
 	CveContentType CveContentType `json:"cveContentType,omitempty"`
 	Mitigation     string         `json:"mitigation,omitempty"`
 	URL            string         `json:"url,omitempty"`
+}
+
+// Mitigations is a list of Mitigation
+type Mitigations []Mitigation
+
+// AppendIfMissing appends mitigation to the list if missing. Identity is the
+// natural key (CveContentType, URL, Mitigation).
+func (ms *Mitigations) AppendIfMissing(mitigation Mitigation) {
+	for _, m := range *ms {
+		if m.CveContentType == mitigation.CveContentType && m.URL == mitigation.URL && m.Mitigation == mitigation.Mitigation {
+			return
+		}
+	}
+	*ms = append(*ms, mitigation)
 }
 
 // KEVType :

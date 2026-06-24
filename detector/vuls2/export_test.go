@@ -3,10 +3,14 @@ package vuls2
 var (
 	ShouldDownload = shouldDownload
 
-	PreConvert    = preConvert
-	PostConvert   = postConvert
-	PruneCriteria = pruneCriteria
-	Enrich        = enrich
+	PreConvertPkgs   = preConvertPkgs
+	PreConvertCPEs   = preConvertCPEs
+	PostConvert      = postConvert
+	PrunePkgCriteria = prunePkgCriteria
+	Enrich           = enrich
+
+	WalkCPECriteria      = walkCPECriteria
+	MergeIntoScannedCves = mergeIntoScannedCves
 )
 
 type Source source

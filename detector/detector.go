@@ -53,14 +53,33 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
 		}
 
+		// Collect the CPE URIs to check. Sources, in order:
+		//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
+		//      that was captured at scan time and shipped in the result JSON.
+		//      Using the scan-time snapshot keeps detection coupled to the
+		//      server that was actually scanned, and lets detection run
+		//      without re-loading config.toml.
+		//   2. OWASP DC XML, if configured.
+		//   3. Synthesised Apple CPEs for macOS scans.
+		//
+		// User-supplied / OWASP CPEs consult JVN, synthesised Apple CPEs
+		// do not.
+		// Prefer the scan-time snapshot; results produced by an older Vuls
+		// (or an external producer) may not embed config.scan.servers, so
+		// fall back to the report-time config.Conf.Servers in that case to
+		// keep CPE detection working for such inputs.
+		serverInfo, serverFound := r.Config.Scan.Servers[r.ServerName]
+		if !serverFound {
+			serverInfo, serverFound = config.Conf.Servers[r.ServerName]
+		}
 		cpeURIs, owaspDCXMLPath := []string{}, ""
 		cpes := []Cpe{}
-		if len(r.Container.ContainerID) == 0 {
-			cpeURIs = config.Conf.Servers[r.ServerName].CpeNames
-			owaspDCXMLPath = config.Conf.Servers[r.ServerName].OwaspDCXMLPath
-		} else {
-			if s, ok := config.Conf.Servers[r.ServerName]; ok {
-				if con, ok := s.Containers[r.Container.Name]; ok {
+		if serverFound {
+			if len(r.Container.ContainerID) == 0 {
+				cpeURIs = serverInfo.CpeNames
+				owaspDCXMLPath = serverInfo.OwaspDCXMLPath
+			} else {
+				if con, ok := serverInfo.Containers[r.Container.Name]; ok {
 					cpeURIs = con.Cpes
 					owaspDCXMLPath = con.OwaspDCXMLPath
 				}
@@ -186,7 +205,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 		}
 
-		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
+		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -294,7 +313,12 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 	return rs, nil
 }
 
-// DetectPkgCves detects OS pkg cves
+// DetectPkgCves detects OS-package / Microsoft-KB CVEs via the vuls2
+// library (family-gated) and applies the FixState / ListenPortStats
+// post-processing. It keeps the master-era name, signature and calling
+// convention so library consumers that drive detection as
+// DetectPkgCves -> DetectCpeURIsCves keep working; CPE-URI detection
+// lives in DetectCpeURIsCves.
 func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	if isPkgCvesDetactable(r) {
 		switch r.Family {
@@ -302,7 +326,7 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 			constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
 			constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine,
 			constant.Windows:
-			if err := vuls2.Detect(r, vuls2Conf, noProgress); err != nil {
+			if err := vuls2.DetectPkgs(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
 		default:
@@ -381,7 +405,8 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with NVD, VulnCheck, JVN, EUVD, Fortinet, MITRE, Paloalto, Cisco
+// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, EUVD, Fortinet, MITRE, Paloalto, Cisco
+// (NVD CveContent/exploits/mitigations are filled by the vuls2 enrich path instead; NVD cert alerts still come from here)
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := make([]string, 0, len(r.ScannedCves))
 	for _, v := range r.ScannedCves {
@@ -404,7 +429,6 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 	}
 
 	for _, d := range ds {
-		nvds, exploits, mitigations := models.ConvertNvdToModel(d.CveID, d.Nvds)
 		vulnchecks := models.ConvertVulncheckToModel(d.CveID, d.Vulnchecks)
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 		euvds := models.ConvertEuvdToModel(d.CveID, d.Euvds)
@@ -419,11 +443,11 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				if vinfo.CveContents == nil {
 					vinfo.CveContents = models.CveContents{}
 				}
-				for _, con := range nvds {
-					if !con.Empty() {
-						vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
-					}
-				}
+				// NVD CveContent (and its exploits/mitigations and US-CERT
+				// alerts) is now provided by the vuls2 detection/enrich path
+				// (see vuls2.enrichNVD), so go-cve-dictionary no longer fills it
+				// here. JP-CERT alerts stay here — they come from JVN, which is
+				// not migrated.
 				for _, con := range vulnchecks {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
@@ -441,9 +465,9 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				for _, con := range mitres {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
-				vinfo.AlertDict = alerts
-				vinfo.Exploits = append(vinfo.Exploits, exploits...)
-				vinfo.Mitigations = append(vinfo.Mitigations, mitigations...)
+				// Set only JP-CERT; US-CERT is filled by the vuls2 enrich path
+				// (vuls2.EnrichVulnInfos runs before this) and must be preserved.
+				vinfo.AlertDict.JPCERT = alerts.JPCERT
 				r.ScannedCves[cveID] = vinfo
 				break
 			}
@@ -452,17 +476,10 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 	return nil
 }
 
+// fillCertAlerts derives JP-CERT alerts from go-cve-dictionary's JVN data.
+// US-CERT alerts are derived from NVD references by the vuls2 enrich path
+// (see vuls2.enrichNVD); JVN is not migrated, so JP-CERT stays here.
 func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
-	for _, nvd := range cvedetail.Nvds {
-		for _, cert := range nvd.Certs {
-			dict.USCERT = append(dict.USCERT, models.Alert{
-				URL:   cert.Link,
-				Title: cert.Title,
-				Team:  "uscert",
-			})
-		}
-	}
-
 	for _, jvn := range cvedetail.Jvns {
 		for _, cert := range jvn.Certs {
 			dict.JPCERT = append(dict.JPCERT, models.Alert{
@@ -476,8 +493,45 @@ func fillCertAlerts(cvedetail *cvemodels.CveDetail) (dict models.AlertDict) {
 	return dict
 }
 
-// DetectCpeURIsCves detects CVEs of given CPE-URIs
-func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
+// DetectCpeURIsCves detects CVEs of given CPE-URIs — the complete CPE
+// detection pipeline, keeping the master-era name and calling convention so
+// library consumers that drive detection as DetectPkgCves ->
+// DetectCpeURIsCves keep working.
+//
+// Sources already migrated to the vuls2 DB (currently NVD, with
+// cpematch-expanded criteria) are detected by vuls2. The remaining sources
+// come from go-cve-dictionary, where the migrated sources' contribution is
+// excluded — dropped just before confidence selection, with detections
+// carried by migrated sources alone skipped entirely — to avoid
+// double-reporting the same source with diverging match semantics.
+func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+	// A caller-provided result may carry a nil ScannedCves map (e.g. a
+	// zero-value ScanResult from a library consumer); initialize before the
+	// detection paths write into it.
+	if r.ScannedCves == nil {
+		r.ScannedCves = models.VulnInfos{}
+	}
+
+	if len(cpes) == 0 {
+		return nil
+	}
+
+	if err := detectCpeURIsCvesWithGoCVEDictionary(r, cpes, cnf, logOpts); err != nil {
+		return xerrors.Errorf("Failed to detect CVEs with go-cve-dictionary. err: %w", err)
+	}
+
+	cpeURIs := make([]string, 0, len(cpes))
+	for _, c := range cpes {
+		cpeURIs = append(cpeURIs, c.CpeURI)
+	}
+	if err := vuls2.DetectCPEs(r, cpeURIs, vuls2Conf, noProgress); err != nil {
+		return xerrors.Errorf("Failed to detect CVEs with vuls2. err: %w", err)
+	}
+
+	return nil
+}
+
+func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
 	client, err := newGoCveDictClient(&cnf, logOpts)
 	if err != nil {
 		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
@@ -496,6 +550,19 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 		}
 
 		for _, detail := range details {
+			// Skip detections carried by no dictionary-remaining DETECTION
+			// source. The list mirrors go-cve-dictionary's GetByCpeURI
+			// admission gate minus the vuls2-migrated sources (NVD, so
+			// far), so NVD-only detections disappear here — vuls2
+			// re-detects them from its own data. EUVD / MITRE contents can
+			// ride along on a detail but are never a detection basis
+			// (gocve neither matches nor admits on them, and
+			// getMaxConfidence has no tier for them), so they do not keep
+			// a detail alive.
+			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() {
+				continue
+			}
+
 			advisories := []models.DistroAdvisory{}
 			if detail.HasCisco() {
 				for _, cisco := range detail.Ciscos {
@@ -546,6 +613,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 				}
 			}
 
+			// JVN advisories are redundant for CVEs that NVD also covers.
 			if !detail.HasNvd() && detail.HasJvn() {
 				for _, jvn := range detail.Jvns {
 					advisories = append(advisories, models.DistroAdvisory{
@@ -557,6 +625,13 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 				}
 			}
 
+			// Drop the vuls2-migrated sources only now, just before
+			// confidence selection: getMaxConfidence must not return their
+			// confidences (vuls2 reports those itself), but everything above
+			// (the skip gate, advisory synthesis) wants the original
+			// detection. Deferring the strip keeps the earlier logic free of
+			// per-source "had*" flags as more sources migrate to vuls2.
+			detail.Nvds = nil
 			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {

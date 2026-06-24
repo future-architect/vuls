@@ -703,7 +703,7 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 			switch sourceID {
 			case sourceTypes.RedHatCSAF:
 				return 5
-			case sourceTypes.RedHatVEX:
+			case sourceTypes.RedHatVEXv1:
 				return 4
 			case sourceTypes.RedHatOVALv2:
 				return 3
@@ -821,7 +821,7 @@ func compareTag(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, a, b segment
 				default:
 					return 1
 				}
-			case sourceTypes.RedHatCSAF, sourceTypes.RedHatVEX:
+			case sourceTypes.RedHatCSAF, sourceTypes.RedHatVEXv1:
 				lhs, _, _ := strings.Cut(string(tag), ":")
 				switch {
 				case strings.HasSuffix(lhs, "-including-unpatched"):
@@ -1001,15 +1001,60 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 	return cvss2, cvss3, cvss4
 }
 
-func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models.Confidence {
+func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd sourceData) models.Confidence {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
 	case ecosystemTypes.EcosystemTypeCPE:
+		// CPE confidences are two-valued: *ExactVersionMatch (100) or
+		// *VendorProductMatch (10). go-cve-dictionary's middle tier,
+		// *RoughVersionMatch (80), is deliberately retired: it marked
+		// matches whose versions semver could not compare and that only an
+		// RPM-style comparison placed in range — a fallback go-cve-
+		// dictionary itself documented as false-positive-prone — yet its
+		// score 80 sailed past downstream low-confidence cutoffs (which
+		// typically drop score <= 10) as if it were a solid match. Those
+		// fuzzy hits now surface as VendorProductMatch, honestly low and
+		// filterable, while cpematch-expanded criteria give most products a
+		// true exact match instead.
+		//
+		// A source whose every CPE accept is version-unconfirmed (vpCpes
+		// populated but exactCpes empty) reports the low *VendorProductMatch
+		// confidence — the vuls2 counterpart of go-cve-dictionary's
+		// VendorProductMatch — instead of the exact-match one. exactCpes and
+		// vpCpes are the only detection signals a cpe-ecosystem source can
+		// carry (packStatuses / kbIDs come from Version / KB criteria, which
+		// never appear under this ecosystem).
+		if len(sd.exactCpes) == 0 && len(sd.vpCpes) > 0 {
+			switch s {
+			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
+				return models.NvdVendorProductMatch
+			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+				return models.JvnVendorProductMatch
+			case sourceTypes.Fortinet:
+				return models.FortinetVendorProductMatch
+			case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
+				return models.PaloaltoVendorProductMatch
+			case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
+				return models.CiscoVendorProductMatch
+			default:
+				return models.Confidence{
+					Score:           0,
+					DetectionMethod: models.DetectionMethod("unknown"),
+					SortOrder:       100,
+				}
+			}
+		}
+
 		switch s {
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+			// Unreachable: walkCPECriteria demotes every JVN match to the
+			// vendor:product tier (isJVNCPESource), so a JVN source never
+			// carries exact-tier CPEs and always lands in the
+			// VendorProductMatch branch above. Mapped to JvnVendorProductMatch
+			// for safety should that demotion ever change.
 			return models.JvnVendorProductMatch
 		case sourceTypes.Fortinet:
 			return models.FortinetExactVersionMatch
@@ -1121,6 +1166,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				vi.KEVs = append(vi.KEVs, enrichVulnerabilityKEV(sourceID, rootMap)...)
 			case sourceTypes.RedHatCVE:
 				enrichRedHatCVE(vi, rootMap)
+			case sourceTypes.NVDFeedCVEv2:
+				enrichNVD(vi, rootMap)
 			case sourceTypes.Metasploit:
 				enrichMetasploit(vi, rootMap)
 			case sourceTypes.ExploitExploitDB, sourceTypes.ExploitGitHub, sourceTypes.ExploitInTheWild, sourceTypes.ExploitTrickest, sourceTypes.NucleiRepository:
@@ -1206,6 +1253,106 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 				Cvss40Vector:   cvss40.Vector,
 				Cvss40Severity: cvss40.Severity,
 				SourceLink:     sourceLink,
+				References:     rs,
+				CweIDs: func() []string {
+					var cs []string //nolint:prealloc
+					for _, cwe := range v.Content.CWE {
+						cs = append(cs, cwe.CWE...)
+					}
+					return cs
+				}(),
+				Published: func() time.Time {
+					if v.Content.Published != nil {
+						return *v.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if v.Content.Modified != nil {
+						return *v.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
+		}
+	}
+}
+
+// enrichNVD adds NVD data as CveContent. It mirrors the NVD branch of the CPE
+// detection path (see postConvert) so a CVE detected by another source carries
+// the same single nvd CveContent — plus NVD exploits/mitigations — that an
+// NVD-detected CVE gets. When the NVD CPE detection already filled that
+// CveContent, the content/exploits/mitigations are left in place; US-CERT
+// alerts are still derived here either way, since the detection path does not
+// populate AlertDict.
+func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	_, hasContent := vi.CveContents[models.Nvd]
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			// US-CERT alerts: an NVD reference whose URL contains "us-cert"
+			// (mirrors go-cve-dictionary's NvdCert derivation). Done regardless
+			// of hasContent — the CPE detection path fills nvd CveContent but
+			// not AlertDict, so this is the single place US-CERT is produced.
+			for _, r := range v.Content.References {
+				if !strings.HasPrefix(r.URL, "http") || !strings.Contains(r.URL, "us-cert") {
+					continue
+				}
+				ss := strings.Split(r.URL, "/")
+				alert := models.Alert{
+					Team:  "uscert",
+					URL:   r.URL,
+					Title: fmt.Sprintf("US-CERT-%s", ss[len(ss)-1]),
+				}
+				if !slices.ContainsFunc(vi.AlertDict.USCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
+					vi.AlertDict.USCERT = append(vi.AlertDict.USCERT, alert)
+				}
+			}
+
+			if hasContent {
+				continue
+			}
+
+			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
+
+			var rs models.References
+			for _, r := range v.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			for _, e := range v.Content.Exploit {
+				if e.Link == "" {
+					continue
+				}
+				vi.Exploits.AppendIfMissing(models.Exploit{
+					ExploitType: models.ExploitTypeNVD,
+					URL:         e.Link,
+				})
+			}
+			for _, m := range v.Content.Mitigations {
+				if m.Description == "" {
+					continue
+				}
+				vi.Mitigations.AppendIfMissing(models.Mitigation{
+					CveContentType: models.Nvd,
+					URL:            m.Description,
+				})
+			}
+
+			vi.CveContents[models.Nvd] = append(vi.CveContents[models.Nvd], models.CveContent{
+				Type:           models.Nvd,
+				CveID:          string(v.Content.ID),
+				Title:          v.Content.Title,
+				Summary:        v.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     cveContentSourceLink(models.Nvd, v),
 				References:     rs,
 				CweIDs: func() []string {
 					var cs []string //nolint:prealloc
