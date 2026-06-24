@@ -8,6 +8,7 @@ var (
 	PostConvert      = postConvert
 	PrunePkgCriteria = prunePkgCriteria
 	Enrich           = enrich
+	EnrichCTI        = enrichCTI
 
 	WalkCPECriteria      = walkCPECriteria
 	MergeIntoScannedCves = mergeIntoScannedCves

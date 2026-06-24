@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cti"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/gosuri/uitable"
@@ -486,7 +485,7 @@ No CVE-IDs are found in updatable packages.
 
 		cweURLs, top10URLs, cweTop25URLs, sansTop25URLs := []string{}, map[string][]string{}, map[string][]string{}, map[string][]string{}
 		for _, v := range vuln.CveContents.UniqCweIDs(r.Family) {
-			name, url, owasp, cwe25, sans := r.CweDict.Get(v.Value, r.Lang)
+			name, url, owasp, cwe25, sans := r.CWEDict.Get(v.Value, r.Lang)
 
 			ds := [][]string{}
 			for year, info := range owasp {
@@ -611,15 +610,10 @@ No CVE-IDs are found in updatable packages.
 		}
 
 		attacks := []string{}
-		for _, techniqueID := range vuln.Ctis {
-			if strings.HasPrefix(techniqueID, "CAPEC-") {
-				continue
+		for _, id := range vuln.CTIs {
+			if a, ok := r.ATTACKDict[id]; ok {
+				attacks = append(attacks, a.Name)
 			}
-			technique, ok := cti.TechniqueDict[techniqueID]
-			if !ok {
-				continue
-			}
-			attacks = append(attacks, technique.Name)
 		}
 		slices.Sort(attacks)
 		for _, attack := range attacks {

@@ -6,8 +6,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.10.0
-	github.com/MaineK00n/vuls-data-update v0.0.0-20260618100055-bfedbc246360
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260619063813-98ac8e5258eb
+	github.com/MaineK00n/vuls-data-update v0.0.0-20260623021656-8bd9360ff613
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260622074355-fab747f7e5ef
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.70.0
 	github.com/aquasecurity/trivy-db v0.0.0-20251222105351-a833f47f8f0d
@@ -51,7 +51,6 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spdx/tools-golang v0.5.7
 	github.com/spf13/cobra v1.10.2
-	github.com/vulsio/go-cti v0.3.6
 	github.com/vulsio/go-cve-dictionary v0.16.2
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/term v0.43.0
@@ -198,7 +197,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
 	github.com/googleapis/gax-go/v2 v2.19.0 // indirect
-	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.72 // indirect
@@ -219,7 +217,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
@@ -289,7 +286,7 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
-	github.com/smartystreets/assertions v1.13.0 // indirect
+	github.com/smartystreets/goconvey v1.8.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

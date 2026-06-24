@@ -14,12 +14,12 @@
 	compare-lockfile
 
 SRCS = $(shell git ls-files '*.go')
-PKGS = $(shell go list ./...)
+GO := CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go
+PKGS = $(shell $(GO) list ./...)
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/future-architect/vuls/config.Version=$(VERSION)' -X 'github.com/future-architect/vuls/config.Revision=build-$(BUILDTIME)_$(REVISION)'
-GO := CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go
 GO_WINDOWS := GOOS=windows GOARCH=amd64 $(GO)
 
 all: build test

@@ -263,7 +263,7 @@ type VulnInfo struct {
 	Metasploits          []Metasploit         `json:"metasploits,omitempty"`
 	Mitigations          Mitigations          `json:"mitigations,omitempty"`
 	KEVs                 []KEV                `json:"kevs,omitempty"`
-	Ctis                 []string             `json:"ctis,omitempty"`
+	CTIs                 []string             `json:"ctis,omitempty"`
 	AlertDict            AlertDict            `json:"alertDict,omitzero"`
 	CpeURIs              []string             `json:"cpeURIs,omitempty"` // CpeURIs related to this CVE defined in config.toml
 	GitHubSecurityAlerts GitHubSecurityAlerts `json:"gitHubSecurityAlerts,omitempty"`

@@ -206,7 +206,6 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...any) subcom
 	if p.configPath == "" {
 		for _, cnf := range []config.VulnDictInterface{
 			&config.Conf.CveDict,
-			&config.Conf.Cti,
 		} {
 			cnf.Init()
 		}

@@ -70,10 +70,10 @@ github.com/MaineK00n/go-microsoft-version v0.0.0-20260325021654-1d9206bdeffc h1:
 github.com/MaineK00n/go-microsoft-version v0.0.0-20260325021654-1d9206bdeffc/go.mod h1:GNf+Vhnxk8/pW56jsxAeFCBP0VCgVQlLIJ812UnAj9c=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250909032857-57479910413b h1:pDmxa1+HCq7nShTgLURMOpjKc38hYq3lrgNHqur/Nps=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20250909032857-57479910413b/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
-github.com/MaineK00n/vuls-data-update v0.0.0-20260618100055-bfedbc246360 h1:JECQZ+ylQ3phdIPtsX1RBGjWSYCqJUjQeNS1vrQl1eA=
-github.com/MaineK00n/vuls-data-update v0.0.0-20260618100055-bfedbc246360/go.mod h1:xvEPdYhcruMCrwAMEgbqCqZ5t+HLH6Ckn4jaEx59Uic=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260619063813-98ac8e5258eb h1:LchrG6VOjK07RGLIlN2B5Rr1Tiy1drHOw021DtXuz5w=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260619063813-98ac8e5258eb/go.mod h1:b0oJvOY0MS7MTCqkvwt6hMvG+eBmXSnLc1eXFG5UMcA=
+github.com/MaineK00n/vuls-data-update v0.0.0-20260623021656-8bd9360ff613 h1:JomAV4cSVXmYTE/IfxxJuYHGD0/MDnVyVedmQi6BXws=
+github.com/MaineK00n/vuls-data-update v0.0.0-20260623021656-8bd9360ff613/go.mod h1:xvEPdYhcruMCrwAMEgbqCqZ5t+HLH6Ckn4jaEx59Uic=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260622074355-fab747f7e5ef h1:85cHV3cu2WNU4doaR9KdFwvznAeJl5Or2D0AsMppTd4=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260622074355-fab747f7e5ef/go.mod h1:b0oJvOY0MS7MTCqkvwt6hMvG+eBmXSnLc1eXFG5UMcA=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
@@ -816,8 +816,8 @@ github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
 github.com/skeema/knownhosts v1.3.2 h1:EDL9mgf4NzwMXCTfaxSD/o/a5fxDw/xL9nkU28JjdBg=
 github.com/skeema/knownhosts v1.3.2/go.mod h1:bEg3iQAuw+jyiw+484wwFJoKSLwcfd7fqRy+N0QTiow=
-github.com/smartystreets/assertions v1.13.0 h1:Dx1kYM01xsSqKPno3aqLnrwac2LetPvN23diwyr69Qs=
-github.com/smartystreets/assertions v1.13.0/go.mod h1:wDmR7qL282YbGsPy6H/yAsesrxfxaaSlJazyFLYVFx8=
+github.com/smartystreets/assertions v1.13.1 h1:Ef7KhSmjZcK6AVf9YbJdvPYG9avaF0ZxudX+ThRdWfU=
+github.com/smartystreets/assertions v1.13.1/go.mod h1:cXr/IwVfSo/RbCSPhoAPv73p3hlSdrBH/b3SdnW/LMY=
 github.com/smartystreets/goconvey v1.8.0 h1:Oi49ha/2MURE0WexF052Z0m+BNSGirfjg5RL+JXWq3w=
 github.com/smartystreets/goconvey v1.8.0/go.mod h1:EdX8jtrTIj26jmjCOVNMVSIYAtgexqXKHOXW2Dx9JLg=
 github.com/sosedoff/gitkit v0.4.0 h1:opyQJ/h9xMRLsz2ca/2CRXtstePcpldiZN8DpLLF8Os=
@@ -878,8 +878,6 @@ github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IU
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
-github.com/vulsio/go-cti v0.3.6 h1:HtSgms2uo4RVcQN0zMVymOFA9nKyTuaCV+vBSl3nAKs=
-github.com/vulsio/go-cti v0.3.6/go.mod h1:XxVbnyFGhseaeEBmRQIoTJ1pe4ATW1a35mvTVqeFE68=
 github.com/vulsio/go-cve-dictionary v0.16.2 h1:1sWXzHBXV55PoOYKiWxqtR9OHq8vfNf3kg1XeNeT7Mw=
 github.com/vulsio/go-cve-dictionary v0.16.2/go.mod h1:cD+HMRAavPw395gGBIa+TOkhOPGRYXkuw94Y31wetRk=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=

@@ -213,7 +213,7 @@ func (w SlackWriter) toSlackAttachments(r models.ScanResult) (attaches []slack.A
 		a := slack.Attachment{
 			Title:      vinfo.CveIDDiffFormat(),
 			TitleLink:  "https://nvd.nist.gov/vuln/detail/" + vinfo.CveID,
-			Text:       w.attachmentText(vinfo, r.CweDict, r.Packages),
+			Text:       w.attachmentText(vinfo, r.CWEDict, r.Packages),
 			MarkdownIn: []string{"text", "pretext"},
 			Fields: []slack.AttachmentField{
 				{
@@ -249,7 +249,7 @@ func cvssColor(cvssScore float64) string {
 	}
 }
 
-func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]models.CweDictEntry, packs models.Packages) string {
+func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]models.CWEDictEntry, packs models.Packages) string {
 	maxCvss := vinfo.MaxCvssScore()
 	vectors := []string{}
 
@@ -327,7 +327,7 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict map[string]mo
 	)
 }
 
-func (w SlackWriter) cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CweDict) string {
+func (w SlackWriter) cweIDs(vinfo models.VulnInfo, osFamily string, cweDict models.CWEDict) string {
 	cs := vinfo.CveContents.UniqCweIDs(osFamily)
 	links := make([]string, 0, len(cs))
 	for _, c := range cs {

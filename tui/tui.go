@@ -13,7 +13,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/cti"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/util"
@@ -869,7 +868,7 @@ func setChangelogLayout(g *gocui.Gui) error {
 			}
 		}
 
-		if len(vinfo.Ctis) > 0 {
+		if len(vinfo.CTIs) > 0 {
 			lines = append(lines, "\n",
 				"Cyber Threat Intelligence",
 				"=========================",
@@ -877,15 +876,11 @@ func setChangelogLayout(g *gocui.Gui) error {
 
 			attacks := []string{}
 			capecs := []string{}
-			for _, techniqueID := range vinfo.Ctis {
-				technique, ok := cti.TechniqueDict[techniqueID]
-				if !ok {
-					continue
-				}
-				if strings.HasPrefix(techniqueID, "CAPEC-") {
-					capecs = append(capecs, fmt.Sprintf("* %s", technique.Name))
-				} else {
-					attacks = append(attacks, fmt.Sprintf("* %s", technique.Name))
+			for _, id := range vinfo.CTIs {
+				if c, ok := currentScanResult.CAPECDict[id]; ok {
+					capecs = append(capecs, fmt.Sprintf("* %s", c.Name))
+				} else if a, ok := currentScanResult.ATTACKDict[id]; ok {
+					attacks = append(attacks, fmt.Sprintf("* %s", a.Name))
 				}
 			}
 			slices.Sort(attacks)
@@ -931,7 +926,7 @@ type dataForTmpl struct {
 	Mitigation       string
 	PatchURLs        []string
 	Confidences      models.Confidences
-	Cwes             []models.CweDictEntry
+	Cwes             []models.CWEDictEntry
 	Alerts           []models.Alert
 	Links            []string
 	References       []models.Reference
@@ -1016,10 +1011,10 @@ func detailLines() (string, error) {
 	}
 
 	uniqCweIDs := vinfo.CveContents.UniqCweIDs(r.Family)
-	cwes := []models.CweDictEntry{}
+	cwes := []models.CWEDictEntry{}
 	for _, cweID := range uniqCweIDs {
 		if after, ok := strings.CutPrefix(cweID.Value, "CWE-"); ok {
-			if dict, ok := r.CweDict[after]; ok {
+			if dict, ok := r.CWEDict[after]; ok {
 				cwes = append(cwes, dict)
 			}
 		}
@@ -1086,7 +1081,7 @@ Patch
 CWE
 -----------
 {{range .Cwes -}}
-* {{.En.CweID}} [{{.En.Name}}](https://cwe.mitre.org/data/definitions/{{.En.CweID}}.html)
+* {{.En.CWEID}} [{{.En.Name}}](https://cwe.mitre.org/data/definitions/{{.En.CWEID}}.html)
 {{end}}
 {{range $name := .CpeURIs -}}
 * {{$name}}

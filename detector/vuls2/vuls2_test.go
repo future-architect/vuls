@@ -11271,3 +11271,120 @@ func compareVulnInfos(a, b models.VulnInfos) (string, error) {
 
 	return sb.String(), nil
 }
+
+func Test_enrichCTI(t *testing.T) {
+	tests := []struct {
+		name           string
+		vi             models.VulnInfo
+		wantVi         models.VulnInfo
+		wantCAPECDict  models.CAPECDict
+		wantATTACKDict models.ATTACKDict
+	}{
+		{
+			name: "cwe with capec+attack chain resolves all",
+			vi: models.VulnInfo{
+				CveID: "CVE-2024-TEST",
+				CveContents: models.CveContents{
+					models.RedHatAPI: []models.CveContent{{
+						Type:   models.RedHatAPI,
+						CveID:  "CVE-2024-TEST",
+						CweIDs: []string{"CWE-306"},
+					}},
+				},
+			},
+			wantVi: models.VulnInfo{
+				CveID: "CVE-2024-TEST",
+				CveContents: models.CveContents{
+					models.RedHatAPI: []models.CveContent{{
+						Type:   models.RedHatAPI,
+						CveID:  "CVE-2024-TEST",
+						CweIDs: []string{"CWE-306"},
+					}},
+				},
+				CTIs: []string{"CAPEC-115", "CAPEC-36", "T1552"},
+			},
+			wantCAPECDict: models.CAPECDict{
+				"CAPEC-115": {CAPECID: "CAPEC-115", Name: "Authentication Bypass"},
+				"CAPEC-36":  {CAPECID: "CAPEC-36", Name: "Using Unpublished Interfaces or Functionality"},
+			},
+			wantATTACKDict: models.ATTACKDict{
+				"T1552": {ATTACKID: "T1552", Name: "Unsecured Credentials", Platforms: []string{"Linux", "Windows", "macOS"}},
+			},
+		},
+		{
+			name: "no CWE leaves VulnInfo untouched",
+			vi: models.VulnInfo{
+				CveID: "CVE-2024-NOCWE",
+				CveContents: models.CveContents{
+					models.RedHatAPI: []models.CveContent{{
+						Type:  models.RedHatAPI,
+						CveID: "CVE-2024-NOCWE",
+					}},
+				},
+			},
+			wantVi: models.VulnInfo{
+				CveID: "CVE-2024-NOCWE",
+				CveContents: models.CveContents{
+					models.RedHatAPI: []models.CveContent{{
+						Type:  models.RedHatAPI,
+						CveID: "CVE-2024-NOCWE",
+					}},
+				},
+			},
+		},
+		{
+			name: "unknown CWE silently skipped",
+			vi: models.VulnInfo{
+				CveID: "CVE-2024-UNKNOWN",
+				CveContents: models.CveContents{
+					models.RedHatAPI: []models.CveContent{{
+						Type:   models.RedHatAPI,
+						CveID:  "CVE-2024-UNKNOWN",
+						CweIDs: []string{"CWE-9999"},
+					}},
+				},
+			},
+			wantVi: models.VulnInfo{
+				CveID: "CVE-2024-UNKNOWN",
+				CveContents: models.CveContents{
+					models.RedHatAPI: []models.CveContent{{
+						Type:   models.RedHatAPI,
+						CveID:  "CVE-2024-UNKNOWN",
+						CweIDs: []string{"CWE-9999"},
+					}},
+				},
+			},
+		},
+	}
+
+	c := session.Config{Type: "boltdb", Path: filepath.Join(t.TempDir(), "enrich-cti.db")}
+	if err := testutil.PopulateDB(c, "testdata/fixtures/enrich"); err != nil {
+		t.Fatalf("PopulateDB() err: %v", err)
+	}
+	sesh, err := c.New()
+	if err != nil {
+		t.Fatalf("session.Config.New() err: %v", err)
+	}
+	if err := sesh.Storage().Open(); err != nil {
+		t.Fatalf("Storage().Open() err: %v", err)
+	}
+	defer sesh.Storage().Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &models.ScanResult{ScannedCves: models.VulnInfos{tt.vi.CveID: tt.vi}}
+			if err := vuls2.EnrichCTI(sesh, r); err != nil {
+				t.Fatalf("EnrichCTI() err: %v", err)
+			}
+			if diff := gocmp.Diff(tt.wantVi, r.ScannedCves[tt.vi.CveID], gocmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+				t.Errorf("enrichCTI() VulnInfo mismatch (-want +got):\n%s", diff)
+			}
+			if diff := gocmp.Diff(tt.wantCAPECDict, r.CAPECDict); diff != "" {
+				t.Errorf("enrichCTI() CAPECDict mismatch (-want +got):\n%s", diff)
+			}
+			if diff := gocmp.Diff(tt.wantATTACKDict, r.ATTACKDict); diff != "" {
+				t.Errorf("enrichCTI() ATTACKDict mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -1,0 +1,13 @@
+{
+	"id": "T1552",
+	"kind": "technique",
+	"name": "Unsecured Credentials",
+	"technique": {
+		"platforms": [
+			"Linux",
+			"Windows",
+			"macOS"
+		]
+	},
+	"data_source": {"id": "mitre-attack"}
+}

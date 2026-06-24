@@ -9,13 +9,19 @@ import (
 	"maps"
 	"net/url"
 	"path"
+	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
 
+	attackTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/attack"
+	kindTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/attack/kind"
+	capecTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/capec"
+	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/cwe"
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
@@ -40,6 +46,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
@@ -274,6 +281,10 @@ func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgres
 
 	if err := enrich(sesh, r.ScannedCves); err != nil {
 		return xerrors.Errorf("Failed to enrich vulnerability data. err: %w", err)
+	}
+
+	if err := enrichCTI(sesh, r); err != nil {
+		return xerrors.Errorf("Failed to enrich CTI. err: %w", err)
 	}
 
 	return nil
@@ -1828,6 +1839,267 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 		enrichAdvisories(&vi, vd.Advisories)
 
 		vim[cveID] = vi
+	}
+	return nil
+}
+
+// yearRe extracts the 4-digit year (20YY) from a CWE View name such as
+// "Weaknesses in the 2024 CWE Top 25 Most Dangerous Software Weaknesses" or
+// "Weaknesses in OWASP Top Ten (2021)" — both forms produced by the mitre-cwe
+// extractor in vuls-data-update.
+var yearRe = regexp.MustCompile(`\b(20\d{2})\b`)
+
+// getCWEDictEntry fetches the CWE record for cweID and returns the resulting
+// CWEDictEntry plus the raw per-source map (so the caller can walk
+// RelatedAttackPatterns without a second storage call). On success entry.En
+// is always non-nil — at minimum a {CweID, Lang: "en"} stub that the
+// MitreCWE source record overwrites when present, so consumers can always
+// fall back to the English side. entry.Ja is left nil unless the
+// JVNFeedRSS source actually ships a record for this id, so consumers
+// (e.g. CWEDict.Get's "ja" branch) can use `dict.Ja != nil` to mean
+// "we have a Japanese name" without false positives from a placeholder.
+//
+// ErrNotFoundCWE is a soft miss — entry is zero and m is nil (mirroring
+// getCAPECDictEntry / getATTACKDictEntry); any other storage error is
+// wrapped and propagated.
+func getCWEDictEntry(sesh *session.Session, cweID string) (models.CWEDictEntry, map[sourceTypes.SourceID]cweTypes.CWE, error) {
+	id := strings.TrimPrefix(cweID, "CWE-")
+	// Pre-seed only En with a {CweID, Lang}-only stub so a missing-from-mitre
+	// case still has an English fallback. Ja stays nil — JVNFeedRSS either
+	// fills it with a real name below or it stays nil to signal absence.
+	entry := models.CWEDictEntry{
+		En:                 &cwe.CWE{CWEID: id, Lang: "en"},
+		OwaspTopTens:       map[string]string{},
+		CweTopTwentyfives:  map[string]string{},
+		SansTopTwentyfives: map[string]string{},
+	}
+
+	m, err := sesh.Storage().GetCWE(cweID)
+	if err != nil {
+		if errors.Is(err, dbTypes.ErrNotFoundCWE) {
+			return models.CWEDictEntry{}, nil, nil
+		}
+		return models.CWEDictEntry{}, nil, xerrors.Errorf("Failed to get cwe %s. err: %w", cweID, err)
+	}
+
+	for sid, w := range m {
+		switch sid {
+		case sourceTypes.MitreCWE:
+			entry.En = &cwe.CWE{
+				CWEID:               id,
+				Name:                w.Name,
+				Description:         w.Description,
+				ExtendedDescription: w.Weakness.ExtendedDescription,
+				Lang:                "en",
+			}
+			for _, ranking := range w.Weakness.Rankings {
+				year := yearRe.FindString(ranking.ViewName)
+				if year == "" {
+					continue
+				}
+				rank := strconv.Itoa(ranking.Rank)
+				switch {
+				case strings.Contains(ranking.ViewName, "OWASP Top Ten"):
+					entry.OwaspTopTens[year] = rank
+				case strings.Contains(ranking.ViewName, "CWE/SANS Top 25"):
+					entry.SansTopTwentyfives[year] = rank
+				case strings.Contains(ranking.ViewName, "CWE Top 25"):
+					entry.CweTopTwentyfives[year] = rank
+				}
+			}
+		case sourceTypes.JVNFeedRSS:
+			entry.Ja = &cwe.CWE{CWEID: id, Name: w.Name, Lang: "ja"}
+		}
+	}
+	return entry, m, nil
+}
+
+// getCAPECDictEntry fetches the CAPEC record for capecID and returns the
+// resulting CAPECDictEntry plus the raw per-source map. Only the mitre-capec
+// source is consulted for entry data (the only catalog vuls-data-update ships
+// CAPEC records for today). ErrNotFoundCAPEC is a soft miss — entry is zero
+// and m is nil.
+func getCAPECDictEntry(sesh *session.Session, capecID string) (models.CAPECDictEntry, map[sourceTypes.SourceID]capecTypes.CAPEC, error) {
+	m, err := sesh.Storage().GetCAPEC(capecID)
+	if err != nil {
+		if errors.Is(err, dbTypes.ErrNotFoundCAPEC) {
+			return models.CAPECDictEntry{}, nil, nil
+		}
+		return models.CAPECDictEntry{}, nil, xerrors.Errorf("Failed to get capec %s. err: %w", capecID, err)
+	}
+	var entry models.CAPECDictEntry
+	for sid, c := range m {
+		switch sid {
+		case sourceTypes.MitreCAPEC:
+			entry = models.CAPECDictEntry{CAPECID: capecID, Name: c.Name}
+		}
+	}
+	return entry, m, nil
+}
+
+// getATTACKDictEntry fetches the ATT&CK Technique record for attackID and
+// returns the resulting ATTACKDictEntry plus the raw per-source map. Only
+// the mitre-attack source is consulted for entry data (the only catalog
+// vuls-data-update ships ATT&CK records for today). ErrNotFoundAttack is a
+// soft miss — entry is zero and m is nil.
+func getATTACKDictEntry(sesh *session.Session, attackID string) (models.ATTACKDictEntry, map[sourceTypes.SourceID]attackTypes.Attack, error) {
+	m, err := sesh.Storage().GetAttack(kindTypes.Technique, attackID)
+	if err != nil {
+		if errors.Is(err, dbTypes.ErrNotFoundAttack) {
+			return models.ATTACKDictEntry{}, nil, nil
+		}
+		return models.ATTACKDictEntry{}, nil, xerrors.Errorf("Failed to get attack %s. err: %w", attackID, err)
+	}
+	var entry models.ATTACKDictEntry
+	for sid, a := range m {
+		switch sid {
+		case sourceTypes.MitreATTACK:
+			entry = models.ATTACKDictEntry{
+				ATTACKID:  attackID,
+				Name:      a.Name,
+				Platforms: slices.Clone(a.Technique.Platforms),
+			}
+		}
+	}
+	return entry, m, nil
+}
+
+// enrichCTI resolves the CVE → CWE → CAPEC → ATT&CK Technique graph for every
+// VulnInfo in r.ScannedCves, populating per-VulnInfo CTIs and the
+// ScanResult-level CWEDict / CAPECDict / ATTACKDict in a single pass.
+//
+// The traversal per VulnInfo is:
+//
+//	vi.CveContents[*].CweIDs ──▶ cweTypes.CWE.RelatedAttackPatterns ──▶ CAPEC
+//	CAPEC.RelatedAttacks ──▶ ATT&CK Technique
+//
+// Storage() lookups are deduped across VulnInfos via the three caches below,
+// so each unique CWE / CAPEC / ATT&CK id is fetched exactly once per
+// EnrichVulnInfos run regardless of how many CVEs reference it. ErrNotFound*
+// is cached as nil and silently skipped (an id missing from the catalog is
+// not an error — the dataset just hasn't shipped that record yet); any other
+// storage error is propagated to the caller so dataset/db-level breakage
+// doesn't get hidden behind partial dicts.
+func enrichCTI(sesh *session.Session, r *models.ScanResult) error {
+	cweCache := map[string]map[sourceTypes.SourceID]cweTypes.CWE{}
+	capecCache := map[string]map[sourceTypes.SourceID]capecTypes.CAPEC{}
+	attackCache := map[string]map[sourceTypes.SourceID]attackTypes.Attack{}
+
+	for cveID, vi := range r.ScannedCves {
+		cweSet := map[string]struct{}{}
+		for _, conts := range vi.CveContents {
+			for _, c := range conts {
+				for _, id := range c.CweIDs {
+					if id == "" {
+						continue
+					}
+					cweSet[id] = struct{}{}
+				}
+			}
+		}
+		if len(cweSet) == 0 {
+			continue
+		}
+
+		capecSet := map[string]struct{}{}
+		for cweID := range cweSet {
+			m, cached := cweCache[cweID]
+			if !cached {
+				entry, fetched, err := getCWEDictEntry(sesh, cweID)
+				if err != nil {
+					return xerrors.Errorf("Failed to enrich CTI for %s. err: %w", cveID, err)
+				}
+				m = fetched
+				cweCache[cweID] = m
+				if m != nil {
+					if r.CWEDict == nil {
+						r.CWEDict = models.CWEDict{}
+					}
+					r.CWEDict[strings.TrimPrefix(cweID, "CWE-")] = entry
+				}
+			}
+			for sid, w := range m {
+				if sid != sourceTypes.MitreCWE {
+					continue
+				}
+				for _, p := range w.Weakness.RelatedAttackPatterns {
+					if p != "" {
+						capecSet[p] = struct{}{}
+					}
+				}
+			}
+		}
+		if len(capecSet) == 0 {
+			continue
+		}
+
+		attackSet := map[string]struct{}{}
+		for capecID := range capecSet {
+			m, cached := capecCache[capecID]
+			if !cached {
+				entry, fetched, err := getCAPECDictEntry(sesh, capecID)
+				if err != nil {
+					return xerrors.Errorf("Failed to enrich CTI for %s. err: %w", cveID, err)
+				}
+				m = fetched
+				capecCache[capecID] = m
+				if m != nil {
+					if r.CAPECDict == nil {
+						r.CAPECDict = models.CAPECDict{}
+					}
+					r.CAPECDict[capecID] = entry
+				}
+			}
+			for sid, c := range m {
+				if sid != sourceTypes.MitreCAPEC {
+					continue
+				}
+				for _, a := range c.RelatedAttacks {
+					if a != "" {
+						attackSet[a] = struct{}{}
+					}
+				}
+			}
+		}
+
+		for attackID := range attackSet {
+			_, cached := attackCache[attackID]
+			if cached {
+				continue
+			}
+			entry, fetched, err := getATTACKDictEntry(sesh, attackID)
+			if err != nil {
+				return xerrors.Errorf("Failed to enrich CTI for %s. err: %w", cveID, err)
+			}
+			attackCache[attackID] = fetched
+			if fetched != nil {
+				if r.ATTACKDict == nil {
+					r.ATTACKDict = models.ATTACKDict{}
+				}
+				r.ATTACKDict[attackID] = entry
+			}
+		}
+
+		if len(capecSet) == 0 && len(attackSet) == 0 {
+			continue
+		}
+
+		existing := map[string]struct{}{}
+		for _, id := range vi.CTIs {
+			existing[id] = struct{}{}
+		}
+		for id := range capecSet {
+			if _, ok := existing[id]; !ok {
+				vi.CTIs = append(vi.CTIs, id)
+			}
+		}
+		for id := range attackSet {
+			if _, ok := existing[id]; !ok {
+				vi.CTIs = append(vi.CTIs, id)
+			}
+		}
+
+		r.ScannedCves[cveID] = vi
 	}
 	return nil
 }
