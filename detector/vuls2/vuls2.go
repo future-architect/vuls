@@ -2080,10 +2080,6 @@ func enrichCTI(sesh *session.Session, r *models.ScanResult) error {
 			}
 		}
 
-		if len(capecSet) == 0 && len(attackSet) == 0 {
-			continue
-		}
-
 		existing := map[string]struct{}{}
 		for _, id := range vi.CTIs {
 			existing[id] = struct{}{}
@@ -2098,6 +2094,7 @@ func enrichCTI(sesh *session.Session, r *models.ScanResult) error {
 				vi.CTIs = append(vi.CTIs, id)
 			}
 		}
+		slices.Sort(vi.CTIs)
 
 		r.ScannedCves[cveID] = vi
 	}
