@@ -678,9 +678,22 @@ func TestCWEDict_Get(t *testing.T) {
 			wantSans:  map[string]AttentionCWE{},
 		},
 		{
-			name: "missing entry returns all zero values",
-			c:    CWEDict{},
-			args: args{cweID: "CWE-999999", lang: "en"},
+			name:      "missing entry still returns mitre URL so Slack-style <url|id> links stay valid",
+			c:         CWEDict{},
+			args:      args{cweID: "CWE-999999", lang: "en"},
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-999999.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
+		},
+		{
+			name:      "missing entry ja falls through to mitre URL too",
+			c:         CWEDict{},
+			args:      args{cweID: "CWE-999999", lang: "ja"},
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-999999.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
 		},
 	}
 	for _, tt := range tests {

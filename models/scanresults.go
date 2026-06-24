@@ -435,13 +435,13 @@ type AttentionCWE struct {
 	URL  string
 }
 
-// Get the name, url, top10URL for the specified cweID, lang
+// Get the name, url, top10URL for the specified cweID, lang. The returned URL
+// is always non-empty (mitre / JVN), so renderers building hyperlinks like
+// Slack's "<url|cweID>" can rely on it even when the dict has no entry for the
+// id — name / owasp / cwe25 / sans are empty in that case.
 func (c CWEDict) Get(cweID, lang string) (name, url string, owasp, cwe25, sans map[string]AttentionCWE) {
 	cweNum := strings.TrimPrefix(cweID, "CWE-")
-	dict, ok := c[cweNum]
-	if !ok {
-		return
-	}
+	dict := c[cweNum]
 
 	owasp, cwe25, sans = fillAttentionCwe(dict, lang)
 	switch lang {
