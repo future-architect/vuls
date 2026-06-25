@@ -1668,15 +1668,15 @@ func cveContentsFromAdvs(sourceID sourceTypes.SourceID, cveID string, contents [
 // postConvert — left in place by the guard). Cisco's rich content lives in the
 // advisory, so this reads advisory roots.
 func enrichCisco(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
-	// Skip only when a non-empty cisco content is already present (built by the
-	// detection path, carrying provenance). An empty/placeholder entry should
-	// still be backfilled.
-	if slices.ContainsFunc(vi.CveContents[models.Cisco], func(c models.CveContent) bool { return !c.Empty() }) {
+	// Skip if the detection path already produced cisco content; it carries the
+	// vuls2-sources provenance, which only the detection path can attach, so it
+	// must never be deleted and rebuilt here. The detection path leaves no cisco
+	// key at all when it has nothing to emit (it does not write empty
+	// placeholders), so a presence check is enough — and matches enrichNVD /
+	// enrichRedHatCVE.
+	if _, ok := vi.CveContents[models.Cisco]; ok {
 		return
 	}
-	// Drop any empty/placeholder cisco entries so the backfill does not leave
-	// junk behind alongside the real content.
-	delete(vi.CveContents, models.Cisco)
 	for _, advisories := range rootMap {
 		for _, a := range advisories {
 			vi.CveContents[models.Cisco] = append(vi.CveContents[models.Cisco], ciscoCveContent(vi.CveID, a.Content, nil))

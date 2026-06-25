@@ -10768,6 +10768,47 @@ func Test_walkCPECriteria(t *testing.T) {
 	}
 }
 
+func Test_mergeVulnInfo(t *testing.T) {
+	// A single CVE can be covered by multiple distinct Cisco advisories, each a
+	// separate root producing a cisco CveContent with its own SourceLink. The
+	// merge keys CveContents by (type, source link), so both must survive rather
+	// than collapse into one. (Mirrors mergeIntoScannedCves' (type, cve, link)
+	// dedup and go-cve-dictionary's per-advisory ConvertCiscoToModel output.)
+	ccA := models.CveContent{
+		Type:       models.Cisco,
+		CveID:      "CVE-2099-0001",
+		Title:      "advisory A",
+		Summary:    "advisory A",
+		SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-aaa",
+		Optional:   map[string]string{"vuls2-sources": "[{\"root_id\":\"cisco-sa-aaa\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]"},
+	}
+	ccB := models.CveContent{
+		Type:       models.Cisco,
+		CveID:      "CVE-2099-0001",
+		Title:      "advisory B",
+		Summary:    "advisory B",
+		SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-bbb",
+		Optional:   map[string]string{"vuls2-sources": "[{\"root_id\":\"cisco-sa-bbb\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]"},
+	}
+
+	a := models.VulnInfo{CveID: "CVE-2099-0001", CveContents: models.CveContents{models.Cisco: []models.CveContent{ccA}}}
+	b := models.VulnInfo{CveID: "CVE-2099-0001", CveContents: models.CveContents{models.Cisco: []models.CveContent{ccB}}}
+
+	got, err := vuls2.MergeVulnInfo(a, b)
+	if err != nil {
+		t.Fatalf("mergeVulnInfo() err: %v", err)
+	}
+
+	links := make([]string, 0, len(got.CveContents[models.Cisco]))
+	for _, c := range got.CveContents[models.Cisco] {
+		links = append(links, c.SourceLink)
+	}
+	want := []string{ccA.SourceLink, ccB.SourceLink}
+	if diff := gocmp.Diff(want, links, gocmpopts.SortSlices(func(x, y string) bool { return x < y })); diff != "" {
+		t.Errorf("mergeVulnInfo() cisco source links mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func Test_enrich(t *testing.T) {
 	type args struct {
 		vim models.VulnInfos
@@ -11428,6 +11469,51 @@ func Test_enrich(t *testing.T) {
 								CweIDs:       []string{"CWE-733"},
 								Published:    time.Date(2025, time.August, 27, 16, 0, 0, 0, time.UTC),
 								LastModified: time.Date(2025, time.August, 27, 16, 0, 0, 0, time.UTC),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// enrichCisco must not overwrite cisco content the detection path
+			// already built: that content carries the vuls2-sources provenance
+			// (which only the detection path can attach), so when it is present
+			// the backfill is skipped and the entry — provenance included — is
+			// left exactly as-is. Guards against the earlier delete-and-rebuild
+			// bug that dropped the provenance for advisories with an empty Summary.
+			name: "enrich cisco skips when detection already built it (preserves provenance)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2025-20241": models.VulnInfo{
+						CveID: "CVE-2025-20241",
+						CveContents: models.CveContents{
+							models.Cisco: []models.CveContent{
+								{
+									Type:       models.Cisco,
+									CveID:      "CVE-2025-20241",
+									Title:      "from-detection",
+									Summary:    "detection-built cisco content",
+									SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx",
+									Optional:   map[string]string{"vuls2-sources": "[{\"root_id\":\"cisco-sa-n39k-isis-dos-JhJA8Rfx\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]"},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-20241": models.VulnInfo{
+					CveID: "CVE-2025-20241",
+					CveContents: models.CveContents{
+						models.Cisco: []models.CveContent{
+							{
+								Type:       models.Cisco,
+								CveID:      "CVE-2025-20241",
+								Title:      "from-detection",
+								Summary:    "detection-built cisco content",
+								SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx",
+								Optional:   map[string]string{"vuls2-sources": "[{\"root_id\":\"cisco-sa-n39k-isis-dos-JhJA8Rfx\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]"},
 							},
 						},
 					},
