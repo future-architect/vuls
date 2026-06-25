@@ -803,8 +803,20 @@ type sourcePolicy struct {
 
 // policyFor returns the routing policy for a source. Sources not listed are
 // vulnerability-sourced with no presentation overrides (the existing default).
-func policyFor(_ sourceTypes.SourceID) sourcePolicy {
-	return sourcePolicy{origin: originVulnerability}
+func policyFor(sid sourceTypes.SourceID) sourcePolicy {
+	switch sid {
+	case sourceTypes.CiscoJSON:
+		return sourcePolicy{
+			origin:  originAdvisory,
+			refTag:  "CISCO",
+			refHost: "cisco.com",
+			advisorySourceLink: func(id string) string {
+				return fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", id)
+			},
+		}
+	default:
+		return sourcePolicy{origin: originVulnerability}
+	}
 }
 
 // fromAdvContent projects an advisory's content into the neutral input. The
@@ -1364,7 +1376,32 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 			switch sourceID {
 			case sourceTypes.ENISAKEV:
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
+			default:
+				if policyFor(sourceID).origin == originAdvisory {
+					enrichAdvisoryContent(vi, sourceID, rootMap)
+				}
 			}
+		}
+	}
+}
+
+// enrichAdvisoryContent backfills advisory-sourced CveContent (e.g. Cisco) for a
+// CVE detected by another source. Like the detection path it builds content via
+// the shared toCveContent, but passes nil provenance — enrich-built content
+// carries no vuls2-sources. It is a no-op when the detection path already filled
+// this content type (which carries provenance); a stale empty placeholder is
+// dropped first so the backfill does not leave junk alongside the real content.
+func enrichAdvisoryContent(vi *models.VulnInfo, sourceID sourceTypes.SourceID, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
+	cctype := toCveContentType(ecosystemTypes.EcosystemTypeCPE, sourceID)
+	if slices.ContainsFunc(vi.CveContents[cctype], func(c models.CveContent) bool { return !c.Empty() }) {
+		return
+	}
+	delete(vi.CveContents, cctype)
+	policy := policyFor(sourceID)
+	for _, advs := range rootMap {
+		for _, a := range advs {
+			vi.CveContents[cctype] = append(vi.CveContents[cctype],
+				toCveContent(fromAdvContent(cctype, vi.CveID, a.Content, policy), nil))
 		}
 	}
 }

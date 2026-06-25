@@ -9149,6 +9149,153 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Cisco's rich content lives in the advisory (the vulnerability is a
+			// thin CVE stub), so the detection path builds the cisco CveContent
+			// from the advisory and carries the vuls2-sources provenance — the
+			// stub never leaks into the emitted content.
+			name: "cpe cisco advisory-sourced content with provenance",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*": {"cpe:/o:cisco:test_product:1.0", "cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "cisco-sa-test",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "cisco-sa-test",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.CiscoJSON: {
+											dataTypes.RootID("cisco-sa-test"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "cisco-sa-test",
+														Title:       "Cisco Test Product Vulnerability",
+														Description: "A test Cisco vulnerability.",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Vendor: new("High"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-test",
+															},
+														},
+														Published: new(time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC)),
+														Modified:  new(time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2099-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.CiscoJSON: {
+											dataTypes.RootID("cisco-sa-test"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2099-0001",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.CiscoJSON: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:o:cisco:test_product:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2099-0001": {
+					CveID:       "CVE-2099-0001",
+					Confidences: models.Confidences{models.CiscoExactVersionMatch},
+					CpeURIs:     []string{"cpe:/o:cisco:test_product:1.0", "cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "cisco-sa-test",
+							Severity:    "High",
+							Issued:      time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
+							Updated:     time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
+							Description: "A test Cisco vulnerability.",
+						},
+					},
+					CveContents: models.CveContents{
+						models.Cisco: []models.CveContent{
+							{
+								Type:       models.Cisco,
+								CveID:      "CVE-2099-0001",
+								Title:      "Cisco Test Product Vulnerability",
+								Summary:    "A test Cisco vulnerability.",
+								SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-test",
+								References: models.References{
+									{Link: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-test", Source: "CISCO"},
+								},
+								Published:    time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"cisco-sa-test\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low
@@ -11158,6 +11305,45 @@ func Test_enrich(t *testing.T) {
 				"CVE-2023-44487": models.VulnInfo{
 					CveID:       "CVE-2023-44487",
 					CveContents: models.CveContents{},
+				},
+			},
+		},
+		{
+			// Cisco content lives in the advisory (not the vulnerability), so
+			// enrichCisco reads advisory roots and builds the cisco CveContent;
+			// Cisco carries no CVSS (only a vendor SIR -> DistroAdvisory severity).
+			// Fixture is a real vuls-data-update PR #844 Cisco golden.
+			name: "enrich with cisco (advisory-sourced content, no CVSS)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2025-20241": models.VulnInfo{
+						CveID: "CVE-2025-20241",
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-20241": models.VulnInfo{
+					CveID: "CVE-2025-20241",
+					CveContents: models.CveContents{
+						models.Cisco: []models.CveContent{
+							{
+								Type:       models.Cisco,
+								CveID:      "CVE-2025-20241",
+								Title:      "Cisco Nexus 3000 and 9000 Series Switches Intermediate System-to-Intermediate System Denial of Service Vulnerability",
+								Summary:    "\r\n<p>A vulnerability in the Intermediate System-to-Intermediate System (IS-IS) feature of Cisco NX-OS Software for Cisco Nexus 3000 Series Switches and Cisco Nexus 9000 Series Switches in standalone NX-OS mode could allow an unauthenticated, adjacent attacker to cause the IS-IS process to unexpectedly restart, which could cause an affected device to reload.</p>\r\n<p>This vulnerability is due to insufficient input validation when parsing an ingress IS-IS packet. An attacker could exploit this vulnerability by sending a crafted IS-IS packet to an affected device. A successful exploit could allow the attacker to cause the unexpected restart of the IS-IS process, which could cause the affected device to reload, resulting in a denial of service (DoS) condition.</p>\r\n<p><strong>Note:</strong> The IS-IS protocol is a routing protocol. To exploit this vulnerability, an attacker must be Layer 2-adjacent to the affected device.</p>\r\n\r\n<p>Cisco has released software updates that address this vulnerability. There are no workarounds that address this vulnerability.</p>\r\n<p>This advisory is available at the following link:<br><a href=\"https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx\">https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx</a></p>\r\n\r\n<p>This advisory is part of the August 2025 Cisco FXOS and NX-OS Software Security Advisory Bundled Publication. For a complete list of the advisories and links to them, see <a href=\"https://sec.cloudapps.cisco.com/security/center/viewErp.x?alertId=ERP-75667\" rel=\"nofollow\">Cisco Event Response: August 2025 Semiannual Cisco FXOS and NX-OS Software Security Advisory Bundled Publication</a>.</p>\r\n",
+								SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx",
+								References: models.References{
+									{Link: "https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn49153", Source: "CISCO"},
+									{Link: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx", Source: "CISCO"},
+									{Link: "https://sec.cloudapps.cisco.com/security/center/contentjson/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx/csaf/cisco-sa-n39k-isis-dos-JhJA8Rfx.json", Source: "CISCO"},
+									{Link: "https://sec.cloudapps.cisco.com/security/center/contentxml/CiscoSecurityAdvisory/cisco-sa-n39k-isis-dos-JhJA8Rfx/cvrf/cisco-sa-n39k-isis-dos-JhJA8Rfx_cvrf.xml", Source: "CISCO"},
+								},
+								CweIDs:       []string{"CWE-733"},
+								Published:    time.Date(2025, time.August, 27, 16, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2025, time.August, 27, 16, 0, 0, 0, time.UTC),
+							},
+						},
+					},
 				},
 			},
 		},

@@ -1453,6 +1453,13 @@ func comparePack(a, b pack) (int, error) {
 // non-vuls2 input is an error). Only content-level fields are handled;
 // AffectedPackages / CpeURIs / WindowsKBFixedIns are aggregated separately
 // by postConvert after this merge.
+// ccKey identifies a CveContent within a merge by its type and source link, so
+// multiple same-type contents from distinct advisories are kept apart.
+type ccKey struct {
+	ctype models.CveContentType
+	link  string
+}
+
 func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	if a.CveID != b.CveID {
 		return models.VulnInfo{}, xerrors.Errorf("CVE IDs are different. a: %s, b: %s", a.CveID, b.CveID)
@@ -1496,11 +1503,16 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 	info.DistroAdvisories = slices.Collect(maps.Values(am))
 
-	ccm := make(map[models.CveContentType]models.CveContent)
+	// Key by (type, source link), not type alone: a CVE can carry multiple
+	// CveContents of the same type from distinct advisories (e.g. several Cisco
+	// advisories), which must not collapse into one. For vulnerability-sourced
+	// types the source link is deterministic per CVE, so same-type contents still
+	// share a key and merge exactly as before.
+	ccm := make(map[ccKey]models.CveContent)
 	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
 		for cc := range cciter {
 			for _, c := range cc {
-				base, ok := ccm[c.Type]
+				base, ok := ccm[ccKey{c.Type, c.SourceLink}]
 				if ok {
 					var src1 []source
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
@@ -1611,13 +1623,13 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 				} else {
 					base = c
 				}
-				ccm[c.Type] = base
+				ccm[ccKey{c.Type, c.SourceLink}] = base
 			}
 		}
 	}
 	ccs := make(models.CveContents)
-	for cctype, cc := range ccm {
-		ccs[cctype] = []models.CveContent{cc}
+	for k, cc := range ccm {
+		ccs[k.ctype] = append(ccs[k.ctype], cc)
 	}
 	info.CveContents = ccs
 
@@ -1779,6 +1791,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 			},
 			DataSources: []sourceTypes.SourceID{
 				sourceTypes.CISAKEV,
+				sourceTypes.CiscoJSON,
 				sourceTypes.ENISAKEV,
 				sourceTypes.ExploitExploitDB,
 				sourceTypes.ExploitGitHub,
