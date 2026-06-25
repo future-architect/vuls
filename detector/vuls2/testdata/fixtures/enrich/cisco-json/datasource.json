@@ -1,6 +1,6 @@
 {
     "id": "cisco-json",
-    "name": "Cisco Security Advisory",
+    "name": "Cisco Security Advisories: openVuln API",
     "raw": [
         {
             "url": "ghcr.io/vulsio/vuls-data-db:vuls-data-raw-cisco-json",

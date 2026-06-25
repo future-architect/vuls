@@ -14,6 +14,7 @@ import (
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
 	advisoryContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory/content"
+	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
 	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
@@ -9157,40 +9158,52 @@ func Test_postConvert(t *testing.T) {
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
-						"cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*",
+						"cpe:2.3:a:cisco:firepower_threat_defense:7.4.0.0:*:*:*:*:*:*:*",
 					},
 				},
 				fsToOriginalCPE: map[string][]string{
-					"cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*": {"cpe:/o:cisco:test_product:1.0", "cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*"},
+					"cpe:2.3:a:cisco:firepower_threat_defense:7.4.0.0:*:*:*:*:*:*:*": {"cpe:/a:cisco:firepower_threat_defense:7.4.0.0", "cpe:2.3:a:cisco:firepower_threat_defense:7.4.0.0:*:*:*:*:*:*:*"},
 				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
 						{
-							ID: "cisco-sa-test",
+							ID: "cisco-sa-3100_4200_tlsdos-2yNSCd54",
 							Advisories: []dbTypes.VulnerabilityDataAdvisory{
 								{
-									ID: "cisco-sa-test",
+									ID: "cisco-sa-3100_4200_tlsdos-2yNSCd54",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
 										sourceTypes.CiscoJSON: {
-											dataTypes.RootID("cisco-sa-test"): []advisoryTypes.Advisory{
+											dataTypes.RootID("cisco-sa-3100_4200_tlsdos-2yNSCd54"): []advisoryTypes.Advisory{
 												{
 													Content: advisoryContentTypes.Content{
-														ID:          "cisco-sa-test",
-														Title:       "Cisco Test Product Vulnerability",
-														Description: "A test Cisco vulnerability.",
+														ID:          "cisco-sa-3100_4200_tlsdos-2yNSCd54",
+														Title:       "Cisco Secure Firewall Adaptive Security Appliance and Secure Firewall Threat Defense Software for Firepower 3100 and 4200 Series TLS 1.3 Cipher Denial of Service Vulnerability",
+														Description: "A vulnerability in the TLS 1.3 implementation for a specific cipher for Cisco Secure Firewall ASA and FTD Software for Firepower 3100 and 4200 Series devices could allow an authenticated, remote attacker to cause a denial of service (DoS) condition.",
 														Severity: []severityTypes.Severity{
 															{
 																Type:   severityTypes.SeverityTypeVendor,
+																Source: "cisco.com",
 																Vendor: new("High"),
+															},
+														},
+														CWE: []cweTypes.CWE{
+															{
+																Source: "cisco.com",
+																CWE:    []string{"CWE-404"},
 															},
 														},
 														References: []referenceTypes.Reference{
 															{
-																URL: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-test",
+																Source: "cisco.com",
+																URL:    "https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm91176",
+															},
+															{
+																Source: "cisco.com",
+																URL:    "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-3100_4200_tlsdos-2yNSCd54",
 															},
 														},
-														Published: new(time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC)),
-														Modified:  new(time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC)),
+														Published: new(time.Date(2025, 8, 14, 16, 0, 0, 0, time.UTC)),
+														Modified:  new(time.Date(2025, 9, 3, 13, 37, 50, 0, time.UTC)),
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -9205,13 +9218,13 @@ func Test_postConvert(t *testing.T) {
 							},
 							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
 								{
-									ID: "CVE-2099-0001",
+									ID: "CVE-2025-20127",
 									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
 										sourceTypes.CiscoJSON: {
-											dataTypes.RootID("cisco-sa-test"): []vulnerabilityTypes.Vulnerability{
+											dataTypes.RootID("cisco-sa-3100_4200_tlsdos-2yNSCd54"): []vulnerabilityTypes.Vulnerability{
 												{
 													Content: vulnerabilityContentTypes.Content{
-														ID: "CVE-2099-0001",
+														ID: "CVE-2025-20127",
 													},
 													Segments: []segmentTypes.Segment{
 														{
@@ -9241,7 +9254,7 @@ func Test_postConvert(t *testing.T) {
 																	FixStatus: new(vcFixStatusTypes.FixStatus{
 																		Class: vcFixStatusTypes.ClassUnknown,
 																	}),
-																	CPE: ccTypes.CPE("cpe:2.3:o:cisco:test_product:*:*:*:*:*:*:*:*"),
+																	CPE: ccTypes.CPE("cpe:2.3:a:cisco:firepower_threat_defense:*:*:*:*:*:*:*:*"),
 																}),
 															},
 															Accepts: criterionTypes.AcceptQueries{
@@ -9260,34 +9273,36 @@ func Test_postConvert(t *testing.T) {
 				},
 			},
 			want: models.VulnInfos{
-				"CVE-2099-0001": {
-					CveID:       "CVE-2099-0001",
+				"CVE-2025-20127": {
+					CveID:       "CVE-2025-20127",
 					Confidences: models.Confidences{models.CiscoExactVersionMatch},
-					CpeURIs:     []string{"cpe:/o:cisco:test_product:1.0", "cpe:2.3:o:cisco:test_product:1.0:*:*:*:*:*:*:*"},
+					CpeURIs:     []string{"cpe:/a:cisco:firepower_threat_defense:7.4.0.0", "cpe:2.3:a:cisco:firepower_threat_defense:7.4.0.0:*:*:*:*:*:*:*"},
 					DistroAdvisories: models.DistroAdvisories{
 						{
-							AdvisoryID:  "cisco-sa-test",
+							AdvisoryID:  "cisco-sa-3100_4200_tlsdos-2yNSCd54",
 							Severity:    "High",
-							Issued:      time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
-							Updated:     time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
-							Description: "A test Cisco vulnerability.",
+							Issued:      time.Date(2025, 8, 14, 16, 0, 0, 0, time.UTC),
+							Updated:     time.Date(2025, 9, 3, 13, 37, 50, 0, time.UTC),
+							Description: "A vulnerability in the TLS 1.3 implementation for a specific cipher for Cisco Secure Firewall ASA and FTD Software for Firepower 3100 and 4200 Series devices could allow an authenticated, remote attacker to cause a denial of service (DoS) condition.",
 						},
 					},
 					CveContents: models.CveContents{
 						models.Cisco: []models.CveContent{
 							{
 								Type:       models.Cisco,
-								CveID:      "CVE-2099-0001",
-								Title:      "Cisco Test Product Vulnerability",
-								Summary:    "A test Cisco vulnerability.",
-								SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-test",
+								CveID:      "CVE-2025-20127",
+								Title:      "Cisco Secure Firewall Adaptive Security Appliance and Secure Firewall Threat Defense Software for Firepower 3100 and 4200 Series TLS 1.3 Cipher Denial of Service Vulnerability",
+								Summary:    "A vulnerability in the TLS 1.3 implementation for a specific cipher for Cisco Secure Firewall ASA and FTD Software for Firepower 3100 and 4200 Series devices could allow an authenticated, remote attacker to cause a denial of service (DoS) condition.",
+								SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-3100_4200_tlsdos-2yNSCd54",
 								References: models.References{
-									{Link: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-test", Source: "CISCO"},
+									{Link: "https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm91176", Source: "CISCO"},
+									{Link: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-3100_4200_tlsdos-2yNSCd54", Source: "CISCO"},
 								},
-								Published:    time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
-								LastModified: time.Date(2025, 8, 27, 16, 0, 0, 0, time.UTC),
+								CweIDs:       []string{"CWE-404"},
+								Published:    time.Date(2025, 8, 14, 16, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2025, 9, 3, 13, 37, 50, 0, time.UTC),
 								Optional: map[string]string{
-									"vuls2-sources": "[{\"root_id\":\"cisco-sa-test\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+									"vuls2-sources": "[{\"root_id\":\"cisco-sa-3100_4200_tlsdos-2yNSCd54\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
 								},
 							},
 						},
