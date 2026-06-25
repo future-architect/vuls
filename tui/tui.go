@@ -3,8 +3,8 @@ package tui
 import (
 	"bytes"
 	"cmp"
+	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 	"text/template"
@@ -56,13 +56,13 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g.SelFgColor = gocui.ColorBlack
 	g.Cursor = true
 
-	// gocui's MainLoop never returns nil (it returns ErrQuit on a normal quit),
-	// so staticcheck flags `err != nil` as always true. The check is intentional.
-	//nolint:staticcheck // SA4023: MainLoop always returns a non-nil error
-	if err := g.MainLoop(); err != nil {
-		g.Close()
+	// gocui's MainLoop returns ErrQuit on a normal quit and never returns nil, so
+	// treat ErrQuit as a clean exit (the deferred g.Close runs) and report only a
+	// real error. Dropping the `err != nil` comparison also avoids staticcheck
+	// SA4023 (it would always be true).
+	if err := g.MainLoop(); !errors.Is(err, gocui.ErrQuit) {
 		logging.Log.Errorf("%+v", err)
-		os.Exit(1)
+		return subcommands.ExitFailure
 	}
 	return subcommands.ExitSuccess
 }
