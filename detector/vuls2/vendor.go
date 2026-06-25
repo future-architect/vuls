@@ -3,6 +3,7 @@ package vuls2
 import (
 	"cmp"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
+	advisoryContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory/content"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -1182,7 +1184,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 	}
 }
 
-// enrichAdvisories enriches VulnInfo with advisory-based data (KEV, EUVD).
+// enrichAdvisories enriches VulnInfo with advisory-based data: KEV, EUVD, and
+// the Cisco CveContent (Cisco is sourced from cisco-json only).
 func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDataAdvisory) {
 	for _, a := range advisories {
 		for sourceID, rootMap := range a.Contents {
@@ -1191,6 +1194,8 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
 			case sourceTypes.ENISAEUVDList:
 				enrichEuvd(vi, rootMap)
+			case sourceTypes.CiscoJSON:
+				enrichCisco(vi, rootMap)
 			}
 		}
 	}
@@ -1580,6 +1585,105 @@ func mitreSSVC(s ssvcTypes.SSVC) *models.SSVC {
 		}
 	}
 	return ssvc
+}
+
+// ciscoCveContent builds the Cisco CveContent from a Cisco advisory's content.
+// It is shared by the CPE detection path (postConvert, which passes the
+// vuls2-sources provenance via optional) and the enrich backfill (enrichCisco,
+// optional nil), so both emit identical Cisco content. Cisco carries no CVSS —
+// only a vendor SIR, surfaced as the DistroAdvisory severity — so no CVSS is
+// set, matching go-cve-dictionary's ConvertCiscoToModel.
+func ciscoCveContent(cveID string, c advisoryContentTypes.Content, optional map[string]string) models.CveContent {
+	var rs models.References
+	for _, r := range c.References {
+		ref := toReference(r.URL)
+		// Cisco advisory/bug URLs fall through toReference to Source "MISC";
+		// tag them "CISCO" to match go-cve-dictionary's ConvertCiscoToModel (and
+		// the Cisco advisoryReference) so reference-source grouping stays stable.
+		// Match on host so both cisco.com and *.cisco.com (e.g.
+		// sec.cloudapps.cisco.com) qualify, and lookalikes (evilcisco.com) do not.
+		if u, err := url.Parse(r.URL); err == nil {
+			if host := u.Hostname(); host == "cisco.com" || strings.HasSuffix(host, ".cisco.com") {
+				ref.Source = "CISCO"
+			}
+		}
+		rs = append(rs, ref)
+	}
+
+	return models.CveContent{
+		Type:       models.Cisco,
+		CveID:      cveID,
+		Title:      c.Title,
+		Summary:    c.Description,
+		SourceLink: fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", string(c.ID)),
+		References: rs,
+		CweIDs: func() []string {
+			var cs []string //nolint:prealloc
+			for _, cwe := range c.CWE {
+				cs = append(cs, cwe.CWE...)
+			}
+			return cs
+		}(),
+		Published: func() time.Time {
+			if c.Published != nil {
+				return *c.Published
+			}
+			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}(),
+		LastModified: func() time.Time {
+			if c.Modified != nil {
+				return *c.Modified
+			}
+			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}(),
+		Optional: optional,
+	}
+}
+
+// cveContentsFromAdvs builds the advisory-sourced CveContents for a CPE
+// detection match (postConvert). It is the detection-path counterpart to the
+// enrich side's enrichAdvisories: both turn advisory content into CveContent via
+// the shared ciscoCveContent builder. The switch on the source ID is the
+// authority for which sources are advisory-sourced (only cisco-json today; the
+// empty default makes adding more, e.g. JVN, a one-case change). Keying on the
+// source ID rather than the CveContentType is deliberate: the same type can be
+// vuln-sourced from one source and advisory-sourced from another. optional
+// carries the vuls2-sources provenance computed for the detection. A
+// non-advisory source or an empty contents slice yields an empty (non-nil)
+// CveContents, which the enrich path then backfills by CVE.
+func cveContentsFromAdvs(sourceID sourceTypes.SourceID, cveID string, contents []advisoryContentTypes.Content, optional map[string]string) models.CveContents {
+	ccs := models.CveContents{}
+	switch sourceID {
+	case sourceTypes.CiscoJSON:
+		for _, c := range contents {
+			ccs[models.Cisco] = append(ccs[models.Cisco], ciscoCveContent(cveID, c, optional))
+		}
+	default:
+	}
+	return ccs
+}
+
+// enrichCisco backfills Cisco CveContent for CVEs that were not detected by the
+// Cisco CPE path (those already carry it, with vuls2-sources provenance, from
+// postConvert — left in place by the guard). Cisco's rich content lives in the
+// advisory, so this reads advisory roots.
+func enrichCisco(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
+	// Skip only when a non-empty cisco content is already present (built by the
+	// detection path, carrying provenance). An empty/placeholder entry should
+	// still be backfilled.
+	if slices.ContainsFunc(vi.CveContents[models.Cisco], func(c models.CveContent) bool { return !c.Empty() }) {
+		return
+	}
+	// Drop any empty/placeholder cisco entries so the backfill does not leave
+	// junk behind alongside the real content.
+	delete(vi.CveContents, models.Cisco)
+	for _, advisories := range rootMap {
+		for _, a := range advisories {
+			vi.CveContents[models.Cisco] = append(vi.CveContents[models.Cisco], ciscoCveContent(vi.CveID, a.Content, nil))
+		}
+	}
+	// Order within the cisco type is normalized for output by
+	// ScanResult.SortForJSONOutput -> CveContents.Sort, so no sort here.
 }
 
 // enrichVulnerabilityKEV extracts KEV data from vulnerability content and maps it to models.KEV.

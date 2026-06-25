@@ -56,6 +56,9 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g.SelFgColor = gocui.ColorBlack
 	g.Cursor = true
 
+	// gocui's MainLoop never returns nil (it returns ErrQuit on a normal quit),
+	// so staticcheck flags `err != nil` as always true. The check is intentional.
+	//nolint:staticcheck // SA4023: MainLoop always returns a non-nil error
 	if err := g.MainLoop(); err != nil {
 		g.Close()
 		logging.Log.Errorf("%+v", err)
