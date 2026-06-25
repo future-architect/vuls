@@ -1651,7 +1651,9 @@ func ciscoCveContent(cveID string, c advisoryContentTypes.Content, optional map[
 // carries the vuls2-sources provenance computed for the detection. A
 // non-advisory source or an empty contents slice yields an empty (non-nil)
 // CveContents, which the enrich path then backfills by CVE.
-func cveContentsFromAdvs(sourceID sourceTypes.SourceID, cveID string, contents []advisoryContentTypes.Content, optional map[string]string) models.CveContents {
+// It returns no error today, but shares cveContentsFromVulns' (CveContents,
+// error) signature so the two read symmetrically at the call site.
+func cveContentsFromAdvs(sourceID sourceTypes.SourceID, cveID string, contents []advisoryContentTypes.Content, optional map[string]string) (models.CveContents, error) {
 	ccs := models.CveContents{}
 	switch sourceID {
 	case sourceTypes.CiscoJSON:
@@ -1660,17 +1662,35 @@ func cveContentsFromAdvs(sourceID sourceTypes.SourceID, cveID string, contents [
 		}
 	default:
 	}
-	return ccs
+	return ccs, nil
 }
 
 // cveContentsFromVulns builds the vulnerability-sourced CveContents for a CPE
 // detection match (postConvert) — the counterpart to cveContentsFromAdvs for
 // sources whose authoritative content is the vulnerability stub itself (NVD and
-// every other non-advisory-sourced CPE source). cvss is pre-computed and refs
-// pre-merged (vulnerability references plus the source's advisory references) by
-// the caller, since that merge can fail; optional carries the vuls2-sources
+// every other non-advisory-sourced CPE source). It computes the CVSS and merges
+// the references (vulnerability references plus the source's advisory references
+// from fdas, which is why it can fail); optional carries the vuls2-sources
 // provenance.
-func cveContentsFromVulns(cctype models.CveContentType, v vulnerabilityTypes.Vulnerability, cvss2 v2.CVSSv2, cvss3 v31.CVSSv31, cvss40 v40.CVSSv40, refs models.References, optional map[string]string) models.CveContents {
+func cveContentsFromVulns(src source, cctype models.CveContentType, v vulnerabilityTypes.Vulnerability, fdas models.DistroAdvisories, optional map[string]string) (models.CveContents, error) {
+	cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, src.SourceID, v.Content.Severity)
+
+	var rs models.References
+	for _, r := range v.Content.References {
+		rs = append(rs, toReference(r.URL))
+	}
+	for _, da := range fdas {
+		ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+		}
+		if !slices.ContainsFunc(rs, func(r models.Reference) bool {
+			return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
+		}) {
+			rs = append(rs, ar)
+		}
+	}
+
 	return models.NewCveContents(models.CveContent{
 		Type:           cctype,
 		CveID:          string(v.Content.ID),
@@ -1686,7 +1706,7 @@ func cveContentsFromVulns(cctype models.CveContentType, v vulnerabilityTypes.Vul
 		Cvss40Vector:   cvss40.Vector,
 		Cvss40Severity: cvss40.Severity,
 		SourceLink:     cveContentSourceLink(cctype, v),
-		References:     refs,
+		References:     rs,
 		CweIDs: func() []string {
 			var cs []string //nolint:prealloc
 			for _, cwe := range v.Content.CWE {
@@ -1707,7 +1727,7 @@ func cveContentsFromVulns(cctype models.CveContentType, v vulnerabilityTypes.Vul
 			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 		}(),
 		Optional: optional,
-	})
+	}), nil
 }
 
 // enrichCisco backfills Cisco CveContent for CVEs that were not detected by the

@@ -1301,23 +1301,6 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 							fdas := filterDistroAdvisories(src.Segment.Ecosystem, distroAdvs[src])
 							cctype := toCveContentType(src.Segment.Ecosystem, sid)
-							cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, sid, v.Content.Severity)
-
-							var rs models.References
-							for _, r := range v.Content.References {
-								rs = append(rs, toReference(r.URL))
-							}
-							for _, da := range fdas {
-								ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
-								if err != nil {
-									return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
-								}
-								if !slices.ContainsFunc(rs, func(r models.Reference) bool {
-									return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
-								}) {
-									rs = append(rs, ar)
-								}
-							}
 
 							// Map content-level Exploit / Mitigations into the
 							// vuls0 models — NVD content only. The NVD feed
@@ -1357,34 +1340,33 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 							optional := cveContentOptional(src.Segment.Ecosystem, v, string(bs))
 
-							// Building the CveContents from the vulnerability stub and from
-							// the advisories is mutually exclusive, and which one applies is a
-							// property of the source ID, not the CveContentType (the same type
-							// can be vuln-sourced from one source and advisory-sourced from
-							// another), so switch on the source ID — matching the
-							// advisory-content stash.
-							var ccs models.CveContents
-							switch src.SourceID {
-							case sourceTypes.CiscoJSON:
-								// cisco-json's rich content lives in the advisory, not the stub.
-								// When the detection has no matching advisory content (anomalous
-								// for cisco-json, whose advisory shares the root), this yields
-								// empty cisco content so the enrich path backfills it by CVE
-								// rather than shipping an empty entry.
-								ccs = cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], optional)
-							default:
-								// The vulnerability stub is the authoritative content.
-								ccs = cveContentsFromVulns(cctype, v, cvss2, cvss3, cvss40, rs, optional)
-							}
-
-							return models.VulnInfo{
+							vinfo := models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
-								CveContents:      ccs,
-							}, nil
+							}
+
+							// Which content source feeds CveContents is a property of the
+							// source ID, not the CveContentType (the same type can be
+							// vuln-sourced from one source and advisory-sourced from another) —
+							// matching the advisory-content stash. cisco-json's rich content
+							// lives in the advisory; every other source's in the vulnerability
+							// stub. (For cisco-json with no matching advisory content —
+							// anomalous, its advisory shares the root — this yields empty cisco
+							// content so the enrich path backfills it by CVE.)
+							switch src.SourceID {
+							case sourceTypes.CiscoJSON:
+								vinfo.CveContents, err = cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], optional)
+							default:
+								vinfo.CveContents, err = cveContentsFromVulns(src, cctype, v, fdas, optional)
+							}
+							if err != nil {
+								return models.VulnInfo{}, xerrors.Errorf("Failed to build cve contents. err: %w", err)
+							}
+
+							return vinfo, nil
 						}()
 						if err != nil {
 							return xerrors.Errorf("Failed to create vuln info. err: %w", err)
