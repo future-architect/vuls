@@ -3,6 +3,7 @@ package vuls2
 import (
 	"cmp"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
+	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -631,28 +633,148 @@ func cveContentOptional(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnera
 	return m
 }
 
-func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
+func cveContentSourceLink(ccType models.CveContentType, cveID string) string {
 	switch ccType {
 	case models.RedHat, models.RedHatAPI:
-		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
+		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", cveID)
 	case models.Oracle:
-		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", v.Content.ID)
+		return fmt.Sprintf("https://linux.oracle.com/cve/%s.html", cveID)
 	case models.Amazon:
-		return fmt.Sprintf("https://explore.alas.aws.amazon.com/%s.html", v.Content.ID)
+		return fmt.Sprintf("https://explore.alas.aws.amazon.com/%s.html", cveID)
 	case models.SUSE:
-		return fmt.Sprintf("https://www.suse.com/security/cve/%s.html", v.Content.ID)
+		return fmt.Sprintf("https://www.suse.com/security/cve/%s.html", cveID)
 	case models.Debian, models.DebianSecurityTracker:
-		return fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", v.Content.ID)
+		return fmt.Sprintf("https://security-tracker.debian.org/tracker/%s", cveID)
 	case models.Ubuntu, models.UbuntuAPI:
-		return fmt.Sprintf("https://ubuntu.com/security/%s", v.Content.ID)
+		return fmt.Sprintf("https://ubuntu.com/security/%s", cveID)
 	case models.Alpine:
-		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
+		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", cveID)
 	case models.Nvd:
-		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID)
 	case models.Microsoft:
-		return fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", v.Content.ID)
+		return fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", cveID)
 	default:
 		return ""
+	}
+}
+
+// cveContentInput is the source-neutral projection that both vulnerability and
+// advisory content map into. It carries exactly what models.CveContent needs so
+// that toCveContent is the single place a CveContent is built (detection and
+// enrich). CVSS is supplied already-computed (toCvss for detection, enrichCvss
+// for enrich, zero for Cisco) — never recomputed in the builder — so the builder
+// stays output-neutral across paths. References are raw URLs mapped via
+// toReference inside the builder; RefTag/RefHost optionally re-tag a reference's
+// Source when its host matches (e.g. "CISCO" for *.cisco.com).
+type cveContentInput struct {
+	Type                models.CveContentType
+	CveID               string
+	Title, Summary      string
+	SourceLink          string
+	RefURLs             []string
+	CweIDs              []string
+	Cvss2               v2.CVSSv2
+	Cvss3               v31.CVSSv31
+	Cvss40              v40.CVSSv40
+	Published, Modified *time.Time
+	RefTag, RefHost     string
+}
+
+// toCveContent is the single models.CveContent constructor for vuls2 data.
+// optional carries provenance: the detection path passes the marshaled
+// []source under "vuls2-sources"; the enrich path passes nil.
+func toCveContent(in cveContentInput, optional map[string]string) models.CveContent {
+	var rs models.References
+	for _, u := range in.RefURLs {
+		ref := toReference(u)
+		if in.RefTag != "" {
+			if parsed, err := url.Parse(u); err == nil {
+				if h := parsed.Hostname(); h == in.RefHost || strings.HasSuffix(h, "."+in.RefHost) {
+					ref.Source = in.RefTag
+				}
+			}
+		}
+		rs = append(rs, ref)
+	}
+
+	return models.CveContent{
+		Type:           in.Type,
+		CveID:          in.CveID,
+		Title:          in.Title,
+		Summary:        in.Summary,
+		Cvss2Score:     in.Cvss2.BaseScore,
+		Cvss2Vector:    in.Cvss2.Vector,
+		Cvss2Severity:  in.Cvss2.NVDBaseSeverity,
+		Cvss3Score:     in.Cvss3.BaseScore,
+		Cvss3Vector:    in.Cvss3.Vector,
+		Cvss3Severity:  in.Cvss3.BaseSeverity,
+		Cvss40Score:    in.Cvss40.Score,
+		Cvss40Vector:   in.Cvss40.Vector,
+		Cvss40Severity: in.Cvss40.Severity,
+		SourceLink:     in.SourceLink,
+		References:     rs,
+		CweIDs:         in.CweIDs,
+		Published:      orYear1000(in.Published),
+		LastModified:   orYear1000(in.Modified),
+		Optional:       optional,
+	}
+}
+
+// flattenCWE flattens the per-entry CWE id lists into one slice (nil when empty).
+func flattenCWE(cwes []cweTypes.CWE) []string {
+	var ids []string //nolint:prealloc
+	for _, c := range cwes {
+		ids = append(ids, c.CWE...)
+	}
+	return ids
+}
+
+// orYear1000 dereferences t, or returns the year-1000 sentinel used across vuls2
+// for a missing timestamp.
+func orYear1000(t *time.Time) time.Time {
+	if t != nil {
+		return *t
+	}
+	return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+}
+
+// fromVulnContent projects a vulnerability stub into the neutral input. Used by
+// every vulnerability-sourced path (NVD/RedHat detection and enrich). The CVSS
+// triplet is supplied by the caller so the detection (toCvss) and enrich
+// (enrichCvss) variants stay faithful.
+func fromVulnContent(cctype models.CveContentType, v vulnerabilityTypes.Vulnerability, cvss2 v2.CVSSv2, cvss3 v31.CVSSv31, cvss40 v40.CVSSv40) cveContentInput {
+	refURLs := make([]string, 0, len(v.Content.References))
+	for _, r := range v.Content.References {
+		refURLs = append(refURLs, r.URL)
+	}
+	return cveContentInput{
+		Type:       cctype,
+		CveID:      string(v.Content.ID),
+		Title:      v.Content.Title,
+		Summary:    v.Content.Description,
+		SourceLink: cveContentSourceLink(cctype, string(v.Content.ID)),
+		RefURLs:    refURLs,
+		CweIDs:     flattenCWE(v.Content.CWE),
+		Cvss2:      cvss2,
+		Cvss3:      cvss3,
+		Cvss40:     cvss40,
+		Published:  v.Content.Published,
+		Modified:   v.Content.Modified,
+	}
+}
+
+// fromDistroAdvisory projects a DistroAdvisory (the advisory-only fallback, where
+// no Content object exists) into the neutral input. The single advisory
+// reference ar is attached by the caller after building.
+func fromDistroAdvisory(cctype models.CveContentType, da models.DistroAdvisory, ar models.Reference) cveContentInput {
+	issued, updated := da.Issued, da.Updated
+	return cveContentInput{
+		Type:       cctype,
+		CveID:      da.AdvisoryID,
+		Summary:    da.Description,
+		SourceLink: ar.Link,
+		Published:  &issued,
+		Modified:   &updated,
 	}
 }
 
@@ -1221,12 +1343,7 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 		for _, v := range vulns {
 			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
 
-			var rs models.References
-			for _, r := range v.Content.References {
-				rs = append(rs, toReference(r.URL))
-			}
-
-			sourceLink := cveContentSourceLink(models.RedHatAPI, v)
+			sourceLink := cveContentSourceLink(models.RedHatAPI, string(v.Content.ID))
 			for _, m := range v.Content.Mitigations {
 				if m.Description == "" {
 					continue
@@ -1238,42 +1355,8 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 				})
 			}
 
-			vi.CveContents[models.RedHatAPI] = append(vi.CveContents[models.RedHatAPI], models.CveContent{
-				Type:           models.RedHatAPI,
-				CveID:          string(v.Content.ID),
-				Title:          v.Content.Title,
-				Summary:        v.Content.Description,
-				Cvss2Score:     cvss2.BaseScore,
-				Cvss2Vector:    cvss2.Vector,
-				Cvss2Severity:  cvss2.NVDBaseSeverity,
-				Cvss3Score:     cvss3.BaseScore,
-				Cvss3Vector:    cvss3.Vector,
-				Cvss3Severity:  cvss3.BaseSeverity,
-				Cvss40Score:    cvss40.Score,
-				Cvss40Vector:   cvss40.Vector,
-				Cvss40Severity: cvss40.Severity,
-				SourceLink:     sourceLink,
-				References:     rs,
-				CweIDs: func() []string {
-					var cs []string //nolint:prealloc
-					for _, cwe := range v.Content.CWE {
-						cs = append(cs, cwe.CWE...)
-					}
-					return cs
-				}(),
-				Published: func() time.Time {
-					if v.Content.Published != nil {
-						return *v.Content.Published
-					}
-					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-				}(),
-				LastModified: func() time.Time {
-					if v.Content.Modified != nil {
-						return *v.Content.Modified
-					}
-					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-				}(),
-			})
+			vi.CveContents[models.RedHatAPI] = append(vi.CveContents[models.RedHatAPI],
+				toCveContent(fromVulnContent(models.RedHatAPI, v, cvss2, cvss3, cvss40), nil))
 		}
 	}
 }
@@ -1314,11 +1397,6 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 
 			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
 
-			var rs models.References
-			for _, r := range v.Content.References {
-				rs = append(rs, toReference(r.URL))
-			}
-
 			for _, e := range v.Content.Exploit {
 				if e.Link == "" {
 					continue
@@ -1338,42 +1416,8 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				})
 			}
 
-			vi.CveContents[models.Nvd] = append(vi.CveContents[models.Nvd], models.CveContent{
-				Type:           models.Nvd,
-				CveID:          string(v.Content.ID),
-				Title:          v.Content.Title,
-				Summary:        v.Content.Description,
-				Cvss2Score:     cvss2.BaseScore,
-				Cvss2Vector:    cvss2.Vector,
-				Cvss2Severity:  cvss2.NVDBaseSeverity,
-				Cvss3Score:     cvss3.BaseScore,
-				Cvss3Vector:    cvss3.Vector,
-				Cvss3Severity:  cvss3.BaseSeverity,
-				Cvss40Score:    cvss40.Score,
-				Cvss40Vector:   cvss40.Vector,
-				Cvss40Severity: cvss40.Severity,
-				SourceLink:     cveContentSourceLink(models.Nvd, v),
-				References:     rs,
-				CweIDs: func() []string {
-					var cs []string //nolint:prealloc
-					for _, cwe := range v.Content.CWE {
-						cs = append(cs, cwe.CWE...)
-					}
-					return cs
-				}(),
-				Published: func() time.Time {
-					if v.Content.Published != nil {
-						return *v.Content.Published
-					}
-					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-				}(),
-				LastModified: func() time.Time {
-					if v.Content.Modified != nil {
-						return *v.Content.Modified
-					}
-					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-				}(),
-			})
+			vi.CveContents[models.Nvd] = append(vi.CveContents[models.Nvd],
+				toCveContent(fromVulnContent(models.Nvd, v, cvss2, cvss3, cvss40), nil))
 		}
 	}
 }

@@ -1269,19 +1269,17 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							cctype := toCveContentType(src.Segment.Ecosystem, sid)
 							cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, sid, v.Content.Severity)
 
-							var rs models.References
-							for _, r := range v.Content.References {
-								rs = append(rs, toReference(r.URL))
-							}
+							cc := toCveContent(fromVulnContent(cctype, v, cvss2, cvss3, cvss40),
+								cveContentOptional(src.Segment.Ecosystem, v, string(bs)))
 							for _, da := range fdas {
 								ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
 								if err != nil {
 									return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
 								}
-								if !slices.ContainsFunc(rs, func(r models.Reference) bool {
+								if !slices.ContainsFunc(cc.References, func(r models.Reference) bool {
 									return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
 								}) {
-									rs = append(rs, ar)
+									cc.References = append(cc.References, ar)
 								}
 							}
 
@@ -1327,43 +1325,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
-								CveContents: models.NewCveContents(models.CveContent{
-									Type:           cctype,
-									CveID:          string(v.Content.ID),
-									Title:          v.Content.Title,
-									Summary:        v.Content.Description,
-									Cvss2Score:     cvss2.BaseScore,
-									Cvss2Vector:    cvss2.Vector,
-									Cvss2Severity:  cvss2.NVDBaseSeverity,
-									Cvss3Score:     cvss3.BaseScore,
-									Cvss3Vector:    cvss3.Vector,
-									Cvss3Severity:  cvss3.BaseSeverity,
-									Cvss40Score:    cvss40.Score,
-									Cvss40Vector:   cvss40.Vector,
-									Cvss40Severity: cvss40.Severity,
-									SourceLink:     cveContentSourceLink(cctype, v),
-									References:     rs,
-									CweIDs: func() []string {
-										var cs []string
-										for _, cwe := range v.Content.CWE {
-											cs = append(cs, cwe.CWE...)
-										}
-										return cs
-									}(),
-									Published: func() time.Time {
-										if v.Content.Published != nil {
-											return *v.Content.Published
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									LastModified: func() time.Time {
-										if v.Content.Modified != nil {
-											return *v.Content.Modified
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
-								}),
+								CveContents:      models.NewCveContents(cc),
 							}, nil
 						}()
 						if err != nil {
@@ -1409,20 +1371,13 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 					return xerrors.Errorf("Failed to get advisory reference. err: %w", err)
 				}
 
+				cc := toCveContent(fromDistroAdvisory(cctype, da, ar), map[string]string{"vuls2-sources": string(bs)})
+				cc.References = models.References{ar}
 				vinfo := models.VulnInfo{
 					CveID:            da.AdvisoryID,
 					Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, m[src])},
 					DistroAdvisories: models.DistroAdvisories{da},
-					CveContents: models.NewCveContents(models.CveContent{
-						Type:         cctype,
-						CveID:        da.AdvisoryID,
-						Summary:      da.Description,
-						SourceLink:   ar.Link,
-						References:   models.References{ar},
-						Published:    da.Issued,
-						LastModified: da.Updated,
-						Optional:     map[string]string{"vuls2-sources": string(bs)},
-					}),
+					CveContents:      models.NewCveContents(cc),
 				}
 
 				base := m[src]
