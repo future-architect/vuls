@@ -405,8 +405,8 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, EUVD, Fortinet, MITRE, Paloalto, Cisco
-// (NVD CveContent/exploits/mitigations are filled by the vuls2 enrich path instead; NVD cert alerts still come from here)
+// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, Fortinet, MITRE, Paloalto, Cisco
+// (NVD CveContent/exploits/mitigations and EUVD are filled by the vuls2 enrich path instead; NVD cert alerts still come from here)
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := make([]string, 0, len(r.ScannedCves))
 	for _, v := range r.ScannedCves {
@@ -431,7 +431,6 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 	for _, d := range ds {
 		vulnchecks := models.ConvertVulncheckToModel(d.CveID, d.Vulnchecks)
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
-		euvds := models.ConvertEuvdToModel(d.CveID, d.Euvds)
 		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
 		mitres := models.ConvertMitreToModel(d.CveID, d.Mitres)
 		paloaltos := models.ConvertPaloaltoToModel(d.CveID, d.Paloaltos)
@@ -451,7 +450,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				for _, con := range vulnchecks {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
-				for _, cons := range [][]models.CveContent{jvns, euvds, fortinets, paloaltos, ciscos} {
+				for _, cons := range [][]models.CveContent{jvns, fortinets, paloaltos, ciscos} {
 					for _, con := range cons {
 						if !con.Empty() {
 							if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {

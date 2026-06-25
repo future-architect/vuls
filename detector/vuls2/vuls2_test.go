@@ -10958,6 +10958,43 @@ func Test_enrich(t *testing.T) {
 			},
 		},
 		{
+			name: "enrich with enisa-euvd-list data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-56374": models.VulnInfo{
+						CveID:       "CVE-2024-56374",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-56374": models.VulnInfo{
+					CveID: "CVE-2024-56374",
+					CveContents: models.CveContents{
+						models.Euvd: []models.CveContent{
+							{
+								Type:          models.Euvd,
+								CveID:         "CVE-2024-56374",
+								Title:         "EUVD-2025-0001",
+								Summary:       "An issue was discovered in Django 5.1 before 5.1.5, 5.0 before 5.0.11, and 4.2 before 4.2.18. Lack of upper-bound limit enforcement in strings passed when performing IPv6 validation could lead to a potential denial-of-service attack. The undocumented and private functions clean_ipv6_address and is_valid_ipv6_address are vulnerable, as is the django.forms.GenericIPAddressField form field. (The django.db.models.GenericIPAddressField model field is not affected.)",
+								Cvss3Score:    5.8,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:L",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://euvd.enisa.europa.eu/vulnerability/EUVD-2025-0001",
+								References: models.References{
+									{Link: "https://docs.djangoproject.com/en/dev/releases/security/", Source: "MISC"},
+									{Link: "https://groups.google.com/g/django-announce", Source: "MISC"},
+									{Link: "https://www.djangoproject.com/weblog/2025/jan/14/security-releases/", Source: "MISC"},
+								},
+								Published:    time.Date(2025, 1, 14, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2025, 2, 12, 20, 31, 20, 0, time.UTC),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "enrich with metasploit data",
 			args: args{
 				vim: models.VulnInfos{

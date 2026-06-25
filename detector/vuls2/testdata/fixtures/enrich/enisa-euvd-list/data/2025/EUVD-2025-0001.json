@@ -1,0 +1,65 @@
+{
+	"id": "EUVD-2025-0001",
+	"advisories": [
+		{
+			"content": {
+				"id": "EUVD-2025-0001",
+				"description": "An issue was discovered in Django 5.1 before 5.1.5, 5.0 before 5.0.11, and 4.2 before 4.2.18. Lack of upper-bound limit enforcement in strings passed when performing IPv6 validation could lead to a potential denial-of-service attack. The undocumented and private functions clean_ipv6_address and is_valid_ipv6_address are vulnerable, as is the django.forms.GenericIPAddressField form field. (The django.db.models.GenericIPAddressField model field is not affected.)",
+				"severity": [
+					{
+						"type": "cvss_v31",
+						"source": "euvd.enisa.europa.eu",
+						"cvss_v31": {
+							"vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:N/A:L",
+							"base_score": 5.8,
+							"base_severity": "MEDIUM",
+							"temporal_score": 5.8,
+							"temporal_severity": "MEDIUM",
+							"environmental_score": 5.8,
+							"environmental_severity": "MEDIUM"
+						}
+					}
+				],
+				"references": [
+					{
+						"source": "euvd.enisa.europa.eu",
+						"url": "https://docs.djangoproject.com/en/dev/releases/security/"
+					},
+					{
+						"source": "euvd.enisa.europa.eu",
+						"url": "https://groups.google.com/g/django-announce"
+					},
+					{
+						"source": "euvd.enisa.europa.eu",
+						"url": "https://www.djangoproject.com/weblog/2025/jan/14/security-releases/"
+					}
+				],
+				"published": "2025-01-14T00:00:00Z",
+				"modified": "2025-02-12T20:31:20Z"
+			}
+		},
+		{
+			"content": {
+				"id": "GHSA-qcgg-j2x8-h9g8"
+			}
+		},
+		{
+			"content": {
+				"id": "PYSEC-2025-1"
+			}
+		}
+	],
+	"vulnerabilities": [
+		{
+			"content": {
+				"id": "CVE-2024-56374"
+			}
+		}
+	],
+	"data_source": {
+		"id": "enisa-euvd-list",
+		"raws": [
+			"fixtures/2025/EUVD-2025-0001.json"
+		]
+	}
+}
