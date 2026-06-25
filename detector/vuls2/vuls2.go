@@ -1355,63 +1355,26 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							cc := models.CveContent{
-								Type:           cctype,
-								CveID:          string(v.Content.ID),
-								Title:          v.Content.Title,
-								Summary:        v.Content.Description,
-								Cvss2Score:     cvss2.BaseScore,
-								Cvss2Vector:    cvss2.Vector,
-								Cvss2Severity:  cvss2.NVDBaseSeverity,
-								Cvss3Score:     cvss3.BaseScore,
-								Cvss3Vector:    cvss3.Vector,
-								Cvss3Severity:  cvss3.BaseSeverity,
-								Cvss40Score:    cvss40.Score,
-								Cvss40Vector:   cvss40.Vector,
-								Cvss40Severity: cvss40.Severity,
-								SourceLink:     cveContentSourceLink(cctype, v),
-								References:     rs,
-								CweIDs: func() []string {
-									var cs []string
-									for _, cwe := range v.Content.CWE {
-										cs = append(cs, cwe.CWE...)
-									}
-									return cs
-								}(),
-								Published: func() time.Time {
-									if v.Content.Published != nil {
-										return *v.Content.Published
-									}
-									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-								}(),
-								LastModified: func() time.Time {
-									if v.Content.Modified != nil {
-										return *v.Content.Modified
-									}
-									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-								}(),
-								Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
-							}
+							optional := cveContentOptional(src.Segment.Ecosystem, v, string(bs))
+
 							// Building the CveContents from the vulnerability stub and from
-							// the advisories is mutually exclusive: for most sources the stub
-							// `cc` is the authoritative content, but cisco-json's rich content
-							// lives in the advisory, so its stub is discarded (only the
-							// shared vuls2-sources provenance, cc.Optional, is reused). This
-							// is a property of the source ID, not the CveContentType, so
-							// switch on the source ID (matching the advisory-content stash).
+							// the advisories is mutually exclusive, and which one applies is a
+							// property of the source ID, not the CveContentType (the same type
+							// can be vuln-sourced from one source and advisory-sourced from
+							// another), so switch on the source ID — matching the
+							// advisory-content stash.
 							var ccs models.CveContents
 							switch src.SourceID {
 							case sourceTypes.CiscoJSON:
-								// cisco-json's content lives in the advisory the root carries
-								// for this source, not the stub. When the detection has no
-								// matching advisory content (anomalous for cisco-json, whose
-								// advisory shares the root), this leaves the cisco content empty
-								// so the enrich path backfills it by CVE rather than shipping an
-								// empty entry.
-								ccs = cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], cc.Optional)
+								// cisco-json's rich content lives in the advisory, not the stub.
+								// When the detection has no matching advisory content (anomalous
+								// for cisco-json, whose advisory shares the root), this yields
+								// empty cisco content so the enrich path backfills it by CVE
+								// rather than shipping an empty entry.
+								ccs = cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], optional)
 							default:
 								// The vulnerability stub is the authoritative content.
-								ccs = models.NewCveContents(cc)
+								ccs = cveContentsFromVulns(cctype, v, cvss2, cvss3, cvss40, rs, optional)
 							}
 
 							return models.VulnInfo{

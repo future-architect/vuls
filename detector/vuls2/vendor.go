@@ -1663,6 +1663,53 @@ func cveContentsFromAdvs(sourceID sourceTypes.SourceID, cveID string, contents [
 	return ccs
 }
 
+// cveContentsFromVulns builds the vulnerability-sourced CveContents for a CPE
+// detection match (postConvert) — the counterpart to cveContentsFromAdvs for
+// sources whose authoritative content is the vulnerability stub itself (NVD and
+// every other non-advisory-sourced CPE source). cvss is pre-computed and refs
+// pre-merged (vulnerability references plus the source's advisory references) by
+// the caller, since that merge can fail; optional carries the vuls2-sources
+// provenance.
+func cveContentsFromVulns(cctype models.CveContentType, v vulnerabilityTypes.Vulnerability, cvss2 v2.CVSSv2, cvss3 v31.CVSSv31, cvss40 v40.CVSSv40, refs models.References, optional map[string]string) models.CveContents {
+	return models.NewCveContents(models.CveContent{
+		Type:           cctype,
+		CveID:          string(v.Content.ID),
+		Title:          v.Content.Title,
+		Summary:        v.Content.Description,
+		Cvss2Score:     cvss2.BaseScore,
+		Cvss2Vector:    cvss2.Vector,
+		Cvss2Severity:  cvss2.NVDBaseSeverity,
+		Cvss3Score:     cvss3.BaseScore,
+		Cvss3Vector:    cvss3.Vector,
+		Cvss3Severity:  cvss3.BaseSeverity,
+		Cvss40Score:    cvss40.Score,
+		Cvss40Vector:   cvss40.Vector,
+		Cvss40Severity: cvss40.Severity,
+		SourceLink:     cveContentSourceLink(cctype, v),
+		References:     refs,
+		CweIDs: func() []string {
+			var cs []string //nolint:prealloc
+			for _, cwe := range v.Content.CWE {
+				cs = append(cs, cwe.CWE...)
+			}
+			return cs
+		}(),
+		Published: func() time.Time {
+			if v.Content.Published != nil {
+				return *v.Content.Published
+			}
+			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}(),
+		LastModified: func() time.Time {
+			if v.Content.Modified != nil {
+				return *v.Content.Modified
+			}
+			return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}(),
+		Optional: optional,
+	})
+}
+
 // enrichCisco backfills Cisco CveContent for CVEs that were not detected by the
 // Cisco CPE path (those already carry it, with vuls2-sources provenance, from
 // postConvert — left in place by the guard). Cisco's rich content lives in the
