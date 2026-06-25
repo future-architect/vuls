@@ -15,6 +15,7 @@ import (
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
+	advisoryContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory/content"
 	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
@@ -775,6 +776,63 @@ func fromDistroAdvisory(cctype models.CveContentType, da models.DistroAdvisory, 
 		SourceLink: ar.Link,
 		Published:  &issued,
 		Modified:   &updated,
+	}
+}
+
+// contentOrigin says which content feeds a source's authoritative CveContent.
+type contentOrigin int
+
+const (
+	// originVulnerability: the vulnerability stub is the content (NVD, RedHat, …).
+	originVulnerability contentOrigin = iota
+	// originAdvisory: the advisory carries the rich content; the vulnerability is
+	// a thin CVE stub (cisco-json, and future advisory-sourced PSIRT feeds).
+	originAdvisory
+)
+
+// sourcePolicy holds the per-source presentation that varies between CPE
+// sources. It is keyed by SourceID (not CveContentType): the same type can be
+// vulnerability-sourced from one source and advisory-sourced from another
+// (e.g. cisco-csaf/cisco-cvrf vs cisco-json, all models.Cisco). Adding a source
+// is one case in policyFor; the rest of the pipeline consults it generically.
+type sourcePolicy struct {
+	origin             contentOrigin
+	refTag, refHost    string                         // reference Source override by host (e.g. CISCO / cisco.com)
+	advisorySourceLink func(advisoryID string) string // nil for vulnerability-sourced
+}
+
+// policyFor returns the routing policy for a source. Sources not listed are
+// vulnerability-sourced with no presentation overrides (the existing default).
+func policyFor(_ sourceTypes.SourceID) sourcePolicy {
+	return sourcePolicy{origin: originVulnerability}
+}
+
+// fromAdvContent projects an advisory's content into the neutral input. The
+// CVE-ID is not in the advisory content — it comes from the paired vulnerability
+// stub — so the caller supplies it. Presentation (SourceLink, ref tagging) comes
+// from the policy; CVSS is left zero (advisory-sourced sources such as Cisco
+// carry no CVSS — the vendor severity is surfaced via DistroAdvisory.Severity).
+func fromAdvContent(cctype models.CveContentType, cveID string, c advisoryContentTypes.Content, p sourcePolicy) cveContentInput {
+	refURLs := make([]string, 0, len(c.References))
+	for _, r := range c.References {
+		refURLs = append(refURLs, r.URL)
+	}
+	var sourceLink string
+	if p.advisorySourceLink != nil {
+		sourceLink = p.advisorySourceLink(string(c.ID))
+	}
+	return cveContentInput{
+		Type:       cctype,
+		CveID:      cveID,
+		Title:      c.Title,
+		Summary:    c.Description,
+		SourceLink: sourceLink,
+		RefURLs:    refURLs,
+		CweIDs:     flattenCWE(c.CWE),
+		Published:  c.Published,
+		Modified:   c.Modified,
+		RefTag:     p.refTag,
+		RefHost:    p.refHost,
 	}
 }
 

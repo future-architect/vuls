@@ -17,6 +17,7 @@ import (
 	"golang.org/x/xerrors"
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
+	advisoryContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory/content"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -1188,6 +1189,10 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
 	for _, vd := range vds {
 		am := make(map[source]models.DistroAdvisories)
+		// advByID indexes this root's advisory contents per source, built
+		// uniformly here and consumed by the vulnerability loop only when the
+		// source is advisory-sourced (policyFor(...).origin == originAdvisory).
+		advByID := make(map[source][]advisoryContentTypes.Content)
 		for _, vda := range vd.Advisories {
 			for sid, rm := range vda.Contents {
 				if rm == nil {
@@ -1229,6 +1234,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							}(),
 							Description: a.Content.Description,
 						})
+						advByID[src] = append(advByID[src], a.Content)
 					}
 				}
 			}
@@ -1269,18 +1275,36 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							cctype := toCveContentType(src.Segment.Ecosystem, sid)
 							cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, sid, v.Content.Severity)
 
-							cc := toCveContent(fromVulnContent(cctype, v, cvss2, cvss3, cvss40),
-								cveContentOptional(src.Segment.Ecosystem, v, string(bs)))
-							for _, da := range fdas {
-								ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
-								if err != nil {
-									return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+							optional := cveContentOptional(src.Segment.Ecosystem, v, string(bs))
+							policy := policyFor(sid)
+							var ccs models.CveContents
+							switch policy.origin {
+							case originAdvisory:
+								// Advisory-sourced (e.g. cisco-json): the rich content lives
+								// in the advisory the root carries for this source, not the
+								// vulnerability stub. Build one CveContent per advisory,
+								// keyed by the CVE-ID from the stub.
+								ccs = models.CveContents{}
+								for _, c := range advByID[src] {
+									cc := toCveContent(fromAdvContent(cctype, string(v.Content.ID), c, policy), optional)
+									ccs[cc.Type] = append(ccs[cc.Type], cc)
 								}
-								if !slices.ContainsFunc(cc.References, func(r models.Reference) bool {
-									return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
-								}) {
-									cc.References = append(cc.References, ar)
+							default:
+								// Vulnerability-sourced (NVD etc.): the stub is the content,
+								// with the source's advisory references merged in.
+								cc := toCveContent(fromVulnContent(cctype, v, cvss2, cvss3, cvss40), optional)
+								for _, da := range fdas {
+									ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
+									if err != nil {
+										return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+									}
+									if !slices.ContainsFunc(cc.References, func(r models.Reference) bool {
+										return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
+									}) {
+										cc.References = append(cc.References, ar)
+									}
 								}
+								ccs = models.NewCveContents(cc)
 							}
 
 							// Map content-level Exploit / Mitigations into the
@@ -1325,7 +1349,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
-								CveContents:      models.NewCveContents(cc),
+								CveContents:      ccs,
 							}, nil
 						}()
 						if err != nil {
