@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -15,7 +14,6 @@ import (
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/contrib/owasp-dependency-check/parser"
-	"github.com/future-architect/vuls/cwe"
 	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
@@ -220,12 +218,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 		if err := FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
 			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
-
-		if err := FillWithCTI(&r, config.Conf.Cti, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with Cyber Threat Intelligences: %w", err)
-		}
-
-		FillCweDict(&r)
 
 		r.ReportedBy, _ = os.Hostname()
 		r.Lang = config.Conf.Lang
@@ -758,68 +750,4 @@ func getMaxConfidence(detail cvemodels.CveDetail) (maxConfidence models.Confiden
 	}
 
 	return maxConfidence
-}
-
-// FillCweDict fills CWE
-func FillCweDict(r *models.ScanResult) {
-	uniqCweIDMap := map[string]bool{}
-	for _, vinfo := range r.ScannedCves {
-		for _, conts := range vinfo.CveContents {
-			for _, cont := range conts {
-				for _, id := range cont.CweIDs {
-					if after, ok := strings.CutPrefix(id, "CWE-"); ok {
-						id = after
-						uniqCweIDMap[id] = true
-					}
-				}
-			}
-		}
-	}
-
-	dict := map[string]models.CweDictEntry{}
-	for id := range uniqCweIDMap {
-		entry := models.CweDictEntry{
-			OwaspTopTens:       map[string]string{},
-			CweTopTwentyfives:  map[string]string{},
-			SansTopTwentyfives: map[string]string{},
-		}
-		if e, ok := cwe.CweDictEn[id]; ok {
-			fillCweRank(&entry, id)
-			entry.En = &e
-		} else {
-			logging.Log.Debugf("CWE-ID %s is not found in English CWE Dict", id)
-			entry.En = &cwe.Cwe{CweID: id}
-		}
-
-		if r.Lang == "ja" {
-			if e, ok := cwe.CweDictJa[id]; ok {
-				fillCweRank(&entry, id)
-				entry.Ja = &e
-			} else {
-				logging.Log.Debugf("CWE-ID %s is not found in Japanese CWE Dict", id)
-				entry.Ja = &cwe.Cwe{CweID: id}
-			}
-		}
-
-		dict[id] = entry
-	}
-	r.CweDict = dict
-}
-
-func fillCweRank(entry *models.CweDictEntry, id string) {
-	for year, ranks := range cwe.OwaspTopTens {
-		if rank, ok := ranks[id]; ok {
-			entry.OwaspTopTens[year] = rank
-		}
-	}
-	for year, ranks := range cwe.CweTopTwentyfives {
-		if rank, ok := ranks[id]; ok {
-			entry.CweTopTwentyfives[year] = rank
-		}
-	}
-	for year, ranks := range cwe.SansTopTwentyfives {
-		if rank, ok := ranks[id]; ok {
-			entry.SansTopTwentyfives[year] = rank
-		}
-	}
 }

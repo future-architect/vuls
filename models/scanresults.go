@@ -55,7 +55,9 @@ type ScanResult struct {
 	GitHubManifests   DependencyGraphManifests `json:"gitHubManifests,omitempty"`
 	LibraryScanners   LibraryScanners          `json:"libraries,omitempty"`
 	WindowsKB         *WindowsKB               `json:"windowsKB,omitempty"`
-	CweDict           CweDict                  `json:"cweDict,omitempty"`
+	CWEDict           CWEDict                  `json:"cweDict,omitempty"`
+	CAPECDict         CAPECDict                `json:"capecDict,omitempty"`
+	ATTACKDict        ATTACKDict               `json:"attackDict,omitempty"`
 	Optional          map[string]any           `json:",omitempty"`
 	Config            struct {
 		Scan   config.Config `json:"scan"`
@@ -419,12 +421,13 @@ func (r *ScanResult) SortForJSONOutput() {
 		slices.SortFunc(v.AlertDict.JPCERT, func(a, b Alert) int {
 			return cmp.Compare(a.Title, b.Title)
 		})
+		slices.Sort(v.CTIs)
 		r.ScannedCves[k] = v
 	}
 }
 
-// CweDict is a dictionary for CWE
-type CweDict map[string]CweDictEntry
+// CWEDict is a dictionary for CWE
+type CWEDict map[string]CWEDictEntry
 
 // AttentionCWE has OWASP TOP10, CWE TOP25, CWE/SANS TOP25 rank and url
 type AttentionCWE struct {
@@ -432,36 +435,36 @@ type AttentionCWE struct {
 	URL  string
 }
 
-// Get the name, url, top10URL for the specified cweID, lang
-func (c CweDict) Get(cweID, lang string) (name, url string, owasp, cwe25, sans map[string]AttentionCWE) {
+// Get the name, url, top10URL for the specified cweID, lang. The returned URL
+// is always non-empty (mitre / JVN), so renderers building hyperlinks like
+// Slack's "<url|cweID>" can rely on it even when the dict has no entry for the
+// id — name / owasp / cwe25 / sans are empty in that case.
+func (c CWEDict) Get(cweID, lang string) (name, url string, owasp, cwe25, sans map[string]AttentionCWE) {
 	cweNum := strings.TrimPrefix(cweID, "CWE-")
-	dict, ok := c[cweNum]
-	if !ok {
-		return
-	}
+	dict := c[cweNum]
 
 	owasp, cwe25, sans = fillAttentionCwe(dict, lang)
 	switch lang {
 	case "ja":
-		if dict, ok := cwe.CweDictJa[cweNum]; ok {
-			name = dict.Name
+		if dict.Ja != nil && dict.Ja.Name != "" {
+			name = dict.Ja.Name
 			url = fmt.Sprintf("http://jvndb.jvn.jp/ja/cwe/%s.html", cweID)
 		} else {
-			if dict, ok := cwe.CweDictEn[cweNum]; ok {
-				name = dict.Name
+			if dict.En != nil {
+				name = dict.En.Name
 			}
 			url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
 		}
 	default:
 		url = fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", cweID)
-		if dict, ok := cwe.CweDictEn[cweNum]; ok {
-			name = dict.Name
+		if dict.En != nil {
+			name = dict.En.Name
 		}
 	}
 	return
 }
 
-func fillAttentionCwe(dict CweDictEntry, lang string) (owasp, cwe25, sans map[string]AttentionCWE) {
+func fillAttentionCwe(dict CWEDictEntry, lang string) (owasp, cwe25, sans map[string]AttentionCWE) {
 	owasp, cwe25, sans = map[string]AttentionCWE{}, map[string]AttentionCWE{}, map[string]AttentionCWE{}
 	switch lang {
 	case "ja":
@@ -497,11 +500,34 @@ func fillAttentionCwe(dict CweDictEntry, lang string) (owasp, cwe25, sans map[st
 	return
 }
 
-// CweDictEntry is a entry of CWE
-type CweDictEntry struct {
-	En                 *cwe.Cwe          `json:"en,omitempty"`
-	Ja                 *cwe.Cwe          `json:"ja,omitempty"`
+// CWEDictEntry is a entry of CWE
+type CWEDictEntry struct {
+	En                 *cwe.CWE          `json:"en,omitempty"`
+	Ja                 *cwe.CWE          `json:"ja,omitempty"`
 	OwaspTopTens       map[string]string `json:"owaspTopTens"`
 	CweTopTwentyfives  map[string]string `json:"cweTopTwentyfives"`
 	SansTopTwentyfives map[string]string `json:"sansTopTwentyfives"`
+}
+
+// CAPECDict is a dictionary of MITRE CAPEC attack patterns keyed by CAPEC ID
+// (e.g. "CAPEC-66"), populated at enrich time so renderers can resolve
+// VulnInfo.CTIs entries to display metadata without a DB handle.
+type CAPECDict map[string]CAPECDictEntry
+
+// CAPECDictEntry is an entry of CAPECDict.
+type CAPECDictEntry struct {
+	CAPECID string `json:"capecID"`
+	Name    string `json:"name,omitempty"`
+}
+
+// ATTACKDict is a dictionary of MITRE ATT&CK techniques keyed by technique ID
+// (e.g. "T1552"), populated at enrich time so renderers can resolve
+// VulnInfo.CTIs entries to display metadata without a DB handle.
+type ATTACKDict map[string]ATTACKDictEntry
+
+// ATTACKDictEntry is an entry of ATTACKDict.
+type ATTACKDictEntry struct {
+	ATTACKID  string   `json:"attackID"`
+	Name      string   `json:"name,omitempty"`
+	Platforms []string `json:"platforms,omitempty"`
 }

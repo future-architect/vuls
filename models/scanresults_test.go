@@ -6,6 +6,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/cwe"
 )
 
 func TestIsDisplayUpdatableNum(t *testing.T) {
@@ -177,6 +178,7 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 						},
+						CTIs: []string{"CAPEC-115", "T1552"},
 					},
 				},
 			},
@@ -236,6 +238,7 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 						},
+						CTIs: []string{"CAPEC-115", "T1552"},
 					},
 				},
 			},
@@ -298,6 +301,7 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "a"},
 							},
 						},
+						CTIs: []string{"T1552", "CAPEC-115"},
 					},
 				},
 			},
@@ -357,6 +361,7 @@ func TestScanResult_Sort(t *testing.T) {
 								{Title: "b"},
 							},
 						},
+						CTIs: []string{"CAPEC-115", "T1552"},
 					},
 				},
 			},
@@ -544,6 +549,170 @@ func TestScanResult_Sort(t *testing.T) {
 
 			if !reflect.DeepEqual(r.ScannedCves, tt.expected.ScannedCves) {
 				t.Errorf("act %+v, want %+v", r.ScannedCves, tt.expected.ScannedCves)
+			}
+		})
+	}
+}
+
+func TestCWEDict_Get(t *testing.T) {
+	type args struct {
+		cweID string
+		lang  string
+	}
+	tests := []struct {
+		name      string
+		c         CWEDict
+		args      args
+		wantName  string
+		wantURL   string
+		wantOwasp map[string]AttentionCWE
+		wantCwe25 map[string]AttentionCWE
+		wantSans  map[string]AttentionCWE
+	}{
+		{
+			name: "en/populated returns En name + mitre URL",
+			c: CWEDict{
+				"306": {
+					En:                 &cwe.CWE{CWEID: "306", Name: "Missing Authentication for Critical Function", Lang: "en"},
+					Ja:                 &cwe.CWE{CWEID: "306", Name: "重要な機能に対する認証の欠如", Lang: "ja"},
+					OwaspTopTens:       map[string]string{"2021": "7"},
+					CweTopTwentyfives:  map[string]string{"2024": "11"},
+					SansTopTwentyfives: map[string]string{"2011": "11"},
+				},
+			},
+			args:     args{cweID: "CWE-306", lang: "en"},
+			wantName: "Missing Authentication for Critical Function",
+			wantURL:  "https://cwe.mitre.org/data/definitions/CWE-306.html",
+			wantOwasp: map[string]AttentionCWE{"2021": {
+				Rank: "7",
+				URL:  cwe.OwaspTopTenURLsEn["2021"]["7"],
+			}},
+			wantCwe25: map[string]AttentionCWE{"2024": {
+				Rank: "11",
+				URL:  cwe.CweTopTwentyfiveURLs["2024"],
+			}},
+			wantSans: map[string]AttentionCWE{"2011": {
+				Rank: "11",
+				URL:  cwe.SansTopTwentyfiveURLs["2011"],
+			}},
+		},
+		{
+			name: "ja/Ja-populated returns Ja name + JVN URL",
+			c: CWEDict{
+				"306": {
+					En:                 &cwe.CWE{CWEID: "306", Name: "Missing Authentication for Critical Function", Lang: "en"},
+					Ja:                 &cwe.CWE{CWEID: "306", Name: "重要な機能に対する認証の欠如", Lang: "ja"},
+					OwaspTopTens:       map[string]string{"2021": "7"},
+					CweTopTwentyfives:  map[string]string{"2024": "11"},
+					SansTopTwentyfives: map[string]string{"2011": "11"},
+				},
+			},
+			args:     args{cweID: "CWE-306", lang: "ja"},
+			wantName: "重要な機能に対する認証の欠如",
+			wantURL:  "http://jvndb.jvn.jp/ja/cwe/CWE-306.html",
+			wantOwasp: map[string]AttentionCWE{"2021": {
+				Rank: "7",
+				URL:  cwe.OwaspTopTenURLsJa["2021"]["7"],
+			}},
+			wantCwe25: map[string]AttentionCWE{"2024": {
+				Rank: "11",
+				URL:  cwe.CweTopTwentyfiveURLs["2024"],
+			}},
+			wantSans: map[string]AttentionCWE{"2011": {
+				Rank: "11",
+				URL:  cwe.SansTopTwentyfiveURLs["2011"],
+			}},
+		},
+		{
+			name: "ja/Ja-nil falls back to En name + mitre URL",
+			c: CWEDict{
+				"79": {
+					En:                 &cwe.CWE{CWEID: "79", Name: "Cross-site Scripting", Lang: "en"},
+					OwaspTopTens:       map[string]string{},
+					CweTopTwentyfives:  map[string]string{},
+					SansTopTwentyfives: map[string]string{},
+				},
+			},
+			args:      args{cweID: "CWE-79", lang: "ja"},
+			wantName:  "Cross-site Scripting",
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-79.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
+		},
+		{
+			name: "ja/Ja-non-nil-empty-Name falls back to En name + mitre URL",
+			c: CWEDict{
+				"22": {
+					En:                 &cwe.CWE{CWEID: "22", Name: "Path Traversal", Lang: "en"},
+					Ja:                 &cwe.CWE{CWEID: "22", Lang: "ja"},
+					OwaspTopTens:       map[string]string{},
+					CweTopTwentyfives:  map[string]string{},
+					SansTopTwentyfives: map[string]string{},
+				},
+			},
+			args:      args{cweID: "CWE-22", lang: "ja"},
+			wantName:  "Path Traversal",
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-22.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
+		},
+		{
+			name: "id without CWE- prefix resolves the same entry",
+			c: CWEDict{
+				"306": {
+					En:                 &cwe.CWE{CWEID: "306", Name: "Missing Authentication for Critical Function", Lang: "en"},
+					OwaspTopTens:       map[string]string{},
+					CweTopTwentyfives:  map[string]string{},
+					SansTopTwentyfives: map[string]string{},
+				},
+			},
+			args:     args{cweID: "306", lang: "en"},
+			wantName: "Missing Authentication for Critical Function",
+			// Get uses the raw input when formatting URL, so the result keeps
+			// the input form — documented quirk of the existing API surface.
+			wantURL:   "https://cwe.mitre.org/data/definitions/306.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
+		},
+		{
+			name:      "missing entry still returns mitre URL so Slack-style <url|id> links stay valid",
+			c:         CWEDict{},
+			args:      args{cweID: "CWE-999999", lang: "en"},
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-999999.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
+		},
+		{
+			name:      "missing entry ja falls through to mitre URL too",
+			c:         CWEDict{},
+			args:      args{cweID: "CWE-999999", lang: "ja"},
+			wantURL:   "https://cwe.mitre.org/data/definitions/CWE-999999.html",
+			wantOwasp: map[string]AttentionCWE{},
+			wantCwe25: map[string]AttentionCWE{},
+			wantSans:  map[string]AttentionCWE{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotURL, gotOwasp, gotCwe25, gotSans := tt.c.Get(tt.args.cweID, tt.args.lang)
+			if gotName != tt.wantName {
+				t.Errorf("CWEDict.Get() gotName = %v, want %v", gotName, tt.wantName)
+			}
+			if gotURL != tt.wantURL {
+				t.Errorf("CWEDict.Get() gotURL = %v, want %v", gotURL, tt.wantURL)
+			}
+			if !reflect.DeepEqual(gotOwasp, tt.wantOwasp) {
+				t.Errorf("CWEDict.Get() gotOwasp = %v, want %v", gotOwasp, tt.wantOwasp)
+			}
+			if !reflect.DeepEqual(gotCwe25, tt.wantCwe25) {
+				t.Errorf("CWEDict.Get() gotCwe25 = %v, want %v", gotCwe25, tt.wantCwe25)
+			}
+			if !reflect.DeepEqual(gotSans, tt.wantSans) {
+				t.Errorf("CWEDict.Get() gotSans = %v, want %v", gotSans, tt.wantSans)
 			}
 		})
 	}
