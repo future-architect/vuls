@@ -1358,12 +1358,17 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							// content so the enrich path backfills it by CVE.)
 							switch src.SourceID {
 							case sourceTypes.CiscoJSON:
-								vinfo.CveContents, err = cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], optional)
+								ccs, err := cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], optional)
+								if err != nil {
+									return models.VulnInfo{}, xerrors.Errorf("Failed to build cisco cve contents. err: %w", err)
+								}
+								vinfo.CveContents = ccs
 							default:
-								vinfo.CveContents, err = cveContentsFromVulns(src, cctype, v, fdas, optional)
-							}
-							if err != nil {
-								return models.VulnInfo{}, xerrors.Errorf("Failed to build cve contents. err: %w", err)
+								ccs, err := cveContentsFromVulns(src, cctype, v, fdas, optional)
+								if err != nil {
+									return models.VulnInfo{}, xerrors.Errorf("Failed to build cve contents. err: %w", err)
+								}
+								vinfo.CveContents = ccs
 							}
 
 							return vinfo, nil
