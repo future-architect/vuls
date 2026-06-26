@@ -11183,7 +11183,7 @@ func Test_enrich(t *testing.T) {
 			want: models.VulnInfos{},
 		},
 		{
-			name: "datasource not in enrich filter is filtered out",
+			name: "enrich with mitre-cve-v5 data",
 			args: args{
 				vim: models.VulnInfos{
 					"CVE-2023-44487": models.VulnInfo{
@@ -11193,7 +11193,57 @@ func Test_enrich(t *testing.T) {
 			},
 			want: models.VulnInfos{
 				"CVE-2023-44487": models.VulnInfo{
-					CveID:       "CVE-2023-44487",
+					CveID: "CVE-2023-44487",
+					CveContents: models.CveContents{
+						models.Mitre: []models.CveContent{
+							{
+								Type:         models.Mitre,
+								CveID:        "CVE-2023-44487",
+								Title:        "HTTP/2 Rapid Reset Attack",
+								Summary:      "The HTTP/2 protocol allows a denial of service (server resource consumption) because request cancellation can reset many streams quickly, as exploited in the wild in August through October 2023.",
+								SourceLink:   "https://www.cve.org/CVERecord?id=CVE-2023-44487",
+								Published:    time.Date(2023, 10, 10, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, 1, 1, 0, 0, 0, 0, time.UTC),
+								SSVC: &models.SSVC{
+									Exploitation:    "active",
+									Automatable:     "yes",
+									TechnicalImpact: "total",
+								},
+								Optional: map[string]string{"source": "ADP:CISA-ADP"},
+							},
+							{
+								Type:          models.Mitre,
+								CveID:         "CVE-2023-44487",
+								Title:         "HTTP/2 Rapid Reset Attack",
+								Summary:       "The HTTP/2 protocol allows a denial of service (server resource consumption) because request cancellation can reset many streams quickly, as exploited in the wild in August through October 2023.",
+								Cvss3Score:    7.5,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+								Cvss3Severity: "HIGH",
+								SourceLink:    "https://www.cve.org/CVERecord?id=CVE-2023-44487",
+								References: models.References{
+									{Link: "https://www.cve.org/CVERecord?id=CVE-2023-44487", Source: "CVE", RefID: "CVE-2023-44487"},
+								},
+								Published:    time.Date(2023, 10, 10, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, 1, 1, 0, 0, 0, 0, time.UTC),
+								Optional:     map[string]string{"source": "CNA:cve@mitre.org"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "datasource not in enrich filter is filtered out",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2020-0001": models.VulnInfo{
+						CveID: "CVE-2020-0001",
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2020-0001": models.VulnInfo{
+					CveID:       "CVE-2020-0001",
 					CveContents: models.CveContents{},
 				},
 			},
@@ -11263,6 +11313,21 @@ func compareVulnInfos(a, b models.VulnInfos) (string, error) {
 			}),
 			gocmpopts.SortSlices(func(a, b models.Reference) bool {
 				return cmp.Compare(a.Link, b.Link) < 0
+			}),
+			// enrich emits CveContent in map order (e.g. one per MITRE CNA/ADP
+			// source); normalised downstream by CveContents.Sort, so compare
+			// order-insensitively here using the same key order as that sort.
+			gocmpopts.SortSlices(func(a, b models.CveContent) bool {
+				return cmp.Or(
+					cmp.Compare(b.Cvss40Score, a.Cvss40Score),
+					cmp.Compare(b.Cvss3Score, a.Cvss3Score),
+					cmp.Compare(b.Cvss2Score, a.Cvss2Score),
+					cmp.Compare(a.SourceLink, b.SourceLink),
+					cmp.Compare(a.Cvss40Vector, b.Cvss40Vector),
+					cmp.Compare(a.Cvss3Vector, b.Cvss3Vector),
+					cmp.Compare(a.Cvss2Vector, b.Cvss2Vector),
+					cmp.Compare(fmt.Sprintf("%#v", a.Optional), fmt.Sprintf("%#v", b.Optional)),
+				) < 0
 			}),
 		}...); diff != "" {
 			sb.WriteString(fmt.Sprintf("%s: %s\n", k, diff))

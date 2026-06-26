@@ -1818,6 +1818,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 				sourceTypes.ExploitInTheWild,
 				sourceTypes.ExploitTrickest,
 				sourceTypes.Metasploit,
+				sourceTypes.MitreCVEV5,
 				sourceTypes.NVDFeedCVEv2,
 				sourceTypes.NucleiRepository,
 				sourceTypes.RedHatCVE,

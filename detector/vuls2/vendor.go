@@ -25,6 +25,7 @@ import (
 	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
 	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
 	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
+	ssvcTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/ssvc"
 	vulnerabilityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
@@ -649,6 +650,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+	case models.Mitre:
+		return fmt.Sprintf("https://www.cve.org/CVERecord?id=%s", v.Content.ID)
 	case models.Microsoft:
 		return fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", v.Content.ID)
 	default:
@@ -1168,6 +1171,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				enrichRedHatCVE(vi, rootMap)
 			case sourceTypes.NVDFeedCVEv2:
 				enrichNVD(vi, rootMap)
+			case sourceTypes.MitreCVEV5:
+				enrichMitreCVE(vi, rootMap)
 			case sourceTypes.Metasploit:
 				enrichMetasploit(vi, rootMap)
 			case sourceTypes.ExploitExploitDB, sourceTypes.ExploitGitHub, sourceTypes.ExploitInTheWild, sourceTypes.ExploitTrickest, sourceTypes.NucleiRepository:
@@ -1433,6 +1438,148 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 			})
 		}
 	}
+}
+
+// enrichMitreCVE adds MITRE CVE v5 data as CveContent, one entry per CNA/ADP
+// source so each source's CVSS, CWE, references, and SSVC decision point are
+// reported separately (rendered as mitre(<source>) by CveContents.SSVC and the
+// reporter). The source is the CNA/ADP provider shortName (e.g. "CISA-ADP").
+func enrichMitreCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	if _, ok := vi.CveContents[models.Mitre]; ok {
+		return
+	}
+
+	// mitreBySource accumulates the per-source MITRE fields so each CNA/ADP
+	// source becomes its own CveContent.
+	type mitreBySource struct {
+		severities []severityTypes.Severity
+		references models.References
+		cweIDs     []string
+		ssvc       *models.SSVC
+	}
+
+	for _, vulns := range rootMap {
+		for _, v := range vulns {
+			// Group every per-source field by its CNA/ADP source in a single pass.
+			bySource := map[string]*mitreBySource{}
+			get := func(source string) *mitreBySource {
+				b, ok := bySource[source]
+				if !ok {
+					b = &mitreBySource{}
+					bySource[source] = b
+				}
+				return b
+			}
+			for _, s := range v.Content.Severity {
+				b := get(s.Source)
+				b.severities = append(b.severities, s)
+			}
+			for _, r := range v.Content.References {
+				b := get(r.Source)
+				b.references = append(b.references, toReference(r.URL))
+			}
+			for _, c := range v.Content.CWE {
+				b := get(c.Source)
+				b.cweIDs = append(b.cweIDs, c.CWE...)
+			}
+			for _, s := range v.Content.SSVC {
+				if b := get(s.Source); b.ssvc == nil {
+					b.ssvc = mitreSSVC(s)
+				}
+			}
+
+			// container_types maps each source label to its container role
+			// ("CNA"/"ADP"), set by the extractor from structural position.
+			containerTypes := mitreContainerTypes(v.Content.Optional)
+
+			sourceLink := cveContentSourceLink(models.Mitre, v)
+			published := func() time.Time {
+				if v.Content.Published != nil {
+					return *v.Content.Published
+				}
+				return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+			}()
+			lastModified := func() time.Time {
+				if v.Content.Modified != nil {
+					return *v.Content.Modified
+				}
+				return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+			}()
+
+			// Order is normalised downstream by CveContents.Sort (see
+			// ScanResult.SortForJSONOutput), so emit in map order here.
+			for source, b := range bySource {
+				cvss2, cvss3, cvss40 := enrichCvss(b.severities)
+
+				cc := models.CveContent{
+					Type:           models.Mitre,
+					CveID:          string(v.Content.ID),
+					Title:          v.Content.Title,
+					Summary:        v.Content.Description,
+					Cvss2Score:     cvss2.BaseScore,
+					Cvss2Vector:    cvss2.Vector,
+					Cvss2Severity:  cvss2.NVDBaseSeverity,
+					Cvss3Score:     cvss3.BaseScore,
+					Cvss3Vector:    cvss3.Vector,
+					Cvss3Severity:  cvss3.BaseSeverity,
+					Cvss40Score:    cvss40.Score,
+					Cvss40Vector:   cvss40.Vector,
+					Cvss40Severity: cvss40.Severity,
+					SourceLink:     sourceLink,
+					References:     b.references,
+					CweIDs:         b.cweIDs,
+					Published:      published,
+					LastModified:   lastModified,
+					SSVC:           b.ssvc,
+				}
+				if source != "" {
+					// Qualify the source with its CNA/ADP role when known
+					// (e.g. "ADP:CISA-ADP"), so reports distinguish the two.
+					label := source
+					if ct := containerTypes[source]; ct != "" {
+						label = fmt.Sprintf("%s:%s", ct, source)
+					}
+					cc.Optional = map[string]string{"source": label}
+				}
+				vi.CveContents[models.Mitre] = append(vi.CveContents[models.Mitre], cc)
+			}
+		}
+	}
+}
+
+// mitreContainerTypes extracts the source-label -> container role ("CNA"/"ADP")
+// mapping that the MITRE CVE v5 extractor stores under Optional["container_types"].
+// Returns an empty (non-nil) map when absent or malformed.
+func mitreContainerTypes(optional map[string]any) map[string]string {
+	cts := map[string]string{}
+	m, ok := optional["container_types"].(map[string]any)
+	if !ok {
+		return cts
+	}
+	for source, ct := range m {
+		if s, ok := ct.(string); ok {
+			cts[source] = s
+		}
+	}
+	return cts
+}
+
+// mitreSSVC maps a single SSVC decision point to models.SSVC. The option keys
+// follow the SSVC computed schema ("Exploitation", "Automatable",
+// "Technical Impact").
+func mitreSSVC(s ssvcTypes.SSVC) *models.SSVC {
+	ssvc := &models.SSVC{}
+	for _, o := range s.Options {
+		switch o.Key {
+		case "Exploitation":
+			ssvc.Exploitation = o.Value
+		case "Automatable":
+			ssvc.Automatable = o.Value
+		case "Technical Impact":
+			ssvc.TechnicalImpact = o.Value
+		}
+	}
+	return ssvc
 }
 
 // enrichVulnerabilityKEV extracts KEV data from vulnerability content and maps it to models.KEV.
