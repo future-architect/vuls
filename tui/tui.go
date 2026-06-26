@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"text/template"
@@ -57,12 +58,12 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g.Cursor = true
 
 	// gocui's MainLoop returns ErrQuit on a normal quit and never returns nil, so
-	// treat ErrQuit as a clean exit (the deferred g.Close runs) and report only a
-	// real error. Dropping the `err != nil` comparison also avoids staticcheck
-	// SA4023 (it would always be true).
+	// treat ErrQuit as a clean exit (the deferred g.Close runs) and exit only on a
+	// real error.
 	if err := g.MainLoop(); !errors.Is(err, gocui.ErrQuit) {
+		g.Close()
 		logging.Log.Errorf("%+v", err)
-		return subcommands.ExitFailure
+		os.Exit(1)
 	}
 	return subcommands.ExitSuccess
 }
