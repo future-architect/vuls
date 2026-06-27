@@ -2,6 +2,13 @@ module github.com/future-architect/vuls
 
 go 1.26
 
+// stats/opentelemetry was absorbed into google.golang.org/grpc itself; the
+// standalone module is still pulled in transitively (helm.sh/helm/v3 →
+// distribution/distribution/v3@v3.0.0) and fails the build with an
+// "ambiguous import" error. Exclude the standalone module so the absorbed
+// sub-package is the only one resolved.
+exclude google.golang.org/grpc/stats/opentelemetry v0.0.0-20240907200651-3ffb98b2c93a
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/BurntSushi/toml v1.6.0
