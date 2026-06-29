@@ -262,16 +262,3 @@ func loadOneServerScanResult(jsonFile string) (*models.ScanResult, error) {
 	}
 	return result, nil
 }
-
-// ValidateDBs checks if the databases are accessible and can be closed properly
-func ValidateDBs(cveConf config.GoCveDictConf, logOpts logging.LogOpts) error {
-	cvec, err := newGoCveDictClient(&cveConf, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to new CVE client. err: %w", err)
-	}
-	if err := cvec.closeDB(); err != nil {
-		return xerrors.Errorf("Failed to close CVE DB. err: %w", err)
-	}
-
-	return nil
-}

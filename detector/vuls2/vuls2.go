@@ -1512,8 +1512,8 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							// extractor lifts detection-relevant reference tags
 							// ("Exploit", "Mitigation") into these slots
 							// (Exploit.Link / Remediation.Description carry the
-							// reference URL), and the classic gocve path derives
-							// the same entries in ConvertNvdToModel. Other
+							// reference URL), matching what the former
+							// go-cve-dictionary NVD conversion produced. Other
 							// sources (e.g. Red Hat) also populate these slots
 							// but with different semantics; mapping them here
 							// would mis-label entries as ExploitTypeNVD, so they

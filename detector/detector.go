@@ -3,7 +3,6 @@
 package detector
 
 import (
-	"cmp"
 	"fmt"
 	"os"
 	"slices"
@@ -18,7 +17,6 @@ import (
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 	"github.com/future-architect/vuls/reporter"
-	cvemodels "github.com/vulsio/go-cve-dictionary/models"
 )
 
 // Cpe :
@@ -202,7 +200,7 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			}
 		}
 
-		if err := DetectCpeURIsCves(&r, cpes, config.Conf.CveDict, config.Conf.LogOpts, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+		if err := DetectCpeURIsCves(&r, cpes, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
 		}
 
@@ -212,10 +210,6 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 
 		if err := vuls2.EnrichVulnInfos(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
 			return nil, xerrors.Errorf("Failed to enrich vulnerability data with vuls2: %w", err)
-		}
-
-		if err := FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-			return nil, xerrors.Errorf("Failed to fill with CVE: %w", err)
 		}
 
 		r.ReportedBy, _ = os.Hostname()
@@ -396,75 +390,14 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with JVN
-// (NVD and VulnCheck CveContent, EUVD, and MITRE are filled by the vuls2 enrich path instead, as are
-// the US-CERT alerts; Cisco, Palo Alto, and Fortinet are detected by vuls2, which always emits a
-// CveContent and additionally a DistroAdvisory when the matched root carries advisories (Cisco and
-// Fortinet roots always do; Palo Alto's PAN-SA roots do — their advisory fallback yields both a
-// DistroAdvisory and an advisory-derived CveContent — while its plain CVE roots yield a CveContent
-// only); only the
-// JP-CERT alerts, derived from JVN, still come from here)
-func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
-	cveIDs := make([]string, 0, len(r.ScannedCves))
-	for _, v := range r.ScannedCves {
-		cveIDs = append(cveIDs, v.CveID)
-	}
-
-	client, err := newGoCveDictClient(&cnf, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
-	}
-	defer func() {
-		if err := client.closeDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v", err)
-		}
-	}()
-
-	ds, err := client.fetchCveDetails(cveIDs)
-	if err != nil {
-		return xerrors.Errorf("Failed to fetchCveDetails. err: %w", err)
-	}
-
-	for _, d := range ds {
-		for cveID, vinfo := range r.ScannedCves {
-			if vinfo.CveID == d.CveID {
-				if vinfo.CveContents == nil {
-					vinfo.CveContents = models.CveContents{}
-				}
-				// All go-cve-dictionary CPE sources (NVD, VulnCheck, JVN, Cisco,
-				// Palo Alto, Fortinet) are detected/enriched by vuls2 now, so
-				// nothing is filled here.
-				for _, cons := range [][]models.CveContent{} {
-					for _, con := range cons {
-						if !con.Empty() {
-							if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {
-								return con.SourceLink == e.SourceLink
-							}) {
-								vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
-							}
-						}
-					}
-				}
-				r.ScannedCves[cveID] = vinfo
-				break
-			}
-		}
-	}
-	return nil
-}
-
 // DetectCpeURIsCves detects CVEs of given CPE-URIs — the complete CPE
 // detection pipeline, keeping the master-era name and calling convention so
 // library consumers that drive detection as DetectPkgCves ->
 // DetectCpeURIsCves keep working.
 //
-// Sources already migrated to the vuls2 DB (currently NVD, with
-// cpematch-expanded criteria, VulnCheck NVD++ and JVN) are detected by vuls2.
-// The remaining sources come from go-cve-dictionary, where the migrated
-// sources' contribution is excluded — dropped just before confidence selection,
-// with detections carried by migrated sources alone skipped entirely — to avoid
-// double-reporting the same source with diverging match semantics.
-func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// All CPE detection sources (NVD with cpematch-expanded criteria, VulnCheck
+// NVD++, JVN, Fortinet, Cisco and PaloAlto) are detected by vuls2.
+func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	// A caller-provided result may carry a nil ScannedCves map (e.g. a
 	// zero-value ScanResult from a library consumer); initialize before the
 	// detection paths write into it.
@@ -476,10 +409,6 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 		return nil
 	}
 
-	if err := detectCpeURIsCvesWithGoCVEDictionary(r, cpes, cnf, logOpts); err != nil {
-		return xerrors.Errorf("Failed to detect CVEs with go-cve-dictionary. err: %w", err)
-	}
-
 	cpeURIs := make([]string, 0, len(cpes))
 	for _, c := range cpes {
 		cpeURIs = append(cpeURIs, c.CpeURI)
@@ -489,130 +418,4 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictCon
 	}
 
 	return nil
-}
-
-func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf config.GoCveDictConf, logOpts logging.LogOpts) error {
-	client, err := newGoCveDictClient(&cnf, logOpts)
-	if err != nil {
-		return xerrors.Errorf("Failed to newGoCveDictClient. err: %w", err)
-	}
-	defer func() {
-		if err := client.closeDB(); err != nil {
-			logging.Log.Errorf("Failed to close DB. err: %+v", err)
-		}
-	}()
-
-	nCVEs := 0
-	for _, cpe := range cpes {
-		details, err := client.detectCveByCpeURI(cpe.CpeURI, cpe.UseJVN)
-		if err != nil {
-			return xerrors.Errorf("Failed to detectCveByCpeURI. err: %w", err)
-		}
-
-		// Every CPE detection source go-cve-dictionary served (NVD, VulnCheck,
-		// JVN, Cisco, Palo Alto, Fortinet) is migrated to vuls2, so go-cve admits
-		// nothing here.
-		_ = details
-	}
-	logging.Log.Infof("%s: %d CVEs are detected with CPE", r.FormatServerName(), nCVEs)
-	return nil
-}
-
-func getMaxConfidence(detail cvemodels.CveDetail) (maxConfidence models.Confidence) {
-	if detail.HasCisco() {
-		fn := func(s string) models.Confidence {
-			switch s {
-			case cvemodels.CiscoExactVersionMatch:
-				return models.CiscoExactVersionMatch
-			case cvemodels.CiscoRoughVersionMatch:
-				return models.CiscoRoughVersionMatch
-			case cvemodels.CiscoVendorProductMatch:
-				return models.CiscoVendorProductMatch
-			default:
-				return models.Confidence{}
-			}
-		}
-
-		return fn(slices.MaxFunc(detail.Ciscos, func(a, b cvemodels.Cisco) int {
-			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
-		}).DetectionMethod)
-	}
-
-	if detail.HasPaloalto() {
-		fn := func(s string) models.Confidence {
-			switch s {
-			case cvemodels.PaloaltoExactVersionMatch:
-				return models.PaloaltoExactVersionMatch
-			case cvemodels.PaloaltoRoughVersionMatch:
-				return models.PaloaltoRoughVersionMatch
-			case cvemodels.PaloaltoVendorProductMatch:
-				return models.PaloaltoVendorProductMatch
-			default:
-				return models.Confidence{}
-			}
-		}
-
-		return fn(slices.MaxFunc(detail.Paloaltos, func(a, b cvemodels.Paloalto) int {
-			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
-		}).DetectionMethod)
-	}
-
-	if detail.HasFortinet() {
-		fn := func(s string) models.Confidence {
-			switch s {
-			case cvemodels.FortinetExactVersionMatch:
-				return models.FortinetExactVersionMatch
-			case cvemodels.FortinetRoughVersionMatch:
-				return models.FortinetRoughVersionMatch
-			case cvemodels.FortinetVendorProductMatch:
-				return models.FortinetVendorProductMatch
-			default:
-				return models.Confidence{}
-			}
-		}
-
-		return fn(slices.MaxFunc(detail.Fortinets, func(a, b cvemodels.Fortinet) int {
-			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
-		}).DetectionMethod)
-	}
-
-	if detail.HasNvd() {
-		fn := func(s string) models.Confidence {
-			switch s {
-			case cvemodels.NvdExactVersionMatch:
-				return models.NvdExactVersionMatch
-			case cvemodels.NvdRoughVersionMatch:
-				return models.NvdRoughVersionMatch
-			case cvemodels.NvdVendorProductMatch:
-				return models.NvdVendorProductMatch
-			default:
-				return models.Confidence{}
-			}
-		}
-
-		return fn(slices.MaxFunc(detail.Nvds, func(a, b cvemodels.Nvd) int {
-			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
-		}).DetectionMethod)
-	}
-
-	if detail.HasVulncheck() {
-		fn := func(s string) models.Confidence {
-			switch s {
-			case cvemodels.VulncheckExactVersionMatch:
-				return models.VulncheckExactVersionMatch
-			case cvemodels.VulncheckRoughVersionMatch:
-				return models.VulncheckRoughVersionMatch
-			case cvemodels.VulncheckVendorProductMatch:
-				return models.VulncheckVendorProductMatch
-			default:
-				return models.Confidence{}
-			}
-		}
-
-		return fn(slices.MaxFunc(detail.Vulnchecks, func(a, b cvemodels.Vulncheck) int {
-			return cmp.Compare(fn(a.DetectionMethod).Score, fn(b.DetectionMethod).Score)
-		}).DetectionMethod)
-	}
-
-	return maxConfidence
 }

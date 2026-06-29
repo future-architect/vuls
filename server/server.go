@@ -74,12 +74,6 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logging.Log.Infof("Fill CVE detailed with CVE-DB")
-	if err := detector.FillCvesWithGoCVEDictionary(&r, config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to fill with CVE: %+v", err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-
 	// set ReportedAt to current time when it's set to the epoch, ensures that ReportedAt will be set
 	// properly for scans sent to vuls when running in server mode
 	if r.ReportedAt.IsZero() {

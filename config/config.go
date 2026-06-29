@@ -38,8 +38,7 @@ type Config struct {
 	ScanOpts
 
 	// report
-	CveDict GoCveDictConf `json:"cveDict,omitzero"`
-	Vuls2   Vuls2Conf     `json:"vuls2,omitzero"`
+	Vuls2 Vuls2Conf `json:"vuls2,omitzero"`
 
 	Slack      SlackConf      `json:"-"`
 	EMail      SMTPConf       `json:"-"`
@@ -179,17 +178,6 @@ func (c *Config) ValidateOnReport() bool {
 	} {
 		if es := rc.Validate(); 0 < len(es) {
 			errs = append(errs, es...)
-		}
-	}
-
-	for _, cnf := range []VulnDictInterface{
-		&Conf.CveDict,
-	} {
-		if err := cnf.Validate(); err != nil {
-			errs = append(errs, xerrors.Errorf("Failed to validate %s: %+v", cnf.GetName(), err))
-		}
-		if err := cnf.CheckHTTPHealth(); err != nil {
-			errs = append(errs, xerrors.Errorf("Run %s as server mode before reporting: %+v", cnf.GetName(), err))
 		}
 	}
 
