@@ -9153,7 +9153,7 @@ func Test_postConvert(t *testing.T) {
 			// Cisco is advisory-shaped (content in advisories[], M:N with CVEs,
 			// the vulnerability entry a bare CVE-ID stub), so the detection path
 			// reports it as a DistroAdvisory only — no synthetic per-CVE CveContent.
-			name: "cpe cisco detection emits DistroAdvisory only, no CveContent",
+			name: "cpe cisco detection emits DistroAdvisory and CveContent (source link to advisory)",
 			args: args{
 				scanned: scanTypes.ScanResult{
 					CPE: []string{
@@ -9285,8 +9285,31 @@ func Test_postConvert(t *testing.T) {
 							Description: "A vulnerability in the TLS 1.3 implementation for a specific cipher for Cisco Secure Firewall ASA and FTD Software for Firepower 3100 and 4200 Series devices could allow an authenticated, remote attacker to cause a denial of service (DoS) condition.",
 						},
 					},
-					// Cisco is advisory-shaped, so the detection path emits a
-					// DistroAdvisory only — no synthetic per-CVE CveContent.
+					// Cisco is advisory-shaped: the vulnerability stub carries
+					// only the CVE-ID, so the CveContent is sparse (no CVSS,
+					// title, or summary) and its source link points at the
+					// advisory (the root ID).
+					CveContents: models.CveContents{
+						models.Cisco: []models.CveContent{
+							{
+								Type:       models.Cisco,
+								CveID:      "CVE-2025-20127",
+								SourceLink: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-3100_4200_tlsdos-2yNSCd54",
+								References: models.References{
+									{
+										Link:   "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-3100_4200_tlsdos-2yNSCd54",
+										Source: "CISCO",
+										RefID:  "cisco-sa-3100_4200_tlsdos-2yNSCd54",
+									},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"cisco-sa-3100_4200_tlsdos-2yNSCd54\",\"source_id\":\"cisco-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
 				},
 			},
 		},

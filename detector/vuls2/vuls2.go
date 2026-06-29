@@ -1332,17 +1332,13 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							var ccs models.CveContents
-							switch cctype {
-							case models.Cisco:
-								// Cisco is advisory-shaped: its content lives in
-								// the advisory (M:N with CVEs), not the bare
-								// CVE-ID stub, so it is reported as a
-								// DistroAdvisory only — no per-CVE CveContent.
-							default:
-								// Every other CPE source carries its content in
-								// the vulnerability stub, built here.
-								ccs = models.NewCveContents(models.CveContent{
+							return models.VulnInfo{
+								CveID:            string(v.Content.ID),
+								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
+								DistroAdvisories: fdas,
+								Exploits:         exploits,
+								Mitigations:      mitigations,
+								CveContents: models.NewCveContents(models.CveContent{
 									Type:           cctype,
 									CveID:          string(v.Content.ID),
 									Title:          v.Content.Title,
@@ -1356,7 +1352,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 									Cvss40Score:    cvss40.Score,
 									Cvss40Vector:   cvss40.Vector,
 									Cvss40Severity: cvss40.Severity,
-									SourceLink:     cveContentSourceLink(cctype, v),
+									SourceLink:     cveContentSourceLink(cctype, v, src.RootID),
 									References:     rs,
 									CweIDs: func() []string {
 										var cs []string
@@ -1378,16 +1374,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 									}(),
 									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
-								})
-							}
-
-							return models.VulnInfo{
-								CveID:            string(v.Content.ID),
-								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
-								DistroAdvisories: fdas,
-								Exploits:         exploits,
-								Mitigations:      mitigations,
-								CveContents:      ccs,
+								}),
 							}, nil
 						}()
 						if err != nil {
@@ -1814,8 +1801,7 @@ func toReference(ref string) models.Reference {
 // enrich adds vulnerability data from specific enrichment sources (KEV, RedHat
 // CVE, NVD) to the already-detected VulnInfos. This replaces gost.FillCVEsWithRedHat
 // and the NVD slice of FillCvesWithGoCVEDictionary, and also provides cross-source
-// enrichment (e.g., RedHat CVE / NVD data for Debian-detected CVEs). Cisco is not
-// enriched here — it is detection-only, reported as a DistroAdvisory.
+// enrichment (e.g., RedHat CVE / NVD data for Debian-detected CVEs).
 func enrich(sesh *session.Session, vim models.VulnInfos) error {
 	for cveID, vi := range vim {
 		vd, err := sesh.GetVulnerabilityDataByVulnerabilityID(vulnerabilityContentTypes.VulnerabilityID(cveID), dbTypes.Filter{
