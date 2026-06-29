@@ -1352,7 +1352,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 									Cvss40Score:    cvss40.Score,
 									Cvss40Vector:   cvss40.Vector,
 									Cvss40Severity: cvss40.Severity,
-									SourceLink:     cveContentSourceLink(cctype, v),
+									SourceLink:     cveContentSourceLink(cctype, v, src.RootID),
 									References:     rs,
 									CweIDs: func() []string {
 										var cs []string

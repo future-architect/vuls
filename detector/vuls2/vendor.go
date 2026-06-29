@@ -632,8 +632,12 @@ func cveContentOptional(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnera
 	return m
 }
 
-func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability) string {
+func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vulnerability, rootID dataTypes.RootID) string {
 	switch ccType {
+	case models.Cisco:
+		// Cisco content lives in the advisory, whose ID is the root ID, so the
+		// per-CVE source link points at that advisory page.
+		return fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", rootID)
 	case models.RedHat, models.RedHatAPI:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:
@@ -1279,7 +1283,7 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 	if _, ok := vi.CveContents[models.RedHatAPI]; ok {
 		return
 	}
-	for _, vulns := range rootMap {
+	for rootID, vulns := range rootMap {
 		for _, v := range vulns {
 			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
 
@@ -1288,7 +1292,7 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 				rs = append(rs, toReference(r.URL))
 			}
 
-			sourceLink := cveContentSourceLink(models.RedHatAPI, v)
+			sourceLink := cveContentSourceLink(models.RedHatAPI, v, rootID)
 			for _, m := range v.Content.Mitigations {
 				if m.Description == "" {
 					continue
@@ -1349,7 +1353,7 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 // populate AlertDict.
 func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
 	_, hasContent := vi.CveContents[models.Nvd]
-	for _, vulns := range rootMap {
+	for rootID, vulns := range rootMap {
 		for _, v := range vulns {
 			// US-CERT alerts: an NVD reference whose URL contains "us-cert"
 			// (mirrors go-cve-dictionary's NvdCert derivation). Done regardless
@@ -1414,7 +1418,7 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				Cvss40Score:    cvss40.Score,
 				Cvss40Vector:   cvss40.Vector,
 				Cvss40Severity: cvss40.Severity,
-				SourceLink:     cveContentSourceLink(models.Nvd, v),
+				SourceLink:     cveContentSourceLink(models.Nvd, v, rootID),
 				References:     rs,
 				CweIDs: func() []string {
 					var cs []string //nolint:prealloc
@@ -1458,7 +1462,7 @@ func enrichMitreCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerab
 		ssvc       *models.SSVC
 	}
 
-	for _, vulns := range rootMap {
+	for rootID, vulns := range rootMap {
 		for _, v := range vulns {
 			// Group every per-source field by its CNA/ADP source in a single pass.
 			bySource := map[string]*mitreBySource{}
@@ -1492,7 +1496,7 @@ func enrichMitreCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerab
 			// ("CNA"/"ADP"), set by the extractor from structural position.
 			containerTypes := mitreContainerTypes(v.Content.Optional)
 
-			sourceLink := cveContentSourceLink(models.Mitre, v)
+			sourceLink := cveContentSourceLink(models.Mitre, v, rootID)
 			published := func() time.Time {
 				if v.Content.Published != nil {
 					return *v.Content.Published

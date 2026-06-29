@@ -397,8 +397,10 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, Fortinet, Paloalto, Cisco
-// (NVD CveContent/exploits/mitigations, EUVD, and MITRE are filled by the vuls2 enrich path instead; JP-CERT alerts still come from here)
+// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, Fortinet, Paloalto
+// (NVD CveContent, EUVD, and MITRE are filled by the vuls2 enrich path instead, as are the US-CERT
+// alerts; Cisco is detected by vuls2, which emits its DistroAdvisory and a sparse CveContent; only the
+// JP-CERT alerts, derived from JVN, still come from here)
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := make([]string, 0, len(r.ScannedCves))
 	for _, v := range r.ScannedCves {
@@ -425,7 +427,6 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
 		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
 		paloaltos := models.ConvertPaloaltoToModel(d.CveID, d.Paloaltos)
-		ciscos := models.ConvertCiscoToModel(d.CveID, d.Ciscos)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -441,7 +442,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				for _, con := range vulnchecks {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
-				for _, cons := range [][]models.CveContent{jvns, fortinets, paloaltos, ciscos} {
+				for _, cons := range [][]models.CveContent{jvns, fortinets, paloaltos} {
 					for _, con := range cons {
 						if !con.Empty() {
 							if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {
@@ -539,30 +540,18 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 		for _, detail := range details {
 			// Skip detections carried by no dictionary-remaining DETECTION
 			// source. The list mirrors go-cve-dictionary's GetByCpeURI
-			// admission gate minus the vuls2-migrated sources (NVD, so
-			// far), so NVD-only detections disappear here — vuls2
+			// admission gate minus the vuls2-migrated sources (NVD and Cisco),
+			// so NVD-only / Cisco-only detections disappear here — vuls2
 			// re-detects them from its own data. EUVD / MITRE contents can
 			// ride along on a detail but are never a detection basis
 			// (gocve neither matches nor admits on them, and
 			// getMaxConfidence has no tier for them), so they do not keep
 			// a detail alive.
-			if !detail.HasJvn() && !detail.HasCisco() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() {
+			if !detail.HasJvn() && !detail.HasPaloalto() && !detail.HasFortinet() && !detail.HasVulncheck() {
 				continue
 			}
 
 			advisories := []models.DistroAdvisory{}
-			if detail.HasCisco() {
-				for _, cisco := range detail.Ciscos {
-					advisories = append(advisories, models.DistroAdvisory{
-						AdvisoryID:  cisco.AdvisoryID,
-						Severity:    cisco.SIR,
-						Issued:      cisco.FirstPublished,
-						Updated:     cisco.LastUpdated,
-						Description: cisco.Summary,
-					})
-				}
-			}
-
 			if detail.HasPaloalto() {
 				for _, paloalto := range detail.Paloaltos {
 					advisories = append(advisories, models.DistroAdvisory{
@@ -619,6 +608,7 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 			// detection. Deferring the strip keeps the earlier logic free of
 			// per-source "had*" flags as more sources migrate to vuls2.
 			detail.Nvds = nil
+			detail.Ciscos = nil
 			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {

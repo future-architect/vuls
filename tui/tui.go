@@ -3,6 +3,7 @@ package tui
 import (
 	"bytes"
 	"cmp"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -56,7 +57,10 @@ func RunTui(results models.ScanResults) subcommands.ExitStatus {
 	g.SelFgColor = gocui.ColorBlack
 	g.Cursor = true
 
-	if err := g.MainLoop(); err != nil {
+	// gocui's MainLoop returns ErrQuit on a normal quit and never returns nil, so
+	// treat ErrQuit as a clean exit (the deferred g.Close runs) and exit only on a
+	// real error.
+	if err := g.MainLoop(); !errors.Is(err, gocui.ErrQuit) {
 		g.Close()
 		logging.Log.Errorf("%+v", err)
 		os.Exit(1)
