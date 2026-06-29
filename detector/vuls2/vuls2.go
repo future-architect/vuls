@@ -42,6 +42,7 @@ import (
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	"github.com/MaineK00n/vuls2/pkg/version"
+	"github.com/knqyf263/go-cpe/common"
 	"github.com/knqyf263/go-cpe/naming"
 
 	"github.com/future-architect/vuls/config"
@@ -120,7 +121,15 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
-	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE)
+	// Defined-product sets for the verified sources, fetched per RootID for
+	// CVEs detected via a suppressed CPE source (VulnCheck / JVN). Drives the
+	// suppression in walkCPECriteria.
+	verifiedProductsByRoot, err := collectVerifiedProducts(sesh, vuls2Detected)
+	if err != nil {
+		return xerrors.Errorf("Failed to collect verified products. err: %w", err)
+	}
+
+	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE, verifiedProductsByRoot)
 	if err != nil {
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
@@ -596,10 +605,10 @@ func appendMissing(dst, src []string) []string {
 // VulnInfo.CpeURIs so the report shows the user-supplied CPE rather than
 // the internal FS-with-wildcards form. Nil / missing keys fall back to
 // the FS string as-is.
-func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string) (models.VulnInfos, error) {
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, verifiedProductsByRoot map[dataTypes.RootID]map[string]struct{}) (models.VulnInfos, error) {
 	m := make(map[source]sourceData)
 
-	if err := walkVulnerabilityDetections(m, scanned, detected.Detected); err != nil {
+	if err := walkVulnerabilityDetections(m, scanned, detected.Detected, verifiedProductsByRoot); err != nil {
 		return nil, xerrors.Errorf("Failed to walk detections. err: %w", err)
 	}
 
@@ -794,8 +803,14 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	return vim, nil
 }
 
-func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.ScanResult, vs []detectTypes.VulnerabilityData) error {
+func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.ScanResult, vs []detectTypes.VulnerabilityData, verifiedProductsByRoot map[dataTypes.RootID]map[string]struct{}) error {
 	for _, v := range vs {
+		// The part:vendor:product set DEFINED by the verified CPE sources
+		// (NVD / Fortinet / Cisco / PaloAlto) for this CVE — used to suppress
+		// overlapping VulnCheck / JVN matches, mirroring go-cve-dictionary's
+		// isCpeURIAlsoDefinedInVerifiedDataSource. Nil when no verified source
+		// defines anything for the CVE.
+		verifiedProducts := verifiedProductsByRoot[v.ID]
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
@@ -806,7 +821,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 						vpCpes    []string
 					)
 					if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
-						exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned)
+						exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned, verifiedProducts)
 						if err != nil {
 							return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 						}
@@ -895,10 +910,21 @@ func pruneCPECriteria(c criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCr
 // AND nodes require every relevant child to be satisfied and demote their
 // exact contributions when any leg holds only at vendor:product level (the
 // conjunction as a whole is then only vendor:product-confirmed); OR nodes take
-// any satisfied child as-is. Finally, a CPE source that carries no version
-// data at all (JVN) is reported at vendor:product regardless of the projected
-// tier — that is a source-semantics decision, kept here in vuls0.
-func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult) ([]string, []string, error) {
+// any satisfied child as-is. A CPE source that carries no version data at all
+// (JVN) is reported at vendor:product regardless of the projected tier — that
+// is a source-semantics decision, kept here in vuls0.
+//
+// For a suppressed source (VulnCheck / JVN) a matched scanned CPE is dropped
+// when its part:vendor:product is in verifiedProducts — the products a verified
+// source (NVD / Fortinet / Cisco / PaloAlto) DEFINES for this CVE — reproducing
+// go-cve-dictionary's isCpeURIAlsoDefinedInVerifiedDataSource (applied there to
+// both VulnCheck and JVN). The suppression keys off the scanned CPE (user
+// input), not the source's criteria, so it needs no knowledge of how the
+// extractor structures the data: VulnCheck criteria that merely mirror NVD's
+// applicability tree contribute only products NVD also defines, which are in
+// verifiedProducts and dropped here, leaving the source's own additional
+// products as the surfaced signal.
+func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, scanned scanTypes.ScanResult, verifiedProducts map[string]struct{}) ([]string, []string, error) {
 	// Pass 1: prune everything a CPE-only scan cannot evaluate, so the
 	// collecting walk below sees evaluatable criterions only and plain
 	// two-valued AND/OR logic suffices (no neutrality tracking). An empty
@@ -913,6 +939,22 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 			return "", xerrors.Errorf("Too large CPE index. len(CPE): %d, index: %d", len(scanned.CPE), index)
 		}
 		return scanned.CPE[index], nil
+	}
+
+	// suppress reports whether a matched scanned CPE must be dropped because a
+	// verified source already defines its part:vendor:product for this CVE.
+	// Only suppressed sources (VulnCheck / JVN) are subject to it; every other
+	// source returns its matches unchanged.
+	suppress := func(fs string) bool {
+		if !isSuppressedCPESource(sourceID) {
+			return false
+		}
+		key, ok := cpeProductKey(fs)
+		if !ok {
+			return false
+		}
+		_, ok = verifiedProducts[key]
+		return ok
 	}
 
 	// Pass 2: walk returns (satisfied, exact, vp) — whether the subtree
@@ -955,12 +997,18 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 				if err != nil {
 					return false, nil, nil, err
 				}
+				if suppress(fs) {
+					continue
+				}
 				exactMatched = append(exactMatched, fs)
 			}
 			for _, index := range cn.Accepts.CPE.VersionUnconfirmed {
 				fs, err := scannedCPE(index)
 				if err != nil {
 					return false, nil, nil, err
+				}
+				if suppress(fs) {
+					continue
 				}
 				vpMatched = append(vpMatched, fs)
 			}
@@ -1019,6 +1067,169 @@ func isJVNCPESource(sourceID sourceTypes.SourceID) bool {
 	default:
 		return false
 	}
+}
+
+// verifiedCPESources are the "verified" CPE data sources whose
+// affected-configuration data go-cve-dictionary trusts over the supplementary
+// sources' coarser/auto-generated data: NVD, Fortinet, Cisco, PaloAlto. A
+// supplementary CPE match is suppressed when its part:vendor:product is also
+// defined by one of these (kept in sync with toCveContentType's verified CPE
+// sources). Fortinet/Cisco/PaloAlto only contribute once migrated to the vuls2
+// DB; until then GetVulnerabilityData simply returns nothing for them.
+var verifiedCPESources = []sourceTypes.SourceID{
+	sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2,
+	sourceTypes.FortinetCSAF, sourceTypes.FortinetCVRF,
+	sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList,
+	sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON,
+}
+
+// isSuppressedCPESource reports whether a CPE-ecosystem source's matches are
+// subject to verified-source suppression. go-cve-dictionary applies the
+// identical isCpeURIAlsoDefinedInVerifiedDataSource gate to both VulnCheck and
+// JVN (db.go); JVN is added here once its detection is migrated to vuls2.
+// Sources here must NOT appear in verifiedCPESources (a source cannot suppress
+// itself).
+func isSuppressedCPESource(sourceID sourceTypes.SourceID) bool {
+	switch sourceID {
+	case sourceTypes.VulnCheckNISTNVD2:
+		return true
+	default:
+		return false
+	}
+}
+
+// hasSuppressedCPESource reports whether any CPE-ecosystem detection of the CVE
+// comes from a suppressed source — i.e. whether the verified-product lookup is
+// worth doing for this RootID.
+func hasSuppressedCPESource(v detectTypes.VulnerabilityData) bool {
+	for _, d := range v.Detections {
+		if d.Ecosystem != ecosystemTypes.EcosystemTypeCPE {
+			continue
+		}
+		for sourceID := range d.Contents {
+			if isSuppressedCPESource(sourceID) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// collectVerifiedProducts builds, per RootID that has a suppressed CPE source,
+// the set of part:vendor:product the verified sources DEFINE for that CVE. It
+// reproduces go-cve-dictionary's isCpeURIAlsoDefinedInVerifiedDataSource, which
+// consults cve.Nvds / cve.Fortinets / ... — every CPE the verified sources list
+// for the CVE, regardless of whether its version matched the scan.
+//
+// The lookup is keyed by CVE ID, not RootID: a suppressed source can sit under
+// a different root than the verified sources (e.g. JVN under a JVNDB-* root
+// while NVD is under the CVE root), so the verified data is gathered across all
+// roots that alias the CVE via GetVulnerabilityDataByVulnerabilityID. Results
+// are cached per CVE so VulnCheck and JVN detections of the same CVE share one
+// bolt read. The returned map is keyed by the suppressed source's RootID for a
+// direct lookup in walkVulnerabilityDetections.
+func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectResult) (map[dataTypes.RootID]map[string]struct{}, error) {
+	cache := make(map[string]map[string]struct{})
+	productsFor := func(cveID string) (map[string]struct{}, error) {
+		if set, ok := cache[cveID]; ok {
+			return set, nil
+		}
+		vd, err := sesh.GetVulnerabilityDataByVulnerabilityID(vulnerabilityContentTypes.VulnerabilityID(cveID), dbTypes.Filter{
+			Contents:    []dbTypes.FilterContentType{dbTypes.FilterContentTypeDetections},
+			DataSources: verifiedCPESources,
+		})
+		if err != nil {
+			return nil, err
+		}
+		set := make(map[string]struct{})
+		for _, d := range vd.Detections {
+			if d.Ecosystem != ecosystemTypes.EcosystemTypeCPE {
+				continue
+			}
+			for _, srcMap := range d.Contents {
+				for _, conds := range srcMap {
+					for _, cond := range conds {
+						collectDefinedCPEProducts(cond.Criteria, set)
+					}
+				}
+			}
+		}
+		cache[cveID] = set
+		return set, nil
+	}
+
+	out := make(map[dataTypes.RootID]map[string]struct{})
+	for _, v := range detected.Detected {
+		if !hasSuppressedCPESource(v) {
+			continue
+		}
+		merged := make(map[string]struct{})
+		for _, cveID := range cveIDsOf(v) {
+			set, err := productsFor(cveID)
+			if err != nil {
+				return nil, xerrors.Errorf("Failed to get verified products. CVE-ID: %s, err: %w", cveID, err)
+			}
+			for k := range set {
+				merged[k] = struct{}{}
+			}
+		}
+		if len(merged) > 0 {
+			out[v.ID] = merged
+		}
+	}
+	return out, nil
+}
+
+// cveIDsOf returns the CVE IDs carried by a detection's vulnerability content.
+// For NVD / VulnCheck the RootID already is the CVE ID; for sources rooted
+// elsewhere (e.g. JVN under a JVNDB-* root) the CVE ID is read from the content.
+func cveIDsOf(v detectTypes.VulnerabilityData) []string {
+	ids := make(map[string]struct{})
+	for _, vdv := range v.Vulnerabilities {
+		for _, rm := range vdv.Contents {
+			for _, vuln := range rm[v.ID] {
+				ids[string(vuln.Content.ID)] = struct{}{}
+			}
+		}
+	}
+	return slices.Collect(maps.Keys(ids))
+}
+
+// collectDefinedCPEProducts walks a (raw, unfiltered) criteria tree and records
+// the part:vendor:product key of every CPE criterion — its primary CPE and any
+// CPEMatches — regardless of the Vulnerable flag (go-cve-dictionary's defined
+// set is likewise unfiltered).
+func collectDefinedCPEProducts(c criteriaTypes.Criteria, set map[string]struct{}) {
+	for _, child := range c.Criterias {
+		collectDefinedCPEProducts(child, set)
+	}
+	for _, cn := range c.Criterions {
+		if cn.Type != criterionTypes.CriterionTypeCPE || cn.CPE == nil {
+			continue
+		}
+		if key, ok := cpeProductKey(string(cn.CPE.CPE)); ok {
+			set[key] = struct{}{}
+		}
+		for _, m := range cn.CPE.CPEMatches {
+			if key, ok := cpeProductKey(string(m)); ok {
+				set[key] = struct{}{}
+			}
+		}
+	}
+}
+
+// cpeProductKey returns the "part:vendor:product" key of a CPE 2.3 formatted
+// string, matching the index key vuls2's cpe.Detect groups scanned CPEs by. The
+// boolean is false when the string is not a valid CPE 2.3 FS form.
+func cpeProductKey(cpe string) (string, bool) {
+	wfn, err := naming.UnbindFS(cpe)
+	if err != nil {
+		return "", false
+	}
+	return fmt.Sprintf("%s:%s:%s",
+		wfn.GetString(common.AttributePart),
+		wfn.GetString(common.AttributeVendor),
+		wfn.GetString(common.AttributeProduct)), true
 }
 
 // prunePkgCriteria drops unaffected branches from a FilteredCriteria tree.
@@ -1823,6 +2034,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 				sourceTypes.NucleiRepository,
 				sourceTypes.RedHatCVE,
 				sourceTypes.VulnCheckKEV,
+				sourceTypes.VulnCheckNISTNVD2,
 			},
 		})
 		if err != nil {

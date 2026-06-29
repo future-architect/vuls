@@ -662,6 +662,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+	case models.Vulncheck:
+		return fmt.Sprintf("https://console.vulncheck.com/cve/%s", v.Content.ID)
 	case models.Mitre:
 		return fmt.Sprintf("https://www.cve.org/CVERecord?id=%s", v.Content.ID)
 	case models.Microsoft:
@@ -881,6 +883,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		switch s {
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.Nvd
+		case sourceTypes.VulnCheckNISTNVD2:
+			return models.Vulncheck
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			return models.Jvn
 		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
@@ -1044,6 +1048,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 			switch s {
 			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 				return models.NvdVendorProductMatch
+			case sourceTypes.VulnCheckNISTNVD2:
+				return models.VulncheckVendorProductMatch
 			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 				return models.JvnVendorProductMatch
 			case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
@@ -1064,6 +1070,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		switch s {
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
+		case sourceTypes.VulnCheckNISTNVD2:
+			return models.VulncheckExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			// Unreachable: walkCPECriteria demotes every JVN match to the
 			// vendor:product tier (isJVNCPESource), so a JVN source never
@@ -1183,6 +1191,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				enrichRedHatCVE(vi, rootMap)
 			case sourceTypes.NVDFeedCVEv2:
 				enrichNVD(vi, rootMap)
+			case sourceTypes.VulnCheckNISTNVD2:
+				enrichVulnCheck(vi, rootMap)
 			case sourceTypes.MitreCVEV5:
 				enrichMitreCVE(vi, rootMap)
 			case sourceTypes.Metasploit:
@@ -1427,6 +1437,71 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				Cvss40Vector:   cvss40.Vector,
 				Cvss40Severity: cvss40.Severity,
 				SourceLink:     cveContentSourceLink(models.Nvd, v, rootID),
+				References:     rs,
+				CweIDs: func() []string {
+					var cs []string //nolint:prealloc
+					for _, cwe := range v.Content.CWE {
+						cs = append(cs, cwe.CWE...)
+					}
+					return cs
+				}(),
+				Published: func() time.Time {
+					if v.Content.Published != nil {
+						return *v.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if v.Content.Modified != nil {
+						return *v.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
+		}
+	}
+}
+
+// enrichVulnCheck adds VulnCheck NVD++ (vulncheck-nist-nvd2) data as CveContent
+// under the models.Vulncheck source. VulnCheck mirrors and enriches NVD, so the
+// content (description, CVSS, CWE, references) parallels enrichNVD's.
+//
+// The CPE detection path already builds a Vulncheck CveContent for every CVE it
+// detects through VulnCheck's vcVulnerableCPEs; the early return when a
+// Vulncheck content already exists keeps this enrich pass from duplicating
+// those, while still filling Vulncheck content for CVEs detected by other means
+// (e.g. OS packages). This mirrors go-cve-dictionary, whose VulnCheck content
+// was filled for any scanned CVE regardless of which source detected it and
+// independently of the NVD/Fortinet/Cisco/PaloAlto detection suppression (which
+// only governs whether VulnCheck is a detection basis, not its content).
+func enrichVulnCheck(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	if _, ok := vi.CveContents[models.Vulncheck]; ok {
+		return
+	}
+	for rootID, vulns := range rootMap {
+		for _, v := range vulns {
+			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
+
+			var rs models.References
+			for _, r := range v.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			vi.CveContents[models.Vulncheck] = append(vi.CveContents[models.Vulncheck], models.CveContent{
+				Type:           models.Vulncheck,
+				CveID:          string(v.Content.ID),
+				Title:          v.Content.Title,
+				Summary:        v.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     cveContentSourceLink(models.Vulncheck, v, rootID),
 				References:     rs,
 				CweIDs: func() []string {
 					var cs []string //nolint:prealloc

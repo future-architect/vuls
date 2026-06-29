@@ -11032,7 +11032,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -11701,9 +11701,10 @@ func Test_walkCPECriteria(t *testing.T) {
 		}
 	}
 	type args struct {
-		sourceID sourceTypes.SourceID
-		criteria criteriaTypes.FilteredCriteria
-		scanned  []string
+		sourceID         sourceTypes.SourceID
+		criteria         criteriaTypes.FilteredCriteria
+		scanned          []string
+		verifiedProducts map[string]struct{}
 	}
 	tests := []struct {
 		name      string
@@ -11859,10 +11860,71 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned:  []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
+		{
+			// A VulnCheck CPE match is projected like any other source when no
+			// verified source defines its part:vendor:product for the CVE.
+			name: "vulncheck kept when no verified product",
+			args: args{
+				sourceID: sourceTypes.VulnCheckNISTNVD2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// A VulnCheck match whose part:vendor:product is defined by a
+			// verified source (NVD/Fortinet/Cisco/PaloAlto) detected for the CVE
+			// is suppressed — go-cve-dictionary's behaviour. This is also how the
+			// NVD-mirror half of VulnCheck's data is dropped, without inspecting
+			// the source's criteria structure.
+			name: "vulncheck suppressed by verified product",
+			args: args{
+				sourceID: sourceTypes.VulnCheckNISTNVD2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:vendor:product": {}},
+			},
+		},
+		{
+			// Suppression is part:vendor:product-scoped: a verified product that
+			// is not the matched CPE's product does not suppress it.
+			name: "vulncheck not suppressed by unrelated verified product",
+			args: args{
+				sourceID: sourceTypes.VulnCheckNISTNVD2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:other:thing": {}},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// Suppression applies only to VulnCheck: a verified source keeps its
+			// own match even when verifiedProducts contains that product.
+			name: "non-vulncheck source ignores verifiedProducts",
+			args: args{
+				sourceID: sourceTypes.NVDFeedCVEv2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:vendor:product": {}},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned})
+			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.verifiedProducts)
 			if err != nil {
 				t.Fatalf("walkCPECriteria() error = %v", err)
 			}
