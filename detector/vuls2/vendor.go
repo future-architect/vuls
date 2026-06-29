@@ -1890,3 +1890,88 @@ func enrichExploits(sourceID sourceTypes.SourceID, rootMap map[dataTypes.RootID]
 	}
 	return exploits
 }
+
+// MacOSCPEs synthesises the Apple CPEs for a macOS scan result: the OS
+// (from r.Release) and each installed application bundle (from r.Packages,
+// keyed by CFBundleIdentifier). macOS has no package security database, so the
+// caller detects these through the CPE path (DetectCPEs). They carry
+// UseJVN:false — Apple CPEs do not consult JVN, mirroring the former
+// go-cve-dictionary macOS handling.
+func MacOSCPEs(r *models.ScanResult) []CPE {
+	var targets []string
+	switch r.Family {
+	case constant.MacOSX:
+		targets = []string{"mac_os_x"}
+	case constant.MacOSXServer:
+		targets = []string{"mac_os_x_server"}
+	case constant.MacOS:
+		targets = []string{"macos", "mac_os"}
+	case constant.MacOSServer:
+		targets = []string{"macos_server", "mac_os_server"}
+	default:
+		return nil
+	}
+
+	var cpes []CPE
+	// The OS itself is bound to its version, so its CPE needs the release.
+	// Applications bind to the OS target (e.g. mac_os_x), not its version, so
+	// they stay detectable even without the release.
+	if r.Release != "" {
+		for _, t := range targets {
+			cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release)})
+		}
+	}
+
+	for _, p := range r.Packages {
+		if p.Version == "" {
+			continue
+		}
+		switch p.Repository {
+		case "com.apple.Safari":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.Music":
+			for _, t := range targets {
+				cpes = append(cpes,
+					CPE{URI: fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t)},
+					CPE{URI: fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t)},
+				)
+			}
+		case "com.apple.mail":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.Terminal":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.shortcuts":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iCal":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iWork.Keynote":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iWork.Numbers":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iWork.Pages":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.dt.Xcode":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t)})
+			}
+		}
+	}
+
+	return cpes
+}

@@ -559,15 +559,16 @@ func Test_preConvertPkgs(t *testing.T) {
 
 func Test_preConvertCPEs(t *testing.T) {
 	type args struct {
-		sr      *models.ScanResult
-		cpeURIs []string
+		sr   *models.ScanResult
+		cpes []vuls2.CPE
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    scanTypes.ScanResult
-		wantMap map[string][]string
-		wantErr bool
+		name      string
+		args      args
+		want      scanTypes.ScanResult
+		wantMap   map[string][]string
+		wantNoJVN map[string]struct{}
+		wantErr   bool
 	}{
 		{
 			// The OS-package / Microsoft-KB inputs stay empty even when the
@@ -613,10 +614,10 @@ func Test_preConvertCPEs(t *testing.T) {
 					ServerName: "cpe-server",
 					Family:     "pseudo",
 				},
-				cpeURIs: []string{
-					"cpe:/a:vendor:product:1.0",
-					"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*",
-					"cpe:/a:vendor:other:2.0",
+				cpes: []vuls2.CPE{
+					{URI: "cpe:/a:vendor:product:1.0", UseJVN: true},
+					{URI: "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", UseJVN: true},
+					{URI: "cpe:/a:vendor:other:2.0", UseJVN: true},
 				},
 			},
 			want: scanTypes.ScanResult{
@@ -634,6 +635,41 @@ func Test_preConvertCPEs(t *testing.T) {
 			},
 		},
 		{
+			// UseJVN:false CPEs land in the no-JVN set (keyed by FS form); a CPE
+			// with a UseJVN:true occurrence anywhere keeps JVN (true wins).
+			name: "UseJVN:false populates the no-JVN set, true wins on conflict",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "cpe-server",
+					Family:     "pseudo",
+				},
+				cpes: []vuls2.CPE{
+					{URI: "cpe:/a:vendor:nojvn:1.0", UseJVN: false},
+					{URI: "cpe:/a:vendor:withjvn:2.0", UseJVN: true},
+					{URI: "cpe:/a:vendor:mixed:3.0", UseJVN: false},
+					{URI: "cpe:/a:vendor:mixed:3.0", UseJVN: true},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "cpe-server",
+				Family:      ecosystemTypes.Ecosystem("pseudo"),
+				CPE: []string{
+					"cpe:2.3:a:vendor:nojvn:1.0:*:*:*:*:*:*:*",
+					"cpe:2.3:a:vendor:withjvn:2.0:*:*:*:*:*:*:*",
+					"cpe:2.3:a:vendor:mixed:3.0:*:*:*:*:*:*:*",
+				},
+			},
+			wantMap: map[string][]string{
+				"cpe:2.3:a:vendor:nojvn:1.0:*:*:*:*:*:*:*":   {"cpe:/a:vendor:nojvn:1.0"},
+				"cpe:2.3:a:vendor:withjvn:2.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:withjvn:2.0"},
+				"cpe:2.3:a:vendor:mixed:3.0:*:*:*:*:*:*:*":   {"cpe:/a:vendor:mixed:3.0"},
+			},
+			wantNoJVN: map[string]struct{}{
+				"cpe:2.3:a:vendor:nojvn:1.0:*:*:*:*:*:*:*": {},
+			},
+		},
+		{
 			// Config-sourced CPEs were validated at config-load time, so an
 			// unparseable entry signals an unvalidated caller input and
 			// fails the conversion instead of silently detecting nothing.
@@ -643,14 +679,14 @@ func Test_preConvertCPEs(t *testing.T) {
 					ServerName: "cpe-server",
 					Family:     "pseudo",
 				},
-				cpeURIs: []string{"cpe:/o:cisco:ios:15.1(4)m3"},
+				cpes: []vuls2.CPE{{URI: "cpe:/o:cisco:ios:15.1(4)m3", UseJVN: true}},
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMap, err := vuls2.PreConvertCPEs(tt.args.sr, tt.args.cpeURIs)
+			got, gotMap, gotNoJVN, err := vuls2.PreConvertCPEs(tt.args.sr, tt.args.cpes)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("preConvertCPEs() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -662,6 +698,9 @@ func Test_preConvertCPEs(t *testing.T) {
 			}
 			if diff := gocmp.Diff(gotMap, tt.wantMap); diff != "" {
 				t.Errorf("preConvertCPEs() reverse map mismatch (-got +want):\n%s", diff)
+			}
+			if diff := gocmp.Diff(gotNoJVN, tt.wantNoJVN); diff != "" {
+				t.Errorf("preConvertCPEs() no-JVN set mismatch (-got +want):\n%s", diff)
 			}
 		})
 	}
@@ -11032,7 +11071,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -11704,6 +11743,7 @@ func Test_walkCPECriteria(t *testing.T) {
 		sourceID         sourceTypes.SourceID
 		criteria         criteriaTypes.FilteredCriteria
 		scanned          []string
+		noJVNCPEs        map[string]struct{}
 		verifiedProducts map[string]struct{}
 	}
 	tests := []struct {
@@ -11921,10 +11961,54 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
+		{
+			// A scanned CPE marked UseJVN:false (in noJVNCPEs) suppresses JVN-source
+			// matches for it — the per-CPE "no JVN" policy (e.g. macOS Apple CPEs).
+			name: "JVN suppressed for a no-JVN CPE",
+			args: args{
+				sourceID: sourceTypes.JVNFeedRSS,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:   []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				noJVNCPEs: map[string]struct{}{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {}},
+			},
+		},
+		{
+			// noJVNCPEs only gates JVN sources: a non-JVN source keeps its match
+			// for the same scanned CPE.
+			name: "no-JVN CPE does not affect a non-JVN source",
+			args: args{
+				sourceID: sourceTypes.NVDFeedCVEv2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:   []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				noJVNCPEs: map[string]struct{}{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {}},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// A JVN match for a CPE NOT in noJVNCPEs is kept (demoted to
+			// vendor:product as usual), confirming the gate is per-CPE.
+			name: "JVN kept for a CPE not marked no-JVN",
+			args: args{
+				sourceID: sourceTypes.JVNFeedRSS,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:   []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				noJVNCPEs: map[string]struct{}{"cpe:2.3:a:other:thing:1.0:*:*:*:*:*:*:*": {}},
+			},
+			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.verifiedProducts)
+			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.noJVNCPEs, tt.args.verifiedProducts)
 			if err != nil {
 				t.Fatalf("walkCPECriteria() error = %v", err)
 			}
