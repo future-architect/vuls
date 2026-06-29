@@ -1198,11 +1198,7 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 }
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
 	for _, vd := range vds {
-		// Per-source DistroAdvisories for this root, built once per source in the
-		// advisory loop and consumed by the vulnerability loop. Advisory-shaped
-		// sources (Cisco) are reported as DistroAdvisories only — they synthesize
-		// no per-CVE CveContent — so nothing else needs stashing here.
-		distroAdvs := make(map[source]models.DistroAdvisories)
+		am := make(map[source]models.DistroAdvisories)
 		for _, vda := range vd.Advisories {
 			for sid, rm := range vda.Contents {
 				if rm == nil {
@@ -1220,7 +1216,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							continue
 						}
 
-						distroAdvs[src] = append(distroAdvs[src], models.DistroAdvisory{
+						am[src] = append(am[src], models.DistroAdvisory{
 							AdvisoryID: string(a.Content.ID),
 							Severity: func() string {
 								for _, s := range a.Content.Severity {
@@ -1270,7 +1266,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 						srcsWithVulns[src] = struct{}{}
 
-						if ignoreVulnerability(src.Segment.Ecosystem, v, distroAdvs[src]) {
+						if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
 							continue
 						}
 
@@ -1280,8 +1276,25 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
 							}
 
-							fdas := filterDistroAdvisories(src.Segment.Ecosystem, distroAdvs[src])
+							fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
 							cctype := toCveContentType(src.Segment.Ecosystem, sid)
+							cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, sid, v.Content.Severity)
+
+							var rs models.References
+							for _, r := range v.Content.References {
+								rs = append(rs, toReference(r.URL))
+							}
+							for _, da := range fdas {
+								ar, err := advisoryReference(src.Segment.Ecosystem, src.SourceID, da)
+								if err != nil {
+									return models.VulnInfo{}, xerrors.Errorf("Failed to get advisory reference. err: %w", err)
+								}
+								if !slices.ContainsFunc(rs, func(r models.Reference) bool {
+									return r.Link == ar.Link && r.Source == ar.Source && r.RefID == ar.RefID && slices.Equal(r.Tags, ar.Tags)
+								}) {
+									rs = append(rs, ar)
+								}
+							}
 
 							// Map content-level Exploit / Mitigations into the
 							// vuls0 models — NVD content only. The NVD feed
@@ -1319,28 +1332,59 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							vinfo := models.VulnInfo{
+							// Cisco is advisory-shaped: its content lives in the
+							// advisory (M:N with CVEs), not the bare CVE-ID stub, so
+							// it is reported as a DistroAdvisory only — no per-CVE
+							// CveContent. Every other CPE source builds one here.
+							var ccs models.CveContents
+							if cctype != models.Cisco {
+								ccs = models.NewCveContents(models.CveContent{
+									Type:           cctype,
+									CveID:          string(v.Content.ID),
+									Title:          v.Content.Title,
+									Summary:        v.Content.Description,
+									Cvss2Score:     cvss2.BaseScore,
+									Cvss2Vector:    cvss2.Vector,
+									Cvss2Severity:  cvss2.NVDBaseSeverity,
+									Cvss3Score:     cvss3.BaseScore,
+									Cvss3Vector:    cvss3.Vector,
+									Cvss3Severity:  cvss3.BaseSeverity,
+									Cvss40Score:    cvss40.Score,
+									Cvss40Vector:   cvss40.Vector,
+									Cvss40Severity: cvss40.Severity,
+									SourceLink:     cveContentSourceLink(cctype, v),
+									References:     rs,
+									CweIDs: func() []string {
+										var cs []string
+										for _, cwe := range v.Content.CWE {
+											cs = append(cs, cwe.CWE...)
+										}
+										return cs
+									}(),
+									Published: func() time.Time {
+										if v.Content.Published != nil {
+											return *v.Content.Published
+										}
+										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+									}(),
+									LastModified: func() time.Time {
+										if v.Content.Modified != nil {
+											return *v.Content.Modified
+										}
+										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+									}(),
+									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
+								})
+							}
+
+							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
-							}
-
-							// Cisco is advisory-shaped: its content lives in advisories[]
-							// (M:N with CVEs) and the vulnerability entry is a bare CVE-ID
-							// stub, so it is reported as a DistroAdvisory only — no synthetic
-							// per-CVE CveContent. Every other CPE source carries its content
-							// in the vulnerability stub, built here.
-							if cctype != models.Cisco {
-								ccs, err := cveContentsFromVulns(src, cctype, v, fdas, cveContentOptional(src.Segment.Ecosystem, v, string(bs)))
-								if err != nil {
-									return models.VulnInfo{}, xerrors.Errorf("Failed to build cve contents. err: %w", err)
-								}
-								vinfo.CveContents = ccs
-							}
-
-							return vinfo, nil
+								CveContents:      ccs,
+							}, nil
 						}()
 						if err != nil {
 							return xerrors.Errorf("Failed to create vuln info. err: %w", err)
@@ -1363,10 +1407,10 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 		// vulnerabilities were all dropped by ignoreVulnerability would incorrectly
 		// fall through to advisory-based VulnInfo creation.
 		for src := range srcsWithVulns {
-			delete(distroAdvs, src)
+			delete(am, src)
 		}
 
-		for src, das := range distroAdvs {
+		for src, das := range am {
 			if len(m[src].vulninfos) > 0 {
 				continue
 			}
@@ -1493,9 +1537,6 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 	info.DistroAdvisories = slices.Collect(maps.Values(am))
 
-	// Each CPE source contributes at most one CveContent per type, so key the
-	// merge by type; same-type contents from the two inputs are merged
-	// (CVSS/refs/sources unioned).
 	ccm := make(map[models.CveContentType]models.CveContent)
 	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
 		for cc := range cciter {
@@ -1616,8 +1657,8 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 		}
 	}
 	ccs := make(models.CveContents)
-	for ctype, cc := range ccm {
-		ccs[ctype] = []models.CveContent{cc}
+	for cctype, cc := range ccm {
+		ccs[cctype] = []models.CveContent{cc}
 	}
 	info.CveContents = ccs
 
@@ -1767,10 +1808,9 @@ func toReference(ref string) models.Reference {
 }
 
 // enrich adds vulnerability data from specific enrichment sources (KEV, RedHat
-// CVE, NVD, EUVD, MITRE, exploits) to the already-detected VulnInfos. This
-// replaces gost.FillCVEsWithRedHat and the NVD slice of
-// FillCvesWithGoCVEDictionary, and also provides cross-source enrichment (e.g.,
-// RedHat CVE / NVD data for CVEs detected by another source). Cisco is not
+// CVE, NVD) to the already-detected VulnInfos. This replaces gost.FillCVEsWithRedHat
+// and the NVD slice of FillCvesWithGoCVEDictionary, and also provides cross-source
+// enrichment (e.g., RedHat CVE / NVD data for Debian-detected CVEs). Cisco is not
 // enriched here — it is detection-only, reported as a DistroAdvisory.
 func enrich(sesh *session.Session, vim models.VulnInfos) error {
 	for cveID, vi := range vim {
