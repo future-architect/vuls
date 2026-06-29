@@ -1332,12 +1332,16 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							// Cisco is advisory-shaped: its content lives in the
-							// advisory (M:N with CVEs), not the bare CVE-ID stub, so
-							// it is reported as a DistroAdvisory only — no per-CVE
-							// CveContent. Every other CPE source builds one here.
 							var ccs models.CveContents
-							if cctype != models.Cisco {
+							switch cctype {
+							case models.Cisco:
+								// Cisco is advisory-shaped: its content lives in
+								// the advisory (M:N with CVEs), not the bare
+								// CVE-ID stub, so it is reported as a
+								// DistroAdvisory only — no per-CVE CveContent.
+							default:
+								// Every other CPE source carries its content in
+								// the vulnerability stub, built here.
 								ccs = models.NewCveContents(models.CveContent{
 									Type:           cctype,
 									CveID:          string(v.Content.ID),
