@@ -398,8 +398,9 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 }
 
 // FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, Fortinet, Paloalto
-// (NVD and Cisco CveContent, EUVD, and MITRE are filled by the vuls2 enrich path instead, as are the
-// US-CERT alerts; only the JP-CERT alerts, derived from JVN, still come from here)
+// (NVD CveContent, EUVD, and MITRE are filled by the vuls2 enrich path instead, as are the US-CERT
+// alerts; Cisco is detected by vuls2 and reported as a DistroAdvisory only, not a CveContent; only the
+// JP-CERT alerts, derived from JVN, still come from here)
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := make([]string, 0, len(r.ScannedCves))
 	for _, v := range r.ScannedCves {

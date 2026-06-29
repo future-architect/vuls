@@ -12,7 +12,6 @@ var (
 
 	WalkCPECriteria      = walkCPECriteria
 	MergeIntoScannedCves = mergeIntoScannedCves
-	MergeVulnInfo        = mergeVulnInfo
 )
 
 type Source source

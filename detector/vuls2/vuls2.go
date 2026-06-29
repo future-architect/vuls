@@ -23,7 +23,6 @@ import (
 	capecTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/capec"
 	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/cwe"
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
-	advisoryContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory/content"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -1199,15 +1198,11 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 }
 func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.VulnerabilityData) error {
 	for _, vd := range vds {
-		// Two per-source views of this root's advisories, both populated by the
-		// advisory loop and consumed by the vulnerability loop. They differ in
-		// form only because of CVE granularity: a DistroAdvisory is CVE-agnostic,
-		// so it is built here once per source; advisory-sourced CveContent (Cisco)
-		// carries a CveID known only in the vulnerability loop, so the raw content
-		// is stashed here and turned into CveContent there (with the detection
-		// provenance), rather than built from the empty vulnerability stub.
+		// Per-source DistroAdvisories for this root, built once per source in the
+		// advisory loop and consumed by the vulnerability loop. Advisory-shaped
+		// sources (Cisco) are reported as DistroAdvisories only — they synthesize
+		// no per-CVE CveContent — so nothing else needs stashing here.
 		distroAdvs := make(map[source]models.DistroAdvisories)
-		advContents := make(map[source][]advisoryContentTypes.Content)
 		for _, vda := range vd.Advisories {
 			for sid, rm := range vda.Contents {
 				if rm == nil {
@@ -1249,20 +1244,6 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 							}(),
 							Description: a.Content.Description,
 						})
-						// Keep the raw advisory content only for advisory-sourced
-						// sources whose CveContent is built from it below; retaining
-						// other sources' (potentially large) descriptions would waste
-						// memory without affecting output. Whether a source's content
-						// comes from the advisory or the vulnerability is a property of
-						// the source ID, not the CveContentType (the same type can be
-						// vuln-sourced from one source and advisory-sourced from another),
-						// so switch on the source ID. The empty default lets more such
-						// sources be added alongside cisco-json.
-						switch src.SourceID {
-						case sourceTypes.CiscoJSON:
-							advContents[src] = append(advContents[src], a.Content)
-						default:
-						}
 					}
 				}
 			}
@@ -1338,8 +1319,6 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
-							optional := cveContentOptional(src.Segment.Ecosystem, v, string(bs))
-
 							vinfo := models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
@@ -1348,23 +1327,13 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								Mitigations:      mitigations,
 							}
 
-							// Which content source feeds CveContents is a property of the
-							// source ID, not the CveContentType (the same type can be
-							// vuln-sourced from one source and advisory-sourced from another) —
-							// matching the advisory-content stash. cisco-json's rich content
-							// lives in the advisory; every other source's in the vulnerability
-							// stub. (For cisco-json with no matching advisory content —
-							// anomalous, its advisory shares the root — this yields empty cisco
-							// content so the enrich path backfills it by CVE.)
-							switch src.SourceID {
-							case sourceTypes.CiscoJSON:
-								ccs, err := cveContentsFromAdvs(src.SourceID, string(v.Content.ID), advContents[src], optional)
-								if err != nil {
-									return models.VulnInfo{}, xerrors.Errorf("Failed to build cisco cve contents. err: %w", err)
-								}
-								vinfo.CveContents = ccs
-							default:
-								ccs, err := cveContentsFromVulns(src, cctype, v, fdas, optional)
+							// Cisco is advisory-shaped: its content lives in advisories[]
+							// (M:N with CVEs) and the vulnerability entry is a bare CVE-ID
+							// stub, so it is reported as a DistroAdvisory only — no synthetic
+							// per-CVE CveContent. Every other CPE source carries its content
+							// in the vulnerability stub, built here.
+							if cctype != models.Cisco {
+								ccs, err := cveContentsFromVulns(src, cctype, v, fdas, cveContentOptional(src.Segment.Ecosystem, v, string(bs)))
 								if err != nil {
 									return models.VulnInfo{}, xerrors.Errorf("Failed to build cve contents. err: %w", err)
 								}
@@ -1524,21 +1493,14 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 	info.DistroAdvisories = slices.Collect(maps.Values(am))
 
-	// Key by (type, source link), not type alone: a single CVE can carry several
-	// CveContents of the same type from distinct advisories (e.g. multiple Cisco
-	// advisories), and collapsing them by type would drop all but one. This
-	// mirrors mergeIntoScannedCves' (type, cve, source link) dedup. Same-link
-	// entries are still merged (CVSS/refs/sources unioned).
-	type ccKey struct {
-		ctype models.CveContentType
-		link  string
-	}
-	ccm := make(map[ccKey]models.CveContent)
+	// Each CPE source contributes at most one CveContent per type, so key the
+	// merge by type; same-type contents from the two inputs are merged
+	// (CVSS/refs/sources unioned).
+	ccm := make(map[models.CveContentType]models.CveContent)
 	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
 		for cc := range cciter {
 			for _, c := range cc {
-				key := ccKey{ctype: c.Type, link: c.SourceLink}
-				base, ok := ccm[key]
+				base, ok := ccm[c.Type]
 				if ok {
 					var src1 []source
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
@@ -1649,16 +1611,14 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 				} else {
 					base = c
 				}
-				ccm[key] = base
+				ccm[c.Type] = base
 			}
 		}
 	}
 	ccs := make(models.CveContents)
-	for key, cc := range ccm {
-		ccs[key.ctype] = append(ccs[key.ctype], cc)
+	for ctype, cc := range ccm {
+		ccs[ctype] = []models.CveContent{cc}
 	}
-	// Order within a type (e.g. multiple Cisco advisories) is normalized for
-	// output by ScanResult.SortForJSONOutput -> CveContents.Sort, so no sort here.
 	info.CveContents = ccs
 
 	return info, nil
@@ -1820,7 +1780,6 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 			},
 			DataSources: []sourceTypes.SourceID{
 				sourceTypes.CISAKEV,
-				sourceTypes.CiscoJSON,
 				sourceTypes.ENISAEUVDList,
 				sourceTypes.ENISAKEV,
 				sourceTypes.ExploitExploitDB,
