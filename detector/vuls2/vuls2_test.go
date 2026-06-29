@@ -9152,7 +9152,8 @@ func Test_postConvert(t *testing.T) {
 		{
 			// Cisco is advisory-shaped (content in advisories[], M:N with CVEs,
 			// the vulnerability entry a bare CVE-ID stub), so the detection path
-			// reports it as a DistroAdvisory only — no synthetic per-CVE CveContent.
+			// emits a DistroAdvisory plus a sparse per-CVE CveContent whose source
+			// link points at the advisory (no CVSS/title/summary in the stub).
 			name: "cpe cisco detection emits DistroAdvisory and CveContent (source link to advisory)",
 			args: args{
 				scanned: scanTypes.ScanResult{
