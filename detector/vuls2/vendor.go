@@ -646,6 +646,14 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		// Fortinet content lives in the PSIRT advisory, whose ID is the root ID
 		// (e.g. FG-IR-24-041), so the per-CVE source link points at that page.
 		return fmt.Sprintf("https://www.fortiguard.com/psirt/%s", rootID)
+	case models.Jvn:
+		// JVN content sits under a JVNDB-<year>-<seq> root; the source link
+		// points at that advisory page, whose URL embeds the year.
+		ss := strings.Split(string(rootID), "-")
+		if len(ss) != 3 {
+			return ""
+		}
+		return fmt.Sprintf("https://jvndb.jvn.jp/ja/contents/%s/%s.html", ss[1], rootID)
 	case models.RedHat, models.RedHatAPI:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:
@@ -1213,7 +1221,64 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
 			case sourceTypes.ENISAEUVDList:
 				enrichEuvd(vi, rootMap)
+			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+				enrichJVN(vi, rootMap)
 			}
+		}
+	}
+}
+
+// enrichJVN adds a minimal JVN (jvn-feed-rss / jvn-feed-detail) CveContent — only
+// the JVNDB note's source link — plus JP-CERT alerts. It runs per CVE (enrich
+// fetches by CVE ID), so JVN is not lost for CVEs that have JVN data but were NOT
+// detected via JVN (e.g. package / RedHat-detected CVEs); this matches
+// go-cve-dictionary, whose by-CVE-ID fill surfaced JVN regardless of detector (the
+// JVNDB DistroAdvisory is only emitted when JVN is itself a detection basis).
+//
+// When JVN WAS the detection basis, the postConvert path already produced a richer
+// Jvn CveContent under the same JVNDB source link (carrying the vulnerability
+// content's per-CVE references); that entry is kept and this one is skipped. Only
+// the source link is carried here: JVN's title/summary/CVSS/CWE and the advisory's
+// references are note-level (one JVNDB note often covers several CVEs), so they are
+// not distributed per-CVE — they live in the JVNDB DistroAdvisory and at the linked
+// JVNDB page, and per-CVE CVSS/CWE come from NVD.
+//
+// JP-CERT alerts mirror go-cve-dictionary's fillCertAlerts. go-cve selected JVN
+// references whose source was "JPCERT-AT"; the vuls2 jvn extractor flattens that
+// per-reference source to "jvndb.jvn.jp", but the URL is preserved and every
+// JPCERT-AT reference is a JPCERT/CC alert (www.jpcert.or.jp/at/...), so the URL
+// identifies them equivalently.
+func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
+	for _, advisories := range rootMap {
+		for _, a := range advisories {
+			// JVNDB-<year>-<seq>; the advisory page URL embeds the year.
+			ss := strings.Split(string(a.Content.ID), "-")
+			if len(ss) != 3 {
+				continue
+			}
+			sourceLink := fmt.Sprintf("https://jvndb.jvn.jp/ja/contents/%s/%s.html", ss[1], a.Content.ID)
+
+			for _, r := range a.Content.References {
+				if !strings.Contains(r.URL, "jpcert.or.jp/at/") {
+					continue
+				}
+				alert := models.Alert{Team: "jpcert", URL: r.URL, Title: a.Content.Title}
+				if !slices.ContainsFunc(vi.AlertDict.JPCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
+					vi.AlertDict.JPCERT = append(vi.AlertDict.JPCERT, alert)
+				}
+			}
+
+			// Keep the postConvert-built entry (same JVNDB link) for JVN-detected
+			// CVEs; otherwise add a bare source-link pointer. This also de-duplicates
+			// across the two JVN feeds (enrichJVN runs once per feed).
+			if slices.ContainsFunc(vi.CveContents[models.Jvn], func(e models.CveContent) bool { return e.SourceLink == sourceLink }) {
+				continue
+			}
+			vi.CveContents[models.Jvn] = append(vi.CveContents[models.Jvn], models.CveContent{
+				Type:       models.Jvn,
+				CveID:      vi.CveID,
+				SourceLink: sourceLink,
+			})
 		}
 	}
 }

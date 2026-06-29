@@ -20,16 +20,6 @@ func Test_getMaxConfidence(t *testing.T) {
 		wantMax models.Confidence
 	}{
 		{
-			name: "JvnVendorProductMatch",
-			args: args{
-				detail: cvemodels.CveDetail{
-					Nvds: []cvemodels.Nvd{},
-					Jvns: []cvemodels.Jvn{{}},
-				},
-			},
-			wantMax: models.JvnVendorProductMatch,
-		},
-		{
 			name: "NvdExactVersionMatch",
 			args: args{
 				detail: cvemodels.CveDetail{

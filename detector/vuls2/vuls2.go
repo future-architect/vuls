@@ -1086,12 +1086,12 @@ var verifiedCPESources = []sourceTypes.SourceID{
 // isSuppressedCPESource reports whether a CPE-ecosystem source's matches are
 // subject to verified-source suppression. go-cve-dictionary applies the
 // identical isCpeURIAlsoDefinedInVerifiedDataSource gate to both VulnCheck and
-// JVN (db.go); JVN is added here once its detection is migrated to vuls2.
-// Sources here must NOT appear in verifiedCPESources (a source cannot suppress
-// itself).
+// JVN (db.go), so they share this list. Sources here must NOT appear in
+// verifiedCPESources (a source cannot suppress itself).
 func isSuppressedCPESource(sourceID sourceTypes.SourceID) bool {
 	switch sourceID {
-	case sourceTypes.VulnCheckNISTNVD2:
+	case sourceTypes.VulnCheckNISTNVD2,
+		sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 		return true
 	default:
 		return false
@@ -2028,6 +2028,7 @@ func enrich(sesh *session.Session, vim models.VulnInfos) error {
 				sourceTypes.ExploitGitHub,
 				sourceTypes.ExploitInTheWild,
 				sourceTypes.ExploitTrickest,
+				sourceTypes.JVNFeedRSS,
 				sourceTypes.Metasploit,
 				sourceTypes.MitreCVEV5,
 				sourceTypes.NVDFeedCVEv2,
