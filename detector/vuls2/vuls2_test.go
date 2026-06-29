@@ -9462,6 +9462,135 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// An advisory-shaped Palo Alto root: a PAN-SA bulletin with
+			// advisories[] + detections[] but NO vulnerabilities[]. With no CVE
+			// stub to drive the vulnerability loop, the advisory fallback builds
+			// the VulnInfo keyed by the advisory ID: a DistroAdvisory plus a
+			// CveContent synthesised from the advisory (Summary/SourceLink/refs
+			// from the advisory, no CVSS). The DistroAdvisory Severity is empty
+			// because Palo Alto advisory severity is CVSS (cvss_v40 here), not a
+			// vendor SIR, and only vendor severity feeds DistroAdvisory.Severity.
+			name: "cpe paloalto PAN-SA advisory (no vulnerabilities) emits DistroAdvisory + advisory CveContent",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*": {"cpe:/o:paloaltonetworks:pan-os:10.0.0", "cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "PAN-SA-2025-0003",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "PAN-SA-2025-0003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.PaloAltoJSON: {
+											dataTypes.RootID("PAN-SA-2025-0003"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "PAN-SA-2025-0003",
+														Title:       "Informational: PAN-OS BIOS and Bootloader Security Bulletin",
+														Description: "Palo Alto Networks is aware of claims of multiple vulnerabilities in PA-Series firewall firmware and bootloaders.",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeCVSSv40,
+																Source: "security.paloaltonetworks.com",
+																CVSSv40: new(cvssV40Types.CVSSv40{
+																	Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:N",
+																	Score:    0,
+																	Severity: "NONE",
+																}),
+															},
+														},
+														Published: new(time.Date(2025, 1, 23, 23, 20, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.PaloAltoJSON: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:o:paloaltonetworks:pan-os:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"PAN-SA-2025-0003": {
+					CveID:       "PAN-SA-2025-0003",
+					Confidences: models.Confidences{models.PaloaltoExactVersionMatch},
+					CpeURIs:     []string{"cpe:/o:paloaltonetworks:pan-os:10.0.0", "cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "PAN-SA-2025-0003",
+							// Severity intentionally empty: Palo Alto carries CVSS, not a vendor SIR.
+							Issued:      time.Date(2025, 1, 23, 23, 20, 0, 0, time.UTC),
+							Updated:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Description: "Palo Alto Networks is aware of claims of multiple vulnerabilities in PA-Series firewall firmware and bootloaders.",
+						},
+					},
+					CveContents: models.CveContents{
+						models.Paloalto: []models.CveContent{
+							{
+								Type:       models.Paloalto,
+								CveID:      "PAN-SA-2025-0003",
+								Summary:    "Palo Alto Networks is aware of claims of multiple vulnerabilities in PA-Series firewall firmware and bootloaders.",
+								SourceLink: "https://security.paloaltonetworks.com/PAN-SA-2025-0003",
+								References: models.References{
+									{
+										Link:   "https://security.paloaltonetworks.com/PAN-SA-2025-0003",
+										Source: "PALOALTO",
+										RefID:  "PAN-SA-2025-0003",
+									},
+								},
+								Published:    time.Date(2025, 1, 23, 23, 20, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"PAN-SA-2025-0003\",\"source_id\":\"paloalto-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low
