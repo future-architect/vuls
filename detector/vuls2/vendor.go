@@ -638,6 +638,10 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		// Cisco content lives in the advisory, whose ID is the root ID, so the
 		// per-CVE source link points at that advisory page.
 		return fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", rootID)
+	case models.Paloalto:
+		// Palo Alto publishes a page per CVE, so the source link is keyed by the
+		// CVE ID (which is the vulnerability content ID, e.g. CVE-2022-0778).
+		return fmt.Sprintf("https://security.paloaltonetworks.com/%s", v.Content.ID)
 	case models.RedHat, models.RedHatAPI:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:

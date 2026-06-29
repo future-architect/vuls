@@ -9315,6 +9315,147 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Palo Alto CVE roots carry rich vulnerability content (CVSS, CWE,
+			// references) directly in the vulnerability stub, so the detection
+			// path builds a full CveContent like any other CPE source. Its
+			// source link is the per-CVE Palo Alto advisory page (keyed by the
+			// CVE ID). No DistroAdvisory here: this root has no advisories[].
+			name: "cpe paloalto detection emits CveContent with paloalto source link",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*": {"cpe:/o:paloaltonetworks:pan-os:10.0.0", "cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2022-0778",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2022-0778",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.PaloAltoJSON: {
+											dataTypes.RootID("CVE-2022-0778"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2022-0778",
+														Title:       "Impact of the OpenSSL Infinite Loop Vulnerability CVE-2022-0778",
+														Description: "The Palo Alto Networks Product Security Assurance team has evaluated the OpenSSL infinite loop vulnerability.",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "security.paloaltonetworks.com",
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:             7.5,
+																	BaseSeverity:          "HIGH",
+																	TemporalScore:         7.5,
+																	TemporalSeverity:      "HIGH",
+																	EnvironmentalScore:    7.5,
+																	EnvironmentalSeverity: "HIGH",
+																}),
+															},
+														},
+														CWE: []cweTypes.CWE{
+															{
+																Source: "security.paloaltonetworks.com",
+																CWE:    []string{"CWE-834"},
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "security.paloaltonetworks.com",
+																URL:    "https://security.paloaltonetworks.com/CVE-2022-0778",
+															},
+														},
+														Published: new(time.Date(2022, 3, 31, 2, 30, 0, 0, time.UTC)),
+														Modified:  new(time.Date(2022, 6, 24, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.PaloAltoJSON: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:o:paloaltonetworks:pan-os:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2022-0778": {
+					CveID:       "CVE-2022-0778",
+					Confidences: models.Confidences{models.PaloaltoExactVersionMatch},
+					CpeURIs:     []string{"cpe:/o:paloaltonetworks:pan-os:10.0.0", "cpe:2.3:o:paloaltonetworks:pan-os:10.0.0:*:*:*:*:*:*:*"},
+					CveContents: models.CveContents{
+						models.Paloalto: []models.CveContent{
+							{
+								Type:          models.Paloalto,
+								CveID:         "CVE-2022-0778",
+								Title:         "Impact of the OpenSSL Infinite Loop Vulnerability CVE-2022-0778",
+								Summary:       "The Palo Alto Networks Product Security Assurance team has evaluated the OpenSSL infinite loop vulnerability.",
+								Cvss3Score:    7.5,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+								Cvss3Severity: "HIGH",
+								SourceLink:    "https://security.paloaltonetworks.com/CVE-2022-0778",
+								References: models.References{
+									{
+										Link:   "https://security.paloaltonetworks.com/CVE-2022-0778",
+										Source: "MISC",
+									},
+								},
+								CweIDs:       []string{"CWE-834"},
+								Published:    time.Date(2022, 3, 31, 2, 30, 0, 0, time.UTC),
+								LastModified: time.Date(2022, 6, 24, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2022-0778\",\"source_id\":\"paloalto-json\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low
