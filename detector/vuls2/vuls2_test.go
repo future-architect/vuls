@@ -9400,10 +9400,16 @@ func Test_postConvert(t *testing.T) {
 																Type: criterionTypes.CriterionTypeCPE,
 																CPE: new(ccTypes.Criterion{
 																	Vulnerable: true,
-																	FixStatus: new(vcFixStatusTypes.FixStatus{
-																		Class: vcFixStatusTypes.ClassUnknown,
+																	CPE:        ccTypes.CPE("cpe:2.3:o:paloaltonetworks:pan-os:*:*:*:*:*:*:*:*"),
+																	// Palo Alto criteria carry a pan-os version range
+																	// (real CVE-2022-0778 shape); the scanned 10.0.0
+																	// falls in [10.0.0, 10.0.10) -> exact match.
+																	Range: new(ccRangeTypes.Range{
+																		Type:         ccRangeTypes.RangeTypePANOS,
+																		GreaterEqual: "10.0.0",
+																		LessThan:     "10.0.10",
 																	}),
-																	CPE: ccTypes.CPE("cpe:2.3:o:paloaltonetworks:pan-os:*:*:*:*:*:*:*:*"),
+																	Fixed: []string{"10.0.10"},
 																}),
 															},
 															Accepts: criterionTypes.AcceptQueries{
