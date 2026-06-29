@@ -6,8 +6,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.10.0
-	github.com/MaineK00n/vuls-data-update v0.0.0-20260625095034-a278fec71114
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260626014420-4f87e83850fe
+	github.com/MaineK00n/vuls-data-update v0.0.0-20260626055850-7e818eb2ba51
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260629073543-a01483fb1da0
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.70.0
 	github.com/aquasecurity/trivy-db v0.0.0-20251222105351-a833f47f8f0d
@@ -81,7 +81,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.55.0 // indirect
 	github.com/MaineK00n/go-cisco-version v0.0.0-20250909032920-fe1559e481f8 // indirect
 	github.com/MaineK00n/go-microsoft-version v0.0.0-20260325021654-1d9206bdeffc // indirect
-	github.com/MaineK00n/go-paloalto-version v0.0.0-20250909032857-57479910413b // indirect
+	github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
