@@ -10159,6 +10159,251 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// A CVE detected by BOTH NVD (feed v2) and Fortinet CSAF must keep
+			// BOTH CveContents in the result — they are different CveContentTypes
+			// (models.Nvd vs models.Fortinet), so the merge keys them separately
+			// and neither overwrites the other.
+			name: "cpe nvd-v2 + fortinet-csaf both detect same CVE -> both CveContents kept",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:fortinet:fortiportal:7.4.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:fortinet:fortiportal:7.4.0:*:*:*:*:*:*:*": {"cpe:/a:fortinet:fortiportal:7.4.0", "cpe:2.3:a:fortinet:fortiportal:7.4.0:*:*:*:*:*:*:*"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-54838",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-54838",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDFeedCVEv2: {
+											dataTypes.RootID("CVE-2025-54838"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-54838",
+														Title:       "Fortinet FortiPortal incorrect authorization",
+														Description: "NVD-side description for CVE-2025-54838",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "nvd@nist.gov",
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:N/I:N/A:H/E:P/RL:X/RC:C",
+																	BaseScore:             6.8,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         6.4,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    6.4,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{Source: "nvd@nist.gov", URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-54838"},
+														},
+														Published: new(time.Date(2025, 12, 10, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{{Ecosystem: ecosystemTypes.EcosystemTypeCPE}},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDFeedCVEv2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:fortinet:fortiportal:*:*:*:*:*:*:*:*"),
+																	Range: new(ccRangeTypes.Range{
+																		Type:         ccRangeTypes.RangeTypeSEMVER,
+																		GreaterEqual: "7.4.0",
+																		LessEqual:    "7.4.5",
+																	}),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "FG-IR-25-032",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "FG-IR-25-032",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.FortinetCSAF: {
+											dataTypes.RootID("FG-IR-25-032"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:        "FG-IR-25-032",
+														Title:     "Incorrect authorization in multi-vdom environment",
+														Published: new(time.Date(2025, 12, 9, 0, 0, 0, 0, time.UTC)),
+														Modified:  new(time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{{Ecosystem: ecosystemTypes.EcosystemTypeCPE}},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-54838",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.FortinetCSAF: {
+											dataTypes.RootID("FG-IR-25-032"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-54838",
+														Title:       "Incorrect authorization in multi-vdom environment",
+														Description: "Incorrect authorization in rebooting FortiGate device feature",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "fortiguard.fortinet.com",
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:N/I:N/A:H/E:P/RL:X/RC:C",
+																	BaseScore:             6.8,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         6.4,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    6.4,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														CWE: []cweTypes.CWE{
+															{Source: "fortiguard.fortinet.com", CWE: []string{"CWE-863"}},
+														},
+														References: []referenceTypes.Reference{
+															{Source: "fortiguard.fortinet.com", URL: "https://fortiguard.fortinet.com/psirt/FG-IR-25-032"},
+														},
+													},
+													Segments: []segmentTypes.Segment{{Ecosystem: ecosystemTypes.EcosystemTypeCPE}},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.FortinetCSAF: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:fortinet:fortiportal:*:*:*:*:*:*:*:*"),
+																	Range: new(ccRangeTypes.Range{
+																		Type:         ccRangeTypes.RangeTypeFortinetFortiPortal,
+																		GreaterEqual: "7.4.0",
+																		LessEqual:    "7.4.5",
+																	}),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-54838": {
+					CveID:       "CVE-2025-54838",
+					Confidences: models.Confidences{models.NvdExactVersionMatch, models.FortinetExactVersionMatch},
+					CpeURIs:     []string{"cpe:/a:fortinet:fortiportal:7.4.0", "cpe:2.3:a:fortinet:fortiportal:7.4.0:*:*:*:*:*:*:*"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "FG-IR-25-032",
+							Issued:     time.Date(2025, 12, 9, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:          models.Nvd,
+								CveID:         "CVE-2025-54838",
+								Title:         "Fortinet FortiPortal incorrect authorization",
+								Summary:       "NVD-side description for CVE-2025-54838",
+								Cvss3Score:    6.8,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:N/I:N/A:H/E:P/RL:X/RC:C",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-2025-54838",
+								References: models.References{
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-54838", Source: "NVD", RefID: "CVE-2025-54838"},
+								},
+								Published:    time.Date(2025, 12, 10, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-54838\",\"source_id\":\"nvd-feed-cve-v2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+						models.Fortinet: []models.CveContent{
+							{
+								Type:          models.Fortinet,
+								CveID:         "CVE-2025-54838",
+								Title:         "Incorrect authorization in multi-vdom environment",
+								Summary:       "Incorrect authorization in rebooting FortiGate device feature",
+								Cvss3Score:    6.8,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:N/I:N/A:H/E:P/RL:X/RC:C",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://www.fortiguard.com/psirt/FG-IR-25-032",
+								References: models.References{
+									{Link: "https://fortiguard.fortinet.com/psirt/FG-IR-25-032", Source: "MISC"},
+									{Link: "https://www.fortiguard.com/psirt/FG-IR-25-032", Source: "FORTINET", RefID: "FG-IR-25-032"},
+								},
+								CweIDs:       []string{"CWE-863"},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"FG-IR-25-032\",\"source_id\":\"fortinet-csaf\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low
