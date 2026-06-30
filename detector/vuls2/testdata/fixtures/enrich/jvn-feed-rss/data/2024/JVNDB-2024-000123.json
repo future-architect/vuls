@@ -1,0 +1,76 @@
+{
+	"id": "JVNDB-2024-000123",
+	"advisories": [
+		{
+			"content": {
+				"id": "JVNDB-2024-000123",
+				"title": "Fortinet FortiOS におけるバッファエラーの脆弱性",
+				"description": "Fortinet が提供する FortiOS には、バッファエラー (CWE-787) の脆弱性が存在します。",
+				"severity": [
+					{
+						"type": "cvss_v31",
+						"source": "jvndb.jvn.jp",
+						"cvss_v31": {
+							"vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+							"base_score": 9.8,
+							"base_severity": "CRITICAL"
+						}
+					}
+				],
+				"cwe": [
+					{
+						"source": "jvndb.jvn.jp",
+						"cwe": [
+							"CWE-787"
+						]
+					}
+				],
+				"references": [
+					{
+						"source": "jvndb.jvn.jp",
+						"url": "https://www.jpcert.or.jp/at/2024/at240008.html"
+					},
+					{
+						"source": "jvndb.jvn.jp",
+						"url": "https://jvn.jp/vu/JVNVU90001234/index.html"
+					}
+				],
+				"published": "2024-02-09T00:00:00Z",
+				"modified": "2024-02-15T00:00:00Z"
+			},
+			"segments": [
+				{
+					"ecosystem": "cpe"
+				}
+			]
+		}
+	],
+	"vulnerabilities": [
+		{
+			"content": {
+				"id": "CVE-2024-21762",
+				"references": [
+					{
+						"source": "jvndb.jvn.jp",
+						"url": "https://nvd.nist.gov/vuln/detail/CVE-2024-21762"
+					},
+					{
+						"source": "jvndb.jvn.jp",
+						"url": "https://www.cve.org/CVERecord?id=CVE-2024-21762"
+					}
+				]
+			},
+			"segments": [
+				{
+					"ecosystem": "cpe"
+				}
+			]
+		}
+	],
+	"data_source": {
+		"id": "jvn-feed-rss",
+		"raws": [
+			"fixtures/2024/JVNDB-2024-000123.json"
+		]
+	}
+}
