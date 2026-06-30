@@ -9591,6 +9591,193 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Fortinet is advisory-shaped (root = the FG-IR PSIRT advisory). The
+			// CSAF extractor puts rich content (CVSS, CWE, refs) on the
+			// vulnerability stub, so the generic path builds a full Fortinet
+			// CveContent whose source link points at the PSIRT advisory page
+			// (keyed by the root ID). The advisory itself carries no vendor SIR
+			// (Fortinet severity is CVSS), so DistroAdvisory.Severity is empty.
+			name: "cpe fortinet (csaf) detection emits CveContent (psirt source link) + DistroAdvisory",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:fortinet:fortipam:1.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:fortinet:fortipam:1.0.0:*:*:*:*:*:*:*": {"cpe:/a:fortinet:fortipam:1.0.0", "cpe:2.3:a:fortinet:fortipam:1.0.0:*:*:*:*:*:*:*"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "FG-IR-24-041",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "FG-IR-24-041",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.FortinetCSAF: {
+											dataTypes.RootID("FG-IR-24-041"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:        "FG-IR-24-041",
+														Title:     "FGFM protocol allows unauthenticated reset of the connection",
+														Published: new(time.Date(2025, 10, 14, 0, 0, 0, 0, time.UTC)),
+														Modified:  new(time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-26008",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.FortinetCSAF: {
+											dataTypes.RootID("FG-IR-24-041"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-26008",
+														Title:       "FGFM protocol allows unauthenticated reset of the connection",
+														Description: "Improper check or handling of exceptional conditions vulnerability in FortiOS, FortiProxy, FortiPAM & FortiSwitchManager",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "fortiguard.fortinet.com",
+																Vendor: new("Denial of service"),
+															},
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "fortiguard.fortinet.com",
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:                "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P/RL:X/RC:C",
+																	BaseScore:             5.3,
+																	BaseSeverity:          "MEDIUM",
+																	TemporalScore:         5,
+																	TemporalSeverity:      "MEDIUM",
+																	EnvironmentalScore:    5,
+																	EnvironmentalSeverity: "MEDIUM",
+																}),
+															},
+														},
+														CWE: []cweTypes.CWE{
+															{
+																Source: "fortiguard.fortinet.com",
+																CWE:    []string{"CWE-754"},
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "fortiguard.fortinet.com",
+																URL:    "https://fortiguard.fortinet.com/psirt/FG-IR-24-041",
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.FortinetCSAF: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:fortinet:fortipam:*:*:*:*:*:*:*:*"),
+																	Range: new(ccRangeTypes.Range{
+																		Type:         ccRangeTypes.RangeTypeFortinetFortiPAM,
+																		GreaterEqual: "1.0",
+																		LessThan:     "1.1",
+																	}),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-26008": {
+					CveID:       "CVE-2024-26008",
+					Confidences: models.Confidences{models.FortinetExactVersionMatch},
+					CpeURIs:     []string{"cpe:/a:fortinet:fortipam:1.0.0", "cpe:2.3:a:fortinet:fortipam:1.0.0:*:*:*:*:*:*:*"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "FG-IR-24-041",
+							// Severity empty: Fortinet advisory severity is CVSS, not a vendor SIR.
+							Issued:  time.Date(2025, 10, 14, 0, 0, 0, 0, time.UTC),
+							Updated: time.Date(2026, 1, 14, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Fortinet: []models.CveContent{
+							{
+								Type:          models.Fortinet,
+								CveID:         "CVE-2024-26008",
+								Title:         "FGFM protocol allows unauthenticated reset of the connection",
+								Summary:       "Improper check or handling of exceptional conditions vulnerability in FortiOS, FortiProxy, FortiPAM & FortiSwitchManager",
+								Cvss3Score:    5.3,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P/RL:X/RC:C",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://www.fortiguard.com/psirt/FG-IR-24-041",
+								References: models.References{
+									{
+										Link:   "https://fortiguard.fortinet.com/psirt/FG-IR-24-041",
+										Source: "MISC",
+									},
+									{
+										Link:   "https://www.fortiguard.com/psirt/FG-IR-24-041",
+										Source: "FORTINET",
+										RefID:  "FG-IR-24-041",
+									},
+								},
+								CweIDs:       []string{"CWE-754"},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"FG-IR-24-041\",\"source_id\":\"fortinet-csaf\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low

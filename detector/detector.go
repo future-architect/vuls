@@ -397,12 +397,12 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 	return nil
 }
 
-// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN, Fortinet
+// FillCvesWithGoCVEDictionary fills CVE detail with VulnCheck, JVN
 // (NVD CveContent, EUVD, and MITRE are filled by the vuls2 enrich path instead, as are the US-CERT
-// alerts; Cisco and Palo Alto are detected by vuls2, which always emits a CveContent and
-// additionally a DistroAdvisory when the matched root carries advisories (Cisco roots always do;
-// Palo Alto's PAN-SA roots do — their advisory fallback yields both a DistroAdvisory and an
-// advisory-derived CveContent — while its plain CVE roots yield a CveContent only); only the
+// alerts; Cisco, Palo Alto, and Fortinet are detected by vuls2, which always emits a CveContent and
+// additionally a DistroAdvisory when the matched root carries advisories (Cisco and Fortinet roots
+// always do; Palo Alto's PAN-SA roots do — their advisory fallback yields both a DistroAdvisory and
+// an advisory-derived CveContent — while its plain CVE roots yield a CveContent only); only the
 // JP-CERT alerts, derived from JVN, still come from here)
 func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf, logOpts logging.LogOpts) (err error) {
 	cveIDs := make([]string, 0, len(r.ScannedCves))
@@ -428,7 +428,6 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 	for _, d := range ds {
 		vulnchecks := models.ConvertVulncheckToModel(d.CveID, d.Vulnchecks)
 		jvns := models.ConvertJvnToModel(d.CveID, d.Jvns)
-		fortinets := models.ConvertFortinetToModel(d.CveID, d.Fortinets)
 
 		alerts := fillCertAlerts(&d)
 		for cveID, vinfo := range r.ScannedCves {
@@ -444,7 +443,7 @@ func FillCvesWithGoCVEDictionary(r *models.ScanResult, cnf config.GoCveDictConf,
 				for _, con := range vulnchecks {
 					vinfo.CveContents[con.Type] = append(vinfo.CveContents[con.Type], con)
 				}
-				for _, cons := range [][]models.CveContent{jvns, fortinets} {
+				for _, cons := range [][]models.CveContent{jvns} {
 					for _, con := range cons {
 						if !con.Empty() {
 							if !slices.ContainsFunc(vinfo.CveContents[con.Type], func(e models.CveContent) bool {
@@ -542,29 +541,18 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 		for _, detail := range details {
 			// Skip detections carried by no dictionary-remaining DETECTION
 			// source. The list mirrors go-cve-dictionary's GetByCpeURI
-			// admission gate minus the vuls2-migrated sources (NVD, Cisco, and
-			// Palo Alto), so NVD-only / Cisco-only / Palo Alto-only detections
-			// disappear here — vuls2 re-detects them from its own data. EUVD /
+			// admission gate minus the vuls2-migrated sources (NVD, Cisco,
+			// Palo Alto, and Fortinet), so detections carried only by those
+			// sources disappear here — vuls2 re-detects them from its own data. EUVD /
 			// MITRE contents can ride along on a detail but are never a
 			// detection basis (gocve neither matches nor admits on them, and
 			// getMaxConfidence has no tier for them), so they do not keep
 			// a detail alive.
-			if !detail.HasJvn() && !detail.HasFortinet() && !detail.HasVulncheck() {
+			if !detail.HasJvn() && !detail.HasVulncheck() {
 				continue
 			}
 
 			advisories := []models.DistroAdvisory{}
-			if detail.HasFortinet() {
-				for _, fortinet := range detail.Fortinets {
-					advisories = append(advisories, models.DistroAdvisory{
-						AdvisoryID:  fortinet.AdvisoryID,
-						Issued:      fortinet.PublishedDate,
-						Updated:     fortinet.LastModifiedDate,
-						Description: fortinet.Summary,
-					})
-				}
-			}
-
 			// JVN advisories are redundant for CVEs that NVD also covers.
 			if !detail.HasNvd() && detail.HasJvn() {
 				for _, jvn := range detail.Jvns {
@@ -586,6 +574,7 @@ func detectCpeURIsCvesWithGoCVEDictionary(r *models.ScanResult, cpes []Cpe, cnf 
 			detail.Nvds = nil
 			detail.Ciscos = nil
 			detail.Paloaltos = nil
+			detail.Fortinets = nil
 			maxConfidence := getMaxConfidence(detail)
 
 			if val, ok := r.ScannedCves[detail.CveID]; ok {
