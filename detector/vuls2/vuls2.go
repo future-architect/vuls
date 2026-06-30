@@ -593,6 +593,14 @@ type sourceData struct {
 	// confidence instead of ExactVersionMatch — the vuls2 replacement for
 	// go-cve-dictionary's fuzzy CPE reporting.
 	vpCpes []string
+	// exactCpesByCVE / vpCpesByCVE hold the per-CVE matched CPEs for SUPPRESSED
+	// CPE sources (VulnCheck / JVN). Those sources are walked once per
+	// constituent CVE with that CVE's own verified-product set, so a verified
+	// product for one CVE never suppresses a sibling and the AND/OR criteria
+	// satisfaction stays correct per CVE. Non-suppressed sources keep using the
+	// per-root exactCpes / vpCpes above.
+	exactCpesByCVE map[string][]string
+	vpCpesByCVE    map[string][]string
 }
 
 type rootTag struct {
@@ -632,7 +640,7 @@ func appendMissing(dst, src []string) []string {
 // VulnInfo.CpeURIs so the report shows the user-supplied CPE rather than
 // the internal FS-with-wildcards form. Nil / missing keys fall back to
 // the FS string as-is.
-func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, verifiedProductsByRoot map[dataTypes.RootID]map[string]struct{}) (models.VulnInfos, error) {
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, verifiedProductsByRoot map[dataTypes.RootID]map[string]map[string]struct{}) (models.VulnInfos, error) {
 	m := make(map[source]sourceData)
 
 	if err := walkVulnerabilityDetections(m, scanned, detected.Detected, noJVNCPEs, verifiedProductsByRoot); err != nil {
@@ -716,14 +724,24 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 				}
 			}
 
+			// Suppressed CPE sources (VulnCheck / JVN) were walked per CVE, so
+			// pick this vulninfo's own matched CPEs rather than the per-root
+			// union — a verified product for a sibling CVE must not surface or
+			// gate this one.
+			exactForCVE, vpForCVE := vd.exactCpes, vd.vpCpes
+			if isSuppressedCPESource(src.SourceID) {
+				exactForCVE = vd.exactCpesByCVE[vi.CveID]
+				vpForCVE = vd.vpCpesByCVE[vi.CveID]
+			}
+
 			base.kbIDs = appendMissing(base.kbIDs, vd.kbIDs)
-			base.exactCpes = appendMissing(base.exactCpes, vd.exactCpes)
-			base.vpCpes = appendMissing(base.vpCpes, vd.vpCpes)
+			base.exactCpes = appendMissing(base.exactCpes, exactForCVE)
+			base.vpCpes = appendMissing(base.vpCpes, vpForCVE)
 
 			// A KB/CPE detection signal marks this CVE emittable. packStatuses
 			// are deliberately excluded — packages are gated separately through
 			// comparePack's per-source winner selection.
-			if len(vd.kbIDs) > 0 || len(vd.exactCpes) > 0 || len(vd.vpCpes) > 0 {
+			if len(vd.kbIDs) > 0 || len(exactForCVE) > 0 || len(vpForCVE) > 0 {
 				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
 					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
 				}
@@ -830,30 +848,51 @@ func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult
 	return vim, nil
 }
 
-func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.ScanResult, vs []detectTypes.VulnerabilityData, noJVNCPEs map[string]struct{}, verifiedProductsByRoot map[dataTypes.RootID]map[string]struct{}) error {
+func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.ScanResult, vs []detectTypes.VulnerabilityData, noJVNCPEs map[string]struct{}, verifiedProductsByRoot map[dataTypes.RootID]map[string]map[string]struct{}) error {
 	for _, v := range vs {
-		// The part:vendor:product set DEFINED by the verified CPE sources
-		// (NVD / Fortinet / Cisco / PaloAlto) for this CVE — used to suppress
-		// overlapping VulnCheck / JVN matches, mirroring go-cve-dictionary's
-		// isCpeURIAlsoDefinedInVerifiedDataSource. Nil when no verified source
-		// defines anything for the CVE.
-		verifiedProducts := verifiedProductsByRoot[v.ID]
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
 					var (
-						statuses  []packStatus
-						kbIDs     []string
-						exactCpes []string
-						vpCpes    []string
+						statuses   []packStatus
+						kbIDs      []string
+						exactCpes  []string
+						vpCpes     []string
+						exactByCVE map[string][]string
+						vpByCVE    map[string][]string
 					)
-					if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
-						exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned, noJVNCPEs, verifiedProducts)
-						if err != nil {
-							return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
+					switch d.Ecosystem {
+					case ecosystemTypes.EcosystemTypeCPE:
+						if isSuppressedCPESource(sourceID) {
+							// Suppressed sources (VulnCheck / JVN) are walked ONCE
+							// PER constituent CVE with that CVE's own verified
+							// product set — the part:vendor:product the verified CPE
+							// sources (NVD / Fortinet / Cisco / PaloAlto) DEFINE for
+							// that CVE, mirroring go-cve-dictionary's
+							// isCpeURIAlsoDefinedInVerifiedDataSource. Per-CVE keeps a
+							// verified product for one CVE from suppressing a sibling
+							// and keeps AND/OR satisfaction correct per CVE.
+							exactByCVE, vpByCVE = make(map[string][]string), make(map[string][]string)
+							for _, cveID := range cveIDsOf(v) {
+								exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned, noJVNCPEs, verifiedProductsByRoot[v.ID][cveID])
+								if err != nil {
+									return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
+								}
+								if len(exact) > 0 {
+									exactByCVE[cveID] = append(exactByCVE[cveID], exact...)
+								}
+								if len(vp) > 0 {
+									vpByCVE[cveID] = append(vpByCVE[cveID], vp...)
+								}
+							}
+						} else {
+							exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned, noJVNCPEs, nil)
+							if err != nil {
+								return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
+							}
+							exactCpes, vpCpes = exact, vp
 						}
-						exactCpes, vpCpes = exact, vp
-					} else {
+					default:
 						s, k, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
 						if err != nil {
 							return xerrors.Errorf("Failed to walk pkg criteria. err: %w", err)
@@ -865,8 +904,9 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// WITHOUT registering it in m: the downstream walk
 					// treats presence in m as "this source detected
 					// something", and an empty entry would emit contents
-					// for an undetected CVE.
-					if len(statuses) == 0 && len(kbIDs) == 0 && len(exactCpes) == 0 && len(vpCpes) == 0 {
+					// for an undetected CVE. A suppressed source's per-CVE
+					// result counts as a signal here too.
+					if len(statuses) == 0 && len(kbIDs) == 0 && len(exactCpes) == 0 && len(vpCpes) == 0 && len(exactByCVE) == 0 && len(vpByCVE) == 0 {
 						continue
 					}
 
@@ -885,6 +925,18 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					base.kbIDs = append(base.kbIDs, kbIDs...)
 					base.exactCpes = append(base.exactCpes, exactCpes...)
 					base.vpCpes = append(base.vpCpes, vpCpes...)
+					for cveID, cpes := range exactByCVE {
+						if base.exactCpesByCVE == nil {
+							base.exactCpesByCVE = make(map[string][]string)
+						}
+						base.exactCpesByCVE[cveID] = append(base.exactCpesByCVE[cveID], cpes...)
+					}
+					for cveID, cpes := range vpByCVE {
+						if base.vpCpesByCVE == nil {
+							base.vpCpesByCVE = make(map[string][]string)
+						}
+						base.vpCpesByCVE[cveID] = append(base.vpCpesByCVE[cveID], cpes...)
+					}
 					m[src] = base
 				}
 			}
@@ -1161,9 +1213,10 @@ func hasSuppressedCPESource(v detectTypes.VulnerabilityData) bool {
 // while NVD is under the CVE root), so the verified data is gathered across all
 // roots that alias the CVE via GetVulnerabilityDataByVulnerabilityID. Results
 // are cached per CVE so VulnCheck and JVN detections of the same CVE share one
-// bolt read. The returned map is keyed by the suppressed source's RootID for a
-// direct lookup in walkVulnerabilityDetections.
-func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectResult) (map[dataTypes.RootID]map[string]struct{}, error) {
+// bolt read. The returned map is keyed by the suppressed source's RootID, then
+// by constituent CVE ID, so a multi-CVE root keeps each CVE's verified product
+// set separate (a verified product for one CVE must not suppress a sibling).
+func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectResult) (map[dataTypes.RootID]map[string]map[string]struct{}, error) {
 	cache := make(map[string]map[string]struct{})
 	productsFor := func(cveID string) (map[string]struct{}, error) {
 		if set, ok := cache[cveID]; ok {
@@ -1174,7 +1227,7 @@ func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectR
 			DataSources: verifiedCPESources,
 		})
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("Failed to get vulnerability data by vulnerability ID. CVE-ID: %s, err: %w", cveID, err)
 		}
 		set := make(map[string]struct{})
 		for _, d := range vd.Detections {
@@ -1193,23 +1246,23 @@ func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectR
 		return set, nil
 	}
 
-	out := make(map[dataTypes.RootID]map[string]struct{})
+	out := make(map[dataTypes.RootID]map[string]map[string]struct{})
 	for _, v := range detected.Detected {
 		if !hasSuppressedCPESource(v) {
 			continue
 		}
-		merged := make(map[string]struct{})
+		byCVE := make(map[string]map[string]struct{})
 		for _, cveID := range cveIDsOf(v) {
 			set, err := productsFor(cveID)
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to get verified products. CVE-ID: %s, err: %w", cveID, err)
 			}
-			for k := range set {
-				merged[k] = struct{}{}
+			if len(set) > 0 {
+				byCVE[cveID] = set
 			}
 		}
-		if len(merged) > 0 {
-			out[v.ID] = merged
+		if len(byCVE) > 0 {
+			out[v.ID] = byCVE
 		}
 	}
 	return out, nil

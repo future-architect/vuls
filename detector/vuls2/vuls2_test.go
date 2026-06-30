@@ -711,6 +711,7 @@ func Test_postConvert(t *testing.T) {
 		scanned         scanTypes.ScanResult
 		detected        detectTypes.DetectResult
 		fsToOriginalCPE map[string][]string
+		verified        map[dataTypes.RootID]map[string]map[string]struct{}
 	}
 	tests := []struct {
 		name    string
@@ -11353,10 +11354,194 @@ func Test_postConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			// A multi-CVE JVN root: one advisory and one CPE detection block
+			// shared by CVE-2024-30001 and CVE-2024-30002. A verified source
+			// defines a:vendor:product only for CVE-2024-30001, so the per-CVE
+			// walk suppresses the scanned CPE for that CVE alone — CVE-2024-30001
+			// drops out entirely while its sibling CVE-2024-30002 still detects
+			// (demoted to vendor:product, with the shared DistroAdvisory).
+			name: "cpe jvn multi-CVE root: verified product suppresses only its own CVE, not the sibling",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				verified: map[dataTypes.RootID]map[string]map[string]struct{}{
+					"JVNDB-2024-000456": {
+						"CVE-2024-30001": {"a:vendor:product": {}},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "JVNDB-2024-000456",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "JVNDB-2024-000456",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "JVNDB-2024-000456",
+														Title:       "advisory title",
+														Description: "advisory description",
+														Published:   new(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30001",
+														Title:       "title 30001",
+														Description: "description 30001",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									ID: "CVE-2024-30002",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30002",
+														Title:       "title 30002",
+														Description: "description 30002",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedRSS: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-30002": {
+					CveID:       "CVE-2024-30002",
+					Confidences: models.Confidences{models.JvnVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "JVNDB-2024-000456",
+							Description: "advisory description",
+							Issued:      time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+							Updated:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:       models.Jvn,
+								CveID:      "CVE-2024-30002",
+								Title:      "title 30002",
+								Summary:    "description 30002",
+								SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000456.html",
+								References: models.References{
+									{
+										Link:   "https://jvn.jp/vu/JVNVU90009999/index.html",
+										Source: "MISC",
+									},
+									{
+										Link:   "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000456.html",
+										Source: "JVN",
+										RefID:  "JVNDB-2024-000456",
+									},
+								},
+								Published:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"JVNDB-2024-000456\",\"source_id\":\"jvn-feed-rss\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil, nil)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil, tt.args.verified)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
