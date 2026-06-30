@@ -195,10 +195,19 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
 	switch r.Family {
 	case constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer:
-		// macOS has no package security database; installed applications and
-		// the OS itself are detected through synthesised Apple CPEs.
-		if err := vuls2.DetectCPEs(r, vuls2.MacOSCPEs(r), vuls2Conf, noProgress); err != nil {
-			return xerrors.Errorf("Failed to detect macOS CVE: %w", err)
+		// macOS has no package security database; the OS itself (when its release
+		// is known) and installed applications are detected through synthesised
+		// Apple CPEs. Applications bind to the OS target, not its version, so they
+		// stay detectable without the release; only an empty result — no release
+		// AND no detectable applications — is an incomplete scan, recorded rather
+		// than silently reporting zero CVEs (as for the recognized families below).
+		switch cpes := vuls2.MacOSCPEs(r); len(cpes) {
+		case 0:
+			r.Errors = append(r.Errors, xerrors.Errorf("Failed to detect CVE for %s: no OS release and no detectable applications", r.Family).Error())
+		default:
+			if err := vuls2.DetectCPEs(r, cpes, vuls2Conf, noProgress); err != nil {
+				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
+			}
 		}
 	case constant.FreeBSD, constant.ServerTypePseudo:
 		logging.Log.Infof("%s type. Skip vuls2 detection", r.Family)
@@ -214,9 +223,13 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 			// trivy runs its own detection; vuls2 OS-package detection is skipped.
 			logging.Log.Infof("r.ScannedVia is trivy. Skip vuls2 detection")
 		case r.Release == "":
-			logging.Log.Infof("r.Release is empty. Skip vuls2 detection")
+			// A recognized OS family with no release or no packages is an
+			// incomplete scan result: record the failure (rather than silently
+			// reporting zero package CVEs) but keep going, so this server's other
+			// detection (CPE, WordPress, ...) and the other servers still run.
+			r.Errors = append(r.Errors, xerrors.Errorf("Failed to detect CVE for %s: r.Release is empty", r.Family).Error())
 		case len(r.Packages)+len(r.SrcPackages) == 0:
-			logging.Log.Infof("Number of packages is 0. Skip vuls2 detection")
+			r.Errors = append(r.Errors, xerrors.Errorf("Failed to detect CVE for %s: no binary or source packages", r.Family).Error())
 		default:
 			if err := vuls2.DetectPkgs(r, vuls2Conf, noProgress); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
