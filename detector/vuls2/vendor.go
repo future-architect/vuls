@@ -510,7 +510,7 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 				Source: "JVN",
 				RefID:  da.AdvisoryID,
 			}, nil
-		case sourceTypes.Fortinet:
+		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
 			return models.Reference{
 				Link:   fmt.Sprintf("https://www.fortiguard.com/psirt/%s", da.AdvisoryID),
 				Source: "FORTINET",
@@ -642,6 +642,10 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		// Palo Alto publishes a page per CVE, so the source link is keyed by the
 		// CVE ID (which is the vulnerability content ID, e.g. CVE-2022-0778).
 		return fmt.Sprintf("https://security.paloaltonetworks.com/%s", v.Content.ID)
+	case models.Fortinet:
+		// Fortinet content lives in the PSIRT advisory, whose ID is the root ID
+		// (e.g. FG-IR-24-041), so the per-CVE source link points at that page.
+		return fmt.Sprintf("https://www.fortiguard.com/psirt/%s", rootID)
 	case models.RedHat, models.RedHatAPI:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:
@@ -696,9 +700,9 @@ func compareSourceID(e ecosystemTypes.Ecosystem, a, b sourceTypes.SourceID) int 
 	case ecosystemTypes.EcosystemTypeCPE:
 		preferenceFn := func(sourceID sourceTypes.SourceID) int {
 			switch sourceID {
-			case sourceTypes.NVDAPICVE, sourceTypes.JVNFeedDetail, sourceTypes.Fortinet, sourceTypes.PaloAltoCSAF, sourceTypes.CiscoCSAF:
+			case sourceTypes.NVDAPICVE, sourceTypes.JVNFeedDetail, sourceTypes.FortinetCSAF, sourceTypes.PaloAltoCSAF, sourceTypes.CiscoCSAF:
 				return 5
-			case sourceTypes.NVDFeedCVEv2, sourceTypes.JVNFeedRSS, sourceTypes.PaloAltoJSON, sourceTypes.CiscoCVRF:
+			case sourceTypes.NVDFeedCVEv2, sourceTypes.JVNFeedRSS, sourceTypes.FortinetCVRF, sourceTypes.PaloAltoJSON, sourceTypes.CiscoCVRF:
 				return 4
 			case sourceTypes.NVDFeedCVEv1:
 				return 3
@@ -879,7 +883,7 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 			return models.Nvd
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			return models.Jvn
-		case sourceTypes.Fortinet:
+		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
 			return models.Fortinet
 		case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
 			return models.Paloalto
@@ -1042,7 +1046,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 				return models.NvdVendorProductMatch
 			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 				return models.JvnVendorProductMatch
-			case sourceTypes.Fortinet:
+			case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
 				return models.FortinetVendorProductMatch
 			case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
 				return models.PaloaltoVendorProductMatch
@@ -1067,7 +1071,7 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 			// VendorProductMatch branch above. Mapped to JvnVendorProductMatch
 			// for safety should that demotion ever change.
 			return models.JvnVendorProductMatch
-		case sourceTypes.Fortinet:
+		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
 			return models.FortinetExactVersionMatch
 		case sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList:
 			return models.PaloaltoExactVersionMatch

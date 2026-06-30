@@ -70,10 +70,10 @@ github.com/MaineK00n/go-microsoft-version v0.0.0-20260325021654-1d9206bdeffc h1:
 github.com/MaineK00n/go-microsoft-version v0.0.0-20260325021654-1d9206bdeffc/go.mod h1:GNf+Vhnxk8/pW56jsxAeFCBP0VCgVQlLIJ812UnAj9c=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf h1:QDz92+GEPbIR4HTw2EGNgYqH+T9jxmO/OvFMfY715PE=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
-github.com/MaineK00n/vuls-data-update v0.0.0-20260626055850-7e818eb2ba51 h1:ADt0VRzK5n+x+VGUpvr+k/9ATgoqovvrM3lJiuvFkP4=
-github.com/MaineK00n/vuls-data-update v0.0.0-20260626055850-7e818eb2ba51/go.mod h1:RiMrqmCnmpsz3esG0r6iCbS5EIgDnm9yW1ZV3f1+RjQ=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260629073543-a01483fb1da0 h1:E7A6LDY5P9iHqNpoJkaz0cZVLuBiJ2N/9IiAPGWFGyE=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260629073543-a01483fb1da0/go.mod h1:hsRv4IvqFBs3YMjlEYfPbKv7Ft+pVaIJh8HvkREhGRo=
+github.com/MaineK00n/vuls-data-update v0.0.0-20260630113343-f3c7f13ad814 h1:Qhe8kzurr/wdoN232kFAi4PgnrNpj27Dha9zfh9QFoc=
+github.com/MaineK00n/vuls-data-update v0.0.0-20260630113343-f3c7f13ad814/go.mod h1:5QVGDCspc2SuU6aHQ99W8boUmpspqLyGJ9uTPGARa9A=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260630120316-69ab575c2ebe h1:x5FeISU0u+jglVPffLh5oFHDpyOjuL4y3sPNz3g3L4E=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260630120316-69ab575c2ebe/go.mod h1:FAVFG6rikN0zLlug40gX9ExUyOK/s0YUcjOSAMOiWVk=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
@@ -880,6 +880,8 @@ github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAh
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 github.com/vulsio/go-cve-dictionary v0.16.2 h1:1sWXzHBXV55PoOYKiWxqtR9OHq8vfNf3kg1XeNeT7Mw=
 github.com/vulsio/go-cve-dictionary v0.16.2/go.mod h1:cD+HMRAavPw395gGBIa+TOkhOPGRYXkuw94Y31wetRk=
+github.com/vulsio/go-fortinet-version v0.0.0-20260629092944-998bd70fcdc5 h1:enHWbWE2opbbaRgNVXvuSkcPwEUM8wtQzRuQt3S2AkM=
+github.com/vulsio/go-fortinet-version v0.0.0-20260629092944-998bd70fcdc5/go.mod h1:6ERUhlKxZIKCSBNdWforXA62XUpWhks58due00b9IUM=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
