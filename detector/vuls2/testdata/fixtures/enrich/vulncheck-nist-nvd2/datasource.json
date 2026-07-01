@@ -1,0 +1,11 @@
+{
+    "id": "vulncheck-nist-nvd2",
+    "name": "VulnCheck NIST NVD2",
+    "raw": [
+        {
+            "url": "ghcr.io/vulsio/vuls-data-db:vuls-data-raw-vulncheck-nist-nvd2",
+            "commit": "0000000000000000000000000000000000000000",
+            "date": "2025-01-01T00:00:00Z"
+        }
+    ]
+}

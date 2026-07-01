@@ -646,6 +646,14 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		// Fortinet content lives in the PSIRT advisory, whose ID is the root ID
 		// (e.g. FG-IR-24-041), so the per-CVE source link points at that page.
 		return fmt.Sprintf("https://www.fortiguard.com/psirt/%s", rootID)
+	case models.Jvn:
+		// JVN content sits under a JVNDB-<year>-<seq> root; the source link
+		// points at that advisory page, whose URL embeds the year.
+		ss := strings.Split(string(rootID), "-")
+		if len(ss) != 3 {
+			return ""
+		}
+		return fmt.Sprintf("https://jvndb.jvn.jp/ja/contents/%s/%s.html", ss[1], rootID)
 	case models.RedHat, models.RedHatAPI:
 		return fmt.Sprintf("https://access.redhat.com/security/cve/%s", v.Content.ID)
 	case models.Oracle:
@@ -662,6 +670,8 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://security.alpinelinux.org/vuln/%s", v.Content.ID)
 	case models.Nvd:
 		return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Content.ID)
+	case models.Vulncheck:
+		return fmt.Sprintf("https://console.vulncheck.com/cve/%s", v.Content.ID)
 	case models.Mitre:
 		return fmt.Sprintf("https://www.cve.org/CVERecord?id=%s", v.Content.ID)
 	case models.Microsoft:
@@ -881,6 +891,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		switch s {
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.Nvd
+		case sourceTypes.VulnCheckNISTNVD2:
+			return models.Vulncheck
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			return models.Jvn
 		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
@@ -1044,6 +1056,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 			switch s {
 			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 				return models.NvdVendorProductMatch
+			case sourceTypes.VulnCheckNISTNVD2:
+				return models.VulncheckVendorProductMatch
 			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 				return models.JvnVendorProductMatch
 			case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
@@ -1064,6 +1078,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		switch s {
 		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 			return models.NvdExactVersionMatch
+		case sourceTypes.VulnCheckNISTNVD2:
+			return models.VulncheckExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
 			// Unreachable: walkCPECriteria demotes every JVN match to the
 			// vendor:product tier (isJVNCPESource), so a JVN source never
@@ -1183,6 +1199,8 @@ func enrichVulnerabilities(vi *models.VulnInfo, vulns []dbTypes.VulnerabilityDat
 				enrichRedHatCVE(vi, rootMap)
 			case sourceTypes.NVDFeedCVEv2:
 				enrichNVD(vi, rootMap)
+			case sourceTypes.VulnCheckNISTNVD2:
+				enrichVulnCheck(vi, rootMap)
 			case sourceTypes.MitreCVEV5:
 				enrichMitreCVE(vi, rootMap)
 			case sourceTypes.Metasploit:
@@ -1203,7 +1221,64 @@ func enrichAdvisories(vi *models.VulnInfo, advisories []dbTypes.VulnerabilityDat
 				vi.KEVs = append(vi.KEVs, enrichAdvisoryKEV(rootMap)...)
 			case sourceTypes.ENISAEUVDList:
 				enrichEuvd(vi, rootMap)
+			case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+				enrichJVN(vi, rootMap)
 			}
+		}
+	}
+}
+
+// enrichJVN adds a minimal JVN (jvn-feed-rss / jvn-feed-detail) CveContent — only
+// the JVNDB note's source link — plus JP-CERT alerts. It runs per CVE (enrich
+// fetches by CVE ID), so JVN is not lost for CVEs that have JVN data but were NOT
+// detected via JVN (e.g. package / RedHat-detected CVEs); this matches
+// go-cve-dictionary, whose by-CVE-ID fill surfaced JVN regardless of detector (the
+// JVNDB DistroAdvisory is only emitted when JVN is itself a detection basis).
+//
+// When JVN WAS the detection basis, the postConvert path already produced a richer
+// Jvn CveContent under the same JVNDB source link (carrying the vulnerability
+// content's per-CVE references); that entry is kept and this one is skipped. Only
+// the source link is carried here: JVN's title/summary/CVSS/CWE and the advisory's
+// references are note-level (one JVNDB note often covers several CVEs), so they are
+// not distributed per-CVE — they live in the JVNDB DistroAdvisory and at the linked
+// JVNDB page, and per-CVE CVSS/CWE come from NVD.
+//
+// JP-CERT alerts mirror go-cve-dictionary's fillCertAlerts. go-cve selected JVN
+// references whose source was "JPCERT-AT"; the vuls2 jvn extractor flattens that
+// per-reference source to "jvndb.jvn.jp", but the URL is preserved and every
+// JPCERT-AT reference is a JPCERT/CC alert (www.jpcert.or.jp/at/...), so the URL
+// identifies them equivalently.
+func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) {
+	for _, advisories := range rootMap {
+		for _, a := range advisories {
+			// JVNDB-<year>-<seq>; the advisory page URL embeds the year.
+			ss := strings.Split(string(a.Content.ID), "-")
+			if len(ss) != 3 {
+				continue
+			}
+			sourceLink := fmt.Sprintf("https://jvndb.jvn.jp/ja/contents/%s/%s.html", ss[1], a.Content.ID)
+
+			for _, r := range a.Content.References {
+				if !strings.Contains(r.URL, "jpcert.or.jp/at/") {
+					continue
+				}
+				alert := models.Alert{Team: "jpcert", URL: r.URL, Title: a.Content.Title}
+				if !slices.ContainsFunc(vi.AlertDict.JPCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
+					vi.AlertDict.JPCERT = append(vi.AlertDict.JPCERT, alert)
+				}
+			}
+
+			// Keep the postConvert-built entry (same JVNDB link) for JVN-detected
+			// CVEs; otherwise add a bare source-link pointer. This also de-duplicates
+			// across the two JVN feeds (enrichJVN runs once per feed).
+			if slices.ContainsFunc(vi.CveContents[models.Jvn], func(e models.CveContent) bool { return e.SourceLink == sourceLink }) {
+				continue
+			}
+			vi.CveContents[models.Jvn] = append(vi.CveContents[models.Jvn], models.CveContent{
+				Type:       models.Jvn,
+				CveID:      vi.CveID,
+				SourceLink: sourceLink,
+			})
 		}
 	}
 }
@@ -1427,6 +1502,71 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				Cvss40Vector:   cvss40.Vector,
 				Cvss40Severity: cvss40.Severity,
 				SourceLink:     cveContentSourceLink(models.Nvd, v, rootID),
+				References:     rs,
+				CweIDs: func() []string {
+					var cs []string //nolint:prealloc
+					for _, cwe := range v.Content.CWE {
+						cs = append(cs, cwe.CWE...)
+					}
+					return cs
+				}(),
+				Published: func() time.Time {
+					if v.Content.Published != nil {
+						return *v.Content.Published
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+				LastModified: func() time.Time {
+					if v.Content.Modified != nil {
+						return *v.Content.Modified
+					}
+					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				}(),
+			})
+		}
+	}
+}
+
+// enrichVulnCheck adds VulnCheck NVD++ (vulncheck-nist-nvd2) data as CveContent
+// under the models.Vulncheck source. VulnCheck mirrors and enriches NVD, so the
+// content (description, CVSS, CWE, references) parallels enrichNVD's.
+//
+// The CPE detection path already builds a Vulncheck CveContent for every CVE it
+// detects through VulnCheck's vcVulnerableCPEs; the early return when a
+// Vulncheck content already exists keeps this enrich pass from duplicating
+// those, while still filling Vulncheck content for CVEs detected by other means
+// (e.g. OS packages). This mirrors go-cve-dictionary, whose VulnCheck content
+// was filled for any scanned CVE regardless of which source detected it and
+// independently of the NVD/Fortinet/Cisco/PaloAlto detection suppression (which
+// only governs whether VulnCheck is a detection basis, not its content).
+func enrichVulnCheck(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
+	if _, ok := vi.CveContents[models.Vulncheck]; ok {
+		return
+	}
+	for rootID, vulns := range rootMap {
+		for _, v := range vulns {
+			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
+
+			var rs models.References
+			for _, r := range v.Content.References {
+				rs = append(rs, toReference(r.URL))
+			}
+
+			vi.CveContents[models.Vulncheck] = append(vi.CveContents[models.Vulncheck], models.CveContent{
+				Type:           models.Vulncheck,
+				CveID:          string(v.Content.ID),
+				Title:          v.Content.Title,
+				Summary:        v.Content.Description,
+				Cvss2Score:     cvss2.BaseScore,
+				Cvss2Vector:    cvss2.Vector,
+				Cvss2Severity:  cvss2.NVDBaseSeverity,
+				Cvss3Score:     cvss3.BaseScore,
+				Cvss3Vector:    cvss3.Vector,
+				Cvss3Severity:  cvss3.BaseSeverity,
+				Cvss40Score:    cvss40.Score,
+				Cvss40Vector:   cvss40.Vector,
+				Cvss40Severity: cvss40.Severity,
+				SourceLink:     cveContentSourceLink(models.Vulncheck, v, rootID),
 				References:     rs,
 				CweIDs: func() []string {
 					var cs []string //nolint:prealloc
@@ -1749,4 +1889,89 @@ func enrichExploits(sourceID sourceTypes.SourceID, rootMap map[dataTypes.RootID]
 		}
 	}
 	return exploits
+}
+
+// MacOSCPEs synthesises the Apple CPEs for a macOS scan result: the OS
+// (from r.Release) and each installed application bundle (from r.Packages,
+// keyed by CFBundleIdentifier). macOS has no package security database, so the
+// caller detects these through the CPE path (DetectCPEs). They carry
+// UseJVN:false — Apple CPEs do not consult JVN, mirroring the former
+// go-cve-dictionary macOS handling.
+func MacOSCPEs(r *models.ScanResult) []CPE {
+	var targets []string
+	switch r.Family {
+	case constant.MacOSX:
+		targets = []string{"mac_os_x"}
+	case constant.MacOSXServer:
+		targets = []string{"mac_os_x_server"}
+	case constant.MacOS:
+		targets = []string{"macos", "mac_os"}
+	case constant.MacOSServer:
+		targets = []string{"macos_server", "mac_os_server"}
+	default:
+		return nil
+	}
+
+	var cpes []CPE
+	// The OS itself is bound to its version, so its CPE needs the release.
+	// Applications bind to the OS target (e.g. mac_os_x), not its version, so
+	// they stay detectable even without the release.
+	if r.Release != "" {
+		for _, t := range targets {
+			cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/o:apple:%s:%s", t, r.Release)})
+		}
+	}
+
+	for _, p := range r.Packages {
+		if p.Version == "" {
+			continue
+		}
+		switch p.Repository {
+		case "com.apple.Safari":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:safari:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.Music":
+			for _, t := range targets {
+				cpes = append(cpes,
+					CPE{URI: fmt.Sprintf("cpe:/a:apple:music:%s::~~~%s~~", p.Version, t)},
+					CPE{URI: fmt.Sprintf("cpe:/a:apple:apple_music:%s::~~~%s~~", p.Version, t)},
+				)
+			}
+		case "com.apple.mail":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:mail:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.Terminal":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:terminal:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.shortcuts":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:shortcuts:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iCal":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:ical:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iWork.Keynote":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:keynote:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iWork.Numbers":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:numbers:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.iWork.Pages":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:pages:%s::~~~%s~~", p.Version, t)})
+			}
+		case "com.apple.dt.Xcode":
+			for _, t := range targets {
+				cpes = append(cpes, CPE{URI: fmt.Sprintf("cpe:/a:apple:xcode:%s::~~~%s~~", p.Version, t)})
+			}
+		}
+	}
+
+	return cpes
 }

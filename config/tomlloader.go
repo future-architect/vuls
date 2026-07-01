@@ -37,12 +37,6 @@ func (c TOMLLoader) Load(pathToToml string) error {
 		return err
 	}
 
-	for _, cnf := range []VulnDictInterface{
-		&Conf.CveDict,
-	} {
-		cnf.Init()
-	}
-
 	index := 0
 	servers := map[string]ServerInfo{}
 	for name, server := range Conf.Servers {

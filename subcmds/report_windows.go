@@ -203,13 +203,7 @@ func (p *ReportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...any) subcom
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
-	if p.configPath == "" {
-		for _, cnf := range []config.VulnDictInterface{
-			&config.Conf.CveDict,
-		} {
-			cnf.Init()
-		}
-	} else {
+	if p.configPath != "" {
 		if err := config.Load(p.configPath); err != nil {
 			logging.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
 			return subcommands.ExitUsageError

@@ -13,7 +13,6 @@ import (
 	"github.com/google/subcommands"
 
 	"github.com/future-architect/vuls/config"
-	"github.com/future-architect/vuls/detector"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
 )
@@ -95,13 +94,7 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
-	if p.configPath == "" {
-		for _, cnf := range []config.VulnDictInterface{
-			&config.Conf.CveDict,
-		} {
-			cnf.Init()
-		}
-	} else {
+	if p.configPath != "" {
 		if err := config.Load(p.configPath); err != nil {
 			logging.Log.Errorf("Error loading %s. err: %+v", p.configPath, err)
 			return subcommands.ExitUsageError
@@ -111,12 +104,6 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 	logging.Log.Info("Validating config...")
 	if !config.Conf.ValidateOnReport() {
 		return subcommands.ExitUsageError
-	}
-
-	logging.Log.Info("Validating DBs...")
-	if err := detector.ValidateDBs(config.Conf.CveDict, config.Conf.LogOpts); err != nil {
-		logging.Log.Errorf("Failed to validate DBs. err: %+v", err)
-		return subcommands.ExitFailure
 	}
 
 	http.Handle("/vuls", server.VulsHandler{

@@ -559,15 +559,16 @@ func Test_preConvertPkgs(t *testing.T) {
 
 func Test_preConvertCPEs(t *testing.T) {
 	type args struct {
-		sr      *models.ScanResult
-		cpeURIs []string
+		sr   *models.ScanResult
+		cpes []vuls2.CPE
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    scanTypes.ScanResult
-		wantMap map[string][]string
-		wantErr bool
+		name      string
+		args      args
+		want      scanTypes.ScanResult
+		wantMap   map[string][]string
+		wantNoJVN map[string]struct{}
+		wantErr   bool
 	}{
 		{
 			// The OS-package / Microsoft-KB inputs stay empty even when the
@@ -613,10 +614,10 @@ func Test_preConvertCPEs(t *testing.T) {
 					ServerName: "cpe-server",
 					Family:     "pseudo",
 				},
-				cpeURIs: []string{
-					"cpe:/a:vendor:product:1.0",
-					"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*",
-					"cpe:/a:vendor:other:2.0",
+				cpes: []vuls2.CPE{
+					{URI: "cpe:/a:vendor:product:1.0", UseJVN: true},
+					{URI: "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", UseJVN: true},
+					{URI: "cpe:/a:vendor:other:2.0", UseJVN: true},
 				},
 			},
 			want: scanTypes.ScanResult{
@@ -634,6 +635,41 @@ func Test_preConvertCPEs(t *testing.T) {
 			},
 		},
 		{
+			// UseJVN:false CPEs land in the no-JVN set (keyed by FS form); a CPE
+			// with a UseJVN:true occurrence anywhere keeps JVN (true wins).
+			name: "UseJVN:false populates the no-JVN set, true wins on conflict",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "cpe-server",
+					Family:     "pseudo",
+				},
+				cpes: []vuls2.CPE{
+					{URI: "cpe:/a:vendor:nojvn:1.0", UseJVN: false},
+					{URI: "cpe:/a:vendor:withjvn:2.0", UseJVN: true},
+					{URI: "cpe:/a:vendor:mixed:3.0", UseJVN: false},
+					{URI: "cpe:/a:vendor:mixed:3.0", UseJVN: true},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "cpe-server",
+				Family:      ecosystemTypes.Ecosystem("pseudo"),
+				CPE: []string{
+					"cpe:2.3:a:vendor:nojvn:1.0:*:*:*:*:*:*:*",
+					"cpe:2.3:a:vendor:withjvn:2.0:*:*:*:*:*:*:*",
+					"cpe:2.3:a:vendor:mixed:3.0:*:*:*:*:*:*:*",
+				},
+			},
+			wantMap: map[string][]string{
+				"cpe:2.3:a:vendor:nojvn:1.0:*:*:*:*:*:*:*":   {"cpe:/a:vendor:nojvn:1.0"},
+				"cpe:2.3:a:vendor:withjvn:2.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:withjvn:2.0"},
+				"cpe:2.3:a:vendor:mixed:3.0:*:*:*:*:*:*:*":   {"cpe:/a:vendor:mixed:3.0"},
+			},
+			wantNoJVN: map[string]struct{}{
+				"cpe:2.3:a:vendor:nojvn:1.0:*:*:*:*:*:*:*": {},
+			},
+		},
+		{
 			// Config-sourced CPEs were validated at config-load time, so an
 			// unparseable entry signals an unvalidated caller input and
 			// fails the conversion instead of silently detecting nothing.
@@ -643,14 +679,14 @@ func Test_preConvertCPEs(t *testing.T) {
 					ServerName: "cpe-server",
 					Family:     "pseudo",
 				},
-				cpeURIs: []string{"cpe:/o:cisco:ios:15.1(4)m3"},
+				cpes: []vuls2.CPE{{URI: "cpe:/o:cisco:ios:15.1(4)m3", UseJVN: true}},
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMap, err := vuls2.PreConvertCPEs(tt.args.sr, tt.args.cpeURIs)
+			got, gotMap, gotNoJVN, err := vuls2.PreConvertCPEs(tt.args.sr, tt.args.cpes)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("preConvertCPEs() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -663,6 +699,9 @@ func Test_preConvertCPEs(t *testing.T) {
 			if diff := gocmp.Diff(gotMap, tt.wantMap); diff != "" {
 				t.Errorf("preConvertCPEs() reverse map mismatch (-got +want):\n%s", diff)
 			}
+			if diff := gocmp.Diff(gotNoJVN, tt.wantNoJVN); diff != "" {
+				t.Errorf("preConvertCPEs() no-JVN set mismatch (-got +want):\n%s", diff)
+			}
 		})
 	}
 }
@@ -672,6 +711,7 @@ func Test_postConvert(t *testing.T) {
 		scanned         scanTypes.ScanResult
 		detected        detectTypes.DetectResult
 		fsToOriginalCPE map[string][]string
+		verified        map[dataTypes.RootID]map[string]map[string]struct{}
 	}
 	tests := []struct {
 		name    string
@@ -11029,10 +11069,479 @@ func Test_postConvert(t *testing.T) {
 			},
 			want: models.VulnInfos{},
 		},
+		{
+			// VulnCheck under the CPE ecosystem mirrors NVD detection: an
+			// exact accept yields models.VulncheckExactVersionMatch and a
+			// models.Vulncheck CveContent whose SourceLink is the VulnCheck
+			// console URL. (No verified source defines this product, so the
+			// verified-product suppression in walkCPECriteria does not apply.)
+			name: "cpe vulncheck exact accept -> Vulncheck content",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2024-3401",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-3401",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.VulnCheckNISTNVD2: {
+											dataTypes.RootID("CVE-2024-3401"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-3401",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:       "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+																	BaseScore:    9.8,
+																	BaseSeverity: "CRITICAL",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2024-3401",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.VulnCheckNISTNVD2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-3401": {
+					CveID:       "CVE-2024-3401",
+					Confidences: models.Confidences{models.VulncheckExactVersionMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
+					CveContents: models.CveContents{
+						models.Vulncheck: []models.CveContent{
+							{
+								Type:          models.Vulncheck,
+								CveID:         "CVE-2024-3401",
+								Title:         "title",
+								Summary:       "description",
+								Cvss3Score:    9.8,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+								Cvss3Severity: "CRITICAL",
+								SourceLink:    "https://console.vulncheck.com/cve/CVE-2024-3401",
+								References: models.References{
+									{
+										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2024-3401",
+										Source: "NVD",
+										RefID:  "CVE-2024-3401",
+									},
+								},
+								Published:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2024-3401\",\"source_id\":\"vulncheck-nist-nvd2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// JVN's CPE entries carry no version data, so walkCPECriteria
+			// demotes even an exact accept to the vendor:product tier
+			// (isJVNCPESource): the CVE is reported with
+			// models.JvnVendorProductMatch. The CPE detection path yields a
+			// sparse models.Jvn CveContent whose SourceLink is the JVNDB
+			// advisory URL (cveContentSourceLink's JVN case); enrichJVN keeps
+			// this entry, only adding a bare source-link pointer for JVNDB
+			// notes not already present, so the detection-built content is
+			// preserved. The advisory content under the same root becomes a
+			// DistroAdvisory (AdvisoryID = JVNDB ID) and its jvndb.jvn.jp
+			// reference is folded into the content.
+			name: "cpe jvn exact accept -> demoted vendor:product + DistroAdvisory",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "JVNDB-2024-000456",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "JVNDB-2024-000456",
+														Title:       "advisory title",
+														Description: "advisory description",
+														Published:   new(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30001",
+														Title:       "title",
+														Description: "description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedRSS: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-30001": {
+					CveID:       "CVE-2024-30001",
+					Confidences: models.Confidences{models.JvnVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "JVNDB-2024-000456",
+							Description: "advisory description",
+							Issued:      time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+							Updated:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:       models.Jvn,
+								CveID:      "CVE-2024-30001",
+								Title:      "title",
+								Summary:    "description",
+								SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000456.html",
+								References: models.References{
+									{
+										Link:   "https://jvn.jp/vu/JVNVU90009999/index.html",
+										Source: "MISC",
+									},
+									{
+										Link:   "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000456.html",
+										Source: "JVN",
+										RefID:  "JVNDB-2024-000456",
+									},
+								},
+								Published:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"JVNDB-2024-000456\",\"source_id\":\"jvn-feed-rss\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// A multi-CVE JVN root: one advisory and one CPE detection block
+			// shared by CVE-2024-30001 and CVE-2024-30002. A verified source
+			// defines a:vendor:product only for CVE-2024-30001, so the per-CVE
+			// walk suppresses the scanned CPE for that CVE alone — CVE-2024-30001
+			// drops out entirely while its sibling CVE-2024-30002 still detects
+			// (demoted to vendor:product, with the shared DistroAdvisory).
+			name: "cpe jvn multi-CVE root: verified product suppresses only its own CVE, not the sibling",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				verified: map[dataTypes.RootID]map[string]map[string]struct{}{
+					"JVNDB-2024-000456": {
+						"CVE-2024-30001": {"a:vendor:product": {}},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "JVNDB-2024-000456",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "JVNDB-2024-000456",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "JVNDB-2024-000456",
+														Title:       "advisory title",
+														Description: "advisory description",
+														Published:   new(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30001",
+														Title:       "title 30001",
+														Description: "description 30001",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									ID: "CVE-2024-30002",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30002",
+														Title:       "title 30002",
+														Description: "description 30002",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedRSS: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-30002": {
+					CveID:       "CVE-2024-30002",
+					Confidences: models.Confidences{models.JvnVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID:  "JVNDB-2024-000456",
+							Description: "advisory description",
+							Issued:      time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+							Updated:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:       models.Jvn,
+								CveID:      "CVE-2024-30002",
+								Title:      "title 30002",
+								Summary:    "description 30002",
+								SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000456.html",
+								References: models.References{
+									{
+										Link:   "https://jvn.jp/vu/JVNVU90009999/index.html",
+										Source: "MISC",
+									},
+									{
+										Link:   "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000456.html",
+										Source: "JVN",
+										RefID:  "JVNDB-2024-000456",
+									},
+								},
+								Published:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"JVNDB-2024-000456\",\"source_id\":\"jvn-feed-rss\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil, tt.args.verified)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -11701,9 +12210,11 @@ func Test_walkCPECriteria(t *testing.T) {
 		}
 	}
 	type args struct {
-		sourceID sourceTypes.SourceID
-		criteria criteriaTypes.FilteredCriteria
-		scanned  []string
+		sourceID         sourceTypes.SourceID
+		criteria         criteriaTypes.FilteredCriteria
+		scanned          []string
+		noJVNCPEs        map[string]struct{}
+		verifiedProducts map[string]struct{}
 	}
 	tests := []struct {
 		name      string
@@ -11859,10 +12370,130 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned:  []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 		},
+		{
+			// A VulnCheck CPE match is projected like any other source when no
+			// verified source defines its part:vendor:product for the CVE.
+			name: "vulncheck kept when no verified product",
+			args: args{
+				sourceID: sourceTypes.VulnCheckNISTNVD2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// A VulnCheck match whose part:vendor:product is defined by a
+			// verified source (NVD/Fortinet/Cisco/PaloAlto) detected for the CVE
+			// is suppressed — go-cve-dictionary's behaviour. This is also how the
+			// NVD-mirror half of VulnCheck's data is dropped, without inspecting
+			// the source's criteria structure.
+			name: "vulncheck suppressed by verified product",
+			args: args{
+				sourceID: sourceTypes.VulnCheckNISTNVD2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:vendor:product": {}},
+			},
+		},
+		{
+			// JVN is suppressed by a verified product exactly like VulnCheck —
+			// isSuppressedCPESource covers both suppressed CPE sources.
+			name: "jvn suppressed by verified product",
+			args: args{
+				sourceID: sourceTypes.JVNFeedRSS,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:vendor:product": {}},
+			},
+		},
+		{
+			// Suppression is part:vendor:product-scoped: a verified product that
+			// is not the matched CPE's product does not suppress it.
+			name: "vulncheck not suppressed by unrelated verified product",
+			args: args{
+				sourceID: sourceTypes.VulnCheckNISTNVD2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:other:thing": {}},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// Verified-product suppression applies only to suppressed sources
+			// (VulnCheck / JVN, see isSuppressedCPESource): a verified source
+			// keeps its own match even when verifiedProducts contains that product.
+			name: "verified source ignores verifiedProducts",
+			args: args{
+				sourceID: sourceTypes.NVDFeedCVEv2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:          []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				verifiedProducts: map[string]struct{}{"a:vendor:product": {}},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// A scanned CPE marked UseJVN:false (in noJVNCPEs) suppresses JVN-source
+			// matches for it — the per-CPE "no JVN" policy (e.g. macOS Apple CPEs).
+			name: "JVN suppressed for a no-JVN CPE",
+			args: args{
+				sourceID: sourceTypes.JVNFeedRSS,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:   []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				noJVNCPEs: map[string]struct{}{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {}},
+			},
+		},
+		{
+			// noJVNCPEs only gates JVN sources: a non-JVN source keeps its match
+			// for the same scanned CPE.
+			name: "no-JVN CPE does not affect a non-JVN source",
+			args: args{
+				sourceID: sourceTypes.NVDFeedCVEv2,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:   []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				noJVNCPEs: map[string]struct{}{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*": {}},
+			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
+		{
+			// A JVN match for a CPE NOT in noJVNCPEs is kept (demoted to
+			// vendor:product as usual), confirming the gate is per-CPE.
+			name: "JVN kept for a CPE not marked no-JVN",
+			args: args{
+				sourceID: sourceTypes.JVNFeedRSS,
+				criteria: criteriaTypes.FilteredCriteria{
+					Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+					Criterions: []criterionTypes.FilteredCriterion{cpeCriterion([]int{0}, nil)},
+				},
+				scanned:   []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+				noJVNCPEs: map[string]struct{}{"cpe:2.3:a:other:thing:1.0:*:*:*:*:*:*:*": {}},
+			},
+			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned})
+			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.noJVNCPEs, tt.args.verifiedProducts)
 			if err != nil {
 				t.Fatalf("walkCPECriteria() error = %v", err)
 			}
@@ -12243,6 +12874,134 @@ func Test_enrich(t *testing.T) {
 								},
 								Published:    time.Date(2025, 1, 14, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(2025, 2, 12, 20, 31, 20, 0, time.UTC),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// VulnCheck mirrors/enriches NVD: a CVE detected by another means
+			// (here none pre-exists) gets a models.Vulncheck CveContent with the
+			// console.vulncheck.com SourceLink. enrichVulnCheck early-returns when
+			// a Vulncheck content already exists, so this exercises the fill path.
+			name: "enrich with vulncheck-nist-nvd2 data",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-3400": models.VulnInfo{
+						CveID:       "CVE-2024-3400",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-3400": models.VulnInfo{
+					CveID: "CVE-2024-3400",
+					CveContents: models.CveContents{
+						models.Vulncheck: []models.CveContent{
+							{
+								Type:          models.Vulncheck,
+								CveID:         "CVE-2024-3400",
+								Summary:       "A command injection vulnerability in the GlobalProtect feature of Palo Alto Networks PAN-OS software enables an unauthenticated attacker to execute arbitrary code with root privileges on the firewall.",
+								Cvss3Score:    10.0,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+								Cvss3Severity: "CRITICAL",
+								SourceLink:    "https://console.vulncheck.com/cve/CVE-2024-3400",
+								References: models.References{
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2024-3400", Source: "NVD", RefID: "CVE-2024-3400"},
+									{Link: "https://security.paloaltonetworks.com/CVE-2024-3400", Source: "MISC"},
+								},
+								CweIDs:       []string{"CWE-77"},
+								Published:    time.Date(2024, 4, 12, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2024, 4, 19, 0, 0, 0, 0, time.UTC),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// enrichJVN adds a minimal Jvn CveContent of only {Type, CveID,
+			// SourceLink} pointing at the JVNDB advisory page, but SKIPS adding
+			// when a Jvn CveContent with that same SourceLink already exists (the
+			// richer postConvert detection entry is kept untouched). It also lifts
+			// any JP-CERT alert from advisory references whose URL contains
+			// "jpcert.or.jp/at/" into AlertDict.JPCERT.
+			name: "enrich with jvn-feed-rss data (keeps the postConvert Jvn content, adds JP-CERT alert)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-21762": models.VulnInfo{
+						CveID: "CVE-2024-21762",
+						CveContents: models.CveContents{
+							models.Jvn: []models.CveContent{
+								{
+									Type:       models.Jvn,
+									CveID:      "CVE-2024-21762",
+									SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000123.html",
+									References: models.References{
+										{Link: "https://example.jp/extra", Source: "MISC"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-21762": models.VulnInfo{
+					CveID: "CVE-2024-21762",
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:       models.Jvn,
+								CveID:      "CVE-2024-21762",
+								SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000123.html",
+								References: models.References{
+									{Link: "https://example.jp/extra", Source: "MISC"},
+								},
+							},
+						},
+					},
+					AlertDict: models.AlertDict{
+						JPCERT: []models.Alert{
+							{
+								Team:  "jpcert",
+								URL:   "https://www.jpcert.or.jp/at/2024/at240008.html",
+								Title: "Fortinet FortiOS におけるバッファエラーの脆弱性",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "enrich with jvn-feed-rss data (adds a source-link pointer when not JVN-detected)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2024-21762": models.VulnInfo{
+						CveID:       "CVE-2024-21762",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-21762": models.VulnInfo{
+					CveID: "CVE-2024-21762",
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:       models.Jvn,
+								CveID:      "CVE-2024-21762",
+								SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000123.html",
+							},
+						},
+					},
+					AlertDict: models.AlertDict{
+						JPCERT: []models.Alert{
+							{
+								Team:  "jpcert",
+								URL:   "https://www.jpcert.or.jp/at/2024/at240008.html",
+								Title: "Fortinet FortiOS におけるバッファエラーの脆弱性",
 							},
 						},
 					},
