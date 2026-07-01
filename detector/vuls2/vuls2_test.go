@@ -13467,3 +13467,256 @@ func Test_enrichCTI(t *testing.T) {
 		})
 	}
 }
+
+func Test_collectVerifiedProducts(t *testing.T) {
+	// cpeCond builds a CPE FilteredCondition whose OR criteria carries one CPE
+	// criterion per string. collectVerifiedProducts reads only Criterion.CPE
+	// (never Accepts), so the accepted-query indices are left empty.
+	cpeCond := func(cpes ...string) conditionTypes.FilteredCondition {
+		crits := make([]criterionTypes.FilteredCriterion, 0, len(cpes))
+		for _, c := range cpes {
+			crits = append(crits, criterionTypes.FilteredCriterion{
+				Criterion: criterionTypes.Criterion{
+					Type: criterionTypes.CriterionTypeCPE,
+					CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE(c)}),
+				},
+			})
+		}
+		return conditionTypes.FilteredCondition{
+			Criteria: criteriaTypes.FilteredCriteria{
+				Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: crits,
+			},
+		}
+	}
+	// cpeCondMatches builds a single CPE criterion with a primary CPE plus
+	// CPEMatches — the version-variant form verified sources emit.
+	cpeCondMatches := func(primary string, matches ...string) conditionTypes.FilteredCondition {
+		ms := make([]ccTypes.CPE, 0, len(matches))
+		for _, m := range matches {
+			ms = append(ms, ccTypes.CPE(m))
+		}
+		return conditionTypes.FilteredCondition{
+			Criteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{{
+					Criterion: criterionTypes.Criterion{
+						Type: criterionTypes.CriterionTypeCPE,
+						CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE(primary), CPEMatches: ms}),
+					},
+				}},
+			},
+		}
+	}
+	// cpeDetection wraps CPE-ecosystem contents in a detection.
+	cpeDetection := func(contents map[sourceTypes.SourceID][]conditionTypes.FilteredCondition) detectTypes.VulnerabilityDataDetection {
+		return detectTypes.VulnerabilityDataDetection{
+			Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+			Contents:  contents,
+		}
+	}
+	// vulns makes a root carry the given CVE IDs the way cveIDsOf reads them:
+	// under the root's own ID in the vulnerability content map.
+	vulns := func(rootID dataTypes.RootID, cveIDs ...string) []dbTypes.VulnerabilityDataVulnerability {
+		vs := make([]vulnerabilityTypes.Vulnerability, 0, len(cveIDs))
+		for _, id := range cveIDs {
+			vs = append(vs, vulnerabilityTypes.Vulnerability{
+				Content: vulnerabilityContentTypes.Content{ID: vulnerabilityContentTypes.VulnerabilityID(id)},
+			})
+		}
+		return []dbTypes.VulnerabilityDataVulnerability{{
+			Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+				sourceTypes.NVDAPICVE: {rootID: vs},
+			},
+		}}
+	}
+	set := func(keys ...string) map[string]struct{} {
+		m := make(map[string]struct{}, len(keys))
+		for _, k := range keys {
+			m[k] = struct{}{}
+		}
+		return m
+	}
+
+	tests := []struct {
+		name     string
+		detected detectTypes.DetectResult
+		want     map[dataTypes.RootID]map[string]map[string]struct{}
+	}{
+		{
+			// NVD (verified) and VulnCheck (suppressed) sit under the same CVE
+			// root and define the same product: the product is derived for the
+			// root's CVE.
+			name: "same root: verified NVD product derived for suppressed VulnCheck",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{{
+					ID: "CVE-2024-0001",
+					Detections: []detectTypes.VulnerabilityDataDetection{
+						cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+							sourceTypes.NVDAPICVE:         {cpeCond("cpe:2.3:a:vendora:product1:*:*:*:*:*:*:*:*")},
+							sourceTypes.VulnCheckNISTNVD2: {cpeCond("cpe:2.3:a:vendora:product1:*:*:*:*:*:*:*:*")},
+						}),
+					},
+					Vulnerabilities: vulns("CVE-2024-0001", "CVE-2024-0001"),
+				}},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"CVE-2024-0001": {"CVE-2024-0001": set("a:vendora:product1")},
+			},
+		},
+		{
+			// The verified source (NVD) and the suppressed source (JVN) alias
+			// the same CVE under different roots — NVD under the CVE root, JVN
+			// under a JVNDB-* root. The derived set is keyed to the suppressed
+			// root via the shared CVE ID; the verified-only root is absent.
+			name: "cross-root: NVD under CVE root feeds JVN under JVNDB root",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0002",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								sourceTypes.NVDAPICVE: {cpeCond("cpe:2.3:a:vendorb:product2:*:*:*:*:*:*:*:*")},
+							}),
+						},
+						Vulnerabilities: vulns("CVE-2024-0002", "CVE-2024-0002"),
+					},
+					{
+						ID: "JVNDB-2024-000002",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								sourceTypes.JVNFeedDetail: {cpeCond("cpe:2.3:a:vendorb:product2:*:*:*:*:*:*:*:*")},
+							}),
+						},
+						Vulnerabilities: vulns("JVNDB-2024-000002", "CVE-2024-0002"),
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"JVNDB-2024-000002": {"CVE-2024-0002": set("a:vendorb:product2")},
+			},
+		},
+		{
+			// A multi-CVE suppressed root must keep each CVE's verified product
+			// separate: prodx (defined only for CVE-A) must not suppress CVE-B
+			// and vice versa.
+			name: "multi-CVE suppressed root keeps per-CVE product sets separate",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-000A",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								sourceTypes.NVDAPICVE: {cpeCond("cpe:2.3:a:vendor:prodx:*:*:*:*:*:*:*:*")},
+							}),
+						},
+						Vulnerabilities: vulns("CVE-2024-000A", "CVE-2024-000A"),
+					},
+					{
+						ID: "CVE-2024-000B",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								sourceTypes.NVDAPICVE: {cpeCond("cpe:2.3:a:vendor:prody:*:*:*:*:*:*:*:*")},
+							}),
+						},
+						Vulnerabilities: vulns("CVE-2024-000B", "CVE-2024-000B"),
+					},
+					{
+						ID: "VC-multi",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								sourceTypes.VulnCheckNISTNVD2: {cpeCond(
+									"cpe:2.3:a:vendor:prodx:*:*:*:*:*:*:*:*",
+									"cpe:2.3:a:vendor:prody:*:*:*:*:*:*:*:*",
+								)},
+							}),
+						},
+						Vulnerabilities: vulns("VC-multi", "CVE-2024-000A", "CVE-2024-000B"),
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"VC-multi": {
+					"CVE-2024-000A": set("a:vendor:prodx"),
+					"CVE-2024-000B": set("a:vendor:prody"),
+				},
+			},
+		},
+		{
+			// A suppressed root whose CVE has no verified-source product yields
+			// no entry (nothing to suppress).
+			name: "suppressed root with no verified product yields no entry",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{{
+					ID: "VC-only",
+					Detections: []detectTypes.VulnerabilityDataDetection{
+						cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+							sourceTypes.VulnCheckNISTNVD2: {cpeCond("cpe:2.3:a:vendor:prodz:*:*:*:*:*:*:*:*")},
+						}),
+					},
+					Vulnerabilities: vulns("VC-only", "CVE-2024-0004"),
+				}},
+			},
+			want: nil,
+		},
+		{
+			// The primary CPE and its CPEMatches (version variants of the same
+			// product) both fold to one part:vendor:product key, and a verified
+			// detection in a non-CPE ecosystem is ignored.
+			name: "CPEMatches fold to the product key; non-CPE ecosystem ignored",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{{
+					ID: "CVE-2024-0005",
+					Detections: []detectTypes.VulnerabilityDataDetection{
+						cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+							sourceTypes.NVDAPICVE: {cpeCondMatches(
+								"cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*",
+								"cpe:2.3:a:vendor:prodp:1.0:*:*:*:*:*:*:*",
+							)},
+							sourceTypes.VulnCheckNISTNVD2: {cpeCond("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*")},
+						}),
+						{
+							Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+							Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								sourceTypes.NVDAPICVE: {cpeCond("cpe:2.3:a:vendor:ignored:*:*:*:*:*:*:*:*")},
+							},
+						},
+					},
+					Vulnerabilities: vulns("CVE-2024-0005", "CVE-2024-0005"),
+				}},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"CVE-2024-0005": {"CVE-2024-0005": set("a:vendor:prodp")},
+			},
+		},
+		{
+			// A suppressed source's own products must NOT be treated as verified:
+			// only NVD's prodp is derived, not VulnCheck's prodw.
+			name: "suppressed source's own products are not treated as verified",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{{
+					ID: "CVE-2024-0006",
+					Detections: []detectTypes.VulnerabilityDataDetection{
+						cpeDetection(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+							sourceTypes.NVDAPICVE:         {cpeCond("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*")},
+							sourceTypes.VulnCheckNISTNVD2: {cpeCond("cpe:2.3:a:vendor:prodw:*:*:*:*:*:*:*:*")},
+						}),
+					},
+					Vulnerabilities: vulns("CVE-2024-0006", "CVE-2024-0006"),
+				}},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"CVE-2024-0006": {"CVE-2024-0006": set("a:vendor:prodp")},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := vuls2.CollectVerifiedProducts(tt.detected)
+			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("collectVerifiedProducts() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

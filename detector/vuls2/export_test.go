@@ -12,6 +12,8 @@ var (
 
 	WalkCPECriteria      = walkCPECriteria
 	MergeIntoScannedCves = mergeIntoScannedCves
+
+	CollectVerifiedProducts = collectVerifiedProducts
 )
 
 type Source source
