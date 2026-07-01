@@ -1289,10 +1289,6 @@ func cveIDsOf(v detectTypes.VulnerabilityData) []string {
 	return slices.Collect(maps.Keys(ids))
 }
 
-// collectDefinedCPEProducts walks a (raw, unfiltered) criteria tree and records
-// the part:vendor:product key of every CPE criterion — its primary CPE and any
-// CPEMatches — regardless of the Vulnerable flag (go-cve-dictionary's defined
-// set is likewise unfiltered).
 // collectDefinedCPEProducts walks a FilteredCriteria and adds every CPE
 // criterion's defined part:vendor:product (the criterion's own CPE and its
 // CPEMatches) to set. cond.Accept keeps the full criterion — including
