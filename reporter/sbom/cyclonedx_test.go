@@ -32,10 +32,10 @@ func TestToCycloneDX(t *testing.T) {
 				},
 			},
 			want: &cdx.BOM{
-				XMLNS:       "http://cyclonedx.org/schema/bom/1.6",
-				JSONSchema:  "http://cyclonedx.org/schema/bom-1.6.schema.json",
+				XMLNS:       "http://cyclonedx.org/schema/bom/1.7",
+				JSONSchema:  "http://cyclonedx.org/schema/bom-1.7.schema.json",
 				BOMFormat:   "CycloneDX",
-				SpecVersion: cdx.SpecVersion1_6,
+				SpecVersion: cdx.SpecVersion1_7,
 				Version:     1,
 				Metadata: &cdx.Metadata{
 					Timestamp: "2025-01-01T00:00:00Z",
@@ -76,10 +76,10 @@ func TestToCycloneDX(t *testing.T) {
 				ReportedRevision: "build-20260311_001506_6827f2d",
 			},
 			want: &cdx.BOM{
-				XMLNS:       "http://cyclonedx.org/schema/bom/1.6",
-				JSONSchema:  "http://cyclonedx.org/schema/bom-1.6.schema.json",
+				XMLNS:       "http://cyclonedx.org/schema/bom/1.7",
+				JSONSchema:  "http://cyclonedx.org/schema/bom-1.7.schema.json",
 				BOMFormat:   "CycloneDX",
-				SpecVersion: cdx.SpecVersion1_6,
+				SpecVersion: cdx.SpecVersion1_7,
 				Version:     1,
 				Metadata: &cdx.Metadata{
 					Timestamp: "2025-01-01T00:00:00Z",
