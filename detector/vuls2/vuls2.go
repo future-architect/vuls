@@ -1199,13 +1199,6 @@ func hasSuppressedCPESource(v detectTypes.VulnerabilityData) bool {
 	return false
 }
 
-// isVerifiedCPESource reports whether a CPE-ecosystem source is one whose
-// defined products suppress a VulnCheck / JVN match (NVD / Fortinet / Cisco /
-// PaloAlto). The complement of isSuppressedCPESource among CPE sources.
-func isVerifiedCPESource(sourceID sourceTypes.SourceID) bool {
-	return slices.Contains(verifiedCPESources, sourceID)
-}
-
 // collectVerifiedProducts builds, per RootID that has a suppressed CPE source,
 // the set of part:vendor:product the verified sources (NVD / Fortinet / Cisco /
 // PaloAlto) DEFINE for each of the root's CVEs — the input to walkCPECriteria's
@@ -1236,7 +1229,7 @@ func collectVerifiedProducts(detected detectTypes.DetectResult) map[dataTypes.Ro
 				continue
 			}
 			for sourceID, fconds := range d.Contents {
-				if !isVerifiedCPESource(sourceID) {
+				if !slices.Contains(verifiedCPESources, sourceID) {
 					continue
 				}
 				if set == nil {
