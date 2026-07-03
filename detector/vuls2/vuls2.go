@@ -1292,14 +1292,13 @@ func collectDefinedCPEProducts(c criteriaTypes.FilteredCriteria, set map[string]
 		collectDefinedCPEProducts(child, set)
 	}
 	for _, fcn := range c.Criterions {
-		cn := fcn.Criterion
-		if cn.Type != criterionTypes.CriterionTypeCPE || cn.CPE == nil {
+		if fcn.Criterion.Type != criterionTypes.CriterionTypeCPE || fcn.Criterion.CPE == nil {
 			continue
 		}
-		if key, ok := cpeProductKey(string(cn.CPE.CPE)); ok {
+		if key, ok := cpeProductKey(string(fcn.Criterion.CPE.CPE)); ok {
 			set[key] = struct{}{}
 		}
-		for _, m := range cn.CPE.CPEMatches {
+		for _, m := range fcn.Criterion.CPE.CPEMatches {
 			if key, ok := cpeProductKey(string(m)); ok {
 				set[key] = struct{}{}
 			}
