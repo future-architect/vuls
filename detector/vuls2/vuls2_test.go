@@ -711,6 +711,7 @@ func Test_postConvert(t *testing.T) {
 		scanned         scanTypes.ScanResult
 		detected        detectTypes.DetectResult
 		fsToOriginalCPE map[string][]string
+		noJVNCPEs       map[string]struct{}
 	}
 	tests := []struct {
 		name    string
@@ -11354,6 +11355,120 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Same JVN detection as the case above, but the scanned CPE is
+			// marked UseJVN:false (in noJVNCPEs). walkCPECriteria's suppress()
+			// drops the match for JVN sources, so — with no other source — the
+			// CVE disappears from the result entirely. Locks the noJVNCPEs
+			// wiring through postConvert (its per-CPE behaviour is unit-tested
+			// in Test_walkCPECriteria).
+			name: "cpe jvn exact accept but CPE in noJVNCPEs -> suppressed, no VulnInfo",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				noJVNCPEs: map[string]struct{}{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "JVNDB-2024-000456",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "JVNDB-2024-000456",
+														Title:       "advisory title",
+														Description: "advisory description",
+														Published:   new(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30001",
+														Title:       "title",
+														Description: "description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedRSS: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
 			// A multi-CVE JVN root: one advisory and one CPE detection block
 			// shared by CVE-2024-30001 and CVE-2024-30002. A verified source
 			// defines a:vendor:product only for CVE-2024-30001, so the per-CVE
@@ -11587,7 +11702,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
