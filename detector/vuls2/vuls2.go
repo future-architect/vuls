@@ -1221,9 +1221,7 @@ func collectVerifiedProducts(detected detectTypes.DetectResult) map[dataTypes.Ro
 	// detected root.
 	verifiedByCVE := make(map[string]map[string]struct{})
 	for _, v := range detected.Detected {
-		// Allocated lazily: a root with no verified CPE source (the common
-		// case) contributes nothing and never touches the map.
-		var set map[string]struct{}
+		set := make(map[string]struct{})
 		for _, d := range v.Detections {
 			if d.Ecosystem != ecosystemTypes.EcosystemTypeCPE {
 				continue
@@ -1231,9 +1229,6 @@ func collectVerifiedProducts(detected detectTypes.DetectResult) map[dataTypes.Ro
 			for sourceID, fconds := range d.Contents {
 				if !slices.Contains(verifiedCPESources, sourceID) {
 					continue
-				}
-				if set == nil {
-					set = make(map[string]struct{})
 				}
 				for _, fcond := range fconds {
 					collectDefinedCPEProducts(fcond.Criteria, set)
