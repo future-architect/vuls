@@ -131,12 +131,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
-	// Defined-product sets for the verified sources, derived from the detection
-	// result for CVEs detected via a suppressed CPE source (VulnCheck / JVN).
-	// Drives the suppression in walkCPECriteria.
-	verifiedProductsByRoot := collectVerifiedProducts(vuls2Detected)
-
-	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE, noJVNCPEs, verifiedProductsByRoot)
+	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE, noJVNCPEs)
 	if err != nil {
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
@@ -637,10 +632,13 @@ func appendMissing(dst, src []string) []string {
 // VulnInfo.CpeURIs so the report shows the user-supplied CPE rather than
 // the internal FS-with-wildcards form. Nil / missing keys fall back to
 // the FS string as-is.
-func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, verifiedProductsByRoot map[dataTypes.RootID]map[string]map[string]struct{}) (models.VulnInfos, error) {
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}) (models.VulnInfos, error) {
 	m := make(map[source]sourceData)
 
-	if err := walkVulnerabilityDetections(m, scanned, detected.Detected, noJVNCPEs, verifiedProductsByRoot); err != nil {
+	// collectVerifiedProducts derives, per suppressed-source root, the products
+	// the verified sources define for each CVE; walkCPECriteria uses it to
+	// suppress VulnCheck / JVN matches already covered by a verified source.
+	if err := walkVulnerabilityDetections(m, scanned, detected.Detected, noJVNCPEs, collectVerifiedProducts(detected)); err != nil {
 		return nil, xerrors.Errorf("Failed to walk detections. err: %w", err)
 	}
 

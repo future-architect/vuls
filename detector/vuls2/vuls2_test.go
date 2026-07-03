@@ -711,7 +711,6 @@ func Test_postConvert(t *testing.T) {
 		scanned         scanTypes.ScanResult
 		detected        detectTypes.DetectResult
 		fsToOriginalCPE map[string][]string
-		verified        map[dataTypes.RootID]map[string]map[string]struct{}
 	}
 	tests := []struct {
 		name    string
@@ -11371,13 +11370,60 @@ func Test_postConvert(t *testing.T) {
 				fsToOriginalCPE: map[string][]string{
 					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
 				},
-				verified: map[dataTypes.RootID]map[string]map[string]struct{}{
-					"JVNDB-2024-000456": {
-						"CVE-2024-30001": {"a:vendor:product": {}},
-					},
-				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
+						{
+							// Verified (NVD) root defining a:vendor:product for
+							// CVE-2024-30001 only. Its CPE is unmatched (empty
+							// Accepts) so it yields no VulnInfo of its own, but
+							// collectVerifiedProducts still derives the product,
+							// which suppresses JVN's CVE-2024-30001 match.
+							ID: "CVE-2024-30001",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2024-30001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-30001"},
+													Segments: []segmentTypes.Segment{
+														{Ecosystem: ecosystemTypes.EcosystemTypeCPE},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															// Empty Accepts: unmatched by the scan.
+															Accepts: criterionTypes.AcceptQueries{},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 						{
 							ID: "JVNDB-2024-000456",
 							Advisories: []dbTypes.VulnerabilityDataAdvisory{
@@ -11541,7 +11587,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil, tt.args.verified)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
