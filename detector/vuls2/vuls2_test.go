@@ -13791,14 +13791,14 @@ func Test_collectVerifiedProducts(t *testing.T) {
 		},
 		{
 			// A multi-CVE suppressed root must keep each CVE's verified product
-			// separate: prodx (defined only for CVE-2024-000A) must not suppress
-			// CVE-2024-000B and vice versa. JVN's JVNDB-* root is the realistic
+			// separate: prodx (defined only for CVE-2024-0011) must not suppress
+			// CVE-2024-0012 and vice versa. JVN's JVNDB-* root is the realistic
 			// multi-CVE carrier here — VulnCheck / NVD are rooted per CVE ID.
 			name: "multi-CVE suppressed root keeps per-CVE product sets separate",
 			detected: detectTypes.DetectResult{
 				Detected: []detectTypes.VulnerabilityData{
 					{
-						ID: "CVE-2024-000A",
+						ID: "CVE-2024-0011",
 						Detections: []detectTypes.VulnerabilityDataDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
@@ -13825,8 +13825,8 @@ func Test_collectVerifiedProducts(t *testing.T) {
 							{
 								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
 									sourceTypes.NVDAPICVE: {
-										"CVE-2024-000A": {
-											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-000A"}},
+										"CVE-2024-0011": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0011"}},
 										},
 									},
 								},
@@ -13834,7 +13834,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 						},
 					},
 					{
-						ID: "CVE-2024-000B",
+						ID: "CVE-2024-0012",
 						Detections: []detectTypes.VulnerabilityDataDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
@@ -13861,8 +13861,8 @@ func Test_collectVerifiedProducts(t *testing.T) {
 							{
 								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
 									sourceTypes.NVDAPICVE: {
-										"CVE-2024-000B": {
-											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-000B"}},
+										"CVE-2024-0012": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0012"}},
 										},
 									},
 								},
@@ -13904,8 +13904,8 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
 									sourceTypes.JVNFeedRSS: {
 										"JVNDB-2024-000099": {
-											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-000A"}},
-											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-000B"}},
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0011"}},
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0012"}},
 										},
 									},
 								},
@@ -13916,8 +13916,8 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			},
 			want: map[dataTypes.RootID]map[string]map[string]struct{}{
 				"JVNDB-2024-000099": {
-					"CVE-2024-000A": {"a:vendor:prodx": {}},
-					"CVE-2024-000B": {"a:vendor:prody": {}},
+					"CVE-2024-0011": {"a:vendor:prodx": {}},
+					"CVE-2024-0012": {"a:vendor:prody": {}},
 				},
 			},
 		},
@@ -13928,7 +13928,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			detected: detectTypes.DetectResult{
 				Detected: []detectTypes.VulnerabilityData{
 					{
-						ID: "VC-only",
+						ID: "CVE-2024-0004",
 						Detections: []detectTypes.VulnerabilityDataDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
@@ -13955,7 +13955,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 							{
 								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
 									sourceTypes.VulnCheckNISTNVD2: {
-										"VC-only": {
+										"CVE-2024-0004": {
 											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0004"}},
 										},
 									},
