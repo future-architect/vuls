@@ -13792,7 +13792,8 @@ func Test_collectVerifiedProducts(t *testing.T) {
 		{
 			// A multi-CVE suppressed root must keep each CVE's verified product
 			// separate: prodx (defined only for CVE-2024-000A) must not suppress
-			// CVE-2024-000B and vice versa.
+			// CVE-2024-000B and vice versa. JVN's JVNDB-* root is the realistic
+			// multi-CVE carrier here — VulnCheck / NVD are rooted per CVE ID.
 			name: "multi-CVE suppressed root keeps per-CVE product sets separate",
 			detected: detectTypes.DetectResult{
 				Detected: []detectTypes.VulnerabilityData{
@@ -13869,12 +13870,12 @@ func Test_collectVerifiedProducts(t *testing.T) {
 						},
 					},
 					{
-						ID: "VC-multi",
+						ID: "JVNDB-2024-000099",
 						Detections: []detectTypes.VulnerabilityDataDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-									sourceTypes.VulnCheckNISTNVD2: {
+									sourceTypes.JVNFeedRSS: {
 										{
 											Criteria: criteriaTypes.FilteredCriteria{
 												Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -13901,8 +13902,8 @@ func Test_collectVerifiedProducts(t *testing.T) {
 						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
 							{
 								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
-									sourceTypes.VulnCheckNISTNVD2: {
-										"VC-multi": {
+									sourceTypes.JVNFeedRSS: {
+										"JVNDB-2024-000099": {
 											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-000A"}},
 											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-000B"}},
 										},
@@ -13914,7 +13915,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 				},
 			},
 			want: map[dataTypes.RootID]map[string]map[string]struct{}{
-				"VC-multi": {
+				"JVNDB-2024-000099": {
 					"CVE-2024-000A": {"a:vendor:prodx": {}},
 					"CVE-2024-000B": {"a:vendor:prody": {}},
 				},
