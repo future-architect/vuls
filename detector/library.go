@@ -17,6 +17,10 @@ import (
 	"github.com/aquasecurity/trivy/pkg/db"
 	"github.com/aquasecurity/trivy/pkg/dependency/parser/java/jar"
 	"github.com/aquasecurity/trivy/pkg/detector/library"
+
+	// Register vendor-specific advisory detection (e.g. Seal Security) to
+	// library.NewDriver, as trivy does in pkg/scan/langpkg.
+	_ "github.com/aquasecurity/trivy/pkg/detector/library/all"
 	ftypes "github.com/aquasecurity/trivy/pkg/fanal/types"
 	"github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/purl"
