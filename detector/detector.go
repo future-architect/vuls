@@ -36,66 +36,82 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 			return nil, xerrors.Errorf("Failed to fill with Library dependency: %w", err)
 		}
 
-		if err := DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
-		}
+		// One vuls2 db session for this server's package/CPE detection and the
+		// enrichment that follows: detection warms the read cache and
+		// enrichment, querying the same CVEs, reuses it instead of opening and
+		// rebuilding a fresh cache. The session opens lazily on the first path
+		// that queries the db (as the unshared code did), and is closed at the
+		// end of this server's turn so each server holds the db only while it
+		// needs it.
+		if err := func() error {
+			sesh := vuls2.NewSession(config.Conf.Vuls2, config.Conf.NoProgress)
+			defer sesh.Close()
 
-		// Collect the user-supplied CPE URIs to check. Sources, in order:
-		//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
-		//      that was captured at scan time and shipped in the result JSON.
-		//      Using the scan-time snapshot keeps detection coupled to the
-		//      server that was actually scanned, and lets detection run
-		//      without re-loading config.toml.
-		//   2. OWASP DC XML, if configured.
-		//
-		// Synthesised Apple CPEs for macOS scans are detected separately in
-		// DetectPkgCves (macOS has no package security database).
-		// Prefer the scan-time snapshot; results produced by an older Vuls
-		// (or an external producer) may not embed config.scan.servers, so
-		// fall back to the report-time config.Conf.Servers in that case to
-		// keep CPE detection working for such inputs.
-		serverInfo, serverFound := r.Config.Scan.Servers[r.ServerName]
-		if !serverFound {
-			serverInfo, serverFound = config.Conf.Servers[r.ServerName]
-		}
-		cpeURIs, owaspDCXMLPath := []string{}, ""
-		cpes := []vuls2.CPE{}
-		if serverFound {
-			if len(r.Container.ContainerID) == 0 {
-				cpeURIs = serverInfo.CpeNames
-				owaspDCXMLPath = serverInfo.OwaspDCXMLPath
-			} else {
-				if con, ok := serverInfo.Containers[r.Container.Name]; ok {
-					cpeURIs = con.Cpes
-					owaspDCXMLPath = con.OwaspDCXMLPath
+			if err := DetectPkgCves(&r, sesh); err != nil {
+				return xerrors.Errorf("Failed to detect Pkg CVE: %w", err)
+			}
+
+			// Collect the user-supplied CPE URIs to check. Sources, in order:
+			//   1. r.Config.Scan.Servers[...].CpeNames — the per-server CPE list
+			//      that was captured at scan time and shipped in the result JSON.
+			//      Using the scan-time snapshot keeps detection coupled to the
+			//      server that was actually scanned, and lets detection run
+			//      without re-loading config.toml.
+			//   2. OWASP DC XML, if configured.
+			//
+			// Synthesised Apple CPEs for macOS scans are detected separately in
+			// DetectPkgCves (macOS has no package security database).
+			// Prefer the scan-time snapshot; results produced by an older Vuls
+			// (or an external producer) may not embed config.scan.servers, so
+			// fall back to the report-time config.Conf.Servers in that case to
+			// keep CPE detection working for such inputs.
+			serverInfo, serverFound := r.Config.Scan.Servers[r.ServerName]
+			if !serverFound {
+				serverInfo, serverFound = config.Conf.Servers[r.ServerName]
+			}
+			cpeURIs, owaspDCXMLPath := []string{}, ""
+			cpes := []vuls2.CPE{}
+			if serverFound {
+				if len(r.Container.ContainerID) == 0 {
+					cpeURIs = serverInfo.CpeNames
+					owaspDCXMLPath = serverInfo.OwaspDCXMLPath
+				} else {
+					if con, ok := serverInfo.Containers[r.Container.Name]; ok {
+						cpeURIs = con.Cpes
+						owaspDCXMLPath = con.OwaspDCXMLPath
+					}
 				}
 			}
-		}
-		if owaspDCXMLPath != "" {
-			owaspCPEs, err := parser.Parse(owaspDCXMLPath)
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
-					r.ServerInfo(), owaspDCXMLPath, err)
+			if owaspDCXMLPath != "" {
+				owaspCPEs, err := parser.Parse(owaspDCXMLPath)
+				if err != nil {
+					return xerrors.Errorf("Failed to read OWASP Dependency Check XML on %s, `%s`, err: %w",
+						r.ServerInfo(), owaspDCXMLPath, err)
+				}
+				cpeURIs = append(cpeURIs, owaspCPEs...)
 			}
-			cpeURIs = append(cpeURIs, owaspCPEs...)
-		}
-		for _, uri := range cpeURIs {
-			cpes = append(cpes, vuls2.CPE{
-				URI:    uri,
-				UseJVN: true,
-			})
-		}
+			for _, uri := range cpeURIs {
+				cpes = append(cpes, vuls2.CPE{
+					URI:    uri,
+					UseJVN: true,
+				})
+			}
 
-		if err := DetectCpeURIsCves(&r, cpes, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
-		}
+			if err := DetectCpeURIsCves(&r, cpes, sesh); err != nil {
+				return xerrors.Errorf("Failed to detect CVE of `%s`: %w", cpeURIs, err)
+			}
 
-		if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
-			return nil, xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
-		}
+			if err := DetectWordPressCves(&r, config.Conf.WpScan); err != nil {
+				return xerrors.Errorf("Failed to detect WordPress Cves: %w", err)
+			}
 
-		if err := vuls2.EnrichVulnInfos(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
-			return nil, xerrors.Errorf("Failed to enrich vulnerability data with vuls2: %w", err)
+			if err := vuls2.EnrichVulnInfos(&r, sesh); err != nil {
+				return xerrors.Errorf("Failed to enrich vulnerability data with vuls2: %w", err)
+			}
+
+			return nil
+		}(); err != nil {
+			return nil, xerrors.Errorf("Failed to detect CVEs of %s. err: %w", r.FormatServerName(), err)
 		}
 
 		r.ReportedBy, _ = os.Hostname()
@@ -188,11 +204,16 @@ func Detect(rs []models.ScanResult, dir string) ([]models.ScanResult, error) {
 // library (family-gated), and applies the FixState / ListenPortStats
 // post-processing. macOS has no package security database, so its installed
 // applications and OS are translated to Apple CPEs (vuls2.MacOSCPEs) and
-// detected through the CPE path here. It keeps the master-era name and
-// calling convention so library consumers that drive detection as
-// DetectPkgCves -> DetectCpeURIsCves keep working; user-supplied CPE-URI
-// detection lives in DetectCpeURIsCves.
-func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// detected through the CPE path here. Its name and its place in the call
+// order are kept from the master era: it runs first and DetectCpeURIsCves
+// second, so OS-package / KB detection happens here while user-supplied
+// CPE-URI detection is DetectCpeURIsCves' job.
+//
+// sesh is the vuls2 db session to query (see vuls2.Session), created with
+// vuls2.NewSession and owned (Closed) by the caller; it is shared with this
+// server's CPE detection and enrichment so all three reuse one warm db
+// connection.
+func DetectPkgCves(r *models.ScanResult, sesh *vuls2.Session) error {
 	switch r.Family {
 	case constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer:
 		// macOS has no package security database; the OS itself (when its release
@@ -205,14 +226,14 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 		case 0:
 			r.Errors = append(r.Errors, xerrors.Errorf("Failed to detect CVE for %s: no OS release and no detectable applications", r.Family).Error())
 		default:
-			if err := vuls2.DetectCPEs(r, cpes, vuls2Conf, noProgress); err != nil {
+			if err := vuls2.DetectCPEs(r, cpes, sesh); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
 		}
 	case constant.FreeBSD, constant.ServerTypePseudo:
 		logging.Log.Infof("%s type. Skip vuls2 detection", r.Family)
 	case constant.Windows:
-		if err := vuls2.DetectPkgs(r, vuls2Conf, noProgress); err != nil {
+		if err := vuls2.DetectPkgs(r, sesh); err != nil {
 			return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 		}
 	case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
@@ -231,7 +252,7 @@ func DetectPkgCves(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress 
 		case len(r.Packages)+len(r.SrcPackages) == 0:
 			r.Errors = append(r.Errors, xerrors.Errorf("Failed to detect CVE for %s: no binary or source packages", r.Family).Error())
 		default:
-			if err := vuls2.DetectPkgs(r, vuls2Conf, noProgress); err != nil {
+			if err := vuls2.DetectPkgs(r, sesh); err != nil {
 				return xerrors.Errorf("Failed to detect CVE with Vuls2: %w", err)
 			}
 		}
@@ -295,13 +316,16 @@ func DetectWordPressCves(r *models.ScanResult, wpCnf config.WpScanConf) error {
 }
 
 // DetectCpeURIsCves detects CVEs of given CPE-URIs — the complete CPE
-// detection pipeline, keeping the master-era name and calling convention so
-// library consumers that drive detection as DetectPkgCves ->
-// DetectCpeURIsCves keep working.
+// detection pipeline. Its name and its place in the call order are kept from
+// the master era: it runs after DetectPkgCves (which handles OS-package / KB
+// detection).
 //
 // All CPE detection sources (NVD with cpematch-expanded criteria, VulnCheck
 // NVD++, JVN, Fortinet, Cisco and PaloAlto) are detected by vuls2.
-func DetectCpeURIsCves(r *models.ScanResult, cpes []vuls2.CPE, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+//
+// sesh is the vuls2 db session to query (see vuls2.Session), created with
+// vuls2.NewSession and owned (Closed) by the caller.
+func DetectCpeURIsCves(r *models.ScanResult, cpes []vuls2.CPE, sesh *vuls2.Session) error {
 	// A caller-provided result may carry a nil ScannedCves map (e.g. a
 	// zero-value ScanResult from a library consumer); initialize before the
 	// detection paths write into it.
@@ -309,7 +333,7 @@ func DetectCpeURIsCves(r *models.ScanResult, cpes []vuls2.CPE, vuls2Conf config.
 		r.ScannedCves = models.VulnInfos{}
 	}
 
-	if err := vuls2.DetectCPEs(r, cpes, vuls2Conf, noProgress); err != nil {
+	if err := vuls2.DetectCPEs(r, cpes, sesh); err != nil {
 		return xerrors.Errorf("Failed to detect CVEs with vuls2. err: %w", err)
 	}
 

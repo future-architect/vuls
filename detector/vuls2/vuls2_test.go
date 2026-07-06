@@ -48,6 +48,7 @@ import (
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 
+	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/detector/vuls2"
 	testutil "github.com/future-architect/vuls/detector/vuls2/internal/test"
 	"github.com/future-architect/vuls/models"
@@ -14132,6 +14133,117 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			got := vuls2.CollectVerifiedProducts(tt.detected)
 			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("collectVerifiedProducts() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSession_Close(t *testing.T) {
+	// Close must be safe to defer even when the db was never opened: a nil
+	// *Session (defensive) and a Session whose server never queried the db
+	// (opened lazily, so still unopened) must both no-op instead of panicking.
+	tests := []struct {
+		name string
+		sesh *vuls2.Session
+	}{
+		{
+			name: "nil session",
+			sesh: nil,
+		},
+		{
+			name: "never-opened session",
+			sesh: vuls2.NewSession(config.Vuls2Conf{}, true),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(_ *testing.T) {
+			tt.sesh.Close() // must not panic
+		})
+	}
+}
+
+func TestDetectPkgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		r       *models.ScanResult
+		sesh    *vuls2.Session
+		wantErr bool
+	}{
+		{
+			// A required session that is nil is rejected with an error rather
+			// than dereferenced (which would panic).
+			name:    "nil session",
+			r:       &models.ScanResult{},
+			sesh:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := vuls2.DetectPkgs(tt.r, tt.sesh); (err != nil) != tt.wantErr {
+				t.Errorf("DetectPkgs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnrichVulnInfos(t *testing.T) {
+	tests := []struct {
+		name    string
+		r       *models.ScanResult
+		sesh    *vuls2.Session
+		wantErr bool
+	}{
+		{
+			// EnrichVulnInfos reaches the db only when there are CVEs to enrich;
+			// give it one so it does not return early, then confirm a nil session
+			// errors instead of being dereferenced.
+			name:    "nil session with CVEs to enrich",
+			r:       &models.ScanResult{ScannedCves: models.VulnInfos{"CVE-0000-0000": {}}},
+			sesh:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := vuls2.EnrichVulnInfos(tt.r, tt.sesh); (err != nil) != tt.wantErr {
+				t.Errorf("EnrichVulnInfos() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDetectCPEs(t *testing.T) {
+	tests := []struct {
+		name    string
+		r       *models.ScanResult
+		cpes    []vuls2.CPE
+		sesh    *vuls2.Session
+		wantErr bool
+	}{
+		{
+			// With no CPEs there is nothing to detect, so DetectCPEs returns
+			// before it would touch the session — a nil session is fine here.
+			name:    "no CPEs returns before using the session",
+			r:       &models.ScanResult{},
+			cpes:    nil,
+			sesh:    nil,
+			wantErr: false,
+		},
+		{
+			// With CPEs to detect, a required session that is nil is rejected
+			// with an error rather than dereferenced (which would panic).
+			name:    "nil session with CPEs to detect",
+			r:       &models.ScanResult{},
+			cpes:    []vuls2.CPE{{URI: "cpe:/a:vendor:product:1.0", UseJVN: true}},
+			sesh:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := vuls2.DetectCPEs(tt.r, tt.cpes, tt.sesh); (err != nil) != tt.wantErr {
+				t.Errorf("DetectCPEs() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
