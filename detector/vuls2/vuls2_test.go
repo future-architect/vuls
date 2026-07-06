@@ -711,7 +711,7 @@ func Test_postConvert(t *testing.T) {
 		scanned         scanTypes.ScanResult
 		detected        detectTypes.DetectResult
 		fsToOriginalCPE map[string][]string
-		verified        map[dataTypes.RootID]map[string]map[string]struct{}
+		noJVNCPEs       map[string]struct{}
 	}
 	tests := []struct {
 		name    string
@@ -11355,6 +11355,120 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Same JVN detection as the case above, but the scanned CPE is
+			// marked UseJVN:false (in noJVNCPEs). walkCPECriteria's suppress()
+			// drops the match for JVN sources, so — with no other source — the
+			// CVE disappears from the result entirely. Locks the noJVNCPEs
+			// wiring through postConvert (its per-CPE behaviour is unit-tested
+			// in Test_walkCPECriteria).
+			name: "cpe jvn exact accept but CPE in noJVNCPEs -> suppressed, no VulnInfo",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				noJVNCPEs: map[string]struct{}{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "JVNDB-2024-000456",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "JVNDB-2024-000456",
+														Title:       "advisory title",
+														Description: "advisory description",
+														Published:   new(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-30001",
+														Title:       "title",
+														Description: "description",
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://jvn.jp/vu/JVNVU90009999/index.html",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedRSS: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
 			// A multi-CVE JVN root: one advisory and one CPE detection block
 			// shared by CVE-2024-30001 and CVE-2024-30002. A verified source
 			// defines a:vendor:product only for CVE-2024-30001, so the per-CVE
@@ -11371,13 +11485,60 @@ func Test_postConvert(t *testing.T) {
 				fsToOriginalCPE: map[string][]string{
 					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
 				},
-				verified: map[dataTypes.RootID]map[string]map[string]struct{}{
-					"JVNDB-2024-000456": {
-						"CVE-2024-30001": {"a:vendor:product": {}},
-					},
-				},
 				detected: detectTypes.DetectResult{
 					Detected: []detectTypes.VulnerabilityData{
+						{
+							// Verified (NVD) root defining a:vendor:product for
+							// CVE-2024-30001 only. Its CPE is unmatched (empty
+							// Accepts) so it yields no VulnInfo of its own, but
+							// collectVerifiedProducts still derives the product,
+							// which suppresses JVN's CVE-2024-30001 match.
+							ID: "CVE-2024-30001",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2024-30001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-30001"},
+													Segments: []segmentTypes.Segment{
+														{Ecosystem: ecosystemTypes.EcosystemTypeCPE},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"),
+																}),
+															},
+															// Empty Accepts: unmatched by the scan.
+															Accepts: criterionTypes.AcceptQueries{},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 						{
 							ID: "JVNDB-2024-000456",
 							Advisories: []dbTypes.VulnerabilityDataAdvisory{
@@ -11541,7 +11702,7 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, nil, tt.args.verified)
+			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -13463,6 +13624,514 @@ func Test_enrichCTI(t *testing.T) {
 			}
 			if diff := gocmp.Diff(tt.wantATTACKDict, r.ATTACKDict); diff != "" {
 				t.Errorf("enrichCTI() ATTACKDict mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_collectVerifiedProducts(t *testing.T) {
+	tests := []struct {
+		name     string
+		detected detectTypes.DetectResult
+		want     map[dataTypes.RootID]map[string]map[string]struct{}
+	}{
+		{
+			// NVD (verified) and VulnCheck (suppressed) sit under the same CVE
+			// root and define the same product: the product is derived for the
+			// root's CVE.
+			name: "same root: verified NVD product derived for suppressed VulnCheck",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0001",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendora:product1:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+									sourceTypes.VulnCheckNISTNVD2: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendora:product1:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.NVDAPICVE: {
+										"CVE-2024-0001": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0001"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"CVE-2024-0001": {
+					"CVE-2024-0001": {"a:vendora:product1": {}},
+				},
+			},
+		},
+		{
+			// The verified source (NVD) and the suppressed source (JVN) alias
+			// the same CVE under different roots — NVD under the CVE root, JVN
+			// under a JVNDB-* root. The derived set is keyed to the suppressed
+			// root via the shared CVE ID; the verified-only root is absent.
+			name: "cross-root: NVD under CVE root feeds JVN under JVNDB root",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0002",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendorb:product2:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.NVDAPICVE: {
+										"CVE-2024-0002": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0002"}},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ID: "JVNDB-2024-000002",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.JVNFeedDetail: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendorb:product2:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.JVNFeedDetail: {
+										"JVNDB-2024-000002": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0002"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"JVNDB-2024-000002": {
+					"CVE-2024-0002": {"a:vendorb:product2": {}},
+				},
+			},
+		},
+		{
+			// A multi-CVE suppressed root must keep each CVE's verified product
+			// separate: prodx (defined only for CVE-2024-0011) must not suppress
+			// CVE-2024-0012 and vice versa. JVN's JVNDB-* root is the realistic
+			// multi-CVE carrier here — VulnCheck / NVD are rooted per CVE ID.
+			name: "multi-CVE suppressed root keeps per-CVE product sets separate",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0011",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodx:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.NVDAPICVE: {
+										"CVE-2024-0011": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0011"}},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ID: "CVE-2024-0012",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prody:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.NVDAPICVE: {
+										"CVE-2024-0012": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0012"}},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ID: "JVNDB-2024-000099",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.JVNFeedRSS: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodx:*:*:*:*:*:*:*:*")}),
+														},
+													},
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prody:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.JVNFeedRSS: {
+										"JVNDB-2024-000099": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0011"}},
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0012"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"JVNDB-2024-000099": {
+					"CVE-2024-0011": {"a:vendor:prodx": {}},
+					"CVE-2024-0012": {"a:vendor:prody": {}},
+				},
+			},
+		},
+		{
+			// A suppressed root whose CVE has no verified-source product yields
+			// no entry (nothing to suppress).
+			name: "suppressed root with no verified product yields no entry",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0004",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.VulnCheckNISTNVD2: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodz:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.VulnCheckNISTNVD2: {
+										"CVE-2024-0004": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0004"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			// The primary CPE and its CPEMatches (version variants of the same
+			// product) both fold to one part:vendor:product key, and a verified
+			// detection in a non-CPE ecosystem is ignored.
+			name: "CPEMatches fold to the product key; non-CPE ecosystem ignored",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0005",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE: new(ccTypes.Criterion{
+																CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*"),
+																CPEMatches: []ccTypes.CPE{
+																	ccTypes.CPE("cpe:2.3:a:vendor:prodp:1.0:*:*:*:*:*:*:*"),
+																},
+															}),
+														},
+													},
+												},
+											},
+										},
+									},
+									sourceTypes.VulnCheckNISTNVD2: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							{
+								// Non-CPE ecosystem: even a verified source here is
+								// ignored by collectVerifiedProducts.
+								Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:ignored:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.NVDAPICVE: {
+										"CVE-2024-0005": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0005"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"CVE-2024-0005": {
+					"CVE-2024-0005": {"a:vendor:prodp": {}},
+				},
+			},
+		},
+		{
+			// A suppressed source's own products must NOT be treated as verified:
+			// only NVD's prodp is derived, not VulnCheck's prodw.
+			name: "suppressed source's own products are not treated as verified",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "CVE-2024-0006",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.NVDAPICVE: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+									sourceTypes.VulnCheckNISTNVD2: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodw:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.NVDAPICVE: {
+										"CVE-2024-0006": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2024-0006"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"CVE-2024-0006": {
+					"CVE-2024-0006": {"a:vendor:prodp": {}},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := vuls2.CollectVerifiedProducts(tt.detected)
+			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("collectVerifiedProducts() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

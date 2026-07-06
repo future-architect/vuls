@@ -131,15 +131,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
-	// Defined-product sets for the verified sources, fetched per RootID for
-	// CVEs detected via a suppressed CPE source (VulnCheck / JVN). Drives the
-	// suppression in walkCPECriteria.
-	verifiedProductsByRoot, err := collectVerifiedProducts(sesh, vuls2Detected)
-	if err != nil {
-		return xerrors.Errorf("Failed to collect verified products. err: %w", err)
-	}
-
-	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE, noJVNCPEs, verifiedProductsByRoot)
+	vulnInfos, err := postConvert(vuls2Scanned, vuls2Detected, fsToOriginalCPE, noJVNCPEs)
 	if err != nil {
 		return xerrors.Errorf("Failed to post convert. err: %w", err)
 	}
@@ -640,10 +632,13 @@ func appendMissing(dst, src []string) []string {
 // VulnInfo.CpeURIs so the report shows the user-supplied CPE rather than
 // the internal FS-with-wildcards form. Nil / missing keys fall back to
 // the FS string as-is.
-func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, verifiedProductsByRoot map[dataTypes.RootID]map[string]map[string]struct{}) (models.VulnInfos, error) {
+func postConvert(scanned scanTypes.ScanResult, detected detectTypes.DetectResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}) (models.VulnInfos, error) {
 	m := make(map[source]sourceData)
 
-	if err := walkVulnerabilityDetections(m, scanned, detected.Detected, noJVNCPEs, verifiedProductsByRoot); err != nil {
+	// collectVerifiedProducts derives, per suppressed-source root, the products
+	// the verified sources define for each CVE; walkCPECriteria uses it to
+	// suppress VulnCheck / JVN matches already covered by a verified source.
+	if err := walkVulnerabilityDetections(m, scanned, detected.Detected, noJVNCPEs, collectVerifiedProducts(detected)); err != nil {
 		return nil, xerrors.Errorf("Failed to walk detections. err: %w", err)
 	}
 
@@ -1203,49 +1198,55 @@ func hasSuppressedCPESource(v detectTypes.VulnerabilityData) bool {
 }
 
 // collectVerifiedProducts builds, per RootID that has a suppressed CPE source,
-// the set of part:vendor:product the verified sources DEFINE for that CVE. It
-// reproduces go-cve-dictionary's isCpeURIAlsoDefinedInVerifiedDataSource, which
-// consults cve.Nvds / cve.Fortinets / ... — every CPE the verified sources list
-// for the CVE, regardless of whether its version matched the scan.
+// the set of part:vendor:product the verified sources (NVD / Fortinet / Cisco /
+// PaloAlto) DEFINE for each of the root's CVEs — the input to walkCPECriteria's
+// suppression, reproducing go-cve-dictionary's isCpeURIAlsoDefinedInVerifiedDataSource
+// (every CPE the verified sources list for the CVE, regardless of whether its
+// version matched the scan). The map is keyed by the suppressed source's RootID,
+// then by constituent CVE ID, so a multi-CVE root keeps each CVE's product set
+// separate (a verified product for one CVE must not suppress a sibling).
 //
-// The lookup is keyed by CVE ID, not RootID: a suppressed source can sit under
-// a different root than the verified sources (e.g. JVN under a JVNDB-* root
-// while NVD is under the CVE root), so the verified data is gathered across all
-// roots that alias the CVE via GetVulnerabilityDataByVulnerabilityID. Results
-// are cached per CVE so VulnCheck and JVN detections of the same CVE share one
-// bolt read. The returned map is keyed by the suppressed source's RootID, then
-// by constituent CVE ID, so a multi-CVE root keeps each CVE's verified product
-// set separate (a verified product for one CVE must not suppress a sibling).
-func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectResult) (map[dataTypes.RootID]map[string]map[string]struct{}, error) {
-	cache := make(map[string]map[string]struct{})
-	productsFor := func(cveID string) (map[string]struct{}, error) {
-		if set, ok := cache[cveID]; ok {
-			return set, nil
-		}
-		vd, err := sesh.GetVulnerabilityDataByVulnerabilityID(vulnerabilityContentTypes.VulnerabilityID(cveID), dbTypes.Filter{
-			Contents:    []dbTypes.FilterContentType{dbTypes.FilterContentTypeDetections},
-			DataSources: verifiedCPESources,
-		})
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to get vulnerability data by vulnerability ID. CVE-ID: %s, err: %w", cveID, err)
-		}
+// It is derived entirely from the in-memory detection result — no per-CVE DB
+// re-fetch. cpe.Detect finds candidate roots through a part:vendor:product index
+// (version-agnostic) and util.Detect returns EVERY source's full criteria for
+// each such root unconditionally, so a verified source's defined products are
+// already present in detected[root].Contents. A verified root absent from the
+// result can only define products that were not scanned (else the index would
+// have surfaced it), and suppress() only ever looks up scanned products, so the
+// result is identical to a by-CVE-ID fetch for suppression purposes.
+func collectVerifiedProducts(detected detectTypes.DetectResult) map[dataTypes.RootID]map[string]map[string]struct{} {
+	// Pass 1: union the verified sources' defined products per CVE across every
+	// detected root.
+	verifiedByCVE := make(map[string]map[string]struct{})
+	for _, v := range detected.Detected {
 		set := make(map[string]struct{})
-		for _, d := range vd.Detections {
+		for _, d := range v.Detections {
 			if d.Ecosystem != ecosystemTypes.EcosystemTypeCPE {
 				continue
 			}
-			for _, srcMap := range d.Contents {
-				for _, conds := range srcMap {
-					for _, cond := range conds {
-						collectDefinedCPEProducts(cond.Criteria, set)
-					}
+			for sourceID, fconds := range d.Contents {
+				if !slices.Contains(verifiedCPESources, sourceID) {
+					continue
+				}
+				for _, fcond := range fconds {
+					collectDefinedCPEProducts(fcond.Criteria, set)
 				}
 			}
 		}
-		cache[cveID] = set
-		return set, nil
+		if len(set) == 0 {
+			continue
+		}
+		for _, cveID := range cveIDsOf(v) {
+			m, ok := verifiedByCVE[cveID]
+			if !ok {
+				m = make(map[string]struct{})
+				verifiedByCVE[cveID] = m
+			}
+			maps.Copy(m, set)
+		}
 	}
 
+	// Pass 2: attach the per-CVE product set to each suppressed-source root.
 	out := make(map[dataTypes.RootID]map[string]map[string]struct{})
 	for _, v := range detected.Detected {
 		if !hasSuppressedCPESource(v) {
@@ -1253,11 +1254,7 @@ func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectR
 		}
 		byCVE := make(map[string]map[string]struct{})
 		for _, cveID := range cveIDsOf(v) {
-			set, err := productsFor(cveID)
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to get verified products. CVE-ID: %s, err: %w", cveID, err)
-			}
-			if len(set) > 0 {
+			if set, ok := verifiedByCVE[cveID]; ok {
 				byCVE[cveID] = set
 			}
 		}
@@ -1265,7 +1262,7 @@ func collectVerifiedProducts(sesh *session.Session, detected detectTypes.DetectR
 			out[v.ID] = byCVE
 		}
 	}
-	return out, nil
+	return out
 }
 
 // cveIDsOf returns the CVE IDs carried by a detection's vulnerability content.
@@ -1283,22 +1280,23 @@ func cveIDsOf(v detectTypes.VulnerabilityData) []string {
 	return slices.Collect(maps.Keys(ids))
 }
 
-// collectDefinedCPEProducts walks a (raw, unfiltered) criteria tree and records
-// the part:vendor:product key of every CPE criterion — its primary CPE and any
-// CPEMatches — regardless of the Vulnerable flag (go-cve-dictionary's defined
-// set is likewise unfiltered).
-func collectDefinedCPEProducts(c criteriaTypes.Criteria, set map[string]struct{}) {
+// collectDefinedCPEProducts walks a FilteredCriteria and adds every CPE
+// criterion's defined part:vendor:product (the criterion's own CPE and its
+// CPEMatches) to set. cond.Accept keeps the full criterion — including
+// non-matching ones — under FilteredCriterion.Criterion, so this sees every
+// defined product regardless of whether the scanned CPE's version matched.
+func collectDefinedCPEProducts(c criteriaTypes.FilteredCriteria, set map[string]struct{}) {
 	for _, child := range c.Criterias {
 		collectDefinedCPEProducts(child, set)
 	}
-	for _, cn := range c.Criterions {
-		if cn.Type != criterionTypes.CriterionTypeCPE || cn.CPE == nil {
+	for _, fcn := range c.Criterions {
+		if fcn.Criterion.Type != criterionTypes.CriterionTypeCPE || fcn.Criterion.CPE == nil {
 			continue
 		}
-		if key, ok := cpeProductKey(string(cn.CPE.CPE)); ok {
+		if key, ok := cpeProductKey(string(fcn.Criterion.CPE.CPE)); ok {
 			set[key] = struct{}{}
 		}
-		for _, m := range cn.CPE.CPEMatches {
+		for _, m := range fcn.Criterion.CPE.CPEMatches {
 			if key, ok := cpeProductKey(string(m)); ok {
 				set[key] = struct{}{}
 			}
