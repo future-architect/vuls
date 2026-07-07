@@ -1,0 +1,18 @@
+[
+  {
+    "type": "pip",
+    "lockfilePath": "seal/requirements.txt",
+    "libs": [
+      {
+        "name": "requests",
+        "version": "2.32.3",
+        "purl": "pkg:pypi/requests@2.32.3"
+      },
+      {
+        "name": "seal-django",
+        "version": "3.2.18+sp1",
+        "purl": "pkg:pypi/seal-django@3.2.18%2Bsp1"
+      }
+    ]
+  }
+]

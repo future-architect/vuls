@@ -1,0 +1,23 @@
+[
+  {
+    "type": "gomod",
+    "lockfilePath": "seal/go.mod",
+    "libs": [
+      {
+        "name": "example.com/seal-demo-app",
+        "version": "",
+        "purl": "pkg:golang/example.com/seal-demo-app",
+        "id": "example.com/seal-demo-app",
+        "dependsOn": [
+          "sealsecurity.io/golang.org/x/crypto@v0.26.0-sp1"
+        ]
+      },
+      {
+        "name": "sealsecurity.io/golang.org/x/crypto",
+        "version": "v0.26.0-sp1",
+        "purl": "pkg:golang/sealsecurity.io/golang.org/x/crypto@v0.26.0-sp1",
+        "id": "sealsecurity.io/golang.org/x/crypto@v0.26.0-sp1"
+      }
+    ]
+  }
+]

@@ -88,6 +88,13 @@ var lockfiles = []lockfileEntry{
 	// Swift
 	{"Podfile.lock", 0644, false},
 	{"Package.resolved", 0644, false},
+
+	// Seal Security patched packages (mixed with standard packages;
+	// detection via the "seal <eco>::" trivy-db buckets happens at report
+	// time, here we only pin the parsed package names/versions)
+	{"seal/package-lock.json", 0644, false},
+	{"seal/requirements.txt", 0644, false},
+	{"seal/go.mod", 0644, false},
 }
 
 // goldenFileName converts a lockfile path to a golden file name.
