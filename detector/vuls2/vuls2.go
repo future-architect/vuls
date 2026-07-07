@@ -60,8 +60,11 @@ const defaultRegistory = "ghcr.io/vulsio/vuls-nightly-db"
 // in DetectCPEs so the two paths (detector.DetectPkgCves for packages,
 // detector.DetectCpeURIsCves for CPEs) can run separately without
 // double-detecting packages.
-func DetectPkgs(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
-	return detectWith(r, preConvertPkgs(r), nil, nil, vuls2Conf, noProgress)
+//
+// sesh is the db session to query, created with NewSession and owned (Closed)
+// by the caller.
+func DetectPkgs(r *models.ScanResult, sesh *Session) error {
+	return detectWith(r, preConvertPkgs(r), nil, nil, sesh)
 }
 
 // CPE is one scanned CPE to detect (a CPE 2.2 URI or 2.3 FS string), paired
@@ -79,7 +82,10 @@ type CPE struct {
 // the vuls2 database. OS-package / Microsoft-KB detection is suppressed here:
 // it already ran via DetectPkgs (detector.DetectPkgCves), and running it
 // twice would duplicate AffectedPackages on merge.
-func DetectCPEs(r *models.ScanResult, cpes []CPE, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+//
+// sesh is the db session to query, created with NewSession and owned (Closed)
+// by the caller.
+func DetectCPEs(r *models.ScanResult, cpes []CPE, sesh *Session) error {
 	if len(cpes) == 0 {
 		return nil
 	}
@@ -87,14 +93,79 @@ func DetectCPEs(r *models.ScanResult, cpes []CPE, vuls2Conf config.Vuls2Conf, no
 	if err != nil {
 		return xerrors.Errorf("Failed to convert CPEs. err: %w", err)
 	}
-	return detectWith(r, vuls2Scanned, fsToOriginalCPE, noJVNCPEs, vuls2Conf, noProgress)
+	return detectWith(r, vuls2Scanned, fsToOriginalCPE, noJVNCPEs, sesh)
 }
 
-func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+// Session is a lazily-opened, shared vuls2 db handle scoped to one server's
+// detection and enrichment. The db is opened at most once — on the first path
+// that actually queries it — and reused by every later path, so the read cache
+// that OS-package / CPE detection warms is still warm for the enrichment that
+// immediately follows instead of being discarded and rebuilt. It is opened
+// only when some path genuinely needs it, exactly as the unshared code did:
+// a family that skips vuls2 detection (FreeBSD, pseudo, trivy-scanned, ...)
+// does not open it during detection, but enrichment still opens it when the
+// result carries CVEs (e.g. FreeBSD's pkg-audit findings); a server with
+// nothing to detect and no CVEs to enrich never opens it at all. Create one
+// with NewSession, thread it through DetectPkgs / DetectCPEs /
+// EnrichVulnInfos, and Close it when the server is done. It is not safe for
+// concurrent use; one server's detection runs sequentially, which is the
+// intended scope.
+type Session struct {
+	vuls2Conf  config.Vuls2Conf
+	noProgress bool
+
+	sesh *session.Session
+}
+
+// NewSession returns a not-yet-opened shared Session; the db is opened lazily
+// on the first path that queries it (see Session).
+func NewSession(vuls2Conf config.Vuls2Conf, noProgress bool) *Session {
+	return &Session{vuls2Conf: vuls2Conf, noProgress: noProgress}
+}
+
+// open opens the db on the first call and reuses the connection on every later
+// one, so all paths sharing this Session query the same db. A nil Session is
+// rejected rather than dereferenced, so a caller that forgot to create one gets
+// an error instead of a panic. A failed open is not cached: the first caller
+// propagates the error and the detection run aborts before any other path would
+// reach open again.
+func (s *Session) open() (*session.Session, error) {
+	if s == nil {
+		return nil, xerrors.Errorf("db session is nil; create one with NewSession")
+	}
+	if s.sesh == nil {
+		sesh, err := openSession(s.vuls2Conf, s.noProgress)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to open db session. err: %w", err)
+		}
+		s.sesh = sesh
+	}
+	return s.sesh, nil
+}
+
+// Close releases the db storage and cache if this Session was opened. It is a
+// no-op on a nil or never-opened Session, and clears the handle afterwards so a
+// second Close (or a stray open) neither double-closes nor reuses a closed
+// session — always safe to defer.
+func (s *Session) Close() {
+	if s == nil || s.sesh == nil {
+		return
+	}
+	_ = s.sesh.Storage().Close()
+	s.sesh.Cache().Close()
+	s.sesh = nil
+}
+
+// openSession opens a cache-backed vuls2 db session: it fills in the default
+// repository/path, downloads or refreshes the db if due and validates the
+// schema version (both inside newDBConfig), opens storage, and records the db
+// digest on the global config. The caller owns the returned session and must
+// close its Storage() and Cache().
+func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session, error) {
 	if vuls2Conf.Repository == "" {
 		sv, err := session.SchemaVersion("boltdb")
 		if err != nil {
-			return xerrors.Errorf("Failed to get schema version. err: %w", err)
+			return nil, xerrors.Errorf("Failed to get schema version. err: %w", err)
 		}
 
 		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
@@ -105,26 +176,40 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 
 	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
 	if err != nil {
-		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
+		return nil, xerrors.Errorf("Failed to get new db connection. err: %w", err)
 	}
 
 	sesh, err := dbConfig.New()
 	if err != nil {
-		return xerrors.Errorf("Failed to new db session. err: %w", err)
+		return nil, xerrors.Errorf("Failed to new db session. err: %w", err)
 	}
-
-	defer sesh.Cache().Close()
 
 	if err := sesh.Storage().Open(); err != nil {
-		return xerrors.Errorf("Failed to open db. err: %w", err)
+		sesh.Cache().Close()
+		return nil, xerrors.Errorf("Failed to open db. err: %w", err)
 	}
-	defer sesh.Storage().Close()
 
 	metadata, err := sesh.Storage().GetMetadata()
 	if err != nil {
-		return xerrors.Errorf("Failed to get metadata. err: %w", err)
+		_ = sesh.Storage().Close()
+		sesh.Cache().Close()
+		return nil, xerrors.Errorf("Failed to get metadata. err: %w", err)
+	}
+	if metadata == nil {
+		_ = sesh.Storage().Close()
+		sesh.Cache().Close()
+		return nil, xerrors.Errorf("unexpected vuls2 db metadata. metadata: nil, path: %s", vuls2Conf.Path)
 	}
 	config.Conf.Vuls2.Digest = metadata.Digest
+
+	return sesh, nil
+}
+
+func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, shared *Session) error {
+	sesh, err := shared.open()
+	if err != nil {
+		return xerrors.Errorf("Failed to open db session. err: %w", err)
+	}
 
 	vuls2Detected, err := detect(sesh, vuls2Scanned)
 	if err != nil {
@@ -256,39 +341,18 @@ func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 // EnrichVulnInfos enriches all ScannedCves in the ScanResult with additional vulnerability data
 // (e.g., Red Hat API) from the vuls2 database.
 // This should be called after all detection paths have completed.
-func EnrichVulnInfos(r *models.ScanResult, vuls2Conf config.Vuls2Conf, noProgress bool) error {
+//
+// shared is the db session to query, created with NewSession and owned (Closed)
+// by the caller.
+func EnrichVulnInfos(r *models.ScanResult, shared *Session) error {
 	if len(r.ScannedCves) == 0 {
 		return nil
 	}
 
-	if vuls2Conf.Repository == "" {
-		sv, err := session.SchemaVersion("boltdb")
-		if err != nil {
-			return xerrors.Errorf("Failed to get schema version. err: %w", err)
-		}
-
-		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
-	}
-	if vuls2Conf.Path == "" {
-		vuls2Conf.Path = DefaultPath
-	}
-
-	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
+	sesh, err := shared.open()
 	if err != nil {
-		return xerrors.Errorf("Failed to get new db connection. err: %w", err)
+		return xerrors.Errorf("Failed to open db session. err: %w", err)
 	}
-
-	sesh, err := dbConfig.New()
-	if err != nil {
-		return xerrors.Errorf("Failed to new db session. err: %w", err)
-	}
-
-	defer sesh.Cache().Close()
-
-	if err := sesh.Storage().Open(); err != nil {
-		return xerrors.Errorf("Failed to open db. err: %w", err)
-	}
-	defer sesh.Storage().Close()
 
 	if err := enrich(sesh, r.ScannedCves); err != nil {
 		return xerrors.Errorf("Failed to enrich vulnerability data. err: %w", err)

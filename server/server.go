@@ -62,13 +62,19 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := detector.DetectPkgCves(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+	// Share one lazily-opened vuls2 db session across this request's package
+	// detection and the enrichment that follows, so the read cache detection
+	// warms is reused by enrichment rather than opened and rebuilt twice.
+	sesh := vuls2.NewSession(config.Conf.Vuls2, config.Conf.NoProgress)
+	defer sesh.Close()
+
+	if err := detector.DetectPkgCves(&r, sesh); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 
-	if err := vuls2.EnrichVulnInfos(&r, config.Conf.Vuls2, config.Conf.NoProgress); err != nil {
+	if err := vuls2.EnrichVulnInfos(&r, sesh); err != nil {
 		logging.Log.Errorf("Failed to enrich vulnerability data with vuls2: %+v", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
