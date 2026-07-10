@@ -1627,7 +1627,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 
 						srcsWithVulns[src] = struct{}{}
 
-						if ignoreVulnerability(src.Segment.Ecosystem, v, am[src]) {
+						if ignoreVulnerability(src.Segment.Ecosystem, src.SourceID, v, am[src]) {
 							continue
 						}
 
@@ -1637,7 +1637,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								return models.VulnInfo{}, xerrors.Errorf("Failed to marshal sources. err: %w", err)
 							}
 
-							fdas := filterDistroAdvisories(src.Segment.Ecosystem, am[src])
+							fdas := filterDistroAdvisories(src.Segment.Ecosystem, src.SourceID, am[src])
 							cctype := toCveContentType(src.Segment.Ecosystem, sid)
 							cvss2, cvss3, cvss40 := toCvss(src.Segment.Ecosystem, sid, v.Content.Severity)
 
@@ -1767,7 +1767,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 				continue
 			}
 
-			fdas := filterDistroAdvisories(src.Segment.Ecosystem, das)
+			fdas := filterDistroAdvisories(src.Segment.Ecosystem, src.SourceID, das)
 			for _, da := range fdas {
 				bs, err := json.Marshal([]source{src})
 				if err != nil {

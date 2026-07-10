@@ -11199,6 +11199,195 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// The direct rejected counterpart of "cpe vulncheck exact accept ->
+			// Vulncheck content" above: identical scanned CPE and accepted CPE
+			// detection, but the vulnerability description is a CVE.org rejection
+			// ("Rejected reason: ..."). As of the "emit detections for rejected
+			// CVEs" change in vuls-data-update, the extractor keeps the detection
+			// for a rejected CVE (previously it dropped it), so the rejected CVE
+			// now reaches the detector with an accepted detection — and
+			// ignoreVulnerability drops it by that description, yielding no
+			// VulnInfo. Locks the NVD/VulnCheck description branch of
+			// ignoreVulnerability through postConvert.
+			name: "cpe vulncheck rejected (accepted detection) -> dropped, no VulnInfo",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2022-49267",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2022-49267",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.VulnCheckNISTNVD2: {
+											dataTypes.RootID("CVE-2022-49267"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2022-49267",
+														Description: "Rejected reason: This CVE ID has been rejected or withdrawn by its CVE Numbering Authority.",
+														Published:   new(time.Date(2025, 2, 26, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.VulnCheckNISTNVD2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
+			// A JVN CPE detection whose advisory is withdrawn in place
+			// ("** 削除 **"). The JVN vulnerability content carries only the CVE
+			// id, so ignoreVulnerability reads the marker from the advisory
+			// description (via am[src]) and drops the CVE — the result is empty.
+			// Locks the JVN advisory-marker branch of ignoreVulnerability through
+			// postConvert.
+			name: "cpe jvn 削除 (withdrawn) -> dropped, no VulnInfo",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "JVNDB-2024-000456",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:          "JVNDB-2024-000456",
+														Title:       "** 削除 ** advisory title",
+														Description: "** 削除 ** 本件は、削除されました。",
+														Published:   new(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-30001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.JVNFeedRSS: {
+											dataTypes.RootID("JVNDB-2024-000456"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:        "CVE-2024-30001",
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.JVNFeedRSS: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{},
+		},
+		{
 			// JVN's CPE entries carry no version data, so walkCPECriteria
 			// demotes even an exact accept to the vendor:product tier
 			// (isJVNCPESource): the CVE is reported with

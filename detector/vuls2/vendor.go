@@ -101,10 +101,44 @@ func toVuls2Release(vuls0Family, vuls0Release string) string {
 	}
 }
 
-func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulnerability, as models.DistroAdvisories) bool {
+func ignoreVulnerability(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, v vulnerabilityTypes.Vulnerability, as models.DistroAdvisories) bool {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
+	case ecosystemTypes.EcosystemTypeCPE:
+		switch s {
+		case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2, sourceTypes.VulnCheckNISTNVD2:
+			// NVD / VulnCheck (CVE-keyed CPE sources) publish the rejection in
+			// the vulnerability description itself ("** REJECT **",
+			// "[REJECTED CVE]", "Rejected reason:").
+			if strings.HasPrefix(v.Content.Description, "** REJECT **") ||
+				strings.HasPrefix(v.Content.Description, "[REJECTED CVE]") ||
+				strings.HasPrefix(v.Content.Description, "Rejected reason:") {
+				return true
+			}
+			return false
+		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+			// JVN invalidates a JVNDB entry in place with a description marker
+			// ("** 削除 **" withdrawn, "** 未確定 **" unconfirmed,
+			// "** サポート外 **" unsupported); go-cve-dictionary drops all three
+			// at fetch. The JVN vulnerability content carries only the CVE id,
+			// so the marker is read from the advisory descriptions (the only
+			// field carried on models.DistroAdvisory).
+			//
+			// There is deliberately no len(as)==0 guard as in the RedHat/Ubuntu
+			// branches. Those keep the vulnerability when no advisory is present
+			// because their vulnerability content carries its own (NVD-sourced)
+			// description that was already checked for a reject marker. A JVN CPE
+			// vulnerability has no such description: the JVNDB advisory is the
+			// sole detection basis and shares this source's segment, so as is
+			// always non-empty here. Were it ever empty, filterDistroAdvisories
+			// returns empty and the CVE is dropped — acceptable, since a JVN
+			// detection with no backing advisory is malformed. Drop the
+			// vulnerability when every backing advisory is marked.
+			return len(filterDistroAdvisories(e, s, as)) == 0
+		default:
+			return false
+		}
 	case ecosystemTypes.EcosystemTypeRedHat:
 		if strings.Contains(v.Content.Description, "** REJECT **") || strings.HasPrefix(v.Content.Description, "[REJECTED CVE]") {
 			return true
@@ -114,7 +148,7 @@ func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulner
 			return false
 		}
 
-		if len(filterDistroAdvisories(e, as)) == 0 {
+		if len(filterDistroAdvisories(e, s, as)) == 0 {
 			return true
 		}
 
@@ -128,7 +162,7 @@ func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulner
 			return false
 		}
 
-		if len(filterDistroAdvisories(e, as)) == 0 {
+		if len(filterDistroAdvisories(e, s, as)) == 0 {
 			return true
 		}
 
@@ -138,7 +172,7 @@ func ignoreVulnerability(e ecosystemTypes.Ecosystem, v vulnerabilityTypes.Vulner
 	}
 }
 
-func filterDistroAdvisories(e ecosystemTypes.Ecosystem, as models.DistroAdvisories) models.DistroAdvisories {
+func filterDistroAdvisories(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, as models.DistroAdvisories) models.DistroAdvisories {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
@@ -150,6 +184,24 @@ func filterDistroAdvisories(e ecosystemTypes.Ecosystem, as models.DistroAdvisori
 			}
 		}
 		return fas
+	case ecosystemTypes.EcosystemTypeCPE:
+		switch s {
+		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
+			// Drop JVN advisories invalidated in place ("** 削除 **" withdrawn,
+			// "** 未確定 **" unconfirmed, "** サポート外 **" unsupported).
+			var fas models.DistroAdvisories
+			for _, a := range as {
+				if strings.Contains(a.Description, "** 削除 **") ||
+					strings.Contains(a.Description, "** 未確定 **") ||
+					strings.Contains(a.Description, "** サポート外 **") {
+					continue
+				}
+				fas = append(fas, a)
+			}
+			return fas
+		default:
+			return as
+		}
 	default:
 		return as
 	}
