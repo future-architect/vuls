@@ -1038,19 +1038,24 @@ func pruneCPECriteria(c criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCr
 //
 // Anything a CPE-only scan cannot evaluate — vulnerable=false
 // environment/hardware guards and other criterion types — is removed by a
-// prune pass first, so it never vetoes an AND (the historical
-// go-cve-dictionary behaviour existing users rely on).
+// prune pass first, so it can neither be matched nor veto the result
+// (reproducing the historical go-cve-dictionary behaviour existing users
+// rely on).
 //
 //   - Accepts.CPE.Exact (version-confirmed match) → exact tier
 //   - Accepts.CPE.VersionUnconfirmed (accepted, but no version confirmation)
 //     → vendor:product tier
 //
-// AND nodes require every relevant child to be satisfied and demote their
-// exact contributions when any leg holds only at vendor:product level (the
-// conjunction as a whole is then only vendor:product-confirmed); OR nodes take
-// any satisfied child as-is. A CPE source that carries no version data at all
-// (JVN) is reported at vendor:product regardless of the projected tier — that
-// is a source-semantics decision, kept here in vuls0.
+// AND and OR nodes are both folded as OR: a scanned CPE matching any single
+// leg satisfies the node. go-cve-dictionary treats every vulnerable=true CPE
+// in an applicability node as independently matchable, ignoring the AND/OR
+// operator, so a co-required product NVD happens to mark vulnerable=true
+// (e.g. the Xen hypervisor conjoined with the vulnerable kernel in
+// CVE-2021-28039) never vetoes the kernel leg. Existing users relied on this
+// flattening under go-cve-dictionary; keeping it here trades AND precision for
+// that compatibility, scoped to CPE detection only. A CPE source that carries
+// no version data at all (JVN) is reported at vendor:product regardless of the
+// projected tier — that is a source-semantics decision, kept here in vuls0.
 //
 // For a suppressed source (VulnCheck / JVN) a matched scanned CPE is dropped
 // when its part:vendor:product is in verifiedProducts — the products a verified
@@ -1104,29 +1109,22 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 	}
 
 	// Pass 2: walk returns (satisfied, exact, vp) — whether the subtree
-	// holds, and the supporting scanned CPEs per confidence tier.
+	// holds, and the supporting scanned CPEs per confidence tier. AND is
+	// folded identically to OR (see the flatten note above): any single
+	// satisfied leg carries the node and contributes its matches at its own
+	// tier, so a co-required product the scan lacks never vetoes the result.
 	var walk func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error)
 	walk = func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error) {
-		satisfied := c.Operator != criteriaTypes.CriteriaOperatorTypeOR
+		var satisfied bool
 		var exact, vp []string
 
-		foldChild := func(childSatisfied bool, childExact, childVP []string) {
-			switch c.Operator {
-			case criteriaTypes.CriteriaOperatorTypeOR:
-				if childSatisfied {
-					satisfied = true
-					exact = append(exact, childExact...)
-					vp = append(vp, childVP...)
-				}
-			case criteriaTypes.CriteriaOperatorTypeAND:
-				if !childSatisfied {
-					satisfied = false
-					return
-				}
-				exact = append(exact, childExact...)
-				vp = append(vp, childVP...)
-			default: // unreachable: criteria operators are only AND / OR
+		fold := func(childSatisfied bool, childExact, childVP []string) {
+			if !childSatisfied {
+				return
 			}
+			satisfied = true
+			exact = append(exact, childExact...)
+			vp = append(vp, childVP...)
 		}
 
 		for _, child := range c.Criterias {
@@ -1134,7 +1132,7 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 			if err != nil {
 				return false, nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 			}
-			foldChild(sat, ex, v)
+			fold(sat, ex, v)
 		}
 		for _, cn := range c.Criterions {
 			var exactMatched, vpMatched []string
@@ -1158,19 +1156,10 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 				}
 				vpMatched = append(vpMatched, fs)
 			}
-			foldChild(len(exactMatched) > 0 || len(vpMatched) > 0, exactMatched, vpMatched)
+			fold(len(exactMatched) > 0 || len(vpMatched) > 0, exactMatched, vpMatched)
 		}
 
-		if !satisfied {
-			return false, nil, nil, nil
-		}
-		if c.Operator != criteriaTypes.CriteriaOperatorTypeOR && len(vp) > 0 {
-			// A conjunction with a leg confirmed only at vendor:product
-			// level is only vendor:product-confirmed as a whole.
-			vp = append(vp, exact...)
-			exact = nil
-		}
-		return true, exact, vp, nil
+		return satisfied, exact, vp, nil
 	}
 
 	satisfied, exact, vp, err := walk(ca)

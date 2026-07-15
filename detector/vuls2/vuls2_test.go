@@ -10607,6 +10607,10 @@ func Test_postConvert(t *testing.T) {
 			// Projection honours AND structure: a CVE whose configuration
 			// requires product A AND product B is not reported when only A was
 			// scanned (A's leg accepted, but B's leg did not).
+			// AND folds as OR in vuls0's CPE walk (go-cve-dictionary flatten
+			// compatibility): the satisfied producta leg is reported at
+			// vendor:product even though the co-required productb leg has no
+			// scanned CPE and does not accept.
 			name: "cpe version-unconfirmed accept, unsatisfied AND",
 			args: args{
 				scanned: scanTypes.ScanResult{
@@ -10686,7 +10690,29 @@ func Test_postConvert(t *testing.T) {
 					},
 				},
 			},
-			want: models.VulnInfos{},
+			want: models.VulnInfos{
+				"CVE-2025-0004": {
+					CveID:       "CVE-2025-0004",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:producta:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0004",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0004",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			// The detection reached us via the part:vendor:product index, but
@@ -12625,7 +12651,9 @@ func Test_walkCPECriteria(t *testing.T) {
 			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND with a vendor:product leg demotes the whole conjunction",
+			// AND folds as OR (go-cve-dictionary flatten compatibility): each
+			// leg keeps its own tier instead of the conjunction being demoted.
+			name: "AND folds as OR: each leg keeps its own tier",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
@@ -12636,10 +12664,14 @@ func Test_walkCPECriteria(t *testing.T) {
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{"cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+			wantVP:    []string{"cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND with an unsatisfied leg -> nothing",
+			// AND folds as OR: an unsatisfied co-required leg (e.g. the Xen
+			// hypervisor the scan lacks in CVE-2021-28039) no longer vetoes the
+			// satisfied leg — the matched product is still reported.
+			name: "AND with an unsatisfied leg still reports the satisfied leg",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
@@ -12650,6 +12682,7 @@ func Test_walkCPECriteria(t *testing.T) {
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "same scanned CPE in exact and vendor:product -> exact wins",
