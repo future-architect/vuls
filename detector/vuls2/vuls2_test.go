@@ -10604,13 +10604,12 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// Projection honours AND structure: a CVE whose configuration
-			// requires product A AND product B is not reported when only A was
-			// scanned (A's leg accepted, but B's leg did not).
 			// AND folds as OR in vuls0's CPE walk (go-cve-dictionary flatten
-			// compatibility): the satisfied producta leg is reported at
-			// vendor:product even though the co-required productb leg has no
-			// scanned CPE and does not accept.
+			// compatibility): a CVE whose configuration requires product A AND
+			// product B is still reported when only A was scanned. A's leg
+			// accepts and carries the node at vendor:product; the co-required
+			// productb leg has no scanned CPE and does not accept, but no longer
+			// vetoes the result.
 			name: "cpe version-unconfirmed accept, unsatisfied AND",
 			args: args{
 				scanned: scanTypes.ScanResult{

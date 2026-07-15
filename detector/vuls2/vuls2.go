@@ -1115,6 +1115,15 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 	// tier, so a co-required product the scan lacks never vetoes the result.
 	var walk func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error)
 	walk = func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error) {
+		// Both operators are folded as OR (see the flatten note above), but
+		// validate anyway so an unsupported operator fails fast rather than
+		// silently taking the OR path — matching walkPkgCriteria.
+		switch c.Operator {
+		case criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR:
+		default:
+			return false, nil, nil, xerrors.Errorf("unexpected operator: %s", c.Operator)
+		}
+
 		var satisfied bool
 		var exact, vp []string
 
