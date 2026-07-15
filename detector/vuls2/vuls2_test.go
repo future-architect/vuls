@@ -10604,9 +10604,12 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
-			// Projection honours AND structure: a CVE whose configuration
-			// requires product A AND product B is not reported when only A was
-			// scanned (A's leg accepted, but B's leg did not).
+			// AND folds as OR in vuls0's CPE walk (go-cve-dictionary flatten
+			// compatibility): a CVE whose configuration requires producta AND
+			// productb is still reported when only producta was scanned.
+			// producta's leg accepts and carries the node at vendor:product;
+			// the co-required productb leg has no scanned CPE and does not
+			// accept, but no longer vetoes the result.
 			name: "cpe version-unconfirmed accept, unsatisfied AND",
 			args: args{
 				scanned: scanTypes.ScanResult{
@@ -10664,6 +10667,222 @@ func Test_postConvert(t *testing.T) {
 															},
 															Accepts: criterionTypes.AcceptQueries{
 																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
+														},
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:productb:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0004": {
+					CveID:       "CVE-2025-0004",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:producta:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0004",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0004",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// Companion to "unsatisfied AND": here the non-contributing AND
+			// leg is a vulnerable=false hardware guard, which pruneCPECriteria
+			// removes before the walk. The satisfied producta leg is reported
+			// at vendor:product. Unlike the vulnerable=true case above (which
+			// detects only because AND now folds as OR), this one detected
+			// even before the flatten — the guard never survived pruning.
+			name: "cpe version-unconfirmed accept, AND with vulnerable=false guard",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0009",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0009",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0009"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0009",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeAND,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
+														},
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: false,
+																	CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0009": {
+					CveID:       "CVE-2025-0009",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:producta:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0009",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0009",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0009\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// AND where neither vulnerable=true leg accepts (both reached via the
+			// part:vendor:product index but their version criteria did not accept —
+			// concrete mismatch or out of range upstream): the flattened OR fold
+			// finds no satisfied leg, so nothing is reported. Guards the AND->OR
+			// flatten against spuriously detecting when no leg actually matched.
+			name: "cpe no accepted criterion in AND, report nothing",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0010",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0010",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0010"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0010",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeAND,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
+																}),
 															},
 														},
 														{
@@ -12625,7 +12844,9 @@ func Test_walkCPECriteria(t *testing.T) {
 			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND with a vendor:product leg demotes the whole conjunction",
+			// AND folds as OR (go-cve-dictionary flatten compatibility): each
+			// leg keeps its own tier instead of the conjunction being demoted.
+			name: "AND folds as OR: each leg keeps its own tier",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
@@ -12636,10 +12857,14 @@ func Test_walkCPECriteria(t *testing.T) {
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 			},
-			wantVP: []string{"cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
+			wantVP:    []string{"cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND with an unsatisfied leg -> nothing",
+			// AND folds as OR: an unsatisfied co-required leg (e.g. the Xen
+			// hypervisor the scan lacks in CVE-2021-28039) no longer vetoes the
+			// satisfied leg — the matched product is still reported.
+			name: "AND with an unsatisfied leg still reports the satisfied leg",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
@@ -12650,6 +12875,7 @@ func Test_walkCPECriteria(t *testing.T) {
 				},
 				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 			},
+			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "same scanned CPE in exact and vendor:product -> exact wins",
