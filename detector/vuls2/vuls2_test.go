@@ -10715,6 +10715,116 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Companion to "unsatisfied AND": here the non-contributing AND
+			// leg is a vulnerable=false hardware guard, which pruneCPECriteria
+			// removes before the walk. The satisfied producta leg is reported
+			// at vendor:product. Unlike the vulnerable=true case above (which
+			// detects only because AND now folds as OR), this one detected
+			// even before the flatten — the guard never survived pruning.
+			name: "cpe version-unconfirmed accept, AND with vulnerable=false guard",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:producta:9.9.9:*:*:*:*:*:*:*": {"cpe:/a:vendor:producta:9.9.9"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-0009",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-0009",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.NVDAPICVE: {
+											dataTypes.RootID("CVE-2025-0009"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-0009",
+														Title:       "title",
+														Description: "description",
+														Published:   new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.NVDAPICVE: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeAND,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	CPE:        ccTypes.CPE("cpe:2.3:a:vendor:producta:-:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
+														},
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: false,
+																	CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
+																}),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-0009": {
+					CveID:       "CVE-2025-0009",
+					Confidences: models.Confidences{models.NvdVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:producta:9.9.9"},
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:         models.Nvd,
+								CveID:        "CVE-2025-0009",
+								Title:        "title",
+								Summary:      "description",
+								SourceLink:   "https://nvd.nist.gov/vuln/detail/CVE-2025-0009",
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0009\",\"source_id\":\"nvd-api-cve\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// The detection reached us via the part:vendor:product index, but
 			// no criterion accepted (every one carries empty Accepts — concrete
 			// version mismatch, out of range, enumeration miss upstream). The
