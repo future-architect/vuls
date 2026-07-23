@@ -37,6 +37,7 @@ import (
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
+	vuls2detect "github.com/MaineK00n/vuls2/pkg/detect"
 	"github.com/MaineK00n/vuls2/pkg/detect/cpe"
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
@@ -222,6 +223,22 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	}
 
 	mergeIntoScannedCves(r, vulnInfos)
+
+	// Surface the skips vuls2 recorded (data this build could not evaluate,
+	// e.g. produced by a newer vuls-data-update) as scan-result warnings.
+	// Deduplicate against warnings already registered by the other vuls2
+	// pass: DetectPkgs and DetectCPEs both route through here.
+	for _, w := range vuls2Detected.Warnings {
+		msg := func() string {
+			if w.Cause == "" {
+				return fmt.Sprintf("vuls2 skipped data it cannot evaluate (kind: %s). Detection may be incomplete; updating vuls may resolve this.", w.Kind)
+			}
+			return fmt.Sprintf("vuls2 skipped data it cannot evaluate (kind: %s, cause: %q). Detection may be incomplete; updating vuls may resolve this.", w.Kind, w.Cause)
+		}()
+		if !slices.Contains(r.Warnings, msg) {
+			r.Warnings = append(r.Warnings, msg)
+		}
+	}
 
 	// detectWith runs once per entry point (DetectPkgs, DetectCPEs); name
 	// the pass so the two log lines of one report run stay tellable apart.
@@ -615,6 +632,13 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 
 		Detected:    slices.Collect(maps.Values(detected)),
 		DataSources: datasources,
+
+		// Data this build could not evaluate (e.g. enum values from a newer
+		// vuls-data-update) is skipped with a warning recorded on the
+		// FilteredCriteria trees; aggregate them here — before any affected
+		// gating downstream prunes the not-affected conditions carrying them
+		// — so the skips stay observable in the scan result.
+		Warnings: vuls2detect.CollectWarnings(detected),
 
 		DetectedAt: time.Now(),
 		DetectedBy: version.String(),
