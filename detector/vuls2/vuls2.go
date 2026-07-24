@@ -234,11 +234,18 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	// both route through here.
 	for _, sid := range slices.Sorted(maps.Keys(vuls2Detected.Warnings)) {
 		for _, kind := range slices.Sorted(maps.Keys(vuls2Detected.Warnings[sid])) {
-			causes := make([]string, 0, len(vuls2Detected.Warnings[sid][kind]))
+			// CollectWarnings leaves causes in first-seen order; canonical
+			// ordering is this presentation layer's job.
+			raw := make([]string, 0, len(vuls2Detected.Warnings[sid][kind]))
 			for _, c := range vuls2Detected.Warnings[sid][kind] {
 				if c != "" {
-					causes = append(causes, fmt.Sprintf("%q", c))
+					raw = append(raw, c)
 				}
+			}
+			slices.Sort(raw)
+			causes := make([]string, 0, len(raw))
+			for _, c := range raw {
+				causes = append(causes, fmt.Sprintf("%q", c))
 			}
 			msg := func() string {
 				if len(causes) == 0 {
