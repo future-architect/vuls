@@ -1316,12 +1316,16 @@ func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes
 				}
 				// Prefer the per-reference JPCERT-AT alert-page title the jvn
 				// extractor fetched (stored under Optional["reference_titles"] as a
-				// url->title map); one JVNDB note often covers several alerts, so
-				// its note-level a.Content.Title is not the alert's own title. Fall
-				// back to the note title when the reference has no fetched title.
+				// url->title map; vuls-data-update #896); one JVNDB note often covers
+				// several alerts, so its note-level a.Content.Title is not the alert's
+				// own title. The extractor writes a map[string]string, but the db
+				// hands it back JSON-decoded into Optional's map[string]any. Fall back
+				// to the note title when the reference has no fetched title.
 				title := a.Content.Title
-				if t := jvnReferenceTitle(a.Content.Optional, r.URL); t != "" {
-					title = t
+				if m, ok := a.Content.Optional["reference_titles"].(map[string]any); ok {
+					if t, ok := m[r.URL].(string); ok && t != "" {
+						title = t
+					}
 				}
 				alert := models.Alert{Team: "jpcert", URL: r.URL, Title: title}
 				if !slices.ContainsFunc(vi.AlertDict.JPCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
@@ -1342,21 +1346,6 @@ func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes
 			})
 		}
 	}
-}
-
-// jvnReferenceTitle returns the JPCERT-AT alert-page title the jvn extractor
-// fetched for url, stored under Optional["reference_titles"] as a url->title
-// map (vuls-data-update #896). The extractor writes a map[string]string, but
-// the db always hands it back JSON-decoded into Optional's map[string]any, so
-// the value is map[string]any with string leaves. "" is returned when no title
-// is recorded for url.
-func jvnReferenceTitle(optional map[string]any, url string) string {
-	m, ok := optional["reference_titles"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	t, _ := m[url].(string)
-	return t
 }
 
 // enrichEuvd adds ENISA EUVD (European Union Vulnerability Database) data as CveContent.
