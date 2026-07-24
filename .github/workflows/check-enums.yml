@@ -19,6 +19,9 @@ jobs:
   enum-diff:
     name: Enum list diff
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -35,8 +38,30 @@ jobs:
       # reaches detection. The known sets are append-only, so a plain diff
       # suffices.
       - name: Diff known enum sets against vuls-data-update nightly
+        id: diff
+        shell: bash
         env:
           GOEXPERIMENT: jsonv2
         run: |
           diff <(go run github.com/MaineK00n/vuls-data-update/tools/print-enums) \
-               <(go run github.com/MaineK00n/vuls-data-update/tools/print-enums@nightly)
+               <(go run github.com/MaineK00n/vuls-data-update/tools/print-enums@nightly) | tee /tmp/enum.diff
+
+      # Drift is a state, not an event: it persists until a bump PR merges,
+      # so the alarm is one open issue (deduplicated by label) rather than a
+      # notification that depends on someone's settings. Assignees are the
+      # vuls2-integration maintainers.
+      - name: File a drift issue
+        if: failure() && steps.diff.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create enum-drift --force --description "vuls-data-update enum vocabulary drift" --color D93F0B
+          if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --label enum-drift --state open --json number --jq '.[].number')" ]; then
+            {
+              printf 'The scheduled check-enums run failed: the vuls-data-update pinned in go.mod knows fewer enum values than the nightly branch. A dependency bump is due before data produced with the new values reaches detection.\n\n'
+              printf '```diff\n'
+              cat /tmp/enum.diff
+              printf '```\n\nRun: %s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            } > /tmp/enum-issue.md
+            gh issue create -R "$GITHUB_REPOSITORY" --title "vuls-data-update enum vocabulary drift" --label enum-drift --assignee MaineK00n,shino --body-file /tmp/enum-issue.md
+          fi
