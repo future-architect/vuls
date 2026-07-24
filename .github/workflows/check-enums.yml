@@ -12,8 +12,7 @@ on:
   schedule:
     - cron: '37 21 * * *'
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   enum-diff:
@@ -21,7 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
+    outputs:
+      diff: ${{ steps.diff.outputs.diff }}
+      nightly: ${{ steps.diff.outputs.nightly }}
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -36,32 +37,60 @@ jobs:
       # knows fewer enum values than the nightly branch — i.e. when a
       # dependency bump is due before data produced with the new values
       # reaches detection. The known sets are append-only, so a plain diff
-      # suffices.
+      # suffices. The moving branch is resolved to a commit once per run, so
+      # execution, the log, and the filed issue all refer to the same
+      # revision.
       - name: Diff known enum sets against vuls-data-update nightly
         id: diff
         shell: bash
         env:
           GOEXPERIMENT: jsonv2
         run: |
-          diff <(go run github.com/MaineK00n/vuls-data-update/tools/print-enums) \
-               <(go run github.com/MaineK00n/vuls-data-update/tools/print-enums@nightly) | tee /tmp/enum.diff
+          nightly=$(git ls-remote https://github.com/MaineK00n/vuls-data-update.git refs/heads/nightly | cut -f1)
+          echo "comparing against vuls-data-update nightly @ $nightly"
+          echo "nightly=$nightly" >> "$GITHUB_OUTPUT"
+          set +e
+          d=$(diff <(go run github.com/MaineK00n/vuls-data-update/tools/print-enums) \
+                   <(go run "github.com/MaineK00n/vuls-data-update/tools/print-enums@$nightly"))
+          rc=$?
+          set -e
+          {
+            echo 'diff<<GH_OUTPUT_EOF'
+            printf '%s\n' "$d"
+            echo 'GH_OUTPUT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$d"
+          exit $rc
 
-      # Drift is a state, not an event: it persists until a bump PR merges,
-      # so the alarm is one open issue (deduplicated by label) rather than a
-      # notification that depends on someone's settings. Assignees are the
-      # vuls2-integration maintainers.
+  # Issue writing runs in a separate job so that the token holding
+  # issues: write never coexists with executing code fetched from the
+  # upstream branch — the diff job above runs `go run` on it with
+  # contents: read only. Drift is a state, not an event: it persists until a
+  # bump PR merges, so the alarm is one open issue (deduplicated by label)
+  # rather than a notification that depends on someone's settings. Assignees
+  # are the vuls2-integration maintainers.
+  file-issue:
+    name: File a drift issue
+    runs-on: ubuntu-latest
+    needs: enum-diff
+    if: failure() && needs.enum-diff.result == 'failure'
+    permissions:
+      issues: write
+    steps:
       - name: File a drift issue
-        if: failure() && steps.diff.outcome == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
+          DIFF: ${{ needs.enum-diff.outputs.diff }}
+          NIGHTLY: ${{ needs.enum-diff.outputs.nightly }}
         run: |
-          gh label create enum-drift --force --description "vuls-data-update enum vocabulary drift" --color D93F0B
+          gh label create enum-drift -R "$GITHUB_REPOSITORY" --force --description "vuls-data-update enum vocabulary drift" --color D93F0B
           if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --label enum-drift --state open --json number --jq '.[].number')" ]; then
             {
-              printf 'The scheduled check-enums run failed: the vuls-data-update pinned in go.mod knows fewer enum values than the nightly branch. A dependency bump is due before data produced with the new values reaches detection.\n\n'
-              printf '```diff\n'
-              cat /tmp/enum.diff
-              printf '```\n\nRun: %s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+              printf 'The scheduled check-enums run failed: the vuls-data-update pinned in go.mod knows fewer enum values than the nightly branch (compared against commit %s). A dependency bump is due before data produced with the new values reaches detection.\n\n' "$NIGHTLY"
+              printf '%s\n' "\`\`\`diff"
+              printf '%s\n' "$DIFF"
+              printf '%s\n\n' "\`\`\`"
+              printf 'Run: %s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             } > /tmp/enum-issue.md
             gh issue create -R "$GITHUB_REPOSITORY" --title "vuls-data-update enum vocabulary drift" --label enum-drift --assignee MaineK00n,shino --body-file /tmp/enum-issue.md
           fi
