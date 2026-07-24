@@ -1314,7 +1314,20 @@ func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes
 				if !strings.Contains(r.URL, "jpcert.or.jp/at/") {
 					continue
 				}
-				alert := models.Alert{Team: "jpcert", URL: r.URL, Title: a.Content.Title}
+				// Prefer the per-reference JPCERT-AT alert-page title the jvn
+				// extractor fetched (stored under Optional["reference_titles"] as a
+				// url->title map; vuls-data-update #896); one JVNDB note often covers
+				// several alerts, so its note-level a.Content.Title is not the alert's
+				// own title. The extractor writes a map[string]string, but the db
+				// hands it back JSON-decoded into Optional's map[string]any. Fall back
+				// to the note title when the reference has no fetched title.
+				title := a.Content.Title
+				if m, ok := a.Content.Optional["reference_titles"].(map[string]any); ok {
+					if t, ok := m[r.URL].(string); ok && t != "" {
+						title = t
+					}
+				}
+				alert := models.Alert{Team: "jpcert", URL: r.URL, Title: title}
 				if !slices.ContainsFunc(vi.AlertDict.JPCERT, func(e models.Alert) bool { return e.URL == alert.URL }) {
 					vi.AlertDict.JPCERT = append(vi.AlertDict.JPCERT, alert)
 				}

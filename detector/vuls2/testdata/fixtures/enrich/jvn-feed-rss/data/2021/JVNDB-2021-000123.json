@@ -1,0 +1,62 @@
+{
+    "id": "JVNDB-2021-000123",
+    "advisories": [
+        {
+            "content": {
+                "id": "JVNDB-2021-000123",
+                "title": "複数の Apache Log4j 製品における脆弱性",
+                "description": "Apache Log4j には、任意のコード実行の脆弱性が存在します。",
+                "references": [
+                    {
+                        "source": "jvndb.jvn.jp",
+                        "url": "https://www.jpcert.or.jp/at/2021/at210050.html"
+                    },
+                    {
+                        "source": "jvndb.jvn.jp",
+                        "url": "https://www.jpcert.or.jp/at/2021/at210051.html"
+                    },
+                    {
+                        "source": "jvndb.jvn.jp",
+                        "url": "https://jvn.jp/vu/JVNVU95519305/index.html"
+                    }
+                ],
+                "optional": {
+                    "reference_titles": {
+                        "https://www.jpcert.or.jp/at/2021/at210050.html": "Apache Log4j の任意のコード実行の脆弱性 (CVE-2021-44228) に関する注意喚起"
+                    }
+                },
+                "published": "2021-12-11T00:00:00Z",
+                "modified": "2021-12-15T00:00:00Z"
+            },
+            "segments": [
+                {
+                    "ecosystem": "cpe"
+                }
+            ]
+        }
+    ],
+    "vulnerabilities": [
+        {
+            "content": {
+                "id": "CVE-2021-44228",
+                "references": [
+                    {
+                        "source": "jvndb.jvn.jp",
+                        "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+                    }
+                ]
+            },
+            "segments": [
+                {
+                    "ecosystem": "cpe"
+                }
+            ]
+        }
+    ],
+    "data_source": {
+        "id": "jvn-feed-rss",
+        "raws": [
+            "fixtures/2021/JVNDB-2021-000123.json"
+        ]
+    }
+}
