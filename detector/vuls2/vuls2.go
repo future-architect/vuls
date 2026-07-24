@@ -226,18 +226,19 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 
 	// Surface the skips vuls2 recorded (data this build could not evaluate,
 	// e.g. produced by a newer vuls-data-update) as scan-result warnings:
-	// one line per (source, kind), iterated in sorted order for
-	// deterministic output. Empty-string causes (the raw value for an unset
-	// datum, or the constant collected by cause-less kinds like empty-range)
-	// are kept in the data but not rendered. Deduplicate against warnings
+	// one line per (source, kind). Line order is left to SortForJSONOutput,
+	// but the causes within a line are sorted here — CollectWarnings leaves
+	// them in no guaranteed order, and the cross-pass dedup below compares
+	// formatted strings, so unsorted causes would let the same warning
+	// slip past it. Empty-string causes (the raw value for an unset datum,
+	// or the constant collected by cause-less kinds like empty-range) are
+	// kept in the data but not rendered. Deduplicate against warnings
 	// already registered by the other vuls2 pass: DetectPkgs and DetectCPEs
 	// both route through here.
-	for _, sid := range slices.Sorted(maps.Keys(vuls2Detected.Warnings)) {
-		for _, kind := range slices.Sorted(maps.Keys(vuls2Detected.Warnings[sid])) {
-			// CollectWarnings leaves causes in first-seen order; canonical
-			// ordering is this presentation layer's job.
-			raw := make([]string, 0, len(vuls2Detected.Warnings[sid][kind]))
-			for _, c := range vuls2Detected.Warnings[sid][kind] {
+	for sid, kinds := range vuls2Detected.Warnings {
+		for kind, cs := range kinds {
+			raw := make([]string, 0, len(cs))
+			for _, c := range cs {
 				if c != "" {
 					raw = append(raw, c)
 				}
