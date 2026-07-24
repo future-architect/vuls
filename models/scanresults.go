@@ -424,6 +424,9 @@ func (r *ScanResult) SortForJSONOutput() {
 		slices.Sort(v.CTIs)
 		r.ScannedCves[k] = v
 	}
+
+	slices.Sort(r.Errors)
+	slices.Sort(r.Warnings)
 }
 
 // CWEDict is a dictionary for CWE
