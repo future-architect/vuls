@@ -1,7 +1,14 @@
 name: Check vuls-data-update enums
 
+# Deliberately NOT triggered by pull_request: this checks a repository-wide
+# condition (is the pinned vuls-data-update behind nightly?), not anything a
+# PR author controls — running it per PR would fail unrelated work (incl.
+# dependabot) whenever upstream drifts, and would permanently block hotfix
+# PRs on maintenance lines whose pins are legitimately old. The daily cron is
+# the drift alarm; use workflow_dispatch to check on demand (e.g. while
+# preparing a bump PR).
 on:
-  pull_request:
+  workflow_dispatch:
   schedule:
     - cron: '37 21 * * *'
 
