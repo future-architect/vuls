@@ -225,18 +225,30 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	mergeIntoScannedCves(r, vulnInfos)
 
 	// Surface the skips vuls2 recorded (data this build could not evaluate,
-	// e.g. produced by a newer vuls-data-update) as scan-result warnings.
-	// Deduplicate against warnings already registered by the other vuls2
-	// pass: DetectPkgs and DetectCPEs both route through here.
-	for _, w := range vuls2Detected.Warnings {
-		msg := func() string {
-			if w.Cause == "" {
-				return fmt.Sprintf("vuls2 skipped data it cannot evaluate (kind: %s). Detection may be incomplete; updating vuls may resolve this.", w.Kind)
+	// e.g. produced by a newer vuls-data-update) as scan-result warnings:
+	// one line per (source, kind), iterated in sorted order for
+	// deterministic output. Empty-string causes (the raw value for an unset
+	// datum, or the constant collected by cause-less kinds like empty-range)
+	// are kept in the data but not rendered. Deduplicate against warnings
+	// already registered by the other vuls2 pass: DetectPkgs and DetectCPEs
+	// both route through here.
+	for _, sid := range slices.Sorted(maps.Keys(vuls2Detected.Warnings)) {
+		for _, kind := range slices.Sorted(maps.Keys(vuls2Detected.Warnings[sid])) {
+			causes := make([]string, 0, len(vuls2Detected.Warnings[sid][kind]))
+			for _, c := range vuls2Detected.Warnings[sid][kind] {
+				if c != "" {
+					causes = append(causes, fmt.Sprintf("%q", c))
+				}
 			}
-			return fmt.Sprintf("vuls2 skipped data it cannot evaluate (kind: %s, cause: %q). Detection may be incomplete; updating vuls may resolve this.", w.Kind, w.Cause)
-		}()
-		if !slices.Contains(r.Warnings, msg) {
-			r.Warnings = append(r.Warnings, msg)
+			msg := func() string {
+				if len(causes) == 0 {
+					return fmt.Sprintf("vuls2 skipped data it cannot evaluate (source: %s, kind: %s). Detection may be incomplete; updating vuls may resolve this.", sid, kind)
+				}
+				return fmt.Sprintf("vuls2 skipped data it cannot evaluate (source: %s, kind: %s, causes: %s). Detection may be incomplete; updating vuls may resolve this.", sid, kind, strings.Join(causes, ", "))
+			}()
+			if !slices.Contains(r.Warnings, msg) {
+				r.Warnings = append(r.Warnings, msg)
+			}
 		}
 	}
 
