@@ -37,6 +37,7 @@ import (
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
+	vuls2detect "github.com/MaineK00n/vuls2/pkg/detect"
 	"github.com/MaineK00n/vuls2/pkg/detect/cpe"
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
@@ -222,6 +223,42 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	}
 
 	mergeIntoScannedCves(r, vulnInfos)
+
+	// Surface the skips vuls2 recorded (data this build could not evaluate,
+	// e.g. produced by a newer vuls-data-update) as scan-result warnings:
+	// one line per (source, kind). Line order is left to SortForJSONOutput,
+	// but the causes within a line are sorted here — CollectWarnings leaves
+	// them in no guaranteed order, and the cross-pass dedup below compares
+	// formatted strings, so unsorted causes would let the same warning
+	// slip past it. Empty-string causes (the raw value for an unset datum,
+	// or the constant collected by cause-less kinds like empty-range) are
+	// kept in the data but not rendered. Deduplicate against warnings
+	// already registered by the other vuls2 pass: DetectPkgs and DetectCPEs
+	// both route through here.
+	for sid, kinds := range vuls2Detected.Warnings {
+		for kind, cs := range kinds {
+			raw := make([]string, 0, len(cs))
+			for _, c := range cs {
+				if c != "" {
+					raw = append(raw, c)
+				}
+			}
+			slices.Sort(raw)
+			causes := make([]string, 0, len(raw))
+			for _, c := range raw {
+				causes = append(causes, fmt.Sprintf("%q", c))
+			}
+			msg := func() string {
+				if len(causes) == 0 {
+					return fmt.Sprintf("vuls2 skipped data it cannot evaluate (source: %s, kind: %s). Detection may be incomplete; updating vuls may resolve this.", sid, kind)
+				}
+				return fmt.Sprintf("vuls2 skipped data it cannot evaluate (source: %s, kind: %s, causes: %s). Detection may be incomplete; updating vuls may resolve this.", sid, kind, strings.Join(causes, ", "))
+			}()
+			if !slices.Contains(r.Warnings, msg) {
+				r.Warnings = append(r.Warnings, msg)
+			}
+		}
+	}
 
 	// detectWith runs once per entry point (DetectPkgs, DetectCPEs); name
 	// the pass so the two log lines of one report run stay tellable apart.
@@ -615,6 +652,13 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 
 		Detected:    slices.Collect(maps.Values(detected)),
 		DataSources: datasources,
+
+		// Data this build could not evaluate (e.g. enum values from a newer
+		// vuls-data-update) is skipped with a warning recorded on the
+		// FilteredCriteria trees; aggregate them here — before any affected
+		// gating downstream prunes the not-affected conditions carrying them
+		// — so the skips stay observable in the scan result.
+		Warnings: vuls2detect.CollectWarnings(detected),
 
 		DetectedAt: time.Now(),
 		DetectedBy: version.String(),
