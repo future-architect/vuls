@@ -1318,9 +1318,12 @@ func enrichJVN(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]advisoryTypes
 				// extractor fetched (stored under Optional["reference_titles"] as a
 				// url->title map; vuls-data-update #896); one JVNDB note often covers
 				// several alerts, so its note-level a.Content.Title is not the alert's
-				// own title. The extractor writes a map[string]string, but the db
-				// hands it back JSON-decoded into Optional's map[string]any. Fall back
-				// to the note title when the reference has no fetched title.
+				// own title. The extractor writes a map[string]string, but advisories
+				// only ever reach here via the db read path, which json-decodes them
+				// into Optional's map[string]any (a JSON object always decodes to
+				// map[string]any, never map[string]string) — so the map[string]any
+				// assertion is the only shape possible here. Fall back to the note
+				// title when the reference has no fetched title.
 				title := a.Content.Title
 				if m, ok := a.Content.Optional["reference_titles"].(map[string]any); ok {
 					if t, ok := m[r.URL].(string); ok && t != "" {
