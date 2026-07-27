@@ -13586,6 +13586,50 @@ func Test_enrich(t *testing.T) {
 			},
 		},
 		{
+			// When the jvn extractor recorded a per-reference JPCERT-AT
+			// alert-page title (Optional["reference_titles"], a url->title map;
+			// vuls-data-update #896), enrichJVN uses that title for the alert.
+			// References without an entry (at210051) fall back to the note-level
+			// advisory title.
+			name: "enrich with jvn-feed-rss data (JP-CERT alert title from reference_titles, falls back to note title otherwise)",
+			args: args{
+				vim: models.VulnInfos{
+					"CVE-2021-44228": models.VulnInfo{
+						CveID:       "CVE-2021-44228",
+						CveContents: models.CveContents{},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2021-44228": models.VulnInfo{
+					CveID: "CVE-2021-44228",
+					CveContents: models.CveContents{
+						models.Jvn: []models.CveContent{
+							{
+								Type:       models.Jvn,
+								CveID:      "CVE-2021-44228",
+								SourceLink: "https://jvndb.jvn.jp/ja/contents/2021/JVNDB-2021-000123.html",
+							},
+						},
+					},
+					AlertDict: models.AlertDict{
+						JPCERT: []models.Alert{
+							{
+								Team:  "jpcert",
+								URL:   "https://www.jpcert.or.jp/at/2021/at210050.html",
+								Title: "Apache Log4j の任意のコード実行の脆弱性 (CVE-2021-44228) に関する注意喚起",
+							},
+							{
+								Team:  "jpcert",
+								URL:   "https://www.jpcert.or.jp/at/2021/at210051.html",
+								Title: "複数の Apache Log4j 製品における脆弱性",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "enrich with metasploit data",
 			args: args{
 				vim: models.VulnInfos{
