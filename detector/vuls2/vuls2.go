@@ -42,6 +42,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
+	vuls2WarningTypes "github.com/MaineK00n/vuls2/pkg/types/warning"
 	"github.com/MaineK00n/vuls2/pkg/version"
 	"github.com/knqyf263/go-cpe/common"
 	"github.com/knqyf263/go-cpe/naming"
@@ -225,38 +226,50 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	mergeIntoScannedCves(r, vulnInfos)
 
 	// Surface the skips vuls2 recorded (data this build could not evaluate,
-	// e.g. produced by a newer vuls-data-update) as scan-result warnings:
-	// one line per (source, kind). Line order is left to SortForJSONOutput,
-	// but the causes within a line are sorted here — CollectWarnings leaves
-	// them in no guaranteed order, and the cross-pass dedup below compares
-	// formatted strings, so unsorted causes would let the same warning
-	// slip past it. Empty-string causes (the raw value for an unset datum,
-	// or the constant collected by cause-less kinds like empty-range) are
-	// kept in the data but not rendered. Deduplicate against warnings
-	// already registered by the other vuls2 pass: DetectPkgs and DetectCPEs
-	// both route through here.
-	for sid, kinds := range vuls2Detected.Warnings {
-		for kind, cs := range kinds {
-			raw := make([]string, 0, len(cs))
-			for _, c := range cs {
-				if c != "" {
-					raw = append(raw, c)
-				}
-			}
-			slices.Sort(raw)
-			causes := make([]string, 0, len(raw))
-			for _, c := range raw {
-				causes = append(causes, fmt.Sprintf("%q", c))
-			}
-			msg := func() string {
-				if len(causes) == 0 {
-					return fmt.Sprintf("vuls2 skipped data it cannot evaluate (source: %s, kind: %s). Detection may be incomplete; updating vuls may resolve this.", sid, kind)
-				}
-				return fmt.Sprintf("vuls2 skipped data it cannot evaluate (source: %s, kind: %s, causes: %s). Detection may be incomplete; updating vuls may resolve this.", sid, kind, strings.Join(causes, ", "))
-			}()
-			if !slices.Contains(r.Warnings, msg) {
-				r.Warnings = append(r.Warnings, msg)
-			}
+	// e.g. produced by a newer vuls-data-update) as scan-result warnings.
+	// The flat warning entries are grouped here into one line per
+	// (source, kind) — grouping is this presentation layer's job, and one
+	// drift event that introduces many enum values reads better as one line
+	// listing the causes. Line order is left to SortForJSONOutput, but the
+	// causes within a line are sorted here: entry order carries no
+	// guarantee, and the cross-pass dedup below compares formatted strings,
+	// so unsorted causes would let the same warning slip past it.
+	// Empty-string causes (the raw value for an unset datum, or the
+	// constant for cause-less kinds like empty-range) are kept in the data
+	// but not rendered. Deduplicate against warnings already registered by
+	// the other vuls2 pass: DetectPkgs and DetectCPEs both route through
+	// here.
+	type warningGroup struct {
+		source sourceTypes.SourceID
+		kind   vuls2WarningTypes.Kind
+	}
+	grouped := make(map[warningGroup][]string)
+	for _, w := range vuls2Detected.Warnings {
+		g := warningGroup{source: w.Source, kind: w.Kind}
+		if _, ok := grouped[g]; !ok {
+			grouped[g] = nil
+		}
+		if w.Cause != "" {
+			grouped[g] = append(grouped[g], w.Cause)
+		}
+	}
+	for g, raw := range grouped {
+		slices.Sort(raw)
+		causes := make([]string, 0, len(raw))
+		for _, c := range raw {
+			causes = append(causes, fmt.Sprintf("%q", c))
+		}
+		var parts []string
+		if g.source != "" {
+			parts = append(parts, fmt.Sprintf("source: %s", g.source))
+		}
+		parts = append(parts, fmt.Sprintf("kind: %s", g.kind))
+		if len(causes) > 0 {
+			parts = append(parts, fmt.Sprintf("causes: %s", strings.Join(causes, ", ")))
+		}
+		msg := fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", "))
+		if !slices.Contains(r.Warnings, msg) {
+			r.Warnings = append(r.Warnings, msg)
 		}
 	}
 
