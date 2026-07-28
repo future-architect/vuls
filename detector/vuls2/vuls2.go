@@ -28,6 +28,7 @@ import (
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
+	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
@@ -37,11 +38,9 @@ import (
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	"github.com/MaineK00n/vuls2/pkg/db/session"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
-	vuls2detect "github.com/MaineK00n/vuls2/pkg/detect"
 	"github.com/MaineK00n/vuls2/pkg/detect/cpe"
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
-	vuls2WarningTypes "github.com/MaineK00n/vuls2/pkg/detect/types/warning"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	"github.com/MaineK00n/vuls2/pkg/version"
 	"github.com/knqyf263/go-cpe/common"
@@ -227,30 +226,48 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 
 	// Surface the skips vuls2 recorded (data this build could not evaluate,
 	// e.g. produced by a newer vuls-data-update) as scan-result warnings.
-	// The flat warning entries are grouped here into one line per
-	// (source, kind) — grouping is this presentation layer's job, and one
-	// drift event that introduces many enum values reads better as one line
-	// listing the causes. Line order is left to SortForJSONOutput, but the
-	// causes within a line are sorted here: entry order carries no
-	// guarantee, and the cross-pass dedup below compares formatted strings,
-	// so unsorted causes would let the same warning slip past it.
-	// Empty-string causes (the raw value for an unset datum, or the
-	// constant for cause-less kinds like empty-range) are kept in the data
-	// but not rendered. Deduplicate against warnings already registered by
-	// the other vuls2 pass: DetectPkgs and DetectCPEs both route through
-	// here.
+	// The warnings ride the FilteredCriteria trees (vuls2 passes every
+	// condition through ungated, and out-of-vocabulary criterions carry
+	// their recorded warnings), so collect them here — before postConvert
+	// applies any affected gating — grouped into one line per
+	// (source, kind): one drift event that introduces many enum values
+	// reads better as one line listing the causes. Line order is left to
+	// SortForJSONOutput, but the causes within a line are sorted here: the
+	// cross-pass dedup below compares formatted strings, so unsorted causes
+	// would let the same warning slip past it. Empty-string causes (the raw
+	// value for an unset datum, or the constant for cause-less kinds like
+	// empty-range) are not rendered. Deduplicate against warnings already
+	// registered by the other vuls2 pass: DetectPkgs and DetectCPEs both
+	// route through here.
 	type warningGroup struct {
 		source sourceTypes.SourceID
-		kind   vuls2WarningTypes.Kind
+		kind   warningTypes.Kind
 	}
 	grouped := make(map[warningGroup][]string)
-	for _, w := range vuls2Detected.Warnings {
-		g := warningGroup{source: w.Source, kind: w.Kind}
-		if _, ok := grouped[g]; !ok {
-			grouped[g] = nil
+	var collect func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID)
+	collect = func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID) {
+		for _, ca := range fca.Criterias {
+			collect(ca, sid)
 		}
-		if w.Cause != "" {
-			grouped[g] = append(grouped[g], w.Cause)
+		for _, cn := range fca.Criterions {
+			for _, w := range cn.Warnings {
+				g := warningGroup{source: sid, kind: w.Kind}
+				if _, ok := grouped[g]; !ok {
+					grouped[g] = nil
+				}
+				if w.Cause != "" && !slices.Contains(grouped[g], w.Cause) {
+					grouped[g] = append(grouped[g], w.Cause)
+				}
+			}
+		}
+	}
+	for _, data := range vuls2Detected.Detected {
+		for _, d := range data.Detections {
+			for sid, conds := range d.Contents {
+				for _, cond := range conds {
+					collect(cond.Criteria, sid)
+				}
+			}
 		}
 	}
 	for g, raw := range grouped {
@@ -665,13 +682,6 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 
 		Detected:    slices.Collect(maps.Values(detected)),
 		DataSources: datasources,
-
-		// Data this build could not evaluate (e.g. enum values from a newer
-		// vuls-data-update) is skipped with a warning recorded on the
-		// FilteredCriteria trees; aggregate them here — before any affected
-		// gating downstream prunes the not-affected conditions carrying them
-		// — so the skips stay observable in the scan result.
-		Warnings: vuls2detect.CollectWarnings(detected),
 
 		DetectedAt: time.Now(),
 		DetectedBy: version.String(),
