@@ -1,6 +1,7 @@
 package vuls2
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -32,9 +33,17 @@ var (
 // a background goroutine and immediately falls through to use the current
 // (stale) DB. Subsequent requests that arrive while the fetch is in flight
 // skip the download entirely.
+//
+// It also tracks whether the initial startup fetch has completed, allowing
+// the server's /health and /vuls endpoints to report readiness.
 type backgroundFetch struct {
 	mu          sync.Mutex
 	downloading bool
+
+	// initialDone is closed once the startup fetch completes (success or
+	// failure). A nil channel means no startup fetch was requested.
+	initialDone chan struct{}
+	initialErr  error
 }
 
 func newDBConfig(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Config, error) {
@@ -217,4 +226,104 @@ func (bf *backgroundFetch) triggerAsync(vuls2Conf config.Vuls2Conf, noProgress b
 			logging.Log.Infof("Background vuls2 db fetch completed successfully")
 		}
 	}()
+}
+
+// StartInitialFetch triggers a one-time background download of the vuls2 DB at
+// server startup. It fills in the default repository/path just like openSession
+// does. The /health endpoint reports 503 until the download finishes. If the DB
+// already exists with a valid schema, the initial fetch is considered done
+// immediately and a normal background refresh is triggered instead.
+func StartInitialFetch(vuls2Conf config.Vuls2Conf, noProgress bool) {
+	if vuls2Conf.Repository == "" {
+		sv, err := session.SchemaVersion("boltdb")
+		if err != nil {
+			logging.Log.Warnf("StartInitialFetch: failed to get schema version: %+v", err)
+			return
+		}
+		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
+	}
+	if vuls2Conf.Path == "" {
+		vuls2Conf.Path = DefaultPath
+	}
+
+	syncRequired, err := mustFetchSync(vuls2Conf.Path)
+	if err != nil {
+		logging.Log.Warnf("StartInitialFetch: failed to check db state: %+v", err)
+		return
+	}
+
+	if !syncRequired {
+		// DB already usable — mark ready immediately, trigger a background
+		// refresh for staleness (same as a normal request would).
+		bgFetch.mu.Lock()
+		bgFetch.initialDone = make(chan struct{})
+		close(bgFetch.initialDone)
+		bgFetch.mu.Unlock()
+
+		willDownload, _ := shouldDownload(vuls2Conf, time.Now())
+		if willDownload {
+			bgFetch.triggerAsync(vuls2Conf, noProgress)
+		}
+		return
+	}
+
+	// DB doesn't exist or schema mismatch — download in background and mark
+	// not-ready until complete.
+	bgFetch.mu.Lock()
+	bgFetch.initialDone = make(chan struct{})
+	bgFetch.downloading = true
+	bgFetch.mu.Unlock()
+
+	logging.Log.Infof("Starting initial vuls2 db download. repository: %s", vuls2Conf.Repository)
+	go func() {
+		defer func() {
+			bgFetch.mu.Lock()
+			bgFetch.downloading = false
+			close(bgFetch.initialDone)
+			bgFetch.mu.Unlock()
+		}()
+
+		if err := fetch.Fetch(fetch.WithRepository(vuls2Conf.Repository), fetch.WithDBPath(vuls2Conf.Path), fetch.WithNoProgress(noProgress)); err != nil {
+			logging.Log.Errorf("Initial vuls2 db fetch failed: %+v", err)
+			bgFetch.mu.Lock()
+			bgFetch.initialErr = err
+			bgFetch.mu.Unlock()
+		} else {
+			logging.Log.Infof("Initial vuls2 db fetch completed successfully")
+		}
+	}()
+}
+
+// Ready reports whether the vuls2 DB is available for serving requests.
+// It returns false with a descriptive message while the initial startup
+// download is still in progress.
+func Ready() (ok bool, msg string) {
+	bgFetch.mu.Lock()
+	done := bgFetch.initialDone
+	bgFetch.mu.Unlock()
+
+	if done == nil {
+		// No startup fetch was requested (e.g. skipUpdate or not configured).
+		return true, "ok"
+	}
+
+	select {
+	case <-done:
+		bgFetch.mu.Lock()
+		err := bgFetch.initialErr
+		bgFetch.mu.Unlock()
+		if err != nil {
+			return false, fmt.Sprintf("initial vuls2 db fetch failed: %v", err)
+		}
+		return true, "ok"
+	default:
+		return false, "downloading vuls2"
+	}
+}
+
+// Downloading reports whether a background fetch is currently in progress.
+func Downloading() bool {
+	bgFetch.mu.Lock()
+	defer bgFetch.mu.Unlock()
+	return bgFetch.downloading
 }

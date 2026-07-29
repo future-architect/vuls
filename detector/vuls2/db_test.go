@@ -206,6 +206,53 @@ func Test_backgroundFetch_singleFlight(t *testing.T) {
 	}
 }
 
+func Test_Ready(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func()
+		wantOK  bool
+		wantMsg string
+	}{
+		{
+			name:    "no startup fetch requested",
+			setup:   func() { vuls2.ResetBgFetch() },
+			wantOK:  true,
+			wantMsg: "ok",
+		},
+		{
+			name:    "startup fetch completed successfully",
+			setup:   func() { vuls2.SetInitialDone(nil) },
+			wantOK:  true,
+			wantMsg: "ok",
+		},
+		{
+			name:    "startup fetch in progress",
+			setup:   func() { vuls2.SetInitialInProgress() },
+			wantOK:  false,
+			wantMsg: "downloading vuls2",
+		},
+		{
+			name:   "startup fetch failed",
+			setup:  func() { vuls2.SetInitialDone(xerrors.New("network error")) },
+			wantOK: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+			defer vuls2.ResetBgFetch()
+
+			ok, msg := vuls2.Ready()
+			if ok != tt.wantOK {
+				t.Errorf("Ready() ok = %v, want %v", ok, tt.wantOK)
+			}
+			if tt.wantMsg != "" && msg != tt.wantMsg {
+				t.Errorf("Ready() msg = %q, want %q", msg, tt.wantMsg)
+			}
+		})
+	}
+}
+
 func putMetadata(metadata types.Metadata, path string) error {
 	c := session.Config{
 		Type: "boltdb",
