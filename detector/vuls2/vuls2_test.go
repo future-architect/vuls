@@ -30,6 +30,7 @@ import (
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	vcBinaryPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/binary"
 	vcSourcePackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/source"
+	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	exploitTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/exploit"
@@ -14703,6 +14704,97 @@ func TestDetectCPEs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := vuls2.DetectCPEs(tt.r, tt.cpes, tt.sesh); (err != nil) != tt.wantErr {
 				t.Errorf("DetectCPEs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_warningMessages(t *testing.T) {
+	tests := []struct {
+		name     string
+		detected []detectTypes.VulnerabilityData
+		want     []string
+	}{
+		{
+			name:     "no warnings yields none",
+			detected: []detectTypes.VulnerabilityData{{ID: "ROOT-ID"}},
+			want:     []string{},
+		},
+		{
+			// One line per distinct (source, warning), deduplicated via the
+			// upstream warning.Compare: duplicates — including one nested a
+			// level down — collapse, an unset ("") cause and a cause-less
+			// kind both render kind-only lines, and the same warning under
+			// another source stays a separate line. Line order carries no
+			// guarantee (ScanResult.SortForJSONOutput normalizes it in
+			// production), so the comparison sorts both sides.
+			name: "one line per source and warning",
+			detected: []detectTypes.VulnerabilityData{
+				{
+					ID: "ROOT-ID",
+					Detections: []detectTypes.VulnerabilityDataDetection{{
+						Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
+						Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+							sourceTypes.RedHatOVALv2: {
+								{
+									Criteria: criteriaTypes.FilteredCriteria{
+										Operator: criteriaTypes.CriteriaOperatorTypeOR,
+										Criterions: []criterionTypes.FilteredCriterion{{
+											Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+											Warnings: []warningTypes.Warning{
+												{Kind: warningTypes.KindEmptyRange},
+												{Kind: warningTypes.KindUnevaluablePackageType},
+												{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"},
+											},
+										}},
+									},
+								},
+								{
+									Criteria: criteriaTypes.FilteredCriteria{
+										Operator: criteriaTypes.CriteriaOperatorTypeOR,
+										Criterias: []criteriaTypes.FilteredCriteria{{
+											Operator: criteriaTypes.CriteriaOperatorTypeAND,
+											Criterions: []criterionTypes.FilteredCriterion{{
+												Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+												Warnings: []warningTypes.Warning{
+													{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"},
+													{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"},
+													{Kind: warningTypes.KindUnevaluablePackageType, Cause: "future-package"},
+												},
+											}},
+										}},
+									},
+								},
+							},
+							sourceTypes.RedHatCSAF: {
+								{
+									Criteria: criteriaTypes.FilteredCriteria{
+										Operator: criteriaTypes.CriteriaOperatorTypeOR,
+										Criterions: []criterionTypes.FilteredCriterion{{
+											Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+											Warnings:  []warningTypes.Warning{{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
+										}},
+									},
+								},
+							},
+						},
+					}},
+				},
+			},
+			want: []string{
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: empty-range). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type, cause: "future-package"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, cause: "future-range-b"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-csaf, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if diff := gocmp.Diff(tt.want, vuls2.WarningMessages(tt.detected), gocmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+				t.Errorf("warningMessages() (-expected +got):\n%s", diff)
 			}
 		})
 	}

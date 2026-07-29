@@ -28,6 +28,7 @@ import (
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
+	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
@@ -205,6 +206,67 @@ func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session,
 	return sesh, nil
 }
 
+// warningMessages renders the non-fatal evaluation warnings recorded on the
+// FilteredCriteria trees (data this build could not evaluate, e.g. produced
+// by a newer vuls-data-update) into scan-result warning lines. vuls2 hands
+// the trees over ungated, with out-of-vocabulary criterions carrying their
+// recorded warnings, so even a condition whose every criterion was skipped
+// is represented — postConvert's affected gating works on its own derived
+// data and never prunes these trees. One line per distinct
+// (source, warning), deduplicated with the upstream warning.Compare: each
+// line renders deterministically on its own, so callers can deduplicate
+// across passes by comparing the rendered strings. The source leads the
+// format on purpose — ScanResult.SortForJSONOutput orders the lines
+// lexicographically, so a drifting source's lines cluster together, then
+// by kind and cause. An empty Cause (the raw value for an unset datum, or
+// the constant for cause-less kinds like empty-range) is not rendered.
+// Line order here is unspecified — SortForJSONOutput normalizes it.
+func warningMessages(detected []detectTypes.VulnerabilityData) []string {
+	type entry struct {
+		source  sourceTypes.SourceID
+		warning warningTypes.Warning
+	}
+	var entries []entry
+	var collect func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID)
+	collect = func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID) {
+		for _, ca := range fca.Criterias {
+			collect(ca, sid)
+		}
+		for _, cn := range fca.Criterions {
+			for _, w := range cn.Warnings {
+				e := entry{source: sid, warning: w}
+				if !slices.ContainsFunc(entries, func(x entry) bool {
+					return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
+				}) {
+					entries = append(entries, e)
+				}
+			}
+		}
+	}
+	for _, data := range detected {
+		for _, d := range data.Detections {
+			for sid, conds := range d.Contents {
+				for _, cond := range conds {
+					collect(cond.Criteria, sid)
+				}
+			}
+		}
+	}
+	msgs := make([]string, 0, len(entries))
+	for _, e := range entries {
+		var parts []string
+		if e.source != "" {
+			parts = append(parts, fmt.Sprintf("source: %s", e.source))
+		}
+		parts = append(parts, fmt.Sprintf("kind: %s", e.warning.Kind))
+		if e.warning.Cause != "" {
+			parts = append(parts, fmt.Sprintf("cause: %q", e.warning.Cause))
+		}
+		msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", ")))
+	}
+	return msgs
+}
+
 func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, shared *Session) error {
 	sesh, err := shared.open()
 	if err != nil {
@@ -222,6 +284,15 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	}
 
 	mergeIntoScannedCves(r, vulnInfos)
+
+	// Surface the skips vuls2 recorded as scan-result warnings, deduplicated
+	// against warnings already registered by the other vuls2 pass:
+	// DetectPkgs and DetectCPEs both route through here.
+	for _, msg := range warningMessages(vuls2Detected.Detected) {
+		if !slices.Contains(r.Warnings, msg) {
+			r.Warnings = append(r.Warnings, msg)
+		}
+	}
 
 	// detectWith runs once per entry point (DetectPkgs, DetectCPEs); name
 	// the pass so the two log lines of one report run stay tellable apart.
