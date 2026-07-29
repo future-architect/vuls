@@ -43,3 +43,6 @@ jobs:
           args: release --clean --timeout 60m
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pin the release tag to the pushed ref so goreleaser never picks
+          # another tag pointing at the same commit (e.g. an rc tag).
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
