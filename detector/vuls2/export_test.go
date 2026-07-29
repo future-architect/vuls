@@ -14,6 +14,8 @@ var (
 	MergeIntoScannedCves = mergeIntoScannedCves
 
 	CollectVerifiedProducts = collectVerifiedProducts
+
+	WarningMessages = warningMessages
 )
 
 type Source source

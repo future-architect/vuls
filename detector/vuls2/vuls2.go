@@ -206,6 +206,72 @@ func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session,
 	return sesh, nil
 }
 
+// warningMessages renders the non-fatal evaluation warnings recorded on the
+// FilteredCriteria trees (data this build could not evaluate, e.g. produced
+// by a newer vuls-data-update) into scan-result warning lines. vuls2 hands
+// the trees over ungated, with out-of-vocabulary criterions carrying their
+// recorded warnings, so even a condition whose every criterion was skipped
+// is represented — postConvert's affected gating works on its own derived
+// data and never prunes these trees. One line per (source, kind): one drift
+// event that introduces many enum values reads better as a single line
+// listing the causes, sorted — callers deduplicate lines by string
+// comparison, so an unstable cause order would let the same warning slip
+// past. Empty causes (the raw value for an unset datum, or the constant for
+// cause-less kinds like empty-range) participate in grouping but are not
+// rendered; a group with only empty causes renders a kind-only line. Line
+// order is unspecified — ScanResult.SortForJSONOutput normalizes it.
+func warningMessages(detected []detectTypes.VulnerabilityData) []string {
+	type group struct {
+		source sourceTypes.SourceID
+		kind   warningTypes.Kind
+	}
+	grouped := make(map[group][]string)
+	var collect func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID)
+	collect = func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID) {
+		for _, ca := range fca.Criterias {
+			collect(ca, sid)
+		}
+		for _, cn := range fca.Criterions {
+			for _, w := range cn.Warnings {
+				g := group{source: sid, kind: w.Kind}
+				if _, ok := grouped[g]; !ok {
+					grouped[g] = nil
+				}
+				if w.Cause != "" && !slices.Contains(grouped[g], w.Cause) {
+					grouped[g] = append(grouped[g], w.Cause)
+				}
+			}
+		}
+	}
+	for _, data := range detected {
+		for _, d := range data.Detections {
+			for sid, conds := range d.Contents {
+				for _, cond := range conds {
+					collect(cond.Criteria, sid)
+				}
+			}
+		}
+	}
+	msgs := make([]string, 0, len(grouped))
+	for g, raw := range grouped {
+		slices.Sort(raw)
+		causes := make([]string, 0, len(raw))
+		for _, c := range raw {
+			causes = append(causes, fmt.Sprintf("%q", c))
+		}
+		var parts []string
+		if g.source != "" {
+			parts = append(parts, fmt.Sprintf("source: %s", g.source))
+		}
+		parts = append(parts, fmt.Sprintf("kind: %s", g.kind))
+		if len(causes) > 0 {
+			parts = append(parts, fmt.Sprintf("causes: %s", strings.Join(causes, ", ")))
+		}
+		msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", ")))
+	}
+	return msgs
+}
+
 func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOriginalCPE map[string][]string, noJVNCPEs map[string]struct{}, shared *Session) error {
 	sesh, err := shared.open()
 	if err != nil {
@@ -224,67 +290,10 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 
 	mergeIntoScannedCves(r, vulnInfos)
 
-	// Surface the skips vuls2 recorded (data this build could not evaluate,
-	// e.g. produced by a newer vuls-data-update) as scan-result warnings.
-	// The warnings ride the FilteredCriteria trees (vuls2 passes every
-	// condition through ungated, and out-of-vocabulary criterions carry
-	// their recorded warnings), so collect them here — before postConvert
-	// applies any affected gating — grouped into one line per
-	// (source, kind): one drift event that introduces many enum values
-	// reads better as one line listing the causes. Line order is left to
-	// SortForJSONOutput, but the causes within a line are sorted here: the
-	// cross-pass dedup below compares formatted strings, so unsorted causes
-	// would let the same warning slip past it. Empty-string causes (the raw
-	// value for an unset datum, or the constant for cause-less kinds like
-	// empty-range) are not rendered. Deduplicate against warnings already
-	// registered by the other vuls2 pass: DetectPkgs and DetectCPEs both
-	// route through here.
-	type warningGroup struct {
-		source sourceTypes.SourceID
-		kind   warningTypes.Kind
-	}
-	grouped := make(map[warningGroup][]string)
-	var collect func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID)
-	collect = func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID) {
-		for _, ca := range fca.Criterias {
-			collect(ca, sid)
-		}
-		for _, cn := range fca.Criterions {
-			for _, w := range cn.Warnings {
-				g := warningGroup{source: sid, kind: w.Kind}
-				if _, ok := grouped[g]; !ok {
-					grouped[g] = nil
-				}
-				if w.Cause != "" && !slices.Contains(grouped[g], w.Cause) {
-					grouped[g] = append(grouped[g], w.Cause)
-				}
-			}
-		}
-	}
-	for _, data := range vuls2Detected.Detected {
-		for _, d := range data.Detections {
-			for sid, conds := range d.Contents {
-				for _, cond := range conds {
-					collect(cond.Criteria, sid)
-				}
-			}
-		}
-	}
-	for g, raw := range grouped {
-		slices.Sort(raw)
-		causes := make([]string, 0, len(raw))
-		for _, c := range raw {
-			causes = append(causes, fmt.Sprintf("%q", c))
-		}
-		var parts []string
-		if g.source != "" {
-			parts = append(parts, fmt.Sprintf("source: %s", g.source))
-		}
-		parts = append(parts, fmt.Sprintf("kind: %s", g.kind))
-		if len(causes) > 0 {
-			parts = append(parts, fmt.Sprintf("causes: %s", strings.Join(causes, ", ")))
-		}
-		msg := fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", "))
+	// Surface the skips vuls2 recorded as scan-result warnings, deduplicated
+	// against warnings already registered by the other vuls2 pass:
+	// DetectPkgs and DetectCPEs both route through here.
+	for _, msg := range warningMessages(vuls2Detected.Detected) {
 		if !slices.Contains(r.Warnings, msg) {
 			r.Warnings = append(r.Warnings, msg)
 		}
