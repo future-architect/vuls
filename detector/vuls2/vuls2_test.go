@@ -14721,12 +14721,14 @@ func Test_warningMessages(t *testing.T) {
 			want:     []string{},
 		},
 		{
-			// One line per (source, kind): duplicated warnings — including
-			// one nested a level down — collapse, causes render sorted, an
-			// unset ("") cause participates in grouping but is not rendered,
-			// a cause-less kind renders a kind-only line, and the same
-			// (kind, cause) under another source stays a separate line.
-			name: "groups per source and kind with sorted causes",
+			// One line per distinct (source, warning), deduplicated via the
+			// upstream warning.Compare: duplicates — including one nested a
+			// level down — collapse, an unset ("") cause and a cause-less
+			// kind both render kind-only lines, and the same warning under
+			// another source stays a separate line. Line order carries no
+			// guarantee (ScanResult.SortForJSONOutput normalizes it in
+			// production), so the comparison sorts both sides.
+			name: "one line per source and warning",
 			detected: []detectTypes.VulnerabilityData{
 				{
 					ID: "ROOT-ID",
@@ -14781,16 +14783,16 @@ func Test_warningMessages(t *testing.T) {
 			},
 			want: []string{
 				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: empty-range). Detection may be incomplete; updating vuls may resolve this.`,
-				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type, causes: "future-package"). Detection may be incomplete; updating vuls may resolve this.`,
-				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, causes: "future-range-a", "future-range-b"). Detection may be incomplete; updating vuls may resolve this.`,
-				`vuls2 skipped data it cannot evaluate (source: redhat-csaf, kind: unevaluable-range-type, causes: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type, cause: "future-package"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, cause: "future-range-b"). Detection may be incomplete; updating vuls may resolve this.`,
+				`vuls2 skipped data it cannot evaluate (source: redhat-csaf, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Line order is unspecified (ScanResult.SortForJSONOutput
-			// normalizes it in production); compare order-insensitively.
 			if diff := gocmp.Diff(tt.want, vuls2.WarningMessages(tt.detected), gocmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
 				t.Errorf("warningMessages() (-expected +got):\n%s", diff)
 			}

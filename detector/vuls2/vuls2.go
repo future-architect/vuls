@@ -212,20 +212,21 @@ func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session,
 // the trees over ungated, with out-of-vocabulary criterions carrying their
 // recorded warnings, so even a condition whose every criterion was skipped
 // is represented — postConvert's affected gating works on its own derived
-// data and never prunes these trees. One line per (source, kind): one drift
-// event that introduces many enum values reads better as a single line
-// listing the causes, sorted — callers deduplicate lines by string
-// comparison, so an unstable cause order would let the same warning slip
-// past. Empty causes (the raw value for an unset datum, or the constant for
-// cause-less kinds like empty-range) participate in grouping but are not
-// rendered; a group with only empty causes renders a kind-only line. Line
-// order is unspecified — ScanResult.SortForJSONOutput normalizes it.
+// data and never prunes these trees. One line per distinct
+// (source, warning), deduplicated with the upstream warning.Compare: each
+// line renders deterministically on its own, so callers can deduplicate
+// across passes by comparing the rendered strings. The source leads the
+// format on purpose — ScanResult.SortForJSONOutput orders the lines
+// lexicographically, so a drifting source's lines cluster together, then
+// by kind and cause. An empty Cause (the raw value for an unset datum, or
+// the constant for cause-less kinds like empty-range) is not rendered.
+// Line order here is unspecified — SortForJSONOutput normalizes it.
 func warningMessages(detected []detectTypes.VulnerabilityData) []string {
-	type group struct {
-		source sourceTypes.SourceID
-		kind   warningTypes.Kind
+	type entry struct {
+		source  sourceTypes.SourceID
+		warning warningTypes.Warning
 	}
-	grouped := make(map[group][]string)
+	var entries []entry
 	var collect func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID)
 	collect = func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID) {
 		for _, ca := range fca.Criterias {
@@ -233,12 +234,11 @@ func warningMessages(detected []detectTypes.VulnerabilityData) []string {
 		}
 		for _, cn := range fca.Criterions {
 			for _, w := range cn.Warnings {
-				g := group{source: sid, kind: w.Kind}
-				if _, ok := grouped[g]; !ok {
-					grouped[g] = nil
-				}
-				if w.Cause != "" && !slices.Contains(grouped[g], w.Cause) {
-					grouped[g] = append(grouped[g], w.Cause)
+				e := entry{source: sid, warning: w}
+				if !slices.ContainsFunc(entries, func(x entry) bool {
+					return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
+				}) {
+					entries = append(entries, e)
 				}
 			}
 		}
@@ -252,20 +252,15 @@ func warningMessages(detected []detectTypes.VulnerabilityData) []string {
 			}
 		}
 	}
-	msgs := make([]string, 0, len(grouped))
-	for g, raw := range grouped {
-		slices.Sort(raw)
-		causes := make([]string, 0, len(raw))
-		for _, c := range raw {
-			causes = append(causes, fmt.Sprintf("%q", c))
-		}
+	msgs := make([]string, 0, len(entries))
+	for _, e := range entries {
 		var parts []string
-		if g.source != "" {
-			parts = append(parts, fmt.Sprintf("source: %s", g.source))
+		if e.source != "" {
+			parts = append(parts, fmt.Sprintf("source: %s", e.source))
 		}
-		parts = append(parts, fmt.Sprintf("kind: %s", g.kind))
-		if len(causes) > 0 {
-			parts = append(parts, fmt.Sprintf("causes: %s", strings.Join(causes, ", ")))
+		parts = append(parts, fmt.Sprintf("kind: %s", e.warning.Kind))
+		if e.warning.Cause != "" {
+			parts = append(parts, fmt.Sprintf("cause: %q", e.warning.Cause))
 		}
 		msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", ")))
 	}
