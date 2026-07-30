@@ -100,31 +100,43 @@ func DetectCPEs(r *models.ScanResult, cpes []CPE, sesh *Session) error {
 	return detectWith(r, vuls2Scanned, fsToOriginalCPE, noJVNCPEs, sesh)
 }
 
-// Session is a lazily-opened, shared vuls2 db handle scoped to one server's
-// detection and enrichment. The db is opened at most once — on the first path
-// that actually queries it — and reused by every later path, so the read cache
+// Session is a vuls2 db handle scoped to one server's detection and
+// enrichment. Every path of that turn queries the same db, so the read cache
 // that OS-package / CPE detection warms is still warm for the enrichment that
-// immediately follows instead of being discarded and rebuilt. It is opened
-// only when some path genuinely needs it, exactly as the unshared code did:
-// a family that skips vuls2 detection (FreeBSD, pseudo, trivy-scanned, ...)
-// does not open it during detection, but enrichment still opens it when the
-// result carries CVEs (e.g. FreeBSD's pkg-audit findings); a server with
-// nothing to detect and no CVEs to enrich never opens it at all. Create one
-// with NewSession, thread it through DetectPkgs / DetectCPEs /
-// EnrichVulnInfos, and Close it when the server is done. It is not safe for
-// concurrent use; one server's detection runs sequentially, which is the
-// intended scope.
+// immediately follows instead of being discarded and rebuilt. That cache is
+// what makes enrichment affordable: without it, every root that references an
+// advisory or a vulnerability re-reads and re-unmarshals the same record, which
+// measured ~60x slower on a 4873-CVE result (2.4s -> 150s).
+//
+// The db is opened lazily, on the first path that actually queries it: a family
+// that skips vuls2 detection (FreeBSD, pseudo, trivy-scanned, ...) does not open
+// it during detection, but enrichment still opens it when the result carries
+// CVEs (e.g. FreeBSD's pkg-audit findings); a server with nothing to detect and
+// no CVEs to enrich never opens it at all. Close releases the db.
+//
+// A Session is not safe for concurrent use; one server's detection runs
+// sequentially, which is the intended scope. Server mode gives each request its
+// own, from SharedDB.Acquire.
 type Session struct {
 	vuls2Conf  config.Vuls2Conf
 	noProgress bool
+	withCache  bool
+
+	// recordDigest records the db's digest on the global config when the db is
+	// opened, so the report this run produces says which db produced it. Server
+	// mode turns it off on the sessions it hands to requests: SharedDB has
+	// already recorded the digest of the db they are about to open, and letting
+	// concurrent requests write a global that detector.DetectPkgCves reads would
+	// be a data race.
+	recordDigest bool
 
 	sesh *session.Session
 }
 
-// NewSession returns a not-yet-opened shared Session; the db is opened lazily
-// on the first path that queries it (see Session).
+// NewSession returns a not-yet-opened Session; the db is opened lazily on the
+// first path that queries it (see Session).
 func NewSession(vuls2Conf config.Vuls2Conf, noProgress bool) *Session {
-	return &Session{vuls2Conf: vuls2Conf, noProgress: noProgress}
+	return &Session{vuls2Conf: vuls2Conf, noProgress: noProgress, withCache: true, recordDigest: true}
 }
 
 // open opens the db on the first call and reuses the connection on every later
@@ -138,16 +150,19 @@ func (s *Session) open() (*session.Session, error) {
 		return nil, xerrors.Errorf("db session is nil; create one with NewSession")
 	}
 	if s.sesh == nil {
-		sesh, err := openSession(s.vuls2Conf, s.noProgress)
+		sesh, digest, err := openSession(s.vuls2Conf, s.noProgress, s.withCache)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to open db session. err: %w", err)
+		}
+		if s.recordDigest {
+			config.Conf.Vuls2.Digest = digest
 		}
 		s.sesh = sesh
 	}
 	return s.sesh, nil
 }
 
-// Close releases the db storage and cache if this Session was opened. It is a
+// Close releases the db storage and cache if this Session opened one. It is a
 // no-op on a nil or never-opened Session, and clears the handle afterwards so a
 // second Close (or a stray open) neither double-closes nor reuses a closed
 // session — always safe to defer.
@@ -160,16 +175,15 @@ func (s *Session) Close() {
 	s.sesh = nil
 }
 
-// openSession opens a cache-backed vuls2 db session: it fills in the default
-// repository/path, downloads or refreshes the db if due and validates the
-// schema version (both inside newDBConfig), opens storage, and records the db
-// digest on the global config. The caller owns the returned session and must
-// close its Storage() and Cache().
-func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session, error) {
+// withDefaults fills in the repository and path openSession falls back to when
+// the config leaves them empty. Callers that inspect the db before opening it
+// (SharedDB, which has to know which file shouldDownload should look at) go
+// through this first, so they and openSession agree on the target.
+func withDefaults(vuls2Conf config.Vuls2Conf) (config.Vuls2Conf, error) {
 	if vuls2Conf.Repository == "" {
 		sv, err := session.SchemaVersion("boltdb")
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to get schema version. err: %w", err)
+			return config.Vuls2Conf{}, xerrors.Errorf("Failed to get schema version. err: %w", err)
 		}
 
 		vuls2Conf.Repository = fmt.Sprintf("%s:%d", defaultRegistory, sv)
@@ -177,36 +191,54 @@ func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session,
 	if vuls2Conf.Path == "" {
 		vuls2Conf.Path = DefaultPath
 	}
+	return vuls2Conf, nil
+}
 
-	dbConfig, err := newDBConfig(vuls2Conf, noProgress)
+// openSession opens a vuls2 db session: it fills in the default
+// repository/path, downloads or refreshes the db if due and validates the
+// schema version (both inside newDBConfig), and opens storage. withCache is
+// passed through to newDBConfig, which documents when a read cache is worth
+// carrying. The caller owns the returned session and must close its Storage()
+// and Cache().
+//
+// The db's digest comes back alongside the session rather than being recorded
+// on the global config here, because who may write that global depends on the
+// caller: a report run is alone in the process, while a server has concurrent
+// requests reading it and records it once, from the goroutine that owns the db.
+func openSession(vuls2Conf config.Vuls2Conf, noProgress, withCache bool) (*session.Session, *string, error) {
+	vuls2Conf, err := withDefaults(vuls2Conf)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to get new db connection. err: %w", err)
+		return nil, nil, xerrors.Errorf("Failed to apply vuls2 config defaults. err: %w", err)
+	}
+
+	dbConfig, err := newDBConfig(vuls2Conf, noProgress, withCache)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("Failed to get new db connection. err: %w", err)
 	}
 
 	sesh, err := dbConfig.New()
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to new db session. err: %w", err)
+		return nil, nil, xerrors.Errorf("Failed to new db session. err: %w", err)
 	}
 
 	if err := sesh.Storage().Open(); err != nil {
 		sesh.Cache().Close()
-		return nil, xerrors.Errorf("Failed to open db. err: %w", err)
+		return nil, nil, xerrors.Errorf("Failed to open db. err: %w", err)
 	}
 
 	metadata, err := sesh.Storage().GetMetadata()
 	if err != nil {
 		_ = sesh.Storage().Close()
 		sesh.Cache().Close()
-		return nil, xerrors.Errorf("Failed to get metadata. err: %w", err)
+		return nil, nil, xerrors.Errorf("Failed to get metadata. err: %w", err)
 	}
 	if metadata == nil {
 		_ = sesh.Storage().Close()
 		sesh.Cache().Close()
-		return nil, xerrors.Errorf("unexpected vuls2 db metadata. metadata: nil, path: %s", vuls2Conf.Path)
+		return nil, nil, xerrors.Errorf("unexpected vuls2 db metadata. metadata: nil, path: %s", vuls2Conf.Path)
 	}
-	config.Conf.Vuls2.Digest = metadata.Digest
 
-	return sesh, nil
+	return sesh, metadata.Digest, nil
 }
 
 // warningMessages renders the non-fatal evaluation warnings recorded on the
@@ -602,9 +634,17 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		return detectTypes.DetectResult{}, xerrors.Errorf("ScanResult carries both CPE and OS-package / Microsoft-KB inputs; DetectPkgs and DetectCPEs feed them exclusively")
 	}
 
+	// GOMAXPROCS, not NumCPU: NumCPU reports the machine's CPU count even when
+	// a cgroup CPU quota lets far fewer of them run at once, so under a
+	// container limit it sizes the worker pool for CPUs the detection will
+	// never get and the surplus workers only add scheduler and cgroup-throttle
+	// overhead. GOMAXPROCS is cgroup-aware since Go 1.25 and is also what an
+	// operator can turn down by hand.
+	concurrency := runtime.GOMAXPROCS(0)
+
 	detections, err := func() (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, error) {
 		if len(sr.CPE) > 0 {
-			m, err := cpe.Detect(sesh.Storage(), sr, runtime.NumCPU())
+			m, err := cpe.Detect(sesh.Storage(), sr, concurrency)
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
 			}
@@ -614,7 +654,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		// either input being present — a Windows scan can carry KBs
 		// without any OS packages.
 		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
-			m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
+			m, err := ospkg.Detect(sesh.Storage(), sr, concurrency)
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to detect os packages. err: %w", err)
 			}

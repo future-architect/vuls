@@ -23,10 +23,35 @@ import (
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
 	ToLocalFile bool
+
+	// DB owns the vuls2 db for the lifetime of the process: it downloads it and
+	// keeps it current in the background, and hands each request a session that
+	// can only read what is already on disk. Nothing here downloads a db.
+	DB *vuls2.SharedDB
+
+	// sem bounds how many requests may detect at once, nil for no bound. One
+	// detection alone spawns GOMAXPROCS workers, holds every CVE it finds, and
+	// builds a read cache that measured 0.4-0.8 GB on heavy servers (4873-7466
+	// CVEs), all of it released when the request ends. So this is what puts a
+	// ceiling on the process: peak memory is roughly maxConcurrency times that,
+	// and letting an unbounded number run oversubscribes CPU and memory badly
+	// enough that each request takes minutes instead of seconds. Requests queue
+	// on it rather than being rejected.
+	sem chan struct{}
+}
+
+// NewVulsHandler returns the /vuls handler. maxConcurrency caps concurrent
+// detections; 0 or less leaves them unbounded.
+func NewVulsHandler(toLocalFile bool, db *vuls2.SharedDB, maxConcurrency int) *VulsHandler {
+	h := &VulsHandler{ToLocalFile: toLocalFile, DB: db}
+	if maxConcurrency > 0 {
+		h.sem = make(chan struct{}, maxConcurrency)
+	}
+	return h
 }
 
 // ServeHTTP is http handler
-func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
 	r := models.ScanResult{ScannedCves: models.VulnInfos{}}
 
@@ -62,10 +87,35 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Share one lazily-opened vuls2 db session across this request's package
-	// detection and the enrichment that follows, so the read cache detection
-	// warms is reused by enrichment rather than opened and rebuilt twice.
-	sesh := vuls2.NewSession(config.Conf.Vuls2, config.Conf.NoProgress)
+	// Bound concurrent detections before opening a db, so a queued request holds
+	// nothing but its own request body while it waits. Taking the slot here also
+	// puts its release after the session's Close in defer order, so the read
+	// cache a detection built is freed before the next request is let in.
+	if h.sem != nil {
+		select {
+		case h.sem <- struct{}{}:
+			defer func() { <-h.sem }()
+		case <-req.Context().Done():
+			// Client gave up while queued; nothing to report to.
+			return
+		}
+	}
+
+	// Refuse before doing any work if there is no db to answer from, so a server
+	// that is still downloading its first one says so plainly instead of failing
+	// somewhere inside detection.
+	if !h.DB.Ready() {
+		logging.Log.Errorf("vuls2 db is not ready")
+		http.Error(w, "vuls2 db is not ready", http.StatusServiceUnavailable)
+		return
+	}
+
+	// One db session for this request's package detection and the enrichment
+	// that follows, so both query the same db and the read cache detection warms
+	// is still warm for enrichment. Nothing here fetches: the session is barred
+	// from downloading, so a request can never become another thing that pulls
+	// a multi-gigabyte db.
+	sesh := h.DB.Acquire()
 	defer sesh.Close()
 
 	if err := detector.DetectPkgCves(&r, sesh); err != nil {
