@@ -1,5 +1,9 @@
 version: 2
 project_name: vuls
+git:
+  # Sort tags treating "-" as a pre-release suffix so that, when multiple tags
+  # point at HEAD (e.g. v0.40.0-rc.1 and v0.40.0), the final tag wins.
+  prerelease_suffix: "-"
 release:
   github:
     owner: future-architect
