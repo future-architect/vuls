@@ -4,6 +4,10 @@ import (
 	"reflect"
 	"testing"
 
+	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
+	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
+	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
+
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
@@ -75,6 +79,159 @@ func Test_MacOSCPEs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := MacOSCPEs(tt.args.r); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MacOSCPEs() = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_splitCveContentBySource(t *testing.T) {
+	base := models.CveContent{
+		Type:       models.Nvd,
+		CveID:      "CVE-0000-0000",
+		Summary:    "summary",
+		SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-0000-0000",
+		// Filled from every source by the caller; the split overwrites both
+		// per source.
+		Cvss3Score:  7.5,
+		Cvss3Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+		CweIDs:      []string{"CWE-125", "CWE-126"},
+		Optional:    map[string]string{"vuls2-sources": "[]"},
+	}
+
+	type args struct {
+		base models.CveContent
+		ss   []severityTypes.Severity
+		cwes []cweTypes.CWE
+	}
+	tests := []struct {
+		name string
+		args args
+		want []models.CveContent
+	}{
+		{
+			name: "one content per source, ordered by source",
+			args: args{
+				base: base,
+				ss: []severityTypes.Severity{
+					{
+						Type:    severityTypes.SeverityTypeCVSSv31,
+						Source:  "nvd@nist.gov",
+						CVSSv31: &v31.CVSSv31{Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", BaseScore: 7.5, BaseSeverity: "HIGH"},
+					},
+					{
+						Type:    severityTypes.SeverityTypeCVSSv31,
+						Source:  "openssl-security@openssl.org",
+						CVSSv31: &v31.CVSSv31{Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N", BaseScore: 5.3, BaseSeverity: "MEDIUM"},
+					},
+				},
+				cwes: []cweTypes.CWE{
+					{Source: "nvd@nist.gov", CWE: []string{"CWE-125"}},
+					{Source: "openssl-security@openssl.org", CWE: []string{"CWE-126"}},
+				},
+			},
+			want: []models.CveContent{
+				{
+					Type:          models.Nvd,
+					CveID:         "CVE-0000-0000",
+					Summary:       "summary",
+					SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-0000-0000",
+					Cvss3Score:    7.5,
+					Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+					Cvss3Severity: "HIGH",
+					CweIDs:        []string{"CWE-125"},
+					Optional:      map[string]string{"vuls2-sources": "[]", "source": "nvd@nist.gov"},
+				},
+				{
+					Type:          models.Nvd,
+					CveID:         "CVE-0000-0000",
+					Summary:       "summary",
+					SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-0000-0000",
+					Cvss3Score:    5.3,
+					Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+					Cvss3Severity: "MEDIUM",
+					CweIDs:        []string{"CWE-126"},
+					Optional:      map[string]string{"vuls2-sources": "[]", "source": "openssl-security@openssl.org"},
+				},
+			},
+		},
+		{
+			name: "a source with only a CWE keeps its entry without CVSS",
+			args: args{
+				base: base,
+				ss: []severityTypes.Severity{
+					{
+						Type:    severityTypes.SeverityTypeCVSSv31,
+						Source:  "nvd@nist.gov",
+						CVSSv31: &v31.CVSSv31{Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", BaseScore: 7.5, BaseSeverity: "HIGH"},
+					},
+				},
+				cwes: []cweTypes.CWE{
+					{Source: "psirt@example.com", CWE: []string{"CWE-126"}},
+				},
+			},
+			want: []models.CveContent{
+				{
+					Type:          models.Nvd,
+					CveID:         "CVE-0000-0000",
+					Summary:       "summary",
+					SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-0000-0000",
+					Cvss3Score:    7.5,
+					Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+					Cvss3Severity: "HIGH",
+					Optional:      map[string]string{"vuls2-sources": "[]", "source": "nvd@nist.gov"},
+				},
+				{
+					Type:       models.Nvd,
+					CveID:      "CVE-0000-0000",
+					Summary:    "summary",
+					SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-0000-0000",
+					CweIDs:     []string{"CWE-126"},
+					Optional:   map[string]string{"vuls2-sources": "[]", "source": "psirt@example.com"},
+				},
+			},
+		},
+		{
+			name: "unattributed severity yields a single unlabelled content",
+			args: args{
+				base: base,
+				ss: []severityTypes.Severity{
+					{
+						Type:    severityTypes.SeverityTypeCVSSv31,
+						CVSSv31: &v31.CVSSv31{Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", BaseScore: 7.5, BaseSeverity: "HIGH"},
+					},
+				},
+				cwes: []cweTypes.CWE{{CWE: []string{"CWE-125", "CWE-126"}}},
+			},
+			want: []models.CveContent{
+				{
+					Type:          models.Nvd,
+					CveID:         "CVE-0000-0000",
+					Summary:       "summary",
+					SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-0000-0000",
+					Cvss3Score:    7.5,
+					Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+					Cvss3Severity: "HIGH",
+					CweIDs:        []string{"CWE-125", "CWE-126"},
+					Optional:      map[string]string{"vuls2-sources": "[]"},
+				},
+			},
+		},
+		{
+			name: "nothing to attribute returns base as-is",
+			args: args{base: base},
+			want: []models.CveContent{base},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := splitCveContentBySource(tt.args.base, tt.args.ss, tt.args.cwes, enrichCvss)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("splitCveContentBySource() = %#v, want %#v", got, tt.want)
+			}
+			// Optional is shared with the caller's content, so the per-source
+			// label must never be written into it.
+			if _, ok := tt.args.base.Optional["source"]; ok {
+				t.Errorf("splitCveContentBySource() mutated base.Optional: %#v", tt.args.base.Optional)
 			}
 		})
 	}

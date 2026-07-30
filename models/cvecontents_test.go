@@ -7,6 +7,54 @@ import (
 	"github.com/future-architect/vuls/constant"
 )
 
+func TestNewCveContents(t *testing.T) {
+	tests := []struct {
+		name  string
+		conts []CveContent
+		want  CveContents
+	}{
+		{
+			name: "several contents of one type are all kept",
+			conts: []CveContent{
+				{Type: Nvd, CveID: "CVE-0000-0000", Cvss3Score: 9.8, Optional: map[string]string{"source": "nvd@nist.gov"}},
+				{Type: Nvd, CveID: "CVE-0000-0000", Cvss3Score: 7.3, Optional: map[string]string{"source": "cna@example.com"}},
+			},
+			want: CveContents{
+				Nvd: []CveContent{
+					{Type: Nvd, CveID: "CVE-0000-0000", Cvss3Score: 9.8, Optional: map[string]string{"source": "nvd@nist.gov"}},
+					{Type: Nvd, CveID: "CVE-0000-0000", Cvss3Score: 7.3, Optional: map[string]string{"source": "cna@example.com"}},
+				},
+			},
+		},
+		{
+			name: "jvn contents are deduplicated by source link",
+			conts: []CveContent{
+				{Type: Jvn, CveID: "CVE-0000-0000", SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000001.html"},
+				{Type: Jvn, CveID: "CVE-0000-0000", SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000001.html"},
+				{Type: Jvn, CveID: "CVE-0000-0000", SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000002.html"},
+			},
+			want: CveContents{
+				Jvn: []CveContent{
+					{Type: Jvn, CveID: "CVE-0000-0000", SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000001.html"},
+					{Type: Jvn, CveID: "CVE-0000-0000", SourceLink: "https://jvndb.jvn.jp/ja/contents/2024/JVNDB-2024-000002.html"},
+				},
+			},
+		},
+		{
+			name:  "no contents",
+			conts: nil,
+			want:  CveContents{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewCveContents(tt.conts...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewCveContents() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCveContents_Except(t *testing.T) {
 	type args struct {
 		exceptCtypes []CveContentType

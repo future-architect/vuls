@@ -10415,6 +10415,7 @@ func Test_postConvert(t *testing.T) {
 								Published:    time.Date(2025, 12, 10, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
+									"source":        "nvd@nist.gov",
 									"vuls2-sources": "[{\"root_id\":\"CVE-2025-54838\",\"source_id\":\"nvd-feed-cve-v2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
 								},
 							},
@@ -13223,6 +13224,9 @@ func Test_enrich(t *testing.T) {
 			},
 		},
 		{
+			// The fixture carries both NVD's own metrics and the CNA's, so the
+			// enrich pass emits one nvd CveContent per source (ordered by
+			// source), each labelled by Optional["source"].
 			name: "enrich with nvd-feed-cve-v2 data (no pre-existing nvd content)",
 			args: args{
 				vim: models.VulnInfos{
@@ -13253,6 +13257,25 @@ func Test_enrich(t *testing.T) {
 								CweIDs:       []string{"CWE-125"},
 								Published:    time.Date(2014, 4, 7, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(2014, 4, 8, 0, 0, 0, 0, time.UTC),
+								Optional:     map[string]string{"source": "nvd@nist.gov"},
+							},
+							{
+								Type:          models.Nvd,
+								CveID:         "CVE-2014-0160",
+								Title:         "OpenSSL Heartbleed",
+								Summary:       "The TLS and DTLS implementations in OpenSSL 1.0.1 before 1.0.1g do not properly handle Heartbeat Extension packets, which allows remote attackers to obtain sensitive information from process memory, aka the Heartbleed bug.",
+								Cvss3Score:    5.3,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-2014-0160",
+								References: models.References{
+									{Link: "http://www.us-cert.gov/ncas/alerts/TA14-098A", Source: "MISC"},
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2014-0160", Source: "NVD", RefID: "CVE-2014-0160"},
+								},
+								CweIDs:       []string{"CWE-126"},
+								Published:    time.Date(2014, 4, 7, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(2014, 4, 8, 0, 0, 0, 0, time.UTC),
+								Optional:     map[string]string{"source": "openssl-security@openssl.org"},
 							},
 						},
 					},
@@ -13492,6 +13515,7 @@ func Test_enrich(t *testing.T) {
 								CweIDs:       []string{"CWE-77"},
 								Published:    time.Date(2024, 4, 12, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(2024, 4, 19, 0, 0, 0, 0, time.UTC),
+								Optional:     map[string]string{"source": "nvd@nist.gov"},
 							},
 						},
 					},

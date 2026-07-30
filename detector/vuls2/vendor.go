@@ -3,6 +3,7 @@ package vuls2
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
+	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -1186,6 +1188,80 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 	}
 }
 
+// splitCveContentBySource expands base into one CveContent per severity/CWE
+// source. NVD (and VulnCheck's NVD++ mirror) publish both the CNA's metrics and
+// their own analysis for the same CVE, distinguished only by
+// severityTypes.Severity.Source; collapsing them into a single CveContent keeps
+// whichever the source-ordered severity sort happens to put first, which
+// depends on the CNA's source identifier rather than on any preference. Each
+// returned entry keeps base's shared fields (title, summary, references, source
+// link, dates) and carries only its own source's CVSS and CWE IDs, labelled by
+// Optional["source"] — the shape go-cve-dictionary's ConvertNvdToModel /
+// ConvertVulncheckToModel produced before NVD and VulnCheck moved to the vuls2
+// DB. base is returned as-is when there is neither severity nor CWE to
+// attribute, so a content without metrics is still reported.
+//
+// toCvss selects the CVSS of one source's severities; callers pass the selector
+// matching their path (enrichCvss for the enrich passes, toCvss for the CPE
+// detection path) so the split changes only the grouping, not the selection.
+func splitCveContentBySource(base models.CveContent, ss []severityTypes.Severity, cwes []cweTypes.CWE, toCvss func([]severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40)) []models.CveContent {
+	type bySource struct {
+		severities []severityTypes.Severity
+		cweIDs     []string
+	}
+	bs := make(map[string]*bySource)
+	get := func(source string) *bySource {
+		b, ok := bs[source]
+		if !ok {
+			b = &bySource{}
+			bs[source] = b
+		}
+		return b
+	}
+	for _, s := range ss {
+		b := get(s.Source)
+		b.severities = append(b.severities, s)
+	}
+	for _, c := range cwes {
+		b := get(c.Source)
+		b.cweIDs = append(b.cweIDs, c.CWE...)
+	}
+	if len(bs) == 0 {
+		return []models.CveContent{base}
+	}
+
+	// Emit in source order so the per-source entries are stable regardless of
+	// map iteration order.
+	sources := slices.Sorted(maps.Keys(bs))
+
+	ccs := make([]models.CveContent, 0, len(sources))
+	for _, source := range sources {
+		b := bs[source]
+		cvss2, cvss3, cvss40 := toCvss(b.severities)
+
+		cc := base
+		cc.Cvss2Score = cvss2.BaseScore
+		cc.Cvss2Vector = cvss2.Vector
+		cc.Cvss2Severity = cvss2.NVDBaseSeverity
+		cc.Cvss3Score = cvss3.BaseScore
+		cc.Cvss3Vector = cvss3.Vector
+		cc.Cvss3Severity = cvss3.BaseSeverity
+		cc.Cvss40Score = cvss40.Score
+		cc.Cvss40Vector = cvss40.Vector
+		cc.Cvss40Severity = cvss40.Severity
+		cc.CweIDs = b.cweIDs
+		if source != "" {
+			// Copy rather than mutate: base.Optional is shared by every entry.
+			o := make(map[string]string, len(base.Optional)+1)
+			maps.Copy(o, base.Optional)
+			o["source"] = source
+			cc.Optional = o
+		}
+		ccs = append(ccs, cc)
+	}
+	return ccs
+}
+
 // enrichCvss extracts CVSS scores from severity data without ecosystem-specific handling.
 func enrichCvss(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
 	var (
@@ -1495,13 +1571,14 @@ func enrichRedHatCVE(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 	}
 }
 
-// enrichNVD adds NVD data as CveContent. It mirrors the NVD branch of the CPE
-// detection path (see postConvert) so a CVE detected by another source carries
-// the same single nvd CveContent — plus NVD exploits/mitigations — that an
-// NVD-detected CVE gets. When the NVD CPE detection already filled that
-// CveContent, the content/exploits/mitigations are left in place; US-CERT
-// alerts are still derived here either way, since the detection path does not
-// populate AlertDict.
+// enrichNVD adds NVD data as CveContent, one entry per CVSS/CWE source (see
+// splitCveContentBySource) so the CNA's metrics and NVD's own analysis are
+// reported separately. It mirrors the NVD branch of the CPE detection path (see
+// postConvert) so a CVE detected by another source carries the same nvd
+// CveContents — plus NVD exploits/mitigations — that an NVD-detected CVE gets.
+// When the NVD CPE detection already filled those CveContents, the
+// content/exploits/mitigations are left in place; US-CERT alerts are still
+// derived here either way, since the detection path does not populate AlertDict.
 func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability) {
 	_, hasContent := vi.CveContents[models.Nvd]
 	for rootID, vulns := range rootMap {
@@ -1529,8 +1606,6 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				continue
 			}
 
-			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
-
 			var rs models.References
 			for _, r := range v.Content.References {
 				rs = append(rs, toReference(r.URL))
@@ -1555,29 +1630,13 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				})
 			}
 
-			vi.CveContents[models.Nvd] = append(vi.CveContents[models.Nvd], models.CveContent{
-				Type:           models.Nvd,
-				CveID:          string(v.Content.ID),
-				Title:          v.Content.Title,
-				Summary:        v.Content.Description,
-				Cvss2Score:     cvss2.BaseScore,
-				Cvss2Vector:    cvss2.Vector,
-				Cvss2Severity:  cvss2.NVDBaseSeverity,
-				Cvss3Score:     cvss3.BaseScore,
-				Cvss3Vector:    cvss3.Vector,
-				Cvss3Severity:  cvss3.BaseSeverity,
-				Cvss40Score:    cvss40.Score,
-				Cvss40Vector:   cvss40.Vector,
-				Cvss40Severity: cvss40.Severity,
-				SourceLink:     cveContentSourceLink(models.Nvd, v, rootID),
-				References:     rs,
-				CweIDs: func() []string {
-					var cs []string //nolint:prealloc
-					for _, cwe := range v.Content.CWE {
-						cs = append(cs, cwe.CWE...)
-					}
-					return cs
-				}(),
+			vi.CveContents[models.Nvd] = append(vi.CveContents[models.Nvd], splitCveContentBySource(models.CveContent{
+				Type:       models.Nvd,
+				CveID:      string(v.Content.ID),
+				Title:      v.Content.Title,
+				Summary:    v.Content.Description,
+				SourceLink: cveContentSourceLink(models.Nvd, v, rootID),
+				References: rs,
 				Published: func() time.Time {
 					if v.Content.Published != nil {
 						return *v.Content.Published
@@ -1590,14 +1649,15 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 					}
 					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 				}(),
-			})
+			}, v.Content.Severity, v.Content.CWE, enrichCvss)...)
 		}
 	}
 }
 
 // enrichVulnCheck adds VulnCheck NVD++ (vulncheck-nist-nvd2) data as CveContent
 // under the models.Vulncheck source. VulnCheck mirrors and enriches NVD, so the
-// content (description, CVSS, CWE, references) parallels enrichNVD's.
+// content (description, CVSS, CWE, references) parallels enrichNVD's, including
+// the one-entry-per-CVSS/CWE-source split (see splitCveContentBySource).
 //
 // The CPE detection path already builds a Vulncheck CveContent for every CVE it
 // detects through VulnCheck's vcVulnerableCPEs; the early return when a
@@ -1613,36 +1673,18 @@ func enrichVulnCheck(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 	}
 	for rootID, vulns := range rootMap {
 		for _, v := range vulns {
-			cvss2, cvss3, cvss40 := enrichCvss(v.Content.Severity)
-
 			var rs models.References
 			for _, r := range v.Content.References {
 				rs = append(rs, toReference(r.URL))
 			}
 
-			vi.CveContents[models.Vulncheck] = append(vi.CveContents[models.Vulncheck], models.CveContent{
-				Type:           models.Vulncheck,
-				CveID:          string(v.Content.ID),
-				Title:          v.Content.Title,
-				Summary:        v.Content.Description,
-				Cvss2Score:     cvss2.BaseScore,
-				Cvss2Vector:    cvss2.Vector,
-				Cvss2Severity:  cvss2.NVDBaseSeverity,
-				Cvss3Score:     cvss3.BaseScore,
-				Cvss3Vector:    cvss3.Vector,
-				Cvss3Severity:  cvss3.BaseSeverity,
-				Cvss40Score:    cvss40.Score,
-				Cvss40Vector:   cvss40.Vector,
-				Cvss40Severity: cvss40.Severity,
-				SourceLink:     cveContentSourceLink(models.Vulncheck, v, rootID),
-				References:     rs,
-				CweIDs: func() []string {
-					var cs []string //nolint:prealloc
-					for _, cwe := range v.Content.CWE {
-						cs = append(cs, cwe.CWE...)
-					}
-					return cs
-				}(),
+			vi.CveContents[models.Vulncheck] = append(vi.CveContents[models.Vulncheck], splitCveContentBySource(models.CveContent{
+				Type:       models.Vulncheck,
+				CveID:      string(v.Content.ID),
+				Title:      v.Content.Title,
+				Summary:    v.Content.Description,
+				SourceLink: cveContentSourceLink(models.Vulncheck, v, rootID),
+				References: rs,
 				Published: func() time.Time {
 					if v.Content.Published != nil {
 						return *v.Content.Published
@@ -1655,7 +1697,7 @@ func enrichVulnCheck(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnera
 					}
 					return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
 				}(),
-			})
+			}, v.Content.Severity, v.Content.CWE, enrichCvss)...)
 		}
 	}
 }

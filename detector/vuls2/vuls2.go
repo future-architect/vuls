@@ -32,6 +32,9 @@ import (
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
+	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
+	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
+	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
 	severityVendorTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/vendor"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
@@ -1762,49 +1765,64 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
+							cc := models.CveContent{
+								Type:           cctype,
+								CveID:          string(v.Content.ID),
+								Title:          v.Content.Title,
+								Summary:        v.Content.Description,
+								Cvss2Score:     cvss2.BaseScore,
+								Cvss2Vector:    cvss2.Vector,
+								Cvss2Severity:  cvss2.NVDBaseSeverity,
+								Cvss3Score:     cvss3.BaseScore,
+								Cvss3Vector:    cvss3.Vector,
+								Cvss3Severity:  cvss3.BaseSeverity,
+								Cvss40Score:    cvss40.Score,
+								Cvss40Vector:   cvss40.Vector,
+								Cvss40Severity: cvss40.Severity,
+								SourceLink:     cveContentSourceLink(cctype, v, src.RootID),
+								References:     rs,
+								CweIDs: func() []string {
+									var cs []string
+									for _, cwe := range v.Content.CWE {
+										cs = append(cs, cwe.CWE...)
+									}
+									return cs
+								}(),
+								Published: func() time.Time {
+									if v.Content.Published != nil {
+										return *v.Content.Published
+									}
+									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+								}(),
+								LastModified: func() time.Time {
+									if v.Content.Modified != nil {
+										return *v.Content.Modified
+									}
+									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+								}(),
+								Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
+							}
+
+							// NVD and VulnCheck carry both the CNA's metrics and
+							// their own, so they are reported as one CveContent
+							// per CVSS/CWE source; every other source publishes a
+							// single set and stays a single content.
+							ccs := []models.CveContent{cc}
+							switch cctype {
+							case models.Nvd, models.Vulncheck:
+								ccs = splitCveContentBySource(cc, v.Content.Severity, v.Content.CWE, func(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
+									return toCvss(src.Segment.Ecosystem, sid, ss)
+								})
+							default:
+							}
+
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
-								CveContents: models.NewCveContents(models.CveContent{
-									Type:           cctype,
-									CveID:          string(v.Content.ID),
-									Title:          v.Content.Title,
-									Summary:        v.Content.Description,
-									Cvss2Score:     cvss2.BaseScore,
-									Cvss2Vector:    cvss2.Vector,
-									Cvss2Severity:  cvss2.NVDBaseSeverity,
-									Cvss3Score:     cvss3.BaseScore,
-									Cvss3Vector:    cvss3.Vector,
-									Cvss3Severity:  cvss3.BaseSeverity,
-									Cvss40Score:    cvss40.Score,
-									Cvss40Vector:   cvss40.Vector,
-									Cvss40Severity: cvss40.Severity,
-									SourceLink:     cveContentSourceLink(cctype, v, src.RootID),
-									References:     rs,
-									CweIDs: func() []string {
-										var cs []string
-										for _, cwe := range v.Content.CWE {
-											cs = append(cs, cwe.CWE...)
-										}
-										return cs
-									}(),
-									Published: func() time.Time {
-										if v.Content.Published != nil {
-											return *v.Content.Published
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									LastModified: func() time.Time {
-										if v.Content.Modified != nil {
-											return *v.Content.Modified
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
-								}),
+								CveContents:      models.NewCveContents(ccs...),
 							}, nil
 						}()
 						if err != nil {

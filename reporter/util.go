@@ -375,17 +375,17 @@ No CVE-IDs are found in updatable packages.
 		data = append(data, []string{"Max Score", vuln.FormatMaxCvssScore()})
 		for _, cvss := range vuln.Cvss40Scores() {
 			if cvssstr := cvss.Value.Format(); cvssstr != "" {
-				data = append(data, []string{string(cvss.Type), cvssstr})
+				data = append(data, []string{cvss.Label(), cvssstr})
 			}
 		}
 		for _, cvss := range vuln.Cvss3Scores() {
 			if cvssstr := cvss.Value.Format(); cvssstr != "" {
-				data = append(data, []string{string(cvss.Type), cvssstr})
+				data = append(data, []string{cvss.Label(), cvssstr})
 			}
 		}
 		for _, cvss := range vuln.Cvss2Scores() {
 			if cvssstr := cvss.Value.Format(); cvssstr != "" {
-				data = append(data, []string{string(cvss.Type), cvssstr})
+				data = append(data, []string{cvss.Label(), cvssstr})
 			}
 		}
 
