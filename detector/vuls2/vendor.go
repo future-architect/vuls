@@ -1251,9 +1251,11 @@ func splitCveContentBySource(base models.CveContent, ss []severityTypes.Severity
 		cc.Cvss40Severity = cvss40.Severity
 		cc.CweIDs = b.cweIDs
 		if source != "" {
-			// Copy rather than mutate: base.Optional is shared by every entry.
-			o := make(map[string]string, len(base.Optional)+1)
-			maps.Copy(o, base.Optional)
+			// Clone rather than mutate: base.Optional is shared by every entry.
+			o := maps.Clone(base.Optional)
+			if o == nil {
+				o = make(map[string]string)
+			}
 			o["source"] = source
 			cc.Optional = o
 		}
