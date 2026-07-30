@@ -1,6 +1,7 @@
 package vuls2_test
 
 import (
+	"context"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -183,4 +184,63 @@ func schemaVersionBoltDB(t *testing.T) uint {
 		t.Fatalf("session.SchemaVersion() err: %v", err)
 	}
 	return sv
+}
+
+func Test_hasNewerRemote(t *testing.T) {
+	tests := []struct {
+		name       string
+		digest     *string
+		writeDB    bool
+		repository string
+		want       bool
+		wantErr    bool
+	}{
+		{
+			// A db that was built locally rather than fetched has no digest to
+			// compare, so the repository's db counts as newer and this answers
+			// without reaching the registry.
+			name:       "no digest recorded",
+			writeDB:    true,
+			repository: "ghcr.io/vulsio/vuls-nightly-db:nightly",
+			want:       true,
+		},
+		{
+			name:       "no db file",
+			repository: "ghcr.io/vulsio/vuls-nightly-db:nightly",
+			wantErr:    true,
+		},
+		{
+			name:       "unparsable repository",
+			digest:     func() *string { s := "sha256:a"; return &s }(),
+			writeDB:    true,
+			repository: "not a repository",
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := config.Vuls2Conf{
+				Path:       filepath.Join(t.TempDir(), "vuls.db"),
+				Repository: tt.repository,
+			}
+			if tt.writeDB {
+				if err := putMetadata(types.Metadata{
+					LastModified:  *parse("2024-01-02T00:00:00Z"),
+					Downloaded:    parse("2024-01-02T00:00:00Z"),
+					SchemaVersion: schemaVersionBoltDB(t),
+					Digest:        tt.digest,
+				}, conf.Path); err != nil {
+					t.Fatalf("putMetadata() err = %v", err)
+				}
+			}
+
+			got, err := vuls2.HasNewerRemote(context.Background(), conf)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("hasNewerRemote() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("hasNewerRemote() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -23,10 +23,32 @@ import (
 // VulsHandler is used for vuls server mode
 type VulsHandler struct {
 	ToLocalFile bool
+
+	// DB is the vuls2 db shared by every request for the lifetime of the
+	// process. Each request borrows it for the length of its detection and
+	// enrichment; nothing here opens or downloads a db.
+	DB *vuls2.SharedDB
+
+	// sem bounds how many requests may detect at once, nil for no bound. One
+	// detection alone spawns GOMAXPROCS workers and holds every CVE it finds,
+	// so letting an unbounded number of them run oversubscribes CPU and memory
+	// badly enough that each takes minutes instead of seconds. Requests queue
+	// on it rather than being rejected.
+	sem chan struct{}
+}
+
+// NewVulsHandler returns the /vuls handler. maxConcurrency caps concurrent
+// detections; 0 or less leaves them unbounded.
+func NewVulsHandler(toLocalFile bool, db *vuls2.SharedDB, maxConcurrency int) *VulsHandler {
+	h := &VulsHandler{ToLocalFile: toLocalFile, DB: db}
+	if maxConcurrency > 0 {
+		h.sem = make(chan struct{}, maxConcurrency)
+	}
+	return h
 }
 
 // ServeHTTP is http handler
-func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
 	r := models.ScanResult{ScannedCves: models.VulnInfos{}}
 
@@ -62,11 +84,30 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Share one lazily-opened vuls2 db session across this request's package
-	// detection and the enrichment that follows, so the read cache detection
-	// warms is reused by enrichment rather than opened and rebuilt twice.
-	sesh := vuls2.NewSession(config.Conf.Vuls2, config.Conf.NoProgress)
-	defer sesh.Close()
+	// Bound concurrent detections before touching the db, so queued requests do
+	// not pin a db generation while they wait.
+	if h.sem != nil {
+		select {
+		case h.sem <- struct{}{}:
+			defer func() { <-h.sem }()
+		case <-req.Context().Done():
+			// Client gave up while queued; nothing to report to.
+			return
+		}
+	}
+
+	// Borrow the process-wide vuls2 db for this request's package detection and
+	// the enrichment that follows, so both query one open db and the refresher
+	// cannot close it under them. Nothing here fetches: while the first fetch is
+	// still running this fails and the request is refused, rather than the
+	// request becoming another thing that downloads a db.
+	sesh, release, err := h.DB.Acquire()
+	if err != nil {
+		logging.Log.Errorf("Failed to acquire vuls2 db: %+v", err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	defer release()
 
 	if err := detector.DetectPkgCves(&r, sesh); err != nil {
 		logging.Log.Errorf("Failed to detect Pkg CVE: %+v", err)

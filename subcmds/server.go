@@ -9,19 +9,37 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+	"time"
 
 	"github.com/google/subcommands"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
 )
 
+const (
+	// dbRefreshInterval is how often the server re-checks whether a newer vuls2
+	// db is due. Whether one actually gets downloaded is decided per check
+	// against the db's own metadata, so this only sets how promptly a due
+	// refresh is noticed.
+	dbRefreshInterval = 1 * time.Hour
+
+	// dbRetryInterval is how long the server waits before retrying a vuls2 db it
+	// has not managed to open yet, during startup. It bounds the retry rate of a
+	// fetch that keeps failing, which used to be driven by request arrivals
+	// instead.
+	dbRetryInterval = 1 * time.Minute
+)
+
 // ServerCmd is subcommand for server
 type ServerCmd struct {
-	configPath  string
-	listen      string
-	toLocalFile bool
+	configPath     string
+	listen         string
+	toLocalFile    bool
+	maxConcurrency int
 }
 
 // Name return subcommand name
@@ -47,6 +65,7 @@ func (*ServerCmd) Usage() string {
 		[-debug]
 		[-debug-sql]
 		[-listen=localhost:5515]
+		[-max-concurrency=4]
 
 		[RFC3339 datetime format under results dir]
 `
@@ -87,10 +106,13 @@ func (p *ServerCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.toLocalFile, "to-localfile", false, "Write report to localfile")
 	f.StringVar(&p.listen, "listen", "localhost:5515",
 		"host:port (default: localhost:5515)")
+
+	f.IntVar(&p.maxConcurrency, "max-concurrency", runtime.GOMAXPROCS(0),
+		"Maximum number of scan results detected in parallel, 0 for unlimited (default: GOMAXPROCS)")
 }
 
 // Execute execute
-func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcommands.ExitStatus {
+func (p *ServerCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	logging.Log = logging.NewCustomLogger(config.Conf.Debug, config.Conf.Quiet, config.Conf.LogToFile, config.Conf.LogDir, "", "")
 	logging.Log.Infof("vuls-%s-%s", config.Version, config.Revision)
 
@@ -106,10 +128,46 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 		return subcommands.ExitUsageError
 	}
 
-	http.Handle("/vuls", server.VulsHandler{
-		ToLocalFile: p.toLocalFile,
-	})
+	// Own the vuls2 db here, for the whole process, rather than per request: a
+	// request must never be the thing that downloads a multi-gigabyte db, and
+	// every request should read the one db this process already has open.
+	// Progress bars are off unconditionally — a server's fetch reports itself
+	// through the log, and a bar redrawing itself into a container log is
+	// unreadable.
+	db, err := vuls2.NewSharedDB(config.Conf.Vuls2, true)
+	if err != nil {
+		logging.Log.Errorf("Failed to configure vuls2 db. err: %+v", err)
+		return subcommands.ExitFailure
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Open the db in the background so the listener comes up right away and can
+	// say that it is still downloading, rather than the port simply being closed
+	// for the length of a multi-gigabyte fetch. Once a db is open, the same
+	// goroutine keeps it current, so a request never waits on a fetch and only
+	// one fetch ever runs at a time.
+	go func() {
+		if err := db.Prepare(ctx, dbRetryInterval); err != nil {
+			logging.Log.Errorf("Failed to prepare vuls2 db. err: %+v", err)
+			return
+		}
+		logging.Log.Infof("vuls2 db is ready")
+		db.Run(ctx, dbRefreshInterval)
+	}()
+
+	http.Handle("/vuls", server.NewVulsHandler(p.toLocalFile, db, p.maxConcurrency))
+	// /health reports whether this server can answer at all: with no db open,
+	// /vuls can only fail, so traffic should be kept away until it is. Point a
+	// readiness probe at it — a liveness probe would restart the process partway
+	// through the first fetch and start the download over from nothing.
 	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		if !db.Ready() {
+			http.Error(w, "vuls2 db is not ready", http.StatusServiceUnavailable)
+			return
+		}
 		if _, err := fmt.Fprintf(w, "ok"); err != nil {
 			logging.Log.Errorf("Failed to print server health. err: %+v", err)
 		}
