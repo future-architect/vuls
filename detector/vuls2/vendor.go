@@ -1206,15 +1206,22 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 // detection path) so the split changes only the grouping, not the selection.
 func splitCveContentBySource(base models.CveContent, ss []severityTypes.Severity, cwes []cweTypes.CWE, toCvss func([]severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40)) []models.CveContent {
 	type bySource struct {
+		source     string
 		severities []severityTypes.Severity
 		cweIDs     []string
 	}
+	// order holds the groups in the order their source is first seen, so the
+	// entries follow the severity/CWE order the data carries instead of a
+	// second ordering imposed here (CveContents.Sort normalizes the output —
+	// see ScanResult.SortForJSONOutput).
+	var order []*bySource
 	bs := make(map[string]*bySource)
 	get := func(source string) *bySource {
 		b, ok := bs[source]
 		if !ok {
-			b = &bySource{}
+			b = &bySource{source: source}
 			bs[source] = b
+			order = append(order, b)
 		}
 		return b
 	}
@@ -1226,17 +1233,13 @@ func splitCveContentBySource(base models.CveContent, ss []severityTypes.Severity
 		b := get(c.Source)
 		b.cweIDs = append(b.cweIDs, c.CWE...)
 	}
-	if len(bs) == 0 {
+	if len(order) == 0 {
 		return []models.CveContent{base}
 	}
 
-	// Emit in source order so the per-source entries are stable regardless of
-	// map iteration order.
-	sources := slices.Sorted(maps.Keys(bs))
-
-	ccs := make([]models.CveContent, 0, len(sources))
-	for _, source := range sources {
-		b := bs[source]
+	ccs := make([]models.CveContent, 0, len(order))
+	for _, b := range order {
+		source := b.source
 		cvss2, cvss3, cvss40 := toCvss(b.severities)
 
 		cc := base

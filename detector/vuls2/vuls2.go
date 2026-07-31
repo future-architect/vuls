@@ -1980,13 +1980,26 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 	info.DistroAdvisories = slices.Collect(maps.Values(am))
 
-	ccm := make(map[cveContentKey]models.CveContent)
+	// Contents of one type stay in the order they arrive in; like the enrich
+	// passes, this leaves ordering to CveContents.Sort (see
+	// ScanResult.SortForJSONOutput) rather than imposing one of its own.
+	ccs := make(models.CveContents)
 	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
 		for cc := range cciter {
 			for _, c := range cc {
-				key := cveContentKey{ctype: c.Type, source: c.Optional["source"]}
-				base, ok := ccm[key]
-				if ok {
+				// A type can hold several contents, one per CVSS/CWE source
+				// (nvd/vulncheck report both the CNA's metrics and their own,
+				// mitre one per CNA/ADP container). Those are separate metric
+				// sets rather than rival reports of the same one, so a content
+				// merges only into one of the same source — merging across
+				// sources would fabricate a set no source published. The
+				// source is empty for every single-content type, which leaves
+				// their merging keyed by type alone as before.
+				i := slices.IndexFunc(ccs[c.Type], func(e models.CveContent) bool {
+					return e.Optional["source"] == c.Optional["source"]
+				})
+				if i >= 0 {
+					base := ccs[c.Type][i]
 					var src1 []source
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
 						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
@@ -2092,37 +2105,16 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 					}
 					merged.Optional["vuls2-sources"] = string(bs)
 
-					base = merged
+					ccs[c.Type][i] = merged
 				} else {
-					base = c
+					ccs[c.Type] = append(ccs[c.Type], c)
 				}
-				ccm[key] = base
 			}
 		}
-	}
-	ccs := make(models.CveContents)
-	// Sorted so the per-source entries of one type keep a stable order
-	// regardless of map iteration.
-	for _, key := range slices.SortedFunc(maps.Keys(ccm), func(x, y cveContentKey) int {
-		return cmp.Or(cmp.Compare(x.ctype, y.ctype), cmp.Compare(x.source, y.source))
-	}) {
-		ccs[key.ctype] = append(ccs[key.ctype], ccm[key])
 	}
 	info.CveContents = ccs
 
 	return info, nil
-}
-
-// cveContentKey identifies a CveContent within one CVE. A type can hold
-// several contents, one per CVSS/CWE source (nvd/vulncheck report both the
-// CNA's metrics and their own, mitre one per CNA/ADP container), and those are
-// separate metric sets rather than rival reports of the same one — merging
-// across sources would fabricate a content no source published, so the source
-// is part of the identity. It is empty for every single-content type, which
-// keeps their merging keyed by type alone as before.
-type cveContentKey struct {
-	ctype  models.CveContentType
-	source string
 }
 
 func toReference(ref string) models.Reference {
