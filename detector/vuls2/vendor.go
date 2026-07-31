@@ -1210,35 +1210,32 @@ func splitCveContentBySource(base models.CveContent, ss []severityTypes.Severity
 		severities []severityTypes.Severity
 		cweIDs     []string
 	}
-	// order holds the groups in the order their source is first seen, so the
-	// entries follow the severity/CWE order the data carries instead of a
-	// second ordering imposed here (CveContents.Sort normalizes the output —
-	// see ScanResult.SortForJSONOutput).
-	var order []*bySource
-	bs := make(map[string]*bySource)
-	get := func(source string) *bySource {
-		b, ok := bs[source]
-		if !ok {
-			b = &bySource{source: source}
-			bs[source] = b
-			order = append(order, b)
+	// Groups stay in the order their source is first seen, so the entries
+	// follow the severity/CWE order the data carries instead of a second
+	// ordering imposed here (CveContents.Sort normalizes the output — see
+	// ScanResult.SortForJSONOutput).
+	var bss []bySource
+	index := func(source string) int {
+		if i := slices.IndexFunc(bss, func(b bySource) bool { return b.source == source }); i >= 0 {
+			return i
 		}
-		return b
+		bss = append(bss, bySource{source: source})
+		return len(bss) - 1
 	}
 	for _, s := range ss {
-		b := get(s.Source)
-		b.severities = append(b.severities, s)
+		i := index(s.Source)
+		bss[i].severities = append(bss[i].severities, s)
 	}
 	for _, c := range cwes {
-		b := get(c.Source)
-		b.cweIDs = append(b.cweIDs, c.CWE...)
+		i := index(c.Source)
+		bss[i].cweIDs = append(bss[i].cweIDs, c.CWE...)
 	}
-	if len(order) == 0 {
+	if len(bss) == 0 {
 		return []models.CveContent{base}
 	}
 
-	ccs := make([]models.CveContent, 0, len(order))
-	for _, b := range order {
+	ccs := make([]models.CveContent, 0, len(bss))
+	for _, b := range bss {
 		source := b.source
 		cvss2, cvss3, cvss40 := toCvss(b.severities)
 
