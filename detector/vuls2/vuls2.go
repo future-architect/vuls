@@ -371,15 +371,19 @@ func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 			// types), so they cannot collide with each other. A caller-provided
 			// base (or the go-cve-dictionary pass) may already carry the same
 			// type for this CVE, though — vuls2 now emits Nvd/Jvn contents — so
-			// dedup on the (type, CVE, source link) identity before appending,
-			// mirroring the key-based dedup the sibling merges above use, to
-			// avoid repeating a source/link in reports. Reconciling genuinely
-			// conflicting contents of one source (e.g. differing CVSS) is out
-			// of scope: the existing entry is kept.
+			// dedup on the (type, CVE, source link, CVSS/CWE source) identity
+			// before appending, mirroring the key-based dedup the sibling
+			// merges above use, to avoid repeating a source/link in reports.
+			// The CVSS/CWE source belongs in that identity because the
+			// per-source contents of one type (nvd's own analysis and the
+			// CNA's) share a source link, and keying on the link alone would
+			// drop all but the first. Reconciling genuinely conflicting
+			// contents of one source (e.g. differing CVSS) is out of scope: the
+			// existing entry is kept.
 			for ccType, ccs := range vi.CveContents {
 				for _, cc := range ccs {
 					if slices.ContainsFunc(viBase.CveContents[ccType], func(e models.CveContent) bool {
-						return e.Type == cc.Type && e.CveID == cc.CveID && e.SourceLink == cc.SourceLink
+						return e.Type == cc.Type && e.CveID == cc.CveID && e.SourceLink == cc.SourceLink && e.Optional["source"] == cc.Optional["source"]
 					}) {
 						continue
 					}
@@ -1976,11 +1980,12 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 	info.DistroAdvisories = slices.Collect(maps.Values(am))
 
-	ccm := make(map[models.CveContentType]models.CveContent)
+	ccm := make(map[cveContentKey]models.CveContent)
 	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
 		for cc := range cciter {
 			for _, c := range cc {
-				base, ok := ccm[c.Type]
+				key := cveContentKey{ctype: c.Type, source: c.Optional["source"]}
+				base, ok := ccm[key]
 				if ok {
 					var src1 []source
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
@@ -2091,17 +2096,33 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 				} else {
 					base = c
 				}
-				ccm[c.Type] = base
+				ccm[key] = base
 			}
 		}
 	}
 	ccs := make(models.CveContents)
-	for cctype, cc := range ccm {
-		ccs[cctype] = []models.CveContent{cc}
+	// Sorted so the per-source entries of one type keep a stable order
+	// regardless of map iteration.
+	for _, key := range slices.SortedFunc(maps.Keys(ccm), func(x, y cveContentKey) int {
+		return cmp.Or(cmp.Compare(x.ctype, y.ctype), cmp.Compare(x.source, y.source))
+	}) {
+		ccs[key.ctype] = append(ccs[key.ctype], ccm[key])
 	}
 	info.CveContents = ccs
 
 	return info, nil
+}
+
+// cveContentKey identifies a CveContent within one CVE. A type can hold
+// several contents, one per CVSS/CWE source (nvd/vulncheck report both the
+// CNA's metrics and their own, mitre one per CNA/ADP container), and those are
+// separate metric sets rather than rival reports of the same one — merging
+// across sources would fabricate a content no source published, so the source
+// is part of the identity. It is empty for every single-content type, which
+// keeps their merging keyed by type alone as before.
+type cveContentKey struct {
+	ctype  models.CveContentType
+	source string
 }
 
 func toReference(ref string) models.Reference {

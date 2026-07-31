@@ -10244,6 +10244,19 @@ func Test_postConvert(t *testing.T) {
 																	EnvironmentalSeverity: "MEDIUM",
 																}),
 															},
+															{
+																Type:   severityTypes.SeverityTypeCVSSv31,
+																Source: "psirt@fortinet.com",
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:       "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H",
+																	BaseScore:    4.9,
+																	BaseSeverity: "MEDIUM",
+																}),
+															},
+														},
+														CWE: []cweTypes.CWE{
+															{Source: "nvd@nist.gov", CWE: []string{"CWE-863"}},
+															{Source: "psirt@fortinet.com", CWE: []string{"CWE-285"}},
 														},
 														References: []referenceTypes.Reference{
 															{Source: "nvd@nist.gov", URL: "https://nvd.nist.gov/vuln/detail/CVE-2025-54838"},
@@ -10399,6 +10412,10 @@ func Test_postConvert(t *testing.T) {
 						},
 					},
 					CveContents: models.CveContents{
+						// Both NVD metric sources survive the merge with the
+						// Fortinet-detected VulnInfo: mergeVulnInfo keys
+						// contents by (type, source), so they are not folded
+						// into one nvd content.
 						models.Nvd: []models.CveContent{
 							{
 								Type:          models.Nvd,
@@ -10412,10 +10429,31 @@ func Test_postConvert(t *testing.T) {
 								References: models.References{
 									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-54838", Source: "NVD", RefID: "CVE-2025-54838"},
 								},
+								CweIDs:       []string{"CWE-863"},
 								Published:    time.Date(2025, 12, 10, 0, 0, 0, 0, time.UTC),
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
 									"source":        "nvd@nist.gov",
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-54838\",\"source_id\":\"nvd-feed-cve-v2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+							{
+								Type:          models.Nvd,
+								CveID:         "CVE-2025-54838",
+								Title:         "Fortinet FortiPortal incorrect authorization",
+								Summary:       "NVD-side description for CVE-2025-54838",
+								Cvss3Score:    4.9,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H",
+								Cvss3Severity: "MEDIUM",
+								SourceLink:    "https://nvd.nist.gov/vuln/detail/CVE-2025-54838",
+								References: models.References{
+									{Link: "https://nvd.nist.gov/vuln/detail/CVE-2025-54838", Source: "NVD", RefID: "CVE-2025-54838"},
+								},
+								CweIDs:       []string{"CWE-285"},
+								Published:    time.Date(2025, 12, 10, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"source":        "psirt@fortinet.com",
 									"vuls2-sources": "[{\"root_id\":\"CVE-2025-54838\",\"source_id\":\"nvd-feed-cve-v2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
 								},
 							},
@@ -12741,6 +12779,66 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 					},
 					CveContents: models.CveContents{
 						models.Nvd: []models.CveContent{{Type: models.Nvd, CveID: "CVE-2025-1002"}},
+					},
+				},
+			},
+		},
+		{
+			// The per-CVSS-source nvd contents share one source link, so the
+			// dedup identity has to include Optional["source"] — keying on the
+			// link alone would append the first and drop the rest.
+			name: "per-source contents of one type all survive the dedup",
+			args: args{
+				r: models.ScanResult{ScannedCves: models.VulnInfos{
+					"CVE-2025-1003": {
+						CveID:       "CVE-2025-1003",
+						CveContents: models.CveContents{},
+					},
+				}},
+				vulnInfos: models.VulnInfos{
+					"CVE-2025-1003": {
+						CveID: "CVE-2025-1003",
+						CveContents: models.CveContents{
+							models.Nvd: []models.CveContent{
+								{
+									Type:       models.Nvd,
+									CveID:      "CVE-2025-1003",
+									Cvss3Score: 9.8,
+									SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-1003",
+									Optional:   map[string]string{"source": "nvd@nist.gov"},
+								},
+								{
+									Type:       models.Nvd,
+									CveID:      "CVE-2025-1003",
+									Cvss3Score: 7.3,
+									SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-1003",
+									Optional:   map[string]string{"source": "cna@example.com"},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-1003": {
+					CveID: "CVE-2025-1003",
+					CveContents: models.CveContents{
+						models.Nvd: []models.CveContent{
+							{
+								Type:       models.Nvd,
+								CveID:      "CVE-2025-1003",
+								Cvss3Score: 9.8,
+								SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-1003",
+								Optional:   map[string]string{"source": "nvd@nist.gov"},
+							},
+							{
+								Type:       models.Nvd,
+								CveID:      "CVE-2025-1003",
+								Cvss3Score: 7.3,
+								SourceLink: "https://nvd.nist.gov/vuln/detail/CVE-2025-1003",
+								Optional:   map[string]string{"source": "cna@example.com"},
+							},
+						},
 					},
 				},
 			},
