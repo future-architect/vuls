@@ -516,7 +516,8 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 				}
 				// https://nvd.nist.gov/vuln-metrics/cvss
 				values = append(values, CveContentCvss{
-					Type: ctype,
+					Type:   ctype,
+					Source: cont.Optional["source"],
 					Value: Cvss{
 						Type:     CVSS2,
 						Score:    cont.Cvss2Score,
@@ -541,7 +542,8 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 				}
 				// https://nvd.nist.gov/vuln-metrics/cvss
 				values = append(values, CveContentCvss{
-					Type: ctype,
+					Type:   ctype,
+					Source: cont.Optional["source"],
 					Value: Cvss{
 						Type:     CVSS3,
 						Score:    cont.Cvss3Score,
@@ -613,7 +615,8 @@ func (v VulnInfo) Cvss40Scores() (values []CveContentCvss) {
 				}
 				// https://nvd.nist.gov/vuln-metrics/cvss
 				values = append(values, CveContentCvss{
-					Type: ctype,
+					Type:   ctype,
+					Source: cont.Optional["source"],
 					Value: Cvss{
 						Type:     CVSS40,
 						Score:    cont.Cvss40Score,
@@ -755,8 +758,22 @@ func (v VulnInfo) PatchStatus(packs Packages) string {
 
 // CveContentCvss has CVSS information
 type CveContentCvss struct {
-	Type  CveContentType `json:"type"`
-	Value Cvss           `json:"value"`
+	Type   CveContentType `json:"type"`
+	Source string         `json:"source,omitempty"`
+	Value  Cvss           `json:"value"`
+}
+
+// Label returns the content type, qualified by the per-source label when the
+// CveContent carries one (e.g. "nvd(nvd@nist.gov)"). One source can publish
+// several metric sets for a CVE — NVD and VulnCheck report both the CNA's and
+// their own, MITRE one per CNA/ADP container — and each becomes its own
+// CveContent, so reports need the source to tell the rows apart. Type alone
+// stays usable as a CveContents key.
+func (c CveContentCvss) Label() string {
+	if c.Source == "" {
+		return string(c.Type)
+	}
+	return fmt.Sprintf("%s(%s)", c.Type, c.Source)
 }
 
 // CvssType Represent the type of CVSS
@@ -842,6 +859,15 @@ func severityToCvssScoreRoughly(severity string) float64 {
 // FormatMaxCvssScore returns Max CVSS Score
 func (v VulnInfo) FormatMaxCvssScore() string {
 	cvss := v.MaxCvssScore()
+	// Not Label(): the type is already parenthesised here, so the source is
+	// listed alongside it rather than nested in a second pair of parens.
+	if cvss.Source != "" {
+		return fmt.Sprintf("%3.1f %s (%s, %s)",
+			cvss.Value.Score,
+			strings.ToUpper(cvss.Value.Severity),
+			cvss.Type,
+			cvss.Source)
+	}
 	return fmt.Sprintf("%3.1f %s (%s)",
 		cvss.Value.Score,
 		strings.ToUpper(cvss.Value.Severity),

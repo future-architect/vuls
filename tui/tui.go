@@ -1010,7 +1010,7 @@ func detailLines() (string, error) {
 	for _, score := range scores {
 		cols = []any{
 			score.Value.Format(),
-			score.Type,
+			score.Label(),
 		}
 		table.AddRow(cols...)
 	}

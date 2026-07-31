@@ -952,7 +952,8 @@ func TestMaxCvssScores(t *testing.T) {
 				},
 			},
 			out: CveContentCvss{
-				Type: Mitre,
+				Type:   Mitre,
+				Source: "CNA",
 				Value: Cvss{
 					Type:     CVSS40,
 					Score:    6.9,
@@ -978,6 +979,37 @@ func TestMaxCvssScores(t *testing.T) {
 		if !reflect.DeepEqual(tt.out, actual) {
 			t.Errorf("\n[%d] expected: %v\n  actual: %v\n", i, tt.out, actual)
 		}
+	}
+}
+
+func TestCveContentCvss_Label(t *testing.T) {
+	tests := []struct {
+		name string
+		in   CveContentCvss
+		want string
+	}{
+		{
+			name: "no source",
+			in:   CveContentCvss{Type: RedHatAPI},
+			want: "redhat_api",
+		},
+		{
+			name: "nvd's own metrics",
+			in:   CveContentCvss{Type: Nvd, Source: "nvd@nist.gov"},
+			want: "nvd(nvd@nist.gov)",
+		},
+		{
+			name: "mitre adp container",
+			in:   CveContentCvss{Type: Mitre, Source: "ADP:CISA-ADP"},
+			want: "mitre(ADP:CISA-ADP)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.in.Label(); got != tt.want {
+				t.Errorf("CveContentCvss.Label() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -1030,6 +1062,29 @@ func TestFormatMaxCvssScore(t *testing.T) {
 				},
 			},
 			out: "9.9 HIGH (redhat)",
+		},
+		{
+			// The max comes from a per-source nvd content, so the source is
+			// named alongside the type.
+			in: VulnInfo{
+				CveContents: CveContents{
+					Nvd: []CveContent{
+						{
+							Type:          Nvd,
+							Cvss3Score:    7.5,
+							Cvss3Severity: "HIGH",
+							Optional:      map[string]string{"source": "nvd@nist.gov"},
+						},
+						{
+							Type:          Nvd,
+							Cvss3Score:    5.3,
+							Cvss3Severity: "MEDIUM",
+							Optional:      map[string]string{"source": "openssl-security@openssl.org"},
+						},
+					},
+				},
+			},
+			out: "7.5 HIGH (nvd, nvd@nist.gov)",
 		},
 	}
 	for i, tt := range tests {
@@ -2080,7 +2135,8 @@ func TestVulnInfo_Cvss40Scores(t *testing.T) {
 			},
 			want: []CveContentCvss{
 				{
-					Type: Mitre,
+					Type:   Mitre,
+					Source: "CNA",
 					Value: Cvss{
 						Type:     CVSS40,
 						Score:    6.9,
@@ -2089,7 +2145,8 @@ func TestVulnInfo_Cvss40Scores(t *testing.T) {
 					},
 				},
 				{
-					Type: Nvd,
+					Type:   Nvd,
+					Source: "cna@vuldb.com",
 					Value: Cvss{
 						Type:     CVSS40,
 						Score:    6.9,
@@ -2142,7 +2199,8 @@ func TestVulnInfo_MaxCvss40Score(t *testing.T) {
 				},
 			},
 			want: CveContentCvss{
-				Type: Mitre,
+				Type:   Mitre,
+				Source: "CNA",
 				Value: Cvss{
 					Type:     CVSS40,
 					Score:    6.9,

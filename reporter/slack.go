@@ -274,12 +274,19 @@ func (w SlackWriter) attachmentText(vinfo models.VulnInfo, cweDict models.CWEDic
 
 		if conts, ok := vinfo.CveContents[cvss.Type]; ok {
 			for _, cont := range conts {
+				// One score belongs to one content: a type can hold several
+				// (the per-CVSS-source nvd/vulncheck/mitre entries), and
+				// linking every one of them would repeat the same score once
+				// per content.
+				if cont.Optional["source"] != cvss.Source {
+					continue
+				}
 				v := fmt.Sprintf("<%s|%s> %s (<%s|%s>)",
 					calcURL,
 					fmt.Sprintf("%3.1f/%s", cvss.Value.Score, cvss.Value.Vector),
 					cvss.Value.Severity,
 					cont.SourceLink,
-					cvss.Type)
+					cvss.Label())
 				vectors = append(vectors, v)
 			}
 		} else {

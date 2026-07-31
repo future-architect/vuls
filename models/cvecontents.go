@@ -26,7 +26,10 @@ func NewCveContents(conts ...CveContent) CveContents {
 				m[cont.Type] = append(m[cont.Type], cont)
 			}
 		default:
-			m[cont.Type] = []CveContent{cont}
+			// Append rather than replace: one type can legitimately carry
+			// several contents (e.g. the per-CVSS-source nvd entries), and
+			// replacing would keep only the last one passed.
+			m[cont.Type] = append(m[cont.Type], cont)
 		}
 	}
 	return m

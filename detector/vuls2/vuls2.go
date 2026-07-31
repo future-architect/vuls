@@ -32,6 +32,9 @@ import (
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
+	v2 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v2"
+	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
+	v40 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v40"
 	severityVendorTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/vendor"
 	vulnerabilityContentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/vulnerability/content"
 	datasourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/datasource"
@@ -368,15 +371,19 @@ func mergeIntoScannedCves(r *models.ScanResult, vulnInfos models.VulnInfos) {
 			// types), so they cannot collide with each other. A caller-provided
 			// base (or the go-cve-dictionary pass) may already carry the same
 			// type for this CVE, though — vuls2 now emits Nvd/Jvn contents — so
-			// dedup on the (type, CVE, source link) identity before appending,
-			// mirroring the key-based dedup the sibling merges above use, to
-			// avoid repeating a source/link in reports. Reconciling genuinely
-			// conflicting contents of one source (e.g. differing CVSS) is out
-			// of scope: the existing entry is kept.
+			// dedup on the (type, CVE, source link, CVSS/CWE source) identity
+			// before appending, mirroring the key-based dedup the sibling
+			// merges above use, to avoid repeating a source/link in reports.
+			// The CVSS/CWE source belongs in that identity because the
+			// per-source contents of one type (nvd's own analysis and the
+			// CNA's) share a source link, and keying on the link alone would
+			// drop all but the first. Reconciling genuinely conflicting
+			// contents of one source (e.g. differing CVSS) is out of scope: the
+			// existing entry is kept.
 			for ccType, ccs := range vi.CveContents {
 				for _, cc := range ccs {
 					if slices.ContainsFunc(viBase.CveContents[ccType], func(e models.CveContent) bool {
-						return e.Type == cc.Type && e.CveID == cc.CveID && e.SourceLink == cc.SourceLink
+						return e.Type == cc.Type && e.CveID == cc.CveID && e.SourceLink == cc.SourceLink && e.Optional["source"] == cc.Optional["source"]
 					}) {
 						continue
 					}
@@ -1762,49 +1769,64 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []detectTypes.Vulnerabi
 								}
 							}
 
+							cc := models.CveContent{
+								Type:           cctype,
+								CveID:          string(v.Content.ID),
+								Title:          v.Content.Title,
+								Summary:        v.Content.Description,
+								Cvss2Score:     cvss2.BaseScore,
+								Cvss2Vector:    cvss2.Vector,
+								Cvss2Severity:  cvss2.NVDBaseSeverity,
+								Cvss3Score:     cvss3.BaseScore,
+								Cvss3Vector:    cvss3.Vector,
+								Cvss3Severity:  cvss3.BaseSeverity,
+								Cvss40Score:    cvss40.Score,
+								Cvss40Vector:   cvss40.Vector,
+								Cvss40Severity: cvss40.Severity,
+								SourceLink:     cveContentSourceLink(cctype, v, src.RootID),
+								References:     rs,
+								CweIDs: func() []string {
+									var cs []string
+									for _, cwe := range v.Content.CWE {
+										cs = append(cs, cwe.CWE...)
+									}
+									return cs
+								}(),
+								Published: func() time.Time {
+									if v.Content.Published != nil {
+										return *v.Content.Published
+									}
+									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+								}(),
+								LastModified: func() time.Time {
+									if v.Content.Modified != nil {
+										return *v.Content.Modified
+									}
+									return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+								}(),
+								Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
+							}
+
+							// NVD and VulnCheck carry both the CNA's metrics and
+							// their own, so they are reported as one CveContent
+							// per CVSS/CWE source; every other source publishes a
+							// single set and stays a single content.
+							ccs := []models.CveContent{cc}
+							switch cctype {
+							case models.Nvd, models.Vulncheck:
+								ccs = splitCveContentBySource(cc, v.Content.Severity, v.Content.CWE, func(ss []severityTypes.Severity) (v2.CVSSv2, v31.CVSSv31, v40.CVSSv40) {
+									return toCvss(src.Segment.Ecosystem, sid, ss)
+								})
+							default:
+							}
+
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
 								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
-								CveContents: models.NewCveContents(models.CveContent{
-									Type:           cctype,
-									CveID:          string(v.Content.ID),
-									Title:          v.Content.Title,
-									Summary:        v.Content.Description,
-									Cvss2Score:     cvss2.BaseScore,
-									Cvss2Vector:    cvss2.Vector,
-									Cvss2Severity:  cvss2.NVDBaseSeverity,
-									Cvss3Score:     cvss3.BaseScore,
-									Cvss3Vector:    cvss3.Vector,
-									Cvss3Severity:  cvss3.BaseSeverity,
-									Cvss40Score:    cvss40.Score,
-									Cvss40Vector:   cvss40.Vector,
-									Cvss40Severity: cvss40.Severity,
-									SourceLink:     cveContentSourceLink(cctype, v, src.RootID),
-									References:     rs,
-									CweIDs: func() []string {
-										var cs []string
-										for _, cwe := range v.Content.CWE {
-											cs = append(cs, cwe.CWE...)
-										}
-										return cs
-									}(),
-									Published: func() time.Time {
-										if v.Content.Published != nil {
-											return *v.Content.Published
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									LastModified: func() time.Time {
-										if v.Content.Modified != nil {
-											return *v.Content.Modified
-										}
-										return time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
-									}(),
-									Optional: cveContentOptional(src.Segment.Ecosystem, v, string(bs)),
-								}),
+								CveContents:      models.NewCveContents(ccs...),
 							}, nil
 						}()
 						if err != nil {
@@ -1958,12 +1980,26 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 	}
 	info.DistroAdvisories = slices.Collect(maps.Values(am))
 
-	ccm := make(map[models.CveContentType]models.CveContent)
+	// Contents of one type stay in the order they arrive in; like the enrich
+	// passes, this leaves ordering to CveContents.Sort (see
+	// ScanResult.SortForJSONOutput) rather than imposing one of its own.
+	ccs := make(models.CveContents)
 	for _, cciter := range []iter.Seq[[]models.CveContent]{maps.Values(a.CveContents), maps.Values(b.CveContents)} {
 		for cc := range cciter {
 			for _, c := range cc {
-				base, ok := ccm[c.Type]
-				if ok {
+				// A type can hold several contents, one per CVSS/CWE source
+				// (nvd/vulncheck report both the CNA's metrics and their own,
+				// mitre one per CNA/ADP container). Those are separate metric
+				// sets rather than rival reports of the same one, so a content
+				// merges only into one of the same source — merging across
+				// sources would fabricate a set no source published. The
+				// source is empty for every single-content type, which leaves
+				// their merging keyed by type alone as before.
+				i := slices.IndexFunc(ccs[c.Type], func(e models.CveContent) bool {
+					return e.Optional["source"] == c.Optional["source"]
+				})
+				if i >= 0 {
+					base := ccs[c.Type][i]
 					var src1 []source
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
 						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
@@ -2069,17 +2105,12 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 					}
 					merged.Optional["vuls2-sources"] = string(bs)
 
-					base = merged
+					ccs[c.Type][i] = merged
 				} else {
-					base = c
+					ccs[c.Type] = append(ccs[c.Type], c)
 				}
-				ccm[c.Type] = base
 			}
 		}
-	}
-	ccs := make(models.CveContents)
-	for cctype, cc := range ccm {
-		ccs[cctype] = []models.CveContent{cc}
 	}
 	info.CveContents = ccs
 
