@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.0
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.11.0
-	github.com/MaineK00n/vuls-data-update v0.0.0-20260725134449-c38b08335698
+	github.com/MaineK00n/vuls-data-update v0.0.0-20260731094820-5b6752ad7cb8
 	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260729010730-7c9a9f98c44c
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.72.0
