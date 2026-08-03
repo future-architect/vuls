@@ -117,9 +117,9 @@ jobs:
 
           Bump along the dependency chain, upstream first. Bumping vuls-data-update here alone is not enough: the standalone vuls2 binary (and the nightly DB build in vulsio/vuls-data-db) resolves vuls-data-update via vuls2's own go.mod, so it would keep skipping data carrying the new values.
 
-          1. In MaineK00n/vuls2: `go get github.com/MaineK00n/vuls-data-update@<nightly commit above> && go mod tidy`, test, PR, merge.
+          1. In MaineK00n/vuls2: `go get github.com/MaineK00n/vuls-data-update@$NIGHTLY && go mod tidy`, test, PR, merge.
           2. Here: `go get github.com/MaineK00n/vuls2@main && go mod tidy` — module graph resolution raises the direct vuls-data-update requirement to the same version. Open a PR with `Fixes #<this issue>`.
-          3. Verify parity before pushing: `GOEXPERIMENT=jsonv2 go run github.com/MaineK00n/vuls-data-update/tools/print-enums` for the pinned version vs `...@<nightly commit above>` — the diff must be empty (or re-run this workflow via workflow_dispatch on the PR branch).
+          3. Verify parity before pushing: `GOEXPERIMENT=jsonv2 go run github.com/MaineK00n/vuls-data-update/tools/print-enums` for the pinned version vs `...@$NIGHTLY` — the diff must be empty (or re-run this workflow via workflow_dispatch on the PR branch).
 
           In each bump PR, list the incoming merged PRs (`gh api 'repos/MaineK00n/<repo>/compare/<old>...<new>' --jq '.commits[].commit.message | split("\n")[0]'`) so reviewers can see what the bump pulls in.
           BODY_EOF
