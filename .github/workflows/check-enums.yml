@@ -98,12 +98,30 @@ jobs:
         run: |
           gh label create enum-drift -R "$GITHUB_REPOSITORY" --force --description "vuls-data-update enum vocabulary drift" --color D93F0B
           if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --label enum-drift --state open --json number --jq '.[].number')" ]; then
-            {
-              printf 'The scheduled check-enums run failed: the vuls-data-update pinned in go.mod knows fewer enum values than the nightly branch (compared against commit %s). A dependency bump is due before data produced with the new values reaches detection.\n\n' "$NIGHTLY"
-              printf '%s\n' "\`\`\`diff"
-              printf '%s\n' "$DIFF"
-              printf '%s\n\n' "\`\`\`"
-              printf 'Run: %s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            } > /tmp/enum-issue.md
+            # The body template is one quoted heredoc: the markdown is full of
+            # backticks, which an unquoted heredoc would run as command
+            # substitutions. envsubst fills in the dynamic values, restricted
+            # to the explicit list so nothing else that looks like $VAR is
+            # touched.
+            # shellcheck disable=SC2016 # the literal $NAMEs are envsubst's variable list
+            envsubst '$NIGHTLY $DIFF $GITHUB_SERVER_URL $GITHUB_REPOSITORY $GITHUB_RUN_ID' > /tmp/enum-issue.md <<'BODY_EOF'
+          The scheduled check-enums run failed: the vuls-data-update pinned in go.mod knows fewer enum values than the nightly branch (compared against commit $NIGHTLY). A dependency bump is due before data produced with the new values reaches detection.
+
+          ```diff
+          $DIFF
+          ```
+
+          Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          ## Remediation
+
+          Bump along the dependency chain, upstream first. Bumping vuls-data-update here alone is not enough: the standalone vuls2 binary (and the nightly DB build in vulsio/vuls-data-db) resolves vuls-data-update via vuls2's own go.mod, so it would keep skipping data carrying the new values.
+
+          1. In MaineK00n/vuls2: `go get github.com/MaineK00n/vuls-data-update@$NIGHTLY && go mod tidy`, test, PR, merge.
+          2. Here: `go get github.com/MaineK00n/vuls2@<commit the step-1 merge produced on vuls2 nightly> && go mod tidy` — vuls2 PRs land on its nightly branch; pin the merge commit hash rather than `@nightly`, which resolves through the module proxy and can lag behind the branch tip. Module graph resolution raises the direct vuls-data-update requirement to the same version. Open a PR with `Fixes #<this issue>`.
+          3. Verify parity before pushing: `GOEXPERIMENT=jsonv2 go run github.com/MaineK00n/vuls-data-update/tools/print-enums` for the pinned version vs `...@$NIGHTLY` — the diff must be empty (or re-run this workflow via workflow_dispatch on the PR branch).
+
+          In each bump PR, list the incoming merged PRs (`gh api 'repos/MaineK00n/<repo>/compare/<old>...<new>' --jq '.commits[].commit.message | split("\n")[0]'`) so reviewers can see what the bump pulls in.
+          BODY_EOF
             gh issue create -R "$GITHUB_REPOSITORY" --title "vuls-data-update enum vocabulary drift" --label enum-drift --assignee MaineK00n,shino --body-file /tmp/enum-issue.md
           fi
