@@ -2072,6 +2072,7 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "21073", kb: "5062561"},
 				{revision: "21100", kb: "5063889"},
 				{revision: "21128", kb: "5065430"},
+				{revision: "21161", kb: "5066837"},
 			},
 		},
 		// https://support.microsoft.com/en-us/topic/windows-10-update-history-2ad7900f-882c-1dfc-f9d7-82b7ca162010
@@ -2316,6 +2317,10 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8868", kb: "5075999"},
 				{revision: "8957", kb: "5078938"},
 				{revision: "9060", kb: "5082198"},
+				{revision: "9062", kb: "5091572"},
+				{revision: "9140", kb: "5087537"},
+				{revision: "9234", kb: "5094122"},
+				{revision: "9339", kb: "5099535"},
 			},
 		},
 		// https://support.microsoft.com/en-us/topic/windows-10-update-history-83aa43c0-82e0-92d8-1580-10642c9ed612
@@ -2725,6 +2730,19 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "7792", kb: "5065428"},
 				{revision: "7919", kb: "5066586"},
 				{revision: "7922", kb: "5070883"},
+				{revision: "8027", kb: "5068791"},
+				{revision: "8146", kb: "5071544"},
+				{revision: "8148", kb: "5074975"},
+				{revision: "8276", kb: "5073723"},
+				{revision: "8280", kb: "5077795"},
+				{revision: "8281", kb: "5078131"},
+				{revision: "8389", kb: "5075904"},
+				{revision: "8511", kb: "5078752"},
+				{revision: "8644", kb: "5082123"},
+				{revision: "8647", kb: "5091573"},
+				{revision: "8755", kb: "5087538"},
+				{revision: "8880", kb: "5094123"},
+				{revision: "9020", kb: "5099538"},
 			},
 		},
 		// https://support.microsoft.com/en-us/topic/windows-10-update-history-e6058e7c-4116-38f1-b984-4fcacfba5e5d
@@ -3085,6 +3103,18 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "6218", kb: "5066188"},
 				{revision: "6332", kb: "5065429"},
 				{revision: "6456", kb: "5066791"},
+				{revision: "6575", kb: "5068781"},
+				{revision: "6691", kb: "5071546"},
+				{revision: "6693", kb: "5074976"},
+				{revision: "6809", kb: "5073724"},
+				{revision: "6811", kb: "5077796"},
+				{revision: "6812", kb: "5078129"},
+				{revision: "6937", kb: "5075912"},
+				{revision: "7058", kb: "5078885"},
+				{revision: "7184", kb: "5082200"},
+				{revision: "7291", kb: "5087544"},
+				{revision: "7417", kb: "5094127"},
+				{revision: "7548", kb: "5099539"},
 			},
 		},
 		// https://support.microsoft.com/en-us/topic/windows-10-update-history-8127c2c6-6edf-4fdf-8b9f-0f7be1ef3562
@@ -3174,6 +3204,9 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "6937", kb: "5075912"},
 				{revision: "7058", kb: "5078885"},
 				{revision: "7184", kb: "5082200"},
+				{revision: "7291", kb: "5087544"},
+				{revision: "7417", kb: "5094127"},
+				{revision: "7548", kb: "5099539"},
 			},
 		},
 	},
@@ -3320,12 +3353,14 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "5472", kb: "5060999"},
 				{revision: "5549", kb: "5060826"},
 				{revision: "5624", kb: "5062552"},
+				{revision: "5699", kb: "5062663"},
 				{revision: "5768", kb: "5063875"},
 				{revision: "5771", kb: "5066189"},
 				{revision: "5909", kb: "5065431"},
 				{revision: "6060", kb: "5066793"},
 			},
 		},
+		// https://support.microsoft.com/en-us/topic/windows-11-version-23h2-update-history-59875222-b990-4bd9-932f-91a5954de434
 		"22631": {
 			rollup: []windowsRelease{
 				{revision: "2428", kb: ""},
@@ -3371,6 +3406,7 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "5472", kb: "5060999"},
 				{revision: "5549", kb: "5060826"},
 				{revision: "5624", kb: "5062552"},
+				{revision: "5699", kb: "5062663"},
 				{revision: "5768", kb: "5063875"},
 				{revision: "5771", kb: "5066189"},
 				{revision: "5840", kb: "5064080"},
@@ -3387,11 +3423,22 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "6649", kb: "5075941"},
 				{revision: "6783", kb: "5078883"},
 				{revision: "6936", kb: "5082052"},
+				{revision: "7079", kb: "5087420"},
+				{revision: "7219", kb: "5093998"},
+				{revision: "7376", kb: "5099414"},
 			},
 		},
+		// https://support.microsoft.com/en-us/topic/windows-11-version-24h2-update-history-0929c747-1815-4543-8461-0160d16f15e5
 		"26100": {
 			rollup: []windowsRelease{
+				{revision: "863", kb: "5039239"},
+				{revision: "1000", kb: "5039304"},
+				{revision: "1150", kb: "5040435"},
+				{revision: "1301", kb: "5040529"},
+				{revision: "1457", kb: "5041571"},
+				{revision: "1591", kb: "5041865"},
 				{revision: "1742", kb: ""},
+				{revision: "1882", kb: "5043178"},
 				{revision: "2033", kb: "5044284"},
 				{revision: "2161", kb: "5044384"},
 				{revision: "2314", kb: "5046617"},
@@ -3438,8 +3485,17 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8116", kb: "5079391"},
 				{revision: "8117", kb: "5086672"},
 				{revision: "8246", kb: "5083769"},
+				{revision: "8328", kb: "5083631"},
+				{revision: "8457", kb: "5089549"},
+				{revision: "8524", kb: "5089573"},
+				{revision: "8655", kb: "5094126"},
+				{revision: "8737", kb: "5095093"},
+				{revision: "8875", kb: "5101650"},
+				{revision: "8894", kb: "5121767"},
+				{revision: "8973", kb: "5101684"},
 			},
 		},
+		// https://support.microsoft.com/en-us/topic/windows-11-version-25h2-update-history-99c7f493-df2a-4832-bd2d-6706baa0dec0
 		"26200": {
 			rollup: []windowsRelease{
 				{revision: "6584", kb: ""},
@@ -3461,8 +3517,17 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8116", kb: "5079391"},
 				{revision: "8117", kb: "5086672"},
 				{revision: "8246", kb: "5083769"},
+				{revision: "8328", kb: "5083631"},
+				{revision: "8457", kb: "5089549"},
+				{revision: "8524", kb: "5089573"},
+				{revision: "8655", kb: "5094126"},
+				{revision: "8737", kb: "5095093"},
+				{revision: "8875", kb: "5101650"},
+				{revision: "8894", kb: "5121767"},
+				{revision: "8973", kb: "5101684"},
 			},
 		},
+		// https://support.microsoft.com/en-us/topic/windows-11-version-26h1-update-history-253c73cd-cab1-4bfd-94dc-76c452273fc9
 		"28000": {
 			rollup: []windowsRelease{
 				{revision: "1", kb: ""},
@@ -3471,6 +3536,13 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "1719", kb: "5079466"},
 				{revision: "1764", kb: "5079489"},
 				{revision: "1836", kb: "5083768"},
+				{revision: "1896", kb: "5083806"},
+				{revision: "2113", kb: "5089548"},
+				{revision: "2179", kb: "5089570"},
+				{revision: "2269", kb: "5095051"},
+				{revision: "2340", kb: "5095091"},
+				{revision: "2525", kb: "5101649"},
+				{revision: "2608", kb: "5101681"},
 			},
 		},
 	},
@@ -4536,11 +4608,15 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8868", kb: "5075999"},
 				{revision: "8957", kb: "5078938"},
 				{revision: "9060", kb: "5082198"},
+				{revision: "9062", kb: "5091572"},
+				{revision: "9140", kb: "5087537"},
+				{revision: "9234", kb: "5094122"},
+				{revision: "9339", kb: "5099535"},
 			},
 		},
 	},
 	"Windows Server, Version 1709": {
-		// https://support.microsoft.com/en-us/topic/windows-10-update-history-8127c2c6-6edf-4fdf-8b9f-0f7be1ef3562
+		// https://support.microsoft.com/en-us/topic/windows-10-and-windows-server-update-history-8e779ac1-e840-d3b8-524e-91037bf7645a
 		"16299": {
 			rollup: []windowsRelease{
 				{revision: "19", kb: "4043961"},
@@ -4620,6 +4696,7 @@ var windowsReleases = map[string]map[string]updateProgram{
 		},
 	},
 	"Windows Server, Version 1803": {
+		// https://support.microsoft.com/en-us/topic/windows-10-update-history-0d8c2da6-3dba-66e4-2ef2-059192bf7869
 		"17134": {
 			rollup: []windowsRelease{},
 		},
@@ -4870,6 +4947,10 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8389", kb: "5075904"},
 				{revision: "8511", kb: "5078752"},
 				{revision: "8644", kb: "5082123"},
+				{revision: "8647", kb: "5091573"},
+				{revision: "8755", kb: "5087538"},
+				{revision: "8880", kb: "5094123"},
+				{revision: "9020", kb: "5099538"},
 			},
 		},
 	},
@@ -5204,6 +5285,10 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "4776", kb: "5082314"},
 				{revision: "4893", kb: "5078766"},
 				{revision: "5020", kb: "5082142"},
+				{revision: "5024", kb: "5091575"},
+				{revision: "5139", kb: "5087545"},
+				{revision: "5256", kb: "5094128"},
+				{revision: "5386", kb: "5099540"},
 			},
 		},
 	},
@@ -5245,6 +5330,8 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "2149", kb: "5075897"},
 				{revision: "2207", kb: "5078734"},
 				{revision: "2274", kb: "5082060"},
+				{revision: "2276", kb: "5091571"},
+				{revision: "2330", kb: "5087541"},
 			},
 		},
 	},
@@ -5281,6 +5368,10 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "32370", kb: "5075899"},
 				{revision: "32522", kb: "5078740"},
 				{revision: "32690", kb: "5082063"},
+				{revision: "32698", kb: "5091157"},
+				{revision: "32860", kb: "5087539"},
+				{revision: "32995", kb: "5094125"},
+				{revision: "33158", kb: "5099536"},
 			},
 		},
 	},
@@ -5319,7 +5410,10 @@ func DetectKBsFromKernelVersion(release, kernelVersion string) (models.WindowsKB
 			return models.WindowsKB{}, xerrors.Errorf("Failed to parse revision number. err: %w", err)
 		}
 
-		var index int
+		// index is the last rollup entry at or below the running revision, or -1
+		// when the running revision predates every entry. Starting at 0 would
+		// treat the first entry as applied on a host that has not reached it.
+		index := -1
 		for i, r := range rels.rollup {
 			nRevision, err := strconv.Atoi(r.revision)
 			if err != nil {
