@@ -16,6 +16,13 @@ var (
 	CollectVerifiedProducts = collectVerifiedProducts
 
 	WarningMessages = warningMessages
+
+	CollectDefinedCPEProducts = collectDefinedCPEProducts
+	CompactCPECriteria        = compactCPECriteria
+	PruneAffectedDetection    = pruneAffectedDetection
+	WalkPkgCriteria           = walkPkgCriteria
 )
+
+type PackStatus = packStatus
 
 type Source source
