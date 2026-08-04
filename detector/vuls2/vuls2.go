@@ -225,36 +225,46 @@ func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session,
 // the constant for cause-less kinds like empty-range) is not rendered.
 // Line order here is unspecified — SortForJSONOutput normalizes it.
 func warningMessages(detected []detectTypes.VulnerabilityData) []string {
-	type entry struct {
-		source  sourceTypes.SourceID
-		warning warningTypes.Warning
-	}
-	var entries []entry
-	var collect func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID)
-	collect = func(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID) {
-		for _, ca := range fca.Criterias {
-			collect(ca, sid)
-		}
-		for _, cn := range fca.Criterions {
-			for _, w := range cn.Warnings {
-				e := entry{source: sid, warning: w}
-				if !slices.ContainsFunc(entries, func(x entry) bool {
-					return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
-				}) {
-					entries = append(entries, e)
-				}
-			}
-		}
-	}
+	var entries []warningEntry
 	for _, data := range detected {
 		for _, d := range data.Detections {
 			for sid, conds := range d.Contents {
 				for _, cond := range conds {
-					collect(cond.Criteria, sid)
+					entries = collectCriteriaWarnings(cond.Criteria, sid, entries)
 				}
 			}
 		}
 	}
+	return renderWarningEntries(entries)
+}
+
+type warningEntry struct {
+	source  sourceTypes.SourceID
+	warning warningTypes.Warning
+}
+
+// collectCriteriaWarnings appends the (source, warning) pairs recorded on
+// fca's criterions to entries, skipping pairs already present, and returns
+// the updated slice. The streaming detect fold calls this on each full
+// tree before reducing it.
+func collectCriteriaWarnings(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID, entries []warningEntry) []warningEntry {
+	for _, ca := range fca.Criterias {
+		entries = collectCriteriaWarnings(ca, sid, entries)
+	}
+	for _, cn := range fca.Criterions {
+		for _, w := range cn.Warnings {
+			e := warningEntry{source: sid, warning: w}
+			if !slices.ContainsFunc(entries, func(x warningEntry) bool {
+				return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
+			}) {
+				entries = append(entries, e)
+			}
+		}
+	}
+	return entries
+}
+
+func renderWarningEntries(entries []warningEntry) []string {
 	msgs := make([]string, 0, len(entries))
 	for _, e := range entries {
 		var parts []string
@@ -276,7 +286,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		return xerrors.Errorf("Failed to open db session. err: %w", err)
 	}
 
-	vuls2Detected, err := detect(sesh, vuls2Scanned)
+	vuls2Detected, warningMsgs, err := detect(sesh, vuls2Scanned)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
@@ -290,8 +300,10 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 
 	// Surface the skips vuls2 recorded as scan-result warnings, deduplicated
 	// against warnings already registered by the other vuls2 pass:
-	// DetectPkgs and DetectCPEs both route through here.
-	for _, msg := range warningMessages(vuls2Detected.Detected) {
+	// DetectPkgs and DetectCPEs both route through here. detect harvests
+	// the warnings while streaming, before the trees are reduced — the
+	// reduced result no longer carries them.
+	for _, msg := range warningMsgs {
 		if !slices.Contains(r.Warnings, msg) {
 			r.Warnings = append(r.Warnings, msg)
 		}
@@ -594,36 +606,71 @@ func preConvertCPEs(sr *models.ScanResult, cpes []CPE) (scanTypes.ScanResult, ma
 	return scanned, fsToOriginal, noJVNCPEs, nil
 }
 
-func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, error) {
+// detect runs vuls2 detection over the scan result and assembles the
+// in-memory DetectResult. It consumes the streaming DetectSeq forms and
+// folds each rootID's detection as it arrives — harvesting the evaluation
+// warnings recorded on the full trees first, then reducing the trees to
+// what this package reads downstream (ospkg: affected-only pruning via
+// prunePkgCriteria; cpe: compactCPEDetection's product projection) — so
+// peak memory holds the reduced result plus only the in-flight full trees.
+// The second return value carries the rendered warning lines, which can no
+// longer be derived from the (reduced) result trees.
+func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectResult, []string, error) {
 	// The two entry points feed exclusive inputs: preConvertPkgs converts
 	// OS packages / Microsoft KB only, preConvertCPEs the CPE list only.
 	// Receiving both means a caller bypassed them.
 	if len(sr.CPE) > 0 && (len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0) {
-		return detectTypes.DetectResult{}, xerrors.Errorf("ScanResult carries both CPE and OS-package / Microsoft-KB inputs; DetectPkgs and DetectCPEs feed them exclusively")
+		return detectTypes.DetectResult{}, nil, xerrors.Errorf("ScanResult carries both CPE and OS-package / Microsoft-KB inputs; DetectPkgs and DetectCPEs feed them exclusively")
+	}
+
+	var warnEntries []warningEntry
+	harvestWarnings := func(d detectTypes.VulnerabilityDataDetection) {
+		for sid, conds := range d.Contents {
+			for _, cond := range conds {
+				warnEntries = collectCriteriaWarnings(cond.Criteria, sid, warnEntries)
+			}
+		}
 	}
 
 	detections, err := func() (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, error) {
 		if len(sr.CPE) > 0 {
-			m, err := cpe.Detect(sesh.Storage(), sr, runtime.NumCPU())
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
+			m := make(map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection)
+			for rd, err := range cpe.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()) {
+				if err != nil {
+					return nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
+				}
+				harvestWarnings(rd.Detection)
+				m[rd.RootID] = compactCPEDetection(rd.Detection)
 			}
 			return m, nil
 		}
-		// ospkg.Detect also covers Microsoft-KB detection, so gate on
+		// ospkg.DetectSeq also covers Microsoft-KB detection, so gate on
 		// either input being present — a Windows scan can carry KBs
 		// without any OS packages.
 		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
-			m, err := ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU())
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+			m := make(map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection)
+			for rd, err := range ospkg.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()) {
+				if err != nil {
+					return nil, xerrors.Errorf("Failed to detect os packages. err: %w", err)
+				}
+				harvestWarnings(rd.Detection)
+				d, err := pruneAffectedDetection(rd.Detection)
+				if err != nil {
+					return nil, xerrors.Errorf("Failed to prune detection. RootID: %s, err: %w", rd.RootID, err)
+				}
+				// A rootID whose every condition pruned to empty carries no
+				// detection signal for any downstream consumer; dropping it
+				// here also skips its vulnerability-data fetch below.
+				if len(d.Contents) > 0 {
+					m[rd.RootID] = d
+				}
 			}
 			return m, nil
 		}
 		return nil, nil
 	}()
 	if err != nil {
-		return detectTypes.DetectResult{}, xerrors.Errorf("Failed to detect. err: %w", err)
+		return detectTypes.DetectResult{}, nil, xerrors.Errorf("Failed to detect. err: %w", err)
 	}
 
 	// Fetch Vulnerability/Advisory data narrowed to the detecting
@@ -642,7 +689,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 			DataSources: slices.Collect(maps.Keys(d.Contents)),
 		})
 		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
+			return detectTypes.DetectResult{}, nil, xerrors.Errorf("Failed to get vulnerability data. RootID: %s, err: %w", rootID, err)
 		}
 		detected[rootID] = detectTypes.VulnerabilityData{
 			ID:              rootID,
@@ -681,7 +728,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 	for _, sourceID := range sourceIDs {
 		s, err := sesh.Storage().GetDataSource(sourceID)
 		if err != nil {
-			return detectTypes.DetectResult{}, xerrors.Errorf("Failed to get datasource. sourceID: %s, err: %w", sourceID, err)
+			return detectTypes.DetectResult{}, nil, xerrors.Errorf("Failed to get datasource. sourceID: %s, err: %w", sourceID, err)
 		}
 		datasources = append(datasources, s)
 	}
@@ -696,7 +743,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 
 		DetectedAt: time.Now(),
 		DetectedBy: version.String(),
-	}, nil
+	}, renderWarningEntries(warnEntries), nil
 }
 
 type source struct {
