@@ -14,8 +14,10 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
 	attackTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/attack"
@@ -44,6 +46,7 @@ import (
 	"github.com/MaineK00n/vuls2/pkg/detect/cpe"
 	"github.com/MaineK00n/vuls2/pkg/detect/ospkg"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
+	"github.com/MaineK00n/vuls2/pkg/detect/util"
 	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 	"github.com/MaineK00n/vuls2/pkg/version"
 	"github.com/knqyf263/go-cpe/common"
@@ -262,6 +265,20 @@ func collectCriteriaWarnings(fca criteriaTypes.FilteredCriteria, sid sourceTypes
 		}
 	}
 	return entries
+}
+
+// mergeWarningEntries appends the entries of add not already present in
+// dst (same (source, warning) dedup as collectCriteriaWarnings) and
+// returns the updated slice.
+func mergeWarningEntries(dst, add []warningEntry) []warningEntry {
+	for _, e := range add {
+		if !slices.ContainsFunc(dst, func(x warningEntry) bool {
+			return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
+		}) {
+			dst = append(dst, e)
+		}
+	}
+	return dst
 }
 
 func renderWarningEntries(entries []warningEntry) []string {
@@ -606,6 +623,60 @@ func preConvertCPEs(sr *models.ScanResult, cpes []CPE) (scanTypes.ScanResult, ma
 	return scanned, fsToOriginal, noJVNCPEs, nil
 }
 
+// foldDetectionSeq consumes a detection stream with a pool of fold
+// workers: each element's evaluation warnings are harvested from the full
+// tree, then fold reduces the tree (returning keep=false to drop the
+// rootID entirely). Folding in parallel matters — the stream side runs
+// NumCPU workers, and a single consumer goroutine walking every large
+// tree (e.g. cpe_kernel's) becomes the pipeline bottleneck. Peak memory
+// holds the folded result plus only the in-flight full trees (stream
+// workers + channel buffer + fold workers, each bounded by NumCPU).
+func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], fold func(detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error)) (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, []warningEntry, error) {
+	var (
+		mu          sync.Mutex
+		m           = make(map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection)
+		warnEntries []warningEntry
+	)
+
+	var g errgroup.Group
+	g.SetLimit(runtime.NumCPU())
+	var seqErr error
+	for rd, err := range seq {
+		if err != nil {
+			seqErr = err
+			break
+		}
+		g.Go(func() error {
+			var entries []warningEntry
+			for sid, conds := range rd.Detection.Contents {
+				for _, cond := range conds {
+					entries = collectCriteriaWarnings(cond.Criteria, sid, entries)
+				}
+			}
+
+			d, keep, err := fold(rd.Detection)
+			if err != nil {
+				return xerrors.Errorf("fold detection. RootID: %s, err: %w", rd.RootID, err)
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			warnEntries = mergeWarningEntries(warnEntries, entries)
+			if keep {
+				m[rd.RootID] = d
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, nil, err
+	}
+	if seqErr != nil {
+		return nil, nil, seqErr
+	}
+	return m, warnEntries, nil
+}
+
 // detect runs vuls2 detection over the scan result and assembles the
 // in-memory DetectResult. It consumes the streaming DetectSeq forms and
 // folds each rootID's detection as it arrives — harvesting the evaluation
@@ -623,51 +694,36 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		return detectTypes.DetectResult{}, nil, xerrors.Errorf("ScanResult carries both CPE and OS-package / Microsoft-KB inputs; DetectPkgs and DetectCPEs feed them exclusively")
 	}
 
-	var warnEntries []warningEntry
-	harvestWarnings := func(d detectTypes.VulnerabilityDataDetection) {
-		for sid, conds := range d.Contents {
-			for _, cond := range conds {
-				warnEntries = collectCriteriaWarnings(cond.Criteria, sid, warnEntries)
-			}
-		}
-	}
-
-	detections, err := func() (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, error) {
+	detections, warnEntries, err := func() (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, []warningEntry, error) {
 		if len(sr.CPE) > 0 {
-			m := make(map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection)
-			for rd, err := range cpe.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()) {
-				if err != nil {
-					return nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
-				}
-				harvestWarnings(rd.Detection)
-				m[rd.RootID] = compactCPEDetection(rd.Detection)
+			m, entries, err := foldDetectionSeq(cpe.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
+				return compactCPEDetection(d), true, nil
+			})
+			if err != nil {
+				return nil, nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
 			}
-			return m, nil
+			return m, entries, nil
 		}
 		// ospkg.DetectSeq also covers Microsoft-KB detection, so gate on
 		// either input being present — a Windows scan can carry KBs
 		// without any OS packages.
 		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
-			m := make(map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection)
-			for rd, err := range ospkg.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()) {
+			m, entries, err := foldDetectionSeq(ospkg.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
+				pruned, err := pruneAffectedDetection(d)
 				if err != nil {
-					return nil, xerrors.Errorf("Failed to detect os packages. err: %w", err)
-				}
-				harvestWarnings(rd.Detection)
-				d, err := pruneAffectedDetection(rd.Detection)
-				if err != nil {
-					return nil, xerrors.Errorf("Failed to prune detection. RootID: %s, err: %w", rd.RootID, err)
+					return detectTypes.VulnerabilityDataDetection{}, false, err
 				}
 				// A rootID whose every condition pruned to empty carries no
 				// detection signal for any downstream consumer; dropping it
 				// here also skips its vulnerability-data fetch below.
-				if len(d.Contents) > 0 {
-					m[rd.RootID] = d
-				}
+				return pruned, len(pruned.Contents) > 0, nil
+			})
+			if err != nil {
+				return nil, nil, xerrors.Errorf("Failed to detect os packages. err: %w", err)
 			}
-			return m, nil
+			return m, entries, nil
 		}
-		return nil, nil
+		return nil, nil, nil
 	}()
 	if err != nil {
 		return detectTypes.DetectResult{}, nil, xerrors.Errorf("Failed to detect. err: %w", err)
