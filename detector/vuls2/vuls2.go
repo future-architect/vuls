@@ -1298,11 +1298,19 @@ func isJVNCPESource(sourceID sourceTypes.SourceID) bool {
 // defined by one of these (kept in sync with toCveContentType's verified CPE
 // sources). Fortinet/Cisco/PaloAlto only contribute once migrated to the vuls2
 // DB; until then GetVulnerabilityData simply returns nothing for them.
+//
+// Apple has no go-cve-dictionary counterpart but belongs to the same category:
+// apple-security-releases is the vendor's own PSIRT feed and states an exact
+// version bound per release, so it strictly dominates a supplementary source's
+// version-less apple:macos / apple:safari match. Suppression is keyed per CVE,
+// so it only fires where Apple detected the very same CVE on the very same
+// product — never where Apple has no advisory.
 var verifiedCPESources = []sourceTypes.SourceID{
 	sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2,
 	sourceTypes.FortinetCSAF, sourceTypes.FortinetCVRF,
 	sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList,
 	sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON,
+	sourceTypes.AppleSecurityReleases,
 }
 
 // isSuppressedCPESource reports whether a CPE-ecosystem source's matches are
