@@ -489,6 +489,8 @@ const (
 
 	// Apple is Apple
 	Apple CveContentType = "apple"
+	// OpenSSH is OpenSSH
+	OpenSSH CveContentType = "openssh"
 
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
@@ -661,6 +663,7 @@ var AllCveContetTypes = CveContentTypes{
 	Paloalto,
 	Cisco,
 	Apple,
+	OpenSSH,
 	RedHat,
 	RedHatAPI,
 	Alma,

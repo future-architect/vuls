@@ -599,6 +599,17 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 				Source: "APPLE",
 				RefID:  da.AdvisoryID,
 			}, nil
+		case sourceTypes.OpenSSHSecurity:
+			// OpenSSH publishes its entire security history on one page and
+			// assigns no per-advisory URL, so every entry points at that page.
+			// The advisory ID is synthesised by the extractor
+			// (OPENSSH-<date>-<n>) and exists only to key the entry, so it is
+			// kept as the RefID rather than built into a link.
+			return models.Reference{
+				Link:   "https://www.openssh.com/security.html",
+				Source: "OPENSSH",
+				RefID:  da.AdvisoryID,
+			}, nil
 		default:
 			return models.Reference{}, xerrors.Errorf("unsupported source: %s", s)
 		}
@@ -704,6 +715,10 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		// Cisco content lives in the advisory, whose ID is the root ID, so the
 		// per-CVE source link points at that advisory page.
 		return fmt.Sprintf("https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/%s", rootID)
+	case models.OpenSSH:
+		// OpenSSH has no per-advisory page: the whole security history is one
+		// document, so every CVE's source link points at it.
+		return "https://www.openssh.com/security.html"
 	case models.Paloalto:
 		// Palo Alto publishes a page per CVE, so the source link is keyed by the
 		// CVE ID (which is the vulnerability content ID, e.g. CVE-2022-0778).
@@ -975,6 +990,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 			return models.Cisco
 		case sourceTypes.AppleSecurityReleases:
 			return models.Apple
+		case sourceTypes.OpenSSHSecurity:
+			return models.OpenSSH
 		default:
 			return models.Unknown
 		}
@@ -1142,6 +1159,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 				return models.CiscoVendorProductMatch
 			case sourceTypes.AppleSecurityReleases:
 				return models.AppleVendorProductMatch
+			case sourceTypes.OpenSSHSecurity:
+				return models.OpenSSHVendorProductMatch
 			default:
 				return models.Confidence{
 					Score:           0,
@@ -1171,6 +1190,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 			return models.CiscoExactVersionMatch
 		case sourceTypes.AppleSecurityReleases:
 			return models.AppleExactVersionMatch
+		case sourceTypes.OpenSSHSecurity:
+			return models.OpenSSHExactVersionMatch
 		default:
 			return models.Confidence{
 				Score:           0,

@@ -10636,6 +10636,157 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// The page assigns no per-advisory URL, so the link is the page and
+			// the synthesised advisory ID (OPENSSH-<date>-<n>) is carried as
+			// the RefID. The bound keeps its portable suffix, which is the
+			// whole point of the openssh range type: 9.9p1 is affected and the
+			// 9.9p2 that fixes it is not.
+			name: "cpe openssh detection emits CveContent (security page source link) + DistroAdvisory",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:openbsd:openssh:9.9:p1:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:openbsd:openssh:9.9:p1:*:*:*:*:*:*": {"cpe:/a:openbsd:openssh:9.9:p1"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "OPENSSH-2025-02-18-1",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "OPENSSH-2025-02-18-1",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.OpenSSHSecurity: {
+											dataTypes.RootID("OPENSSH-2025-02-18-1"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:    "OPENSSH-2025-02-18-1",
+														Title: "VerifyHostKeyDNS server impersonation.",
+														References: []referenceTypes.Reference{
+															{
+																Source: "openssh.com",
+																URL:    "https://www.openssh.com/security.html",
+															},
+														},
+														Published: new(time.Date(2025, 2, 18, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-26465",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.OpenSSHSecurity: {
+											dataTypes.RootID("OPENSSH-2025-02-18-1"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2025-26465",
+														References: []referenceTypes.Reference{
+															{
+																Source: "openssh.com",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-26465",
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.OpenSSHSecurity: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class:  vcFixStatusTypes.ClassFixed,
+																		Vendor: "openssh.com",
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:openbsd:openssh:*:*:*:*:*:*:*:*"),
+																	Range: &ccRangeTypes.Range{
+																		Type:         ccRangeTypes.RangeTypeOpenSSH,
+																		GreaterEqual: "6.8p1",
+																		LessEqual:    "9.9p1",
+																	},
+																	Fixed: []string{"9.9p2"},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-26465": {
+					CveID:       "CVE-2025-26465",
+					Confidences: models.Confidences{models.OpenSSHExactVersionMatch},
+					CpeURIs:     []string{"cpe:/a:openbsd:openssh:9.9:p1"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "OPENSSH-2025-02-18-1",
+							Issued:     time.Date(2025, 2, 18, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.OpenSSH: []models.CveContent{
+							{
+								Type:       models.OpenSSH,
+								CveID:      "CVE-2025-26465",
+								SourceLink: "https://www.openssh.com/security.html",
+								References: models.References{
+									{Link: "https://www.openssh.com/security.html", Source: "OPENSSH", RefID: "OPENSSH-2025-02-18-1"},
+									{Link: "https://www.cve.org/CVERecord?id=CVE-2025-26465", Source: "CVE", RefID: "CVE-2025-26465"},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"OPENSSH-2025-02-18-1\",\"source_id\":\"openssh-security\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low
