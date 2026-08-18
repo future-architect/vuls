@@ -587,6 +587,18 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 				Source: "CISCO",
 				RefID:  da.AdvisoryID,
 			}, nil
+		case sourceTypes.AppleSecurityReleases:
+			// The advisory ID is the support article ID, in either the modern
+			// numeric form (128067) or the legacy HT form (HT213823); the
+			// locale-less /<id> URL redirects to the canonical localized page
+			// for both, and legacy IDs are re-pointed at their renumbered
+			// article (HT213823 -> /en-us/106354), which no ID-to-URL rule
+			// could reproduce.
+			return models.Reference{
+				Link:   fmt.Sprintf("https://support.apple.com/%s", da.AdvisoryID),
+				Source: "APPLE",
+				RefID:  da.AdvisoryID,
+			}, nil
 		default:
 			return models.Reference{}, xerrors.Errorf("unsupported source: %s", s)
 		}
@@ -700,6 +712,12 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		// Fortinet content lives in the PSIRT advisory, whose ID is the root ID
 		// (e.g. FG-IR-24-041), so the per-CVE source link points at that page.
 		return fmt.Sprintf("https://www.fortiguard.com/psirt/%s", rootID)
+	case models.Apple:
+		// Apple content lives in the security release page, whose support
+		// article ID is the root ID (e.g. 128067 or the legacy HT213823), so
+		// the per-CVE source link points at that page. The per-CVE references
+		// the extractor emits point at cve.org, not at Apple.
+		return fmt.Sprintf("https://support.apple.com/%s", rootID)
 	case models.Jvn:
 		// JVN content sits under a JVNDB-<year>-<seq> root; the source link
 		// points at that advisory page, whose URL embeds the year.
@@ -955,6 +973,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 			return models.Paloalto
 		case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
 			return models.Cisco
+		case sourceTypes.AppleSecurityReleases:
+			return models.Apple
 		default:
 			return models.Unknown
 		}
@@ -1120,6 +1140,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 				return models.PaloaltoVendorProductMatch
 			case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
 				return models.CiscoVendorProductMatch
+			case sourceTypes.AppleSecurityReleases:
+				return models.AppleVendorProductMatch
 			default:
 				return models.Confidence{
 					Score:           0,
@@ -1147,6 +1169,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 			return models.PaloaltoExactVersionMatch
 		case sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON:
 			return models.CiscoExactVersionMatch
+		case sourceTypes.AppleSecurityReleases:
+			return models.AppleExactVersionMatch
 		default:
 			return models.Confidence{
 				Score:           0,

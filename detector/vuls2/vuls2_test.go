@@ -10485,6 +10485,157 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Apple security releases are advisory-shaped like Cisco: the
+			// vulnerability stub carries only the CVE-ID and a cve.org
+			// reference, so the CveContent is sparse and its source link
+			// points at the support article (the root ID). The advisory ID is
+			// the article ID — here the modern numeric form; legacy HT IDs
+			// (HT213823) take the same /<id> URL, which redirects to the
+			// renumbered article.
+			name: "cpe apple detection emits CveContent (support article source link) + DistroAdvisory",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:o:apple:macos:26.5:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:o:apple:macos:26.5:*:*:*:*:*:*:*": {"cpe:/o:apple:macos:26.5"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "128067",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "128067",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.AppleSecurityReleases: {
+											dataTypes.RootID("128067"): []advisoryTypes.Advisory{
+												{
+													Content: advisoryContentTypes.Content{
+														ID:    "128067",
+														Title: "About the security content of macOS Tahoe 26.6",
+														References: []referenceTypes.Reference{
+															{
+																Source: "support.apple.com",
+																URL:    "https://support.apple.com/en-us/128067",
+															},
+														},
+														Published: new(time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2026-40765",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.AppleSecurityReleases: {
+											dataTypes.RootID("128067"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2026-40765",
+														References: []referenceTypes.Reference{
+															{
+																Source: "support.apple.com",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2026-40765",
+															},
+														},
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.AppleSecurityReleases: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:o:apple:macos:*:*:*:*:*:*:*:*"),
+																	Range: &ccRangeTypes.Range{
+																		Type:     ccRangeTypes.RangeTypeApple,
+																		LessThan: "26.6",
+																	},
+																	Fixed: []string{"26.6"},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{Exact: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2026-40765": {
+					CveID:       "CVE-2026-40765",
+					Confidences: models.Confidences{models.AppleExactVersionMatch},
+					CpeURIs:     []string{"cpe:/o:apple:macos:26.5"},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "128067",
+							Issued:     time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.Apple: []models.CveContent{
+							{
+								Type:       models.Apple,
+								CveID:      "CVE-2026-40765",
+								SourceLink: "https://support.apple.com/128067",
+								References: models.References{
+									{Link: "https://support.apple.com/128067", Source: "APPLE", RefID: "128067"},
+									{Link: "https://www.cve.org/CVERecord?id=CVE-2026-40765", Source: "CVE", RefID: "CVE-2026-40765"},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"128067\",\"source_id\":\"apple-security-releases\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// A criterion accepted the query only at version-unconfirmed
 			// quality (the upstream matcher could not confirm the scanned
 			// version is affected), so the CVE is reported with the low
@@ -14369,6 +14520,94 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			want: map[dataTypes.RootID]map[string]map[string]struct{}{
 				"JVNDB-2024-000002": {
 					"CVE-2024-0002": {"a:vendorb:product2": {}},
+				},
+			},
+		},
+		{
+			// Apple is verified too, and is rooted at the support article, so
+			// it always feeds a suppressed root cross-root like JVN above. The
+			// vendor's own exact version bound outranks JVN's version-less
+			// apple:macos match on the same CVE.
+			name: "cross-root: apple under support-article root feeds JVN under JVNDB root",
+			detected: detectTypes.DetectResult{
+				Detected: []detectTypes.VulnerabilityData{
+					{
+						ID: "128067",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.AppleSecurityReleases: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:o:apple:macos:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.AppleSecurityReleases: {
+										"128067": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2026-40765"}},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ID: "JVNDB-2026-000003",
+						Detections: []detectTypes.VulnerabilityDataDetection{
+							{
+								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+									sourceTypes.JVNFeedDetail: {
+										{
+											Criteria: criteriaTypes.FilteredCriteria{
+												Operator: criteriaTypes.CriteriaOperatorTypeOR,
+												Criterions: []criterionTypes.FilteredCriterion{
+													{
+														Criterion: criterionTypes.Criterion{
+															Type: criterionTypes.CriterionTypeCPE,
+															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:o:apple:macos:*:*:*:*:*:*:*:*")}),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+							{
+								Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+									sourceTypes.JVNFeedDetail: {
+										"JVNDB-2026-000003": {
+											{Content: vulnerabilityContentTypes.Content{ID: "CVE-2026-40765"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[dataTypes.RootID]map[string]map[string]struct{}{
+				"JVNDB-2026-000003": {
+					"CVE-2026-40765": {"o:apple:macos": {}},
 				},
 			},
 		},

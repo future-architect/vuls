@@ -451,6 +451,8 @@ func GetCveContentTypes(family string) []CveContentType {
 		return []CveContentType{SUSE}
 	case constant.Alpine:
 		return []CveContentType{Alpine}
+	case constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer:
+		return []CveContentType{Apple}
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
@@ -484,6 +486,9 @@ const (
 
 	// Cisco is Cisco
 	Cisco CveContentType = "cisco"
+
+	// Apple is Apple
+	Apple CveContentType = "apple"
 
 	// RedHat is RedHat
 	RedHat CveContentType = "redhat"
@@ -655,6 +660,7 @@ var AllCveContetTypes = CveContentTypes{
 	Fortinet,
 	Paloalto,
 	Cisco,
+	Apple,
 	RedHat,
 	RedHatAPI,
 	Alma,

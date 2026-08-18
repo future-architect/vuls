@@ -1158,6 +1158,12 @@ const (
 	// CiscoVendorProductMatchStr :
 	CiscoVendorProductMatchStr = "CiscoVendorProductMatch"
 
+	// AppleExactVersionMatchStr :
+	AppleExactVersionMatchStr = "AppleExactVersionMatch"
+
+	// AppleVendorProductMatchStr :
+	AppleVendorProductMatchStr = "AppleVendorProductMatch"
+
 	// PkgAuditMatchStr :
 	PkgAuditMatchStr = "PkgAuditMatch"
 
@@ -1285,4 +1291,10 @@ var (
 
 	// CiscoVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	CiscoVendorProductMatch = Confidence{10, CiscoVendorProductMatchStr, 9}
+
+	// AppleExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	AppleExactVersionMatch = Confidence{100, AppleExactVersionMatchStr, 1}
+
+	// AppleVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	AppleVendorProductMatch = Confidence{10, AppleVendorProductMatchStr, 9}
 )
