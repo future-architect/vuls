@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"os"
 	ex "os/exec"
 	"path/filepath"
 	"runtime"
@@ -13,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/saintfish/chardet"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/unicode"
@@ -205,7 +205,7 @@ func sshExecExternal(c config.ServerInfo, cmdstr string, sudo bool) (result exec
 			"-o", "ConnectTimeout=10",
 		)
 		if runtime.GOOS != "windows" {
-			home, err := homedir.Dir()
+			home, err := os.UserHomeDir()
 			if err != nil {
 				msg := fmt.Sprintf("Failed to get HOME directory: %s", err)
 				result.Stderr = msg
