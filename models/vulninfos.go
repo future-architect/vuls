@@ -1163,6 +1163,11 @@ const (
 
 	// AppleVendorProductMatchStr :
 	AppleVendorProductMatchStr = "AppleVendorProductMatch"
+	// OpenSSHExactVersionMatchStr :
+	OpenSSHExactVersionMatchStr = "OpenSSHExactVersionMatch"
+
+	// OpenSSHVendorProductMatchStr :
+	OpenSSHVendorProductMatchStr = "OpenSSHVendorProductMatch"
 
 	// PkgAuditMatchStr :
 	PkgAuditMatchStr = "PkgAuditMatch"
@@ -1297,4 +1302,9 @@ var (
 
 	// AppleVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
 	AppleVendorProductMatch = Confidence{10, AppleVendorProductMatchStr, 9}
+	// OpenSSHExactVersionMatch is a ranking how confident the CVE-ID was detected correctly
+	OpenSSHExactVersionMatch = Confidence{100, OpenSSHExactVersionMatchStr, 1}
+
+	// OpenSSHVendorProductMatch is a ranking how confident the CVE-ID was detected correctly
+	OpenSSHVendorProductMatch = Confidence{10, OpenSSHVendorProductMatchStr, 9}
 )

@@ -1291,6 +1291,11 @@ func isJVNCPESource(sourceID sourceTypes.SourceID) bool {
 	}
 }
 
+// OpenSSH belongs to the same category without a go-cve-dictionary counterpart:
+// openssh-security is the upstream project's own statement of which releases a
+// flaw applies to, stated as a bounded range per entry, so it dominates a
+// supplementary source's version-less openbsd:openssh match.
+//
 // verifiedCPESources are the "verified" CPE data sources whose
 // affected-configuration data go-cve-dictionary trusts over the supplementary
 // sources' coarser/auto-generated data: NVD, Fortinet, Cisco, PaloAlto. A
@@ -1311,6 +1316,7 @@ var verifiedCPESources = []sourceTypes.SourceID{
 	sourceTypes.PaloAltoCSAF, sourceTypes.PaloAltoJSON, sourceTypes.PaloAltoList,
 	sourceTypes.CiscoCSAF, sourceTypes.CiscoCVRF, sourceTypes.CiscoJSON,
 	sourceTypes.AppleSecurityReleases,
+	sourceTypes.OpenSSHSecurity,
 }
 
 // isSuppressedCPESource reports whether a CPE-ecosystem source's matches are
