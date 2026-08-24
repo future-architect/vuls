@@ -81,9 +81,16 @@
         "digest": "sha1:d6337b0de8b25e53e81b922352fbea9f9f57ba0b"
       },
       {
-        "name": "Apache Software Foundation:org.apache.xml.resolver.Catalog",
+        "name": ":xml-apis",
+        "version": "1.0.b2",
+        "purl": "pkg:maven/xml-apis@1.0.b2",
+        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xml-apis-1.0.b2.jar",
+        "digest": "sha1:3136ca936f64c9d68529f048c2618bd356bf85c9"
+      },
+      {
+        "name": ":xml-resolver",
         "version": "1.2",
-        "purl": "pkg:maven/Apache%20Software%20Foundation/org.apache.xml.resolver.Catalog@1.2",
+        "purl": "pkg:maven/xml-resolver@1.2",
         "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xml-resolver-1.2.jar",
         "digest": "sha1:3d0f97750b3a03e0971831566067754ba4bfd68c"
       },
@@ -116,13 +123,6 @@
         "digest": "sha1:5d3ccc056b6f056dbf0dddfdf43894b9065a8f94"
       },
       {
-        "name": "Sun Microsystems Inc.:javax.xml.transform",
-        "version": "1.1.2",
-        "purl": "pkg:maven/Sun%20Microsystems%20Inc./javax.xml.transform@1.1.2",
-        "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/xml-apis-1.0.b2.jar",
-        "digest": "sha1:3136ca936f64c9d68529f048c2618bd356bf85c9"
-      },
-      {
         "name": "com.fasterxml:classmate",
         "version": "1.3.0",
         "purl": "pkg:maven/com.fasterxml/classmate@1.3.0",
@@ -130,8 +130,8 @@
       },
       {
         "name": "com.sun:JAXB Reference Implementation",
-        "version": "hudson-jaxb-ri-2.1-2",
-        "purl": "pkg:maven/com.sun/JAXB%20Reference%20Implementation@hudson-jaxb-ri-2.1-2",
+        "version": "2.1.13",
+        "purl": "pkg:maven/com.sun/JAXB%20Reference%20Implementation@2.1.13",
         "filePath": "juddiv3-war-3.3.5.war/WEB-INF/lib/jaxb-impl-2.1.13.jar",
         "digest": "sha1:7c1ea3e298d0a32fafcebcb734e77990598f7720"
       },

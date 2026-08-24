@@ -23,6 +23,16 @@ var (
 	jarFileRegEx = regexp.MustCompile(`^([a-zA-Z0-9\._-]*[^-*])-(\d\S*(?:-SNAPSHOT)?).[jwep]ar$`)
 )
 
+// maxManifestSize, scanManifestLines, parseManifestMainSection and
+// addAttribute are ported from unexported code in
+// github.com/aquasecurity/trivy@v0.74.0 pkg/dependency/parser/java/jar/parse.go,
+// minus the license-related attributes vuls does not model. Re-diff against
+// upstream when bumping trivy.
+
+// maxManifestSize caps the decompressed MANIFEST.MF size, guarding against a
+// decompression bomb. Real manifests are only a few KB.
+const maxManifestSize = 10 << 20 // 10 MiB
+
 type jarLibrary struct {
 	id       string
 	name     string
@@ -268,47 +278,96 @@ func parseManifest(f *zip.File) (manifest, error) {
 	}
 	defer file.Close()
 
+	return parseManifestMainSection(xio.MaxBytesReader(file, maxManifestSize))
+}
+
+// scanManifestLines recognizes every newline sequence allowed by the JAR
+// manifest grammar: CRLF, LF, and a lone CR.
+func scanManifestLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	for i, b := range data {
+		switch b {
+		case '\n':
+			return i + 1, data[:i], nil
+		case '\r':
+			if i+1 == len(data) && !atEOF {
+				return 0, nil, nil
+			}
+			advance = i + 1
+			if i+1 < len(data) && data[i+1] == '\n' {
+				advance++
+			}
+			return advance, data[:i], nil
+		}
+	}
+	if atEOF {
+		return len(data), data, nil
+	}
+	return 0, nil, nil
+}
+
+// parseManifestMainSection reads only the section describing the archive.
+// Sections after the first empty line describe files inside the archive and
+// must not override archive-level artifact properties.
+func parseManifestMainSection(r io.Reader) (manifest, error) {
 	var m manifest
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(r)
+	scanner.Split(scanManifestLines)
+
+	// Continuation lines begin with one space and extend the preceding value.
+	var attribute strings.Builder
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		// Skip variables. e.g. Bundle-Name: %bundleName
-		ss := strings.Fields(line)
-		if len(ss) <= 1 || (len(ss) > 1 && strings.HasPrefix(ss[1], "%")) {
+		if line == "" {
+			break
+		}
+		if continued, ok := strings.CutPrefix(line, " "); ok {
+			attribute.WriteString(continued)
 			continue
 		}
-
-		// It is not determined which fields are present in each application.
-		// In some cases, none of them are included, in which case they cannot be detected.
-		switch {
-		case strings.HasPrefix(line, "Implementation-Version:"):
-			m.implementationVersion = strings.TrimPrefix(line, "Implementation-Version:")
-		case strings.HasPrefix(line, "Implementation-Title:"):
-			m.implementationTitle = strings.TrimPrefix(line, "Implementation-Title:")
-		case strings.HasPrefix(line, "Implementation-Vendor:"):
-			m.implementationVendor = strings.TrimPrefix(line, "Implementation-Vendor:")
-		case strings.HasPrefix(line, "Implementation-Vendor-Id:"):
-			m.implementationVendorID = strings.TrimPrefix(line, "Implementation-Vendor-Id:")
-		case strings.HasPrefix(line, "Specification-Version:"):
-			m.specificationVersion = strings.TrimPrefix(line, "Specification-Version:")
-		case strings.HasPrefix(line, "Specification-Title:"):
-			m.specificationTitle = strings.TrimPrefix(line, "Specification-Title:")
-		case strings.HasPrefix(line, "Specification-Vendor:"):
-			m.specificationVendor = strings.TrimPrefix(line, "Specification-Vendor:")
-		case strings.HasPrefix(line, "Bundle-Version:"):
-			m.bundleVersion = strings.TrimPrefix(line, "Bundle-Version:")
-		case strings.HasPrefix(line, "Bundle-Name:"):
-			m.bundleName = strings.TrimPrefix(line, "Bundle-Name:")
-		case strings.HasPrefix(line, "Bundle-SymbolicName:"):
-			m.bundleSymbolicName = strings.TrimPrefix(line, "Bundle-SymbolicName:")
-		}
+		m.addAttribute(attribute.String())
+		attribute.Reset()
+		attribute.WriteString(line)
 	}
+	m.addAttribute(attribute.String())
 
-	if err = scanner.Err(); err != nil {
-		return manifest{}, xerrors.Errorf("Failed to scan %s. err: %w", f.Name, err)
+	if err := scanner.Err(); err != nil {
+		return manifest{}, xerrors.Errorf("Failed to scan MANIFEST.MF. err: %w", err)
 	}
 	return m, nil
+}
+
+func (m *manifest) addAttribute(line string) {
+	// Skip variables. e.g. Bundle-Name: %bundleName
+	fields := strings.Fields(line)
+	if len(fields) <= 1 || strings.HasPrefix(fields[1], "%") {
+		return
+	}
+
+	switch {
+	case strings.HasPrefix(line, "Implementation-Version:"):
+		m.implementationVersion = strings.TrimPrefix(line, "Implementation-Version:")
+	case strings.HasPrefix(line, "Implementation-Title:"):
+		m.implementationTitle = strings.TrimPrefix(line, "Implementation-Title:")
+	case strings.HasPrefix(line, "Implementation-Vendor:"):
+		m.implementationVendor = strings.TrimPrefix(line, "Implementation-Vendor:")
+	case strings.HasPrefix(line, "Implementation-Vendor-Id:"):
+		m.implementationVendorID = strings.TrimPrefix(line, "Implementation-Vendor-Id:")
+	case strings.HasPrefix(line, "Specification-Version:"):
+		m.specificationVersion = strings.TrimPrefix(line, "Specification-Version:")
+	case strings.HasPrefix(line, "Specification-Title:"):
+		m.specificationTitle = strings.TrimPrefix(line, "Specification-Title:")
+	case strings.HasPrefix(line, "Specification-Vendor:"):
+		m.specificationVendor = strings.TrimPrefix(line, "Specification-Vendor:")
+	case strings.HasPrefix(line, "Bundle-Version:"):
+		m.bundleVersion = strings.TrimPrefix(line, "Bundle-Version:")
+	case strings.HasPrefix(line, "Bundle-Name:"):
+		m.bundleName = strings.TrimPrefix(line, "Bundle-Name:")
+	case strings.HasPrefix(line, "Bundle-SymbolicName:"):
+		m.bundleSymbolicName = strings.TrimPrefix(line, "Bundle-SymbolicName:")
+	}
 }
 
 func (m manifest) properties(filePath string, sha1 digest.Digest) properties {
