@@ -23,8 +23,14 @@ var (
 	jarFileRegEx = regexp.MustCompile(`^([a-zA-Z0-9\._-]*[^-*])-(\d\S*(?:-SNAPSHOT)?).[jwep]ar$`)
 )
 
-// maxManifestSize caps the decompressed MANIFEST.MF size. Real manifests are
-// only a few KB, so a larger value is most likely a malformed archive.
+// maxManifestSize, scanManifestLines, parseManifestMainSection and
+// addAttribute are ported from unexported code in
+// github.com/aquasecurity/trivy@v0.74.0 pkg/dependency/parser/java/jar/parse.go,
+// minus the license-related attributes vuls does not model. Re-diff against
+// upstream when bumping trivy.
+
+// maxManifestSize caps the decompressed MANIFEST.MF size, guarding against a
+// decompression bomb. Real manifests are only a few KB.
 const maxManifestSize = 10 << 20 // 10 MiB
 
 type jarLibrary struct {

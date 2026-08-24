@@ -391,8 +391,6 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyCoreOS
 	case "trivy:bottlerocket":
 		return TrivyBottlerocket
-	case "trivy:rapidfort":
-		return TrivyRapidFort
 	case "trivy:ruby-advisory-db":
 		return TrivyRubySec
 	case "trivy:php-security-advisories":
@@ -423,6 +421,8 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyMinimOS
 	case "trivy:rootio":
 		return TrivyRootIO
+	case "trivy:rapidfort":
+		return TrivyRapidFort
 	case "GitHub":
 		return Trivy
 	default:
@@ -458,7 +458,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRapidFort, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort}
 	default:
 		return nil
 	}
@@ -599,9 +599,6 @@ const (
 	// TrivyBottlerocket is TrivyBottlerocket
 	TrivyBottlerocket CveContentType = "trivy:bottlerocket"
 
-	// TrivyRapidFort is TrivyRapidFort
-	TrivyRapidFort CveContentType = "trivy:rapidfort"
-
 	// TrivyRubySec is TrivyRubySec
 	TrivyRubySec CveContentType = "trivy:ruby-advisory-db"
 
@@ -646,6 +643,9 @@ const (
 
 	// TrivyRootIO is TrivyRootIO
 	TrivyRootIO CveContentType = "trivy:rootio"
+
+	// TrivyRapidFort is TrivyRapidFort
+	TrivyRapidFort CveContentType = "trivy:rapidfort"
 
 	// GitHub is GitHub Security Alerts
 	GitHub CveContentType = "github"
@@ -703,7 +703,6 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyPhoton,
 	TrivyCoreOS,
 	TrivyBottlerocket,
-	TrivyRapidFort,
 	TrivyRubySec,
 	TrivyPhpSecurityAdvisories,
 	TrivyNodejsSecurityWg,
@@ -719,6 +718,7 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyEcho,
 	TrivyMinimOS,
 	TrivyRootIO,
+	TrivyRapidFort,
 	GitHub,
 }
 
