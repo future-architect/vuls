@@ -678,7 +678,7 @@ func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], fold func(detect
 }
 
 // detect runs vuls2 detection over the scan result and assembles the
-// in-memory DetectResult. It consumes the streaming DetectSeq forms and
+// in-memory DetectResult. It consumes the streaming Detect forms and
 // folds each rootID's detection as it arrives — harvesting the evaluation
 // warnings recorded on the full trees first, then reducing the trees to
 // what this package reads downstream (ospkg: affected-only pruning via
@@ -696,7 +696,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 
 	detections, warnEntries, err := func() (map[dataTypes.RootID]detectTypes.VulnerabilityDataDetection, []warningEntry, error) {
 		if len(sr.CPE) > 0 {
-			m, entries, err := foldDetectionSeq(cpe.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
+			m, entries, err := foldDetectionSeq(cpe.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
 				return compactCPEDetection(d), true, nil
 			})
 			if err != nil {
@@ -704,11 +704,11 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 			}
 			return m, entries, nil
 		}
-		// ospkg.DetectSeq also covers Microsoft-KB detection, so gate on
+		// ospkg.Detect also covers Microsoft-KB detection, so gate on
 		// either input being present — a Windows scan can carry KBs
 		// without any OS packages.
 		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
-			m, entries, err := foldDetectionSeq(ospkg.DetectSeq(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
+			m, entries, err := foldDetectionSeq(ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
 				pruned, err := pruneAffectedDetection(d)
 				if err != nil {
 					return detectTypes.VulnerabilityDataDetection{}, false, err
