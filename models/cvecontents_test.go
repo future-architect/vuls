@@ -1,8 +1,12 @@
 package models
 
 import (
+	"fmt"
 	"reflect"
+	"slices"
 	"testing"
+
+	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
 
 	"github.com/future-architect/vuls/constant"
 )
@@ -700,6 +704,18 @@ func TestNewCveContentType(t *testing.T) {
 			want: TrivyRapidFort,
 		},
 		{
+			name: "trivy:julia",
+			want: TrivyJulia,
+		},
+		{
+			name: "trivy:seal",
+			want: TrivySeal,
+		},
+		{
+			name: "trivy:redhat-csaf-vex",
+			want: TrivyRedHatCSAFVEX,
+		},
+		{
 			name: "unknown",
 			want: Unknown,
 		},
@@ -708,6 +724,29 @@ func TestNewCveContentType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewCveContentType(tt.name); got != tt.want {
 				t.Errorf("NewCveContentType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestNewCveContentTypeCoversTrivyDBSourceIDs fails when a trivy-db bump adds
+// a vulnerability source that has no CveContentType yet. Contents of an
+// unmapped type still enter CveContents (detector/library.go keys them as
+// "trivy:<SourceID>"), but every ordering-based accessor skips them, so their
+// severities and references silently disappear from reports.
+func TestNewCveContentTypeCoversTrivyDBSourceIDs(t *testing.T) {
+	// AllSourceIDs misses a few registered sources, so list them explicitly.
+	sourceIDs := append(slices.Clone(vulnerability.AllSourceIDs), vulnerability.Seal, vulnerability.RedHatCSAFVEX)
+	for _, id := range sourceIDs {
+		name := fmt.Sprintf("%s:%s", Trivy, id)
+		t.Run(name, func(t *testing.T) {
+			got := NewCveContentType(name)
+			if got == Unknown {
+				t.Errorf("NewCveContentType(%q) = Unknown; add a CveContentType for the trivy-db source %q", name, id)
+				return
+			}
+			if !slices.Contains(GetCveContentTypes(string(Trivy)), got) {
+				t.Errorf("GetCveContentTypes(Trivy) does not contain %v for the trivy-db source %q", got, id)
 			}
 		})
 	}
