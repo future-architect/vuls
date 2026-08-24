@@ -1,16 +1,18 @@
-package jar
+package jar_test
 
 import (
 	"archive/zip"
 	"bytes"
 	"testing"
+
+	"github.com/future-architect/vuls/scanner/trivy/jar"
 )
 
 func TestParseManifest(t *testing.T) {
 	tests := []struct {
 		name string
 		in   string
-		want manifest
+		want jar.Manifest
 	}{
 		{
 			name: "basic attributes with LF line endings",
@@ -18,10 +20,10 @@ func TestParseManifest(t *testing.T) {
 				"Implementation-Title: xercesImpl\n" +
 				"Implementation-Version: 2.12.2\n" +
 				"Implementation-Vendor-Id: xerces\n",
-			want: manifest{
-				implementationTitle:    " xercesImpl",
-				implementationVersion:  " 2.12.2",
-				implementationVendorID: " xerces",
+			want: jar.Manifest{
+				ImplementationTitle:    " xercesImpl",
+				ImplementationVersion:  " 2.12.2",
+				ImplementationVendorID: " xerces",
 			},
 		},
 		{
@@ -30,10 +32,10 @@ func TestParseManifest(t *testing.T) {
 				"Implementation-Title: xercesImpl\r\n" +
 				"Implementation-Version: 2.12.2\r\n" +
 				"Implementation-Vendor-Id: xerces\r\n",
-			want: manifest{
-				implementationTitle:    " xercesImpl",
-				implementationVersion:  " 2.12.2",
-				implementationVendorID: " xerces",
+			want: jar.Manifest{
+				ImplementationTitle:    " xercesImpl",
+				ImplementationVersion:  " 2.12.2",
+				ImplementationVendorID: " xerces",
 			},
 		},
 		{
@@ -49,31 +51,31 @@ func TestParseManifest(t *testing.T) {
 				"Bundle-Name: Guava\r\n" +
 				"Bundle-Version: 31.1.0\r\n" +
 				"Bundle-SymbolicName: com.google.guava\r\n",
-			want: manifest{
-				implementationTitle:    " guava",
-				implementationVersion:  " 31.1",
-				implementationVendor:   " Google",
-				implementationVendorID: " com.google.guava",
-				specificationTitle:     " Guava",
-				specificationVersion:   " 31",
-				specificationVendor:    " Google LLC",
-				bundleName:             " Guava",
-				bundleVersion:          " 31.1.0",
-				bundleSymbolicName:     " com.google.guava",
+			want: jar.Manifest{
+				ImplementationTitle:    " guava",
+				ImplementationVersion:  " 31.1",
+				ImplementationVendor:   " Google",
+				ImplementationVendorID: " com.google.guava",
+				SpecificationTitle:     " Guava",
+				SpecificationVersion:   " 31",
+				SpecificationVendor:    " Google LLC",
+				BundleName:             " Guava",
+				BundleVersion:          " 31.1.0",
+				BundleSymbolicName:     " com.google.guava",
 			},
 		},
 		{
 			name: "empty manifest",
 			in:   "",
-			want: manifest{},
+			want: jar.Manifest{},
 		},
 		{
 			name: "variable values are skipped",
 			in: "Manifest-Version: 1.0\r\n" +
 				"Bundle-Name: %bundleName\r\n" +
 				"Bundle-Version: 1.2.3\r\n",
-			want: manifest{
-				bundleVersion: " 1.2.3",
+			want: jar.Manifest{
+				BundleVersion: " 1.2.3",
 			},
 		},
 		{
@@ -87,10 +89,10 @@ func TestParseManifest(t *testing.T) {
 				"Implementation-Title: org.apache.xerces.xni\n" +
 				"Implementation-Version: 1.2\n" +
 				"Implementation-Vendor-Id: org.apache.xerces\n",
-			want: manifest{
-				implementationTitle:    " xercesImpl",
-				implementationVersion:  " 2.12.2",
-				implementationVendorID: " xerces",
+			want: jar.Manifest{
+				ImplementationTitle:    " xercesImpl",
+				ImplementationVersion:  " 2.12.2",
+				ImplementationVendorID: " xerces",
 			},
 		},
 		{
@@ -103,21 +105,21 @@ func TestParseManifest(t *testing.T) {
 				"\r" +
 				"Name: ignored\r" +
 				"Implementation-Version: 9.9.9\r",
-			want: manifest{
-				implementationTitle:    " long-title",
-				implementationVersion:  " 1.2.3",
-				implementationVendorID: " example",
+			want: jar.Manifest{
+				ImplementationTitle:    " long-title",
+				ImplementationVersion:  " 1.2.3",
+				ImplementationVendorID: " example",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseManifest(newManifestFile(t, tt.in))
+			got, err := jar.ParseManifest(newManifestFile(t, tt.in))
 			if err != nil {
 				t.Fatalf("parseManifest() error = %v", err)
 			}
-			if got != tt.want {
-				t.Errorf("parseManifest() = %#v, want %#v", got, tt.want)
+			if got != tt.want.Internal() {
+				t.Errorf("parseManifest() = %#v, want %#v", got, tt.want.Internal())
 			}
 		})
 	}
