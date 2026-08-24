@@ -391,6 +391,8 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyCoreOS
 	case "trivy:bottlerocket":
 		return TrivyBottlerocket
+	case "trivy:rapidfort":
+		return TrivyRapidFort
 	case "trivy:ruby-advisory-db":
 		return TrivyRubySec
 	case "trivy:php-security-advisories":
@@ -456,7 +458,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRapidFort, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO}
 	default:
 		return nil
 	}
@@ -597,6 +599,9 @@ const (
 	// TrivyBottlerocket is TrivyBottlerocket
 	TrivyBottlerocket CveContentType = "trivy:bottlerocket"
 
+	// TrivyRapidFort is TrivyRapidFort
+	TrivyRapidFort CveContentType = "trivy:rapidfort"
+
 	// TrivyRubySec is TrivyRubySec
 	TrivyRubySec CveContentType = "trivy:ruby-advisory-db"
 
@@ -698,6 +703,7 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyPhoton,
 	TrivyCoreOS,
 	TrivyBottlerocket,
+	TrivyRapidFort,
 	TrivyRubySec,
 	TrivyPhpSecurityAdvisories,
 	TrivyNodejsSecurityWg,

@@ -696,6 +696,10 @@ func TestNewCveContentType(t *testing.T) {
 			want: RedHat,
 		},
 		{
+			name: "trivy:rapidfort",
+			want: TrivyRapidFort,
+		},
+		{
 			name: "unknown",
 			want: Unknown,
 		},

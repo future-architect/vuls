@@ -758,6 +758,25 @@ func TestMaxCvss3Scores(t *testing.T) {
 				},
 			},
 		},
+		{
+			in: VulnInfo{
+				CveContents: CveContents{
+					TrivyRapidFort: []CveContent{{
+						Type:          TrivyRapidFort,
+						Cvss3Severity: "HIGH",
+					}},
+				},
+			},
+			out: CveContentCvss{
+				Type: TrivyRapidFort,
+				Value: Cvss{
+					Type:                 CVSS3,
+					Score:                8.9,
+					CalculatedBySeverity: true,
+					Severity:             "HIGH",
+				},
+			},
+		},
 		// Empty
 		{
 			in: VulnInfo{},
