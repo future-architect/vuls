@@ -6,36 +6,120 @@ import (
 	"testing"
 )
 
-func TestParseManifestUsesOnlyMainSection(t *testing.T) {
-	manifestFile := newManifestFile(t, `Manifest-Version: 1.0
-Implementation-Title: xercesImpl
-Implementation-Version: 2.12.2
-Implementation-Vendor-Id: xerces
-
-Name: org/apache/xerces/xni/
-Implementation-Title: org.apache.xerces.xni
-Implementation-Version: 1.2
-Implementation-Vendor-Id: org.apache.xerces
-`)
-
-	got, err := parseManifest(manifestFile)
-	if err != nil {
-		t.Fatalf("parseManifest() error = %v", err)
+func TestParseManifest(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want manifest
+	}{
+		{
+			name: "basic attributes with LF line endings",
+			in: "Manifest-Version: 1.0\n" +
+				"Implementation-Title: xercesImpl\n" +
+				"Implementation-Version: 2.12.2\n" +
+				"Implementation-Vendor-Id: xerces\n",
+			want: manifest{
+				implementationTitle:    " xercesImpl",
+				implementationVersion:  " 2.12.2",
+				implementationVendorID: " xerces",
+			},
+		},
+		{
+			name: "basic attributes with CRLF line endings",
+			in: "Manifest-Version: 1.0\r\n" +
+				"Implementation-Title: xercesImpl\r\n" +
+				"Implementation-Version: 2.12.2\r\n" +
+				"Implementation-Vendor-Id: xerces\r\n",
+			want: manifest{
+				implementationTitle:    " xercesImpl",
+				implementationVersion:  " 2.12.2",
+				implementationVendorID: " xerces",
+			},
+		},
+		{
+			name: "all supported attributes",
+			in: "Manifest-Version: 1.0\r\n" +
+				"Implementation-Title: guava\r\n" +
+				"Implementation-Version: 31.1\r\n" +
+				"Implementation-Vendor: Google\r\n" +
+				"Implementation-Vendor-Id: com.google.guava\r\n" +
+				"Specification-Title: Guava\r\n" +
+				"Specification-Version: 31\r\n" +
+				"Specification-Vendor: Google LLC\r\n" +
+				"Bundle-Name: Guava\r\n" +
+				"Bundle-Version: 31.1.0\r\n" +
+				"Bundle-SymbolicName: com.google.guava\r\n",
+			want: manifest{
+				implementationTitle:    " guava",
+				implementationVersion:  " 31.1",
+				implementationVendor:   " Google",
+				implementationVendorID: " com.google.guava",
+				specificationTitle:     " Guava",
+				specificationVersion:   " 31",
+				specificationVendor:    " Google LLC",
+				bundleName:             " Guava",
+				bundleVersion:          " 31.1.0",
+				bundleSymbolicName:     " com.google.guava",
+			},
+		},
+		{
+			name: "empty manifest",
+			in:   "",
+			want: manifest{},
+		},
+		{
+			name: "variable values are skipped",
+			in: "Manifest-Version: 1.0\r\n" +
+				"Bundle-Name: %bundleName\r\n" +
+				"Bundle-Version: 1.2.3\r\n",
+			want: manifest{
+				bundleVersion: " 1.2.3",
+			},
+		},
+		{
+			name: "only the main section is read",
+			in: "Manifest-Version: 1.0\n" +
+				"Implementation-Title: xercesImpl\n" +
+				"Implementation-Version: 2.12.2\n" +
+				"Implementation-Vendor-Id: xerces\n" +
+				"\n" +
+				"Name: org/apache/xerces/xni/\n" +
+				"Implementation-Title: org.apache.xerces.xni\n" +
+				"Implementation-Version: 1.2\n" +
+				"Implementation-Vendor-Id: org.apache.xerces\n",
+			want: manifest{
+				implementationTitle:    " xercesImpl",
+				implementationVersion:  " 2.12.2",
+				implementationVendorID: " xerces",
+			},
+		},
+		{
+			name: "lone CR line endings and continuation folding",
+			in: "Manifest-Version: 1.0\r" +
+				"Implementation-Title: long-\r" +
+				" title\r" +
+				"Implementation-Version: 1.2.3\r" +
+				"Implementation-Vendor-Id: example\r" +
+				"\r" +
+				"Name: ignored\r" +
+				"Implementation-Version: 9.9.9\r",
+			want: manifest{
+				implementationTitle:    " long-title",
+				implementationVersion:  " 1.2.3",
+				implementationVendorID: " example",
+			},
+		},
 	}
-	if got.implementationTitle != " xercesImpl" || got.implementationVersion != " 2.12.2" || got.implementationVendorID != " xerces" {
-		t.Fatalf("parseManifest() read an individual section: %#v", got)
-	}
-}
-
-func TestParseManifestSupportsCRAndFolding(t *testing.T) {
-	manifestFile := newManifestFile(t, "Manifest-Version: 1.0\rImplementation-Title: long-\r title\rImplementation-Version: 1.2.3\rImplementation-Vendor-Id: example\r\rName: ignored\rImplementation-Version: 9.9.9\r")
-
-	got, err := parseManifest(manifestFile)
-	if err != nil {
-		t.Fatalf("parseManifest() error = %v", err)
-	}
-	if got.implementationTitle != " long-title" || got.implementationVersion != " 1.2.3" || got.implementationVendorID != " example" {
-		t.Fatalf("parseManifest() = %#v", got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseManifest(newManifestFile(t, tt.in))
+			if err != nil {
+				t.Fatalf("parseManifest() error = %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("parseManifest() = %#v, want %#v", got, tt.want)
+			}
+		})
 	}
 }
 
