@@ -181,9 +181,9 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) detection {
 //     so the tree structure carries no information. Vulnerable criterions
 //     with a non-empty Accepts are kept flat under a single OR root,
 //     Accepts intact, in DFS order (children before own criterions) so
-//     folded CPE lists keep their order; their CPE / CPEMatches are
-//     reduced to part:vendor:product form for debuggability (the walk
-//     never reads them).
+//     folded CPE lists keep their order; their CPE is reduced to
+//     part:vendor:product form for debuggability (the walk never reads
+//     it) and their CPEMatches are dropped.
 //   - the defined products: the part:vendor:product key of every CPE
 //     criterion's own CPE and CPEMatches, kept or dropped, matched or not
 //     (cond.Accept keeps non-matching criterions under
@@ -195,7 +195,6 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) detection {
 func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, []string) {
 	var (
 		kept    []criterionTypes.FilteredCriterion
-		carried = make(map[string]struct{})
 		defined = make(map[string]struct{})
 	)
 
@@ -224,20 +223,8 @@ func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.Filter
 			compact := ccTypes.Criterion{Vulnerable: true}
 			if p, ok := productCPE(string(cn.Criterion.CPE.CPE)); ok {
 				compact.CPE = ccTypes.CPE(p)
-				carried[p] = struct{}{}
 			} else {
 				compact.CPE = cn.Criterion.CPE.CPE
-			}
-			for _, m := range cn.Criterion.CPE.CPEMatches {
-				p, ok := productCPE(string(m))
-				if !ok {
-					continue
-				}
-				if _, ok := carried[p]; ok {
-					continue
-				}
-				carried[p] = struct{}{}
-				compact.CPEMatches = append(compact.CPEMatches, ccTypes.CPE(p))
 			}
 			kept = append(kept, criterionTypes.FilteredCriterion{
 				Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &compact},

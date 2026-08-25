@@ -38,14 +38,11 @@ func Test_projectCPECriteria(t *testing.T) {
 			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
 		}
 	}
-	// a kept (walk-ready) criterion: vulnerable, product-form CPE, Accepts intact
-	keptCriterion := func(cpe string, exact, vp []int, matches ...string) criterionTypes.FilteredCriterion {
-		c := ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}
-		for _, m := range matches {
-			c.CPEMatches = append(c.CPEMatches, ccTypes.CPE(m))
-		}
+	// a kept (walk-ready) criterion: vulnerable, product-form CPE, Accepts
+	// intact, CPEMatches dropped
+	keptCriterion := func(cpe string, exact, vp []int) criterionTypes.FilteredCriterion {
 		return criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &c},
+			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}},
 			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
 		}
 	}
@@ -63,9 +60,8 @@ func Test_projectCPECriteria(t *testing.T) {
 			wantDefined:  nil,
 		},
 		{
-			// The kept criterion's CPE and CPEMatches are reduced to
-			// part:vendor:product form; matches sharing the criterion's own
-			// product are deduplicated away.
+			// The kept criterion's CPE is reduced to part:vendor:product
+			// form and its CPEMatches are dropped (the walk reads neither).
 			name: "flat OR, one exact accept",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -150,8 +146,7 @@ func Test_projectCPECriteria(t *testing.T) {
 		},
 		{
 			// An unparsable CPE cannot be product-reduced: the kept criterion
-			// carries it verbatim, unparsable matches are dropped, and no
-			// defined product is recorded.
+			// carries it verbatim and no defined product is recorded.
 			name: "invalid CPE strings are tolerated",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
