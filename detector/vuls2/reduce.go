@@ -13,7 +13,7 @@ import (
 	"github.com/knqyf263/go-cpe/naming"
 )
 
-// pruneAffectedDetection reduces an ospkg-ecosystem detection streamed out
+// pruneUnaffectedDetection reduces an ospkg-ecosystem detection streamed out
 // of vuls2 to its affected branches: each condition's criteria tree is
 // pruned with prunePkgCriteria (the same AND/OR gate walkPkgCriteria
 // applies before its walk, so the pruning is invisible downstream —
@@ -22,7 +22,7 @@ import (
 // caller drops rootIDs whose Contents end up empty. Evaluation warnings
 // must be harvested from the full tree before calling this — pruned
 // branches carry them away.
-func pruneAffectedDetection(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, error) {
+func pruneUnaffectedDetection(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, error) {
 	contents := make(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition, len(d.Contents))
 	for sourceID, conds := range d.Contents {
 		kept := make([]conditionTypes.FilteredCondition, 0, len(conds))

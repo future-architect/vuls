@@ -695,7 +695,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectTypes.DetectR
 		// without any OS packages.
 		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
 			m, entries, err := foldDetectionSeq(ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, bool, error) {
-				pruned, err := pruneAffectedDetection(d)
+				pruned, err := pruneUnaffectedDetection(d)
 				if err != nil {
 					return detectTypes.VulnerabilityDataDetection{}, false, err
 				}

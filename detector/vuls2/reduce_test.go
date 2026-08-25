@@ -161,12 +161,12 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 	}
 }
 
-// TestPruneAffectedDetectionInvariants checks the contract the streaming
+// TestPruneUnaffectedDetectionInvariants checks the contract the streaming
 // ospkg fold relies on: walkPkgCriteria (which itself starts from
 // prunePkgCriteria — the same gate, making the early pruning idempotent)
 // projects the pruned detection onto identical pack statuses / KB IDs, and
 // conditions carrying no detection signal are exactly the ones dropped.
-func TestPruneAffectedDetectionInvariants(t *testing.T) {
+func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
 	scanned := scanTypes.ScanResult{
 		Family: ecosystemTypes.EcosystemTypeRedHat,
 		OSPackages: []scanTypes.OSPackage{
@@ -257,9 +257,9 @@ func TestPruneAffectedDetectionInvariants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pruned, err := vuls2.PruneAffectedDetection(tt.d)
+			pruned, err := vuls2.PruneUnaffectedDetection(tt.d)
 			if err != nil {
-				t.Fatalf("pruneAffectedDetection. error = %v", err)
+				t.Fatalf("pruneUnaffectedDetection. error = %v", err)
 			}
 
 			for sid, conds := range tt.d.Contents {
