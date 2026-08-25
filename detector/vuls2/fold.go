@@ -30,17 +30,17 @@ import (
 	"slices"
 )
 
-// detection is one rootID's detection reduced by the fold to exactly what
+// projectedDetection is one rootID's detection reduced by the fold to exactly what
 // this package reads downstream — the common shape both ecosystems' folds
 // produce, and the contract between detect() and postConvert: everything
 // postConvert needs from a full vuls2 criteria tree is extracted here,
 // before the tree is dropped.
-type detection struct {
+type projectedDetection struct {
 	Ecosystem ecosystemTypes.Ecosystem
-	Contents  map[sourceTypes.SourceID][]condition
+	Contents  map[sourceTypes.SourceID][]projectedCondition
 }
 
-// condition is one source condition reduced to what its ecosystem's walk
+// projectedCondition is one source condition reduced to what its ecosystem's walk
 // reads. Criteria is walk-ready for the ecosystem's walker: pkg — the
 // gate-pruned tree (prunePkgCriteria's AND/OR gate over detect-time
 // accepts, applied here and nowhere else); cpe — the flat projection of
@@ -49,17 +49,17 @@ type detection struct {
 // part:vendor:product keys every criterion of the full tree DEFINES,
 // matched or not — the verified-product suppression input, aggregated
 // across roots by postConvert's collectVerifiedProducts.
-type condition struct {
+type projectedCondition struct {
 	Criteria        criteriaTypes.FilteredCriteria
 	Tag             segmentTypes.DetectionTag
 	DefinedProducts []string
 }
 
-// vulnerabilityData is detection plus the fetched Advisory/Vulnerability
+// vulnerabilityData is projectedDetection plus the fetched Advisory/Vulnerability
 // contents for the rootID — the per-root element of detectResult.
 type vulnerabilityData struct {
 	ID              dataTypes.RootID
-	Detections      []detection
+	Detections      []projectedDetection
 	Advisories      []dbTypes.VulnerabilityDataAdvisory
 	Vulnerabilities []dbTypes.VulnerabilityDataVulnerability
 }
@@ -151,10 +151,10 @@ func renderWarningEntries(entries []warningEntry) []string {
 // memory holds the folded result plus only the in-flight full trees
 // (stream workers + channel buffer + fold workers, each bounded by
 // NumCPU).
-func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(detectTypes.VulnerabilityDataDetection) (detection, bool, error)) (map[dataTypes.RootID]detection, []warningEntry, error) {
+func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error)) (map[dataTypes.RootID]projectedDetection, []warningEntry, error) {
 	var (
 		mu          sync.Mutex
-		m           = make(map[dataTypes.RootID]detection)
+		m           = make(map[dataTypes.RootID]projectedDetection)
 		warnEntries []warningEntry
 	)
 
@@ -207,25 +207,25 @@ func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(det
 // empty are dropped, and sources with no remaining conditions are
 // removed. The caller drops rootIDs whose Contents end up empty. The
 // cpe-ecosystem counterpart is projectCPEDetection.
-func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (detection, error) {
-	contents := make(map[sourceTypes.SourceID][]condition, len(d.Contents))
+func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (projectedDetection, error) {
+	contents := make(map[sourceTypes.SourceID][]projectedCondition, len(d.Contents))
 	for sourceID, fconds := range d.Contents {
-		kept := make([]condition, 0, len(fconds))
+		kept := make([]projectedCondition, 0, len(fconds))
 		for _, fcond := range fconds {
 			pruned, err := prunePkgCriteria(fcond.Criteria)
 			if err != nil {
-				return detection{}, xerrors.Errorf("prune criteria: %w", err)
+				return projectedDetection{}, xerrors.Errorf("prune criteria: %w", err)
 			}
 			if len(pruned.Criterias) == 0 && len(pruned.Criterions) == 0 {
 				continue
 			}
-			kept = append(kept, condition{Criteria: pruned, Tag: fcond.Tag})
+			kept = append(kept, projectedCondition{Criteria: pruned, Tag: fcond.Tag})
 		}
 		if len(kept) > 0 {
 			contents[sourceID] = kept
 		}
 	}
-	return detection{Ecosystem: d.Ecosystem, Contents: contents}, nil
+	return projectedDetection{Ecosystem: d.Ecosystem, Contents: contents}, nil
 }
 
 // projectCPEDetection reduces a cpe-ecosystem detection streamed out of
@@ -234,17 +234,17 @@ func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (detection,
 // walks to nothing, and its DefinedProducts and Contents keys
 // (hasSuppressedCPESource, per-rootID vulnerability-data narrowing) stay
 // meaningful. The ospkg-ecosystem counterpart is projectOSPkgDetection.
-func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) detection {
-	contents := make(map[sourceTypes.SourceID][]condition, len(d.Contents))
+func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) projectedDetection {
+	contents := make(map[sourceTypes.SourceID][]projectedCondition, len(d.Contents))
 	for sourceID, fconds := range d.Contents {
-		conds := make([]condition, 0, len(fconds))
+		conds := make([]projectedCondition, 0, len(fconds))
 		for _, fcond := range fconds {
 			walkReady, defined := projectCPECriteria(fcond.Criteria)
-			conds = append(conds, condition{Criteria: walkReady, Tag: fcond.Tag, DefinedProducts: defined})
+			conds = append(conds, projectedCondition{Criteria: walkReady, Tag: fcond.Tag, DefinedProducts: defined})
 		}
 		contents[sourceID] = conds
 	}
-	return detection{Ecosystem: d.Ecosystem, Contents: contents}
+	return projectedDetection{Ecosystem: d.Ecosystem, Contents: contents}
 }
 
 // projectCPECriteria splits a cpe-ecosystem criteria tree into its two

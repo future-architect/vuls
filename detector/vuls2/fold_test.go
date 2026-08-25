@@ -207,7 +207,7 @@ func Test_projectOSPkgDetection(t *testing.T) {
 	tests := []struct {
 		name string
 		d    detectTypes.VulnerabilityDataDetection
-		want vuls2.Detection
+		want vuls2.ProjectedDetection
 	}{
 		{
 			name: "OR keeps accepted, drops unaccepted",
@@ -222,9 +222,9 @@ func Test_projectOSPkgDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: vuls2.Detection{
+			want: vuls2.ProjectedDetection{
 				Ecosystem: ecosystem,
-				Contents: map[sourceTypes.SourceID][]vuls2.Condition{
+				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 					sourceTypes.RedHatOVALv2: {{
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
@@ -257,9 +257,9 @@ func Test_projectOSPkgDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: vuls2.Detection{
+			want: vuls2.ProjectedDetection{
 				Ecosystem: ecosystem,
-				Contents: map[sourceTypes.SourceID][]vuls2.Condition{
+				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 					sourceTypes.RedHatCSAF: {{
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
@@ -285,9 +285,9 @@ func Test_projectOSPkgDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: vuls2.Detection{
+			want: vuls2.ProjectedDetection{
 				Ecosystem: ecosystem,
-				Contents: map[sourceTypes.SourceID][]vuls2.Condition{
+				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 					sourceTypes.RedHatOVALv2: {{
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator: criteriaTypes.CriteriaOperatorTypeAND,
@@ -313,9 +313,9 @@ func Test_projectOSPkgDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: vuls2.Detection{
+			want: vuls2.ProjectedDetection{
 				Ecosystem: ecosystem,
-				Contents:  map[sourceTypes.SourceID][]vuls2.Condition{},
+				Contents:  map[sourceTypes.SourceID][]vuls2.ProjectedCondition{},
 			},
 		},
 	}

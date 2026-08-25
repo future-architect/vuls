@@ -547,9 +547,9 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []str
 		return detectResult{}, nil, xerrors.Errorf("ScanResult carries both CPE and OS-package / Microsoft-KB inputs; DetectPkgs and DetectCPEs feed them exclusively")
 	}
 
-	detections, warnEntries, err := func() (map[dataTypes.RootID]detection, []warningEntry, error) {
+	detections, warnEntries, err := func() (map[dataTypes.RootID]projectedDetection, []warningEntry, error) {
 		if len(sr.CPE) > 0 {
-			m, entries, err := foldDetectionSeq(cpe.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detection, bool, error) {
+			m, entries, err := foldDetectionSeq(cpe.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error) {
 				return projectCPEDetection(d), true, nil
 			})
 			if err != nil {
@@ -561,10 +561,10 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []str
 		// either input being present — a Windows scan can carry KBs
 		// without any OS packages.
 		if len(sr.OSPackages) > 0 || len(sr.MicrosoftKB.Applied) > 0 || len(sr.MicrosoftKB.Unapplied) > 0 {
-			m, entries, err := foldDetectionSeq(ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (detection, bool, error) {
+			m, entries, err := foldDetectionSeq(ospkg.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error) {
 				projected, err := projectOSPkgDetection(d)
 				if err != nil {
-					return detection{}, false, err
+					return projectedDetection{}, false, err
 				}
 				// A rootID whose every condition pruned to empty carries no
 				// detection signal for any downstream consumer; dropping it
@@ -602,7 +602,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []str
 		}
 		detected[rootID] = vulnerabilityData{
 			ID:              rootID,
-			Detections:      []detection{d},
+			Detections:      []projectedDetection{d},
 			Advisories:      avs.Advisories,
 			Vulnerabilities: avs.Vulnerabilities,
 		}

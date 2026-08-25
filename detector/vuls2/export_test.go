@@ -35,10 +35,10 @@ type PackStatus = packStatus
 type Source source
 
 type (
-	Detection    = detection
-	Condition    = condition
-	VulnData     = vulnerabilityData
-	DetectResult = detectResult
+	ProjectedDetection = projectedDetection
+	ProjectedCondition = projectedCondition
+	VulnData           = vulnerabilityData
+	DetectResult       = detectResult
 )
 
 // WarningEntry mirrors warningEntry with exported fields so the external
@@ -89,7 +89,7 @@ func RenderWarningEntries(entries []WarningEntry) []string {
 func ProjectDetectResult(detected detectTypes.DetectResult) (detectResult, error) {
 	out := detectResult{Detected: make([]vulnerabilityData, 0, len(detected.Detected))}
 	for _, v := range detected.Detected {
-		ds := make([]detection, 0, len(v.Detections))
+		ds := make([]projectedDetection, 0, len(v.Detections))
 		for _, d := range v.Detections {
 			if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
 				ds = append(ds, projectCPEDetection(d))
