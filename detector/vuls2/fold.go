@@ -251,14 +251,20 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) projectedDete
 // downstream reads, dropping the bulk of the decoded DB payload (deep
 // AND/OR nesting, version ranges, full CPEMatches enumerations):
 //
-//   - the walk-ready tree: walkCPECriteria folds AND and OR identically
-//     and reads only the vulnerable flag and Accepts of CPE criterions,
-//     so the tree structure carries no information. Vulnerable criterions
-//     with a non-empty Accepts are kept flat under a single OR root,
-//     Accepts intact, in DFS order (children before own criterions) so
-//     folded CPE lists keep their order; their CPE is reduced to
-//     part:vendor:product form for debuggability (the walk never reads
-//     it) and their CPEMatches are dropped.
+//   - the walk-ready tree: vulnerable criterions with a non-empty
+//     Accepts, kept flat under a single OR root, Accepts intact, in DFS
+//     order (children before own criterions) so folded CPE lists keep
+//     their order; their CPE is reduced to part:vendor:product form for
+//     debuggability (the walk reads only the Accepts) and their
+//     CPEMatches are dropped. Flattening the AND/OR structure away is
+//     deliberate go-cve-dictionary compatibility: it treats every
+//     vulnerable=true CPE in an applicability node as independently
+//     matchable, ignoring the operator, so a co-required product NVD
+//     happens to mark vulnerable=true (e.g. the Xen hypervisor conjoined
+//     with the vulnerable kernel in CVE-2021-28039) never vetoes the
+//     kernel leg. Existing users relied on this flattening under
+//     go-cve-dictionary; keeping it trades AND precision for that
+//     compatibility, scoped to CPE detection only.
 //   - the defined products: the part:vendor:product key of every CPE
 //     criterion's own CPE and CPEMatches, kept or dropped, matched or not
 //     (cond.Accept keeps non-matching criterions under

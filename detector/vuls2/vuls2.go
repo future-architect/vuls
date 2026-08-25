@@ -1000,30 +1000,23 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 // All CPE match semantics — WFN attribute matching, range/cpematch evaluation,
 // and the exact vs version-unconfirmed quality judgement — already happened in
 // vuls-data-update's cpecriterion.Match; this function only reads the resulting
-// AcceptQueries.CPE indices and folds the supporting scanned CPEs (FS form) up
-// the AND/OR tree into vuls0's two confidence tiers: exact and vendor:product.
-//
-// The tree must already be walk-ready — projectCPECriteria's fold
-// guarantees this. Anything a CPE-only scan cannot evaluate
-// (vulnerable=false environment/hardware guards, other criterion types)
-// was removed there, so it can neither be matched nor veto the result
-// (reproducing the historical go-cve-dictionary behaviour existing users
-// rely on).
+// AcceptQueries.CPE indices and collects the supporting scanned CPEs (FS form)
+// into vuls0's two confidence tiers:
 //
 //   - Accepts.CPE.Exact (version-confirmed match) → exact tier
 //   - Accepts.CPE.VersionUnconfirmed (accepted, but no version confirmation)
 //     → vendor:product tier
 //
-// AND and OR nodes are both folded as OR: a scanned CPE matching any single
-// leg satisfies the node. go-cve-dictionary treats every vulnerable=true CPE
-// in an applicability node as independently matchable, ignoring the AND/OR
-// operator, so a co-required product NVD happens to mark vulnerable=true
-// (e.g. the Xen hypervisor conjoined with the vulnerable kernel in
-// CVE-2021-28039) never vetoes the kernel leg. Existing users relied on this
-// flattening under go-cve-dictionary; keeping it here trades AND precision for
-// that compatibility, scoped to CPE detection only. A CPE source that carries
-// no version data at all (JVN) is reported at vendor:product regardless of the
-// projected tier — that is a source-semantics decision, kept here in vuls0.
+// The tree must be walk-ready — a flat OR of vulnerable+accepted
+// criterions, projectCPECriteria's fold guarantees it. Everything else
+// (guards, other criterion types, AND structure — see projectCPECriteria
+// for the go-cve-dictionary flattening compatibility) was removed there,
+// so each criterion contributes its matches independently and nothing can
+// veto the result.
+//
+// A CPE source that carries no version data at all (JVN) is reported at
+// vendor:product regardless of the projected tier — that is a
+// source-semantics decision, kept here in vuls0.
 //
 // For a suppressed source (VulnCheck / JVN) a matched scanned CPE is dropped
 // when its part:vendor:product is in verifiedProducts — the products a verified
@@ -1067,75 +1060,35 @@ func walkCPECriteria(sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCri
 		return ok
 	}
 
-	// walk returns (satisfied, exact, vp) — whether the subtree
-	// holds, and the supporting scanned CPEs per confidence tier. AND is
-	// folded identically to OR (see the flatten note above): any single
-	// satisfied leg carries the node and contributes its matches at its own
-	// tier, so a co-required product the scan lacks never vetoes the result.
-	var walk func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error)
-	walk = func(c criteriaTypes.FilteredCriteria) (bool, []string, []string, error) {
-		// Both operators are folded as OR (see the flatten note above), but
-		// validate anyway so an unsupported operator fails fast rather than
-		// silently taking the OR path — matching walkPkgCriteria.
-		switch c.Operator {
-		case criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR:
-		default:
-			return false, nil, nil, xerrors.Errorf("unexpected operator: %s", c.Operator)
-		}
+	// Fail fast on a tree that is not projectCPECriteria's output shape,
+	// rather than silently mis-walking it — matching walkPkgCriteria's
+	// precondition discipline.
+	if ca.Operator != criteriaTypes.CriteriaOperatorTypeOR || len(ca.Criterias) > 0 {
+		return nil, nil, xerrors.Errorf("not a walk-ready tree. operator: %s, nested criterias: %d", ca.Operator, len(ca.Criterias))
+	}
 
-		var satisfied bool
-		var exact, vp []string
-
-		fold := func(childSatisfied bool, childExact, childVP []string) {
-			if !childSatisfied {
-				return
-			}
-			satisfied = true
-			exact = append(exact, childExact...)
-			vp = append(vp, childVP...)
-		}
-
-		for _, child := range c.Criterias {
-			sat, ex, v, err := walk(child)
+	var exact, vp []string
+	for _, cn := range ca.Criterions {
+		for _, index := range cn.Accepts.CPE.Exact {
+			fs, err := scannedCPE(index)
 			if err != nil {
-				return false, nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
+				return nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 			}
-			fold(sat, ex, v)
+			if suppress(fs) {
+				continue
+			}
+			exact = append(exact, fs)
 		}
-		for _, cn := range c.Criterions {
-			var exactMatched, vpMatched []string
-			for _, index := range cn.Accepts.CPE.Exact {
-				fs, err := scannedCPE(index)
-				if err != nil {
-					return false, nil, nil, err
-				}
-				if suppress(fs) {
-					continue
-				}
-				exactMatched = append(exactMatched, fs)
+		for _, index := range cn.Accepts.CPE.VersionUnconfirmed {
+			fs, err := scannedCPE(index)
+			if err != nil {
+				return nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 			}
-			for _, index := range cn.Accepts.CPE.VersionUnconfirmed {
-				fs, err := scannedCPE(index)
-				if err != nil {
-					return false, nil, nil, err
-				}
-				if suppress(fs) {
-					continue
-				}
-				vpMatched = append(vpMatched, fs)
+			if suppress(fs) {
+				continue
 			}
-			fold(len(exactMatched) > 0 || len(vpMatched) > 0, exactMatched, vpMatched)
+			vp = append(vp, fs)
 		}
-
-		return satisfied, exact, vp, nil
-	}
-
-	satisfied, exact, vp, err := walk(ca)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
-	}
-	if !satisfied {
-		return nil, nil, nil
 	}
 
 	// JVN carries no version data, so even an exact-tier projection only
