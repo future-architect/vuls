@@ -1003,13 +1003,12 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 // AcceptQueries.CPE indices and folds the supporting scanned CPEs (FS form) up
 // the AND/OR tree into vuls0's two confidence tiers: exact and vendor:product.
 //
-// The tree must already be walk-ready — projectCPECriteria's flat
-// projection of vulnerable+accepted CPE criterions, which detect()'s cpe
-// fold applies to every streamed condition. Anything a CPE-only scan
-// cannot evaluate — vulnerable=false environment/hardware guards and
-// other criterion types — was removed there, so it can neither be matched
-// nor veto the result (reproducing the historical go-cve-dictionary
-// behaviour existing users rely on).
+// The tree must already be walk-ready — projectCPECriteria's fold
+// guarantees this. Anything a CPE-only scan cannot evaluate
+// (vulnerable=false environment/hardware guards, other criterion types)
+// was removed there, so it can neither be matched nor veto the result
+// (reproducing the historical go-cve-dictionary behaviour existing users
+// rely on).
 //
 //   - Accepts.CPE.Exact (version-confirmed match) → exact tier
 //   - Accepts.CPE.VersionUnconfirmed (accepted, but no version confirmation)
@@ -1320,12 +1319,8 @@ func cveIDsOf(v vulnerabilityData) []string {
 }
 
 // walkPkgCriteria walks a package/KB condition's criteria tree for package
-// statuses and KB IDs. The tree must already be gate-pruned with
-// prunePkgCriteria (the AND/OR gate over detect-time accepts): detect()'s
-// ospkg fold applies it to every streamed condition, so everything read
-// from a detectResult here satisfies the precondition. The cpe-ecosystem
-// counterpart is walkCPECriteria, over projectCPECriteria's walk-ready
-// trees.
+// statuses and KB IDs. The tree must already be gate-pruned —
+// projectOSPkgDetection's fold guarantees this.
 func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, error) {
 	var walk func(ca criteriaTypes.FilteredCriteria) ([]packStatus, []string, bool, error)
 	walk = func(ca criteriaTypes.FilteredCriteria) ([]packStatus, []string, bool, error) {
