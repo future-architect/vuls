@@ -3,6 +3,7 @@ package vuls2
 import (
 	"iter"
 	"runtime"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -17,6 +18,7 @@ import (
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	ccTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion"
+	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
 	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
@@ -65,6 +67,77 @@ type vulnerabilityData struct {
 // detectResult is detect()'s in-memory result, consumed by postConvert.
 type detectResult struct {
 	Detected []vulnerabilityData
+}
+
+type warningEntry struct {
+	source  sourceTypes.SourceID
+	warning warningTypes.Warning
+}
+
+// collectCriteriaWarnings appends the (source, warning) pairs recorded on
+// fca's criterions to entries, skipping pairs already present (deduplicated
+// with the upstream warning.Compare), and returns the updated slice. These
+// are the non-fatal evaluation warnings for data this build could not
+// evaluate (e.g. produced by a newer vuls-data-update); vuls2 hands the
+// trees over ungated with out-of-vocabulary criterions carrying their
+// recorded warnings, so even a condition whose every criterion was skipped
+// is represented. The streaming detect fold calls this on each full tree
+// before reducing it — the reductions could otherwise drop the warnings
+// along with the criterions carrying them.
+func collectCriteriaWarnings(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID, entries []warningEntry) []warningEntry {
+	for _, ca := range fca.Criterias {
+		entries = collectCriteriaWarnings(ca, sid, entries)
+	}
+	for _, cn := range fca.Criterions {
+		for _, w := range cn.Warnings {
+			e := warningEntry{source: sid, warning: w}
+			if !slices.ContainsFunc(entries, func(x warningEntry) bool {
+				return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
+			}) {
+				entries = append(entries, e)
+			}
+		}
+	}
+	return entries
+}
+
+// mergeWarningEntries appends the entries of add not already present in
+// dst (same (source, warning) dedup as collectCriteriaWarnings) and
+// returns the updated slice.
+func mergeWarningEntries(dst, add []warningEntry) []warningEntry {
+	for _, e := range add {
+		if !slices.ContainsFunc(dst, func(x warningEntry) bool {
+			return x.source == e.source && warningTypes.Compare(x.warning, e.warning) == 0
+		}) {
+			dst = append(dst, e)
+		}
+	}
+	return dst
+}
+
+// renderWarningEntries renders collected warning entries into scan-result
+// warning lines, one per entry. Each line renders deterministically on its
+// own, so callers can deduplicate across passes by comparing the rendered
+// strings. The source leads the format on purpose —
+// ScanResult.SortForJSONOutput orders the lines lexicographically, so a
+// drifting source's lines cluster together, then by kind and cause. An
+// empty Cause (the raw value for an unset datum, or the constant for
+// cause-less kinds like empty-range) is not rendered. Line order here is
+// unspecified — SortForJSONOutput normalizes it.
+func renderWarningEntries(entries []warningEntry) []string {
+	msgs := make([]string, 0, len(entries))
+	for _, e := range entries {
+		var parts []string
+		if e.source != "" {
+			parts = append(parts, fmt.Sprintf("source: %s", e.source))
+		}
+		parts = append(parts, fmt.Sprintf("kind: %s", e.warning.Kind))
+		if e.warning.Cause != "" {
+			parts = append(parts, fmt.Sprintf("cause: %q", e.warning.Cause))
+		}
+		msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", ")))
+	}
+	return msgs
 }
 
 // foldDetectionSeq consumes a detection stream with a pool of fold
