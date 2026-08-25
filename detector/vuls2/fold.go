@@ -1,6 +1,7 @@
 package vuls2
 
 import (
+	"context"
 	"iter"
 	"runtime"
 	"strings"
@@ -158,7 +159,11 @@ func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(det
 		warnEntries []warningEntry
 	)
 
-	var g errgroup.Group
+	// gctx is canceled by the first worker error, so the consumer loop
+	// below stops draining the stream: breaking out of the range cancels
+	// vuls2's producer, and an early project failure does not pay for the
+	// remaining roots' DB fetches and evaluations.
+	g, gctx := errgroup.WithContext(context.Background())
 	g.SetLimit(runtime.NumCPU())
 	var seqErr error
 	for rd, err := range seq {
@@ -166,7 +171,18 @@ func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(det
 			seqErr = err
 			break
 		}
+		if gctx.Err() != nil {
+			break
+		}
 		g.Go(func() error {
+			// The loop's check above is not atomic with g.Go: with SetLimit,
+			// g.Go blocks while every slot is taken, and a cancellation
+			// arriving during that wait would otherwise let this element be
+			// projected once a slot opens. Re-check before doing any work.
+			if err := gctx.Err(); err != nil {
+				return err
+			}
+
 			var entries []warningEntry
 			for sid, conds := range rd.Detection.Contents {
 				for _, cond := range conds {

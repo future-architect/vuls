@@ -2,6 +2,7 @@ package vuls2_test
 
 import (
 	"errors"
+	"fmt"
 	"iter"
 	"strings"
 	"testing"
@@ -418,6 +419,30 @@ func Test_foldDetectionSeq(t *testing.T) {
 		})
 		if err == nil || !strings.Contains(err.Error(), "ROOT-1") || !strings.Contains(err.Error(), "boom") {
 			t.Errorf("expected wrapped project error naming the root, got %v", err)
+		}
+	})
+
+	t.Run("project error stops the stream consumption", func(t *testing.T) {
+		const n = 256
+		consumed := 0
+		seq := func(yield func(util.RootDetection, error) bool) {
+			for i := range n {
+				consumed++
+				if !yield(warned(fmt.Sprintf("ROOT-%03d", i)), nil) {
+					return
+				}
+			}
+		}
+		_, _, err := vuls2.FoldDetectionSeq(seq, func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+			return vuls2.ProjectedDetection{}, false, errors.New("boom")
+		})
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+		// Breaking out of the range is what cancels vuls2's producer, so an
+		// early project failure must not drain the whole stream.
+		if consumed == n {
+			t.Errorf("stream fully consumed (%d elements) despite an early project error", consumed)
 		}
 	})
 
