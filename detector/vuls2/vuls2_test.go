@@ -12454,25 +12454,12 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// postConvert requires gate-pruned pkg-ecosystem trees (detect()'s
-			// ospkg fold guarantees it in production); mirror that here so the
-			// fixtures can stay written as raw DB trees.
-			detected := tt.args.detected
-			detected.Detected = make([]detectTypes.VulnerabilityData, 0, len(tt.args.detected.Detected))
-			for _, vd := range tt.args.detected.Detected {
-				ds := make([]detectTypes.VulnerabilityDataDetection, 0, len(vd.Detections))
-				for _, d := range vd.Detections {
-					if d.Ecosystem != ecosystemTypes.EcosystemTypeCPE {
-						pruned, err := vuls2.PruneUnaffectedDetection(d)
-						if err != nil {
-							t.Fatalf("pruneUnaffectedDetection. error = %v", err)
-						}
-						d = pruned
-					}
-					ds = append(ds, d)
-				}
-				vd.Detections = ds
-				detected.Detected = append(detected.Detected, vd)
+			// postConvert consumes detect()'s fold-projected form; project the
+			// fixtures with the production projectors so they can stay written
+			// as raw DB trees.
+			detected, err := vuls2.ProjectDetectResult(tt.args.detected)
+			if err != nil {
+				t.Fatalf("projectDetectResult. error = %v", err)
 			}
 			got, err := vuls2.PostConvert(tt.args.scanned, detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
 			if (err != nil) != tt.wantErr {
@@ -13754,7 +13741,10 @@ func Test_walkCPECriteria(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.noJVNCPEs, tt.args.verifiedProducts)
+			// walkCPECriteria consumes walk-ready trees; project the raw
+			// fixtures with the production projector first.
+			criteria, _ := vuls2.ProjectCPECriteria(tt.args.criteria)
+			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.noJVNCPEs, tt.args.verifiedProducts)
 			if err != nil {
 				t.Fatalf("walkCPECriteria() error = %v", err)
 			}
@@ -15384,7 +15374,11 @@ func Test_collectVerifiedProducts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := vuls2.CollectVerifiedProducts(tt.detected)
+			detected, err := vuls2.ProjectDetectResult(tt.detected)
+			if err != nil {
+				t.Fatalf("projectDetectResult. error = %v", err)
+			}
+			got := vuls2.CollectVerifiedProducts(detected)
 			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("collectVerifiedProducts() mismatch (-want +got):\n%s", diff)
 			}

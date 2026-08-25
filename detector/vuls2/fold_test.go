@@ -1,7 +1,6 @@
 package vuls2_test
 
 import (
-	"fmt"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -21,22 +20,11 @@ import (
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
-	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 
 	vuls2 "github.com/future-architect/vuls/detector/vuls2"
 )
 
-// TestCompactCPECriteriaInvariants checks the contract compactCPEDetection
-// relies on: for every consumer read of a cpe-ecosystem criteria tree —
-// walkCPECriteria's projection (per source class) and
-// collectDefinedCPEProducts' defined-product set — the compacted tree is
-// indistinguishable from the original.
-func TestCompactCPECriteriaInvariants(t *testing.T) {
-	scanned := scanTypes.ScanResult{CPE: []string{
-		"cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*",
-		"cpe:2.3:a:vendorb:productb:2.0:*:*:*:*:*:*:*",
-	}}
-
+func Test_projectCPECriteria(t *testing.T) {
 	cpeCriterion := func(vulnerable bool, cpe string, exact, vp []int, matches ...string) criterionTypes.FilteredCriterion {
 		c := ccTypes.Criterion{Vulnerable: vulnerable, CPE: ccTypes.CPE(cpe)}
 		if vulnerable {
@@ -50,16 +38,34 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
 		}
 	}
+	// a kept (walk-ready) criterion: vulnerable, product-form CPE, Accepts intact
+	keptCriterion := func(cpe string, exact, vp []int, matches ...string) criterionTypes.FilteredCriterion {
+		c := ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}
+		for _, m := range matches {
+			c.CPEMatches = append(c.CPEMatches, ccTypes.CPE(m))
+		}
+		return criterionTypes.FilteredCriterion{
+			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &c},
+			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
+		}
+	}
 
 	tests := []struct {
-		name string
-		ca   criteriaTypes.FilteredCriteria
+		name         string
+		ca           criteriaTypes.FilteredCriteria
+		wantCriteria criteriaTypes.FilteredCriteria
+		wantDefined  []string
 	}{
 		{
-			name: "empty",
-			ca:   criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR},
+			name:         "empty",
+			ca:           criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR},
+			wantCriteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR},
+			wantDefined:  nil,
 		},
 		{
+			// The kept criterion's CPE and CPEMatches are reduced to
+			// part:vendor:product form; matches sharing the criterion's own
+			// product are deduplicated away.
 			name: "flat OR, one exact accept",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -68,8 +74,18 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 						"cpe:2.3:o:linux:linux_kernel:5.10.1:*:*:*:*:*:*:*", "cpe:2.3:o:linux:linux_kernel:5.10.2:*:*:*:*:*:*:*"),
 				},
 			},
+			wantCriteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, nil),
+				},
+			},
+			wantDefined: []string{"o:linux:linux_kernel"},
 		},
 		{
+			// The non-vulnerable hardware guard is dropped from the walk-ready
+			// tree but its products (own CPE and CPEMatches) stay defined; the
+			// accepted criterion is flattened out of the AND child.
 			name: "AND with non-vulnerable hardware guard defining extra products",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -82,8 +98,17 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 					},
 				}},
 			},
+			wantCriteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", nil, []int{0}),
+				},
+			},
+			wantDefined: []string{"h:vendorx:boardx", "h:vendorx:boardy", "o:linux:linux_kernel"},
 		},
 		{
+			// A vulnerable criterion that accepted nothing is dropped from the
+			// walk-ready tree but keeps contributing defined products.
 			name: "unaccepted vulnerable criterion contributes defined products only",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -93,6 +118,13 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 					cpeCriterion(true, "cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*", []int{1}, nil),
 				},
 			},
+			wantCriteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					keptCriterion("cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*", []int{1}, nil),
+				},
+			},
+			wantDefined: []string{"a:vendorb:productb", "a:vendorc:productc"},
 		},
 		{
 			name: "nested OR under AND, both tiers accepted",
@@ -108,8 +140,18 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 					cpeCriterion(false, "cpe:2.3:h:vendorx:boardx:-:*:*:*:*:*:*:*", nil, nil),
 				},
 			},
+			wantCriteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, []int{1}),
+				},
+			},
+			wantDefined: []string{"h:vendorx:boardx", "o:linux:linux_kernel"},
 		},
 		{
+			// An unparsable CPE cannot be product-reduced: the kept criterion
+			// carries it verbatim, unparsable matches are dropped, and no
+			// defined product is recorded.
 			name: "invalid CPE strings are tolerated",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -118,56 +160,35 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 					cpeCriterion(false, "not-a-cpe-either", nil, nil),
 				},
 			},
+			wantCriteria: criteriaTypes.FilteredCriteria{
+				Operator: criteriaTypes.CriteriaOperatorTypeOR,
+				Criterions: []criterionTypes.FilteredCriterion{
+					keptCriterion("not-a-cpe", []int{0}, nil),
+				},
+			},
+			wantDefined: nil,
 		},
 	}
 
-	sources := []sourceTypes.SourceID{
-		sourceTypes.NVDAPICVE,         // verified
-		sourceTypes.VulnCheckNISTNVD2, // suppressed
-		sourceTypes.JVNFeedRSS,        // suppressed + JVN demotion
-	}
-	verifiedProducts := map[string]struct{}{"o:linux:linux_kernel": {}}
-	noJVNCPEs := map[string]struct{}{scanned.CPE[1]: {}}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			compacted := vuls2.CompactCPECriteria(tt.ca)
-
-			for _, sourceID := range sources {
-				for _, vp := range []map[string]struct{}{nil, verifiedProducts} {
-					name := fmt.Sprintf("%s/verified=%t", sourceID, vp != nil)
-					wantExact, wantVP, wantErr := vuls2.WalkCPECriteria(sourceID, tt.ca, scanned, noJVNCPEs, vp)
-					gotExact, gotVP, gotErr := vuls2.WalkCPECriteria(sourceID, compacted, scanned, noJVNCPEs, vp)
-					if (wantErr != nil) != (gotErr != nil) {
-						t.Errorf("%s: walkCPECriteria error mismatch: original %v, compacted %v", name, wantErr, gotErr)
-						continue
-					}
-					if diff := gocmp.Diff(wantExact, gotExact); diff != "" {
-						t.Errorf("%s: exact (-original +compacted):\n%s", name, diff)
-					}
-					if diff := gocmp.Diff(wantVP, gotVP); diff != "" {
-						t.Errorf("%s: vendor-product (-original +compacted):\n%s", name, diff)
-					}
-				}
+			gotCriteria, gotDefined := vuls2.ProjectCPECriteria(tt.ca)
+			if diff := gocmp.Diff(tt.wantCriteria, gotCriteria, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("projectCPECriteria() criteria (-expected +got):\n%s", diff)
 			}
-
-			wantSet := make(map[string]struct{})
-			vuls2.CollectDefinedCPEProducts(tt.ca, wantSet)
-			gotSet := make(map[string]struct{})
-			vuls2.CollectDefinedCPEProducts(compacted, gotSet)
-			if diff := gocmp.Diff(wantSet, gotSet); diff != "" {
-				t.Errorf("collectDefinedCPEProducts (-original +compacted):\n%s", diff)
+			if diff := gocmp.Diff(tt.wantDefined, gotDefined, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("projectCPECriteria() defined products (-expected +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-// Test_pruneUnaffectedDetection: prunePkgCriteria's gate semantics are
+// Test_projectOSPkgDetection: prunePkgCriteria's gate semantics are
 // covered by Test_prunePkgCriteria; here the wrapper's own behavior is
-// pinned — every condition's tree is pruned, conditions whose tree prunes
-// to empty are dropped, and sources with no remaining conditions are
-// removed.
-func Test_pruneUnaffectedDetection(t *testing.T) {
+// pinned — every condition's tree is gate-pruned, conditions whose tree
+// prunes to empty are dropped, and sources with no remaining conditions
+// are removed.
+func Test_projectOSPkgDetection(t *testing.T) {
 	ecosystem := ecosystemTypes.Ecosystem("redhat:8")
 
 	vc := func(name string, accepts []int) criterionTypes.FilteredCriterion {
@@ -191,7 +212,7 @@ func Test_pruneUnaffectedDetection(t *testing.T) {
 	tests := []struct {
 		name string
 		d    detectTypes.VulnerabilityDataDetection
-		want detectTypes.VulnerabilityDataDetection
+		want vuls2.Detection
 	}{
 		{
 			name: "OR keeps accepted, drops unaccepted",
@@ -206,9 +227,9 @@ func Test_pruneUnaffectedDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: detectTypes.VulnerabilityDataDetection{
+			want: vuls2.Detection{
 				Ecosystem: ecosystem,
-				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+				Contents: map[sourceTypes.SourceID][]vuls2.Condition{
 					sourceTypes.RedHatOVALv2: {{
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
@@ -241,9 +262,9 @@ func Test_pruneUnaffectedDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: detectTypes.VulnerabilityDataDetection{
+			want: vuls2.Detection{
 				Ecosystem: ecosystem,
-				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+				Contents: map[sourceTypes.SourceID][]vuls2.Condition{
 					sourceTypes.RedHatCSAF: {{
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
@@ -269,9 +290,9 @@ func Test_pruneUnaffectedDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: detectTypes.VulnerabilityDataDetection{
+			want: vuls2.Detection{
 				Ecosystem: ecosystem,
-				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+				Contents: map[sourceTypes.SourceID][]vuls2.Condition{
 					sourceTypes.RedHatOVALv2: {{
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator: criteriaTypes.CriteriaOperatorTypeAND,
@@ -297,21 +318,21 @@ func Test_pruneUnaffectedDetection(t *testing.T) {
 					}},
 				},
 			},
-			want: detectTypes.VulnerabilityDataDetection{
+			want: vuls2.Detection{
 				Ecosystem: ecosystem,
-				Contents:  map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{},
+				Contents:  map[sourceTypes.SourceID][]vuls2.Condition{},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pruned, err := vuls2.PruneUnaffectedDetection(tt.d)
+			got, err := vuls2.ProjectOSPkgDetection(tt.d)
 			if err != nil {
-				t.Fatalf("pruneUnaffectedDetection. error = %v", err)
+				t.Fatalf("projectOSPkgDetection. error = %v", err)
 			}
-			if diff := gocmp.Diff(tt.want, pruned, gocmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("pruneUnaffectedDetection() (-expected +got):\n%s", diff)
+			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("projectOSPkgDetection() (-expected +got):\n%s", diff)
 			}
 		})
 	}

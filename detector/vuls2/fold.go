@@ -1,95 +1,198 @@
 package vuls2
 
 import (
+	"iter"
+	"runtime"
+	"sync"
+
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
-	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
+	"github.com/knqyf263/go-cpe/common"
+	"github.com/knqyf263/go-cpe/naming"
+
+	"fmt"
+
+	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	ccTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/cpecriterion"
+	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
+	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
+	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
-	"github.com/knqyf263/go-cpe/common"
-	"github.com/knqyf263/go-cpe/naming"
+	"github.com/MaineK00n/vuls2/pkg/detect/util"
+
+	"maps"
+	"slices"
 )
 
-// pruneUnaffectedDetection reduces an ospkg-ecosystem detection streamed out
-// of vuls2 to its affected branches: each condition's criteria tree is
-// pruned with prunePkgCriteria — the AND/OR gate over detect-time accepts,
-// applied here and nowhere else, so downstream readers (walkPkgCriteria)
-// assume gated trees — conditions whose tree prunes to empty are dropped,
-// and sources with no remaining conditions are removed. The caller drops
-// rootIDs whose Contents end up empty. Evaluation warnings must be
-// harvested from the full tree before calling this — pruned branches
-// carry them away.
-func pruneUnaffectedDetection(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, error) {
-	contents := make(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition, len(d.Contents))
-	for sourceID, conds := range d.Contents {
-		kept := make([]conditionTypes.FilteredCondition, 0, len(conds))
-		for _, cond := range conds {
-			pruned, err := prunePkgCriteria(cond.Criteria)
+// detection is one rootID's detection reduced by the fold to exactly what
+// this package reads downstream — the common shape both ecosystems' folds
+// produce, and the contract between detect() and postConvert: everything
+// postConvert needs from a full vuls2 criteria tree is extracted here,
+// before the tree is dropped.
+type detection struct {
+	Ecosystem ecosystemTypes.Ecosystem
+	Contents  map[sourceTypes.SourceID][]condition
+}
+
+// condition is one source condition reduced to what its ecosystem's walk
+// reads. Criteria is walk-ready for the ecosystem's walker: pkg — the
+// gate-pruned tree (prunePkgCriteria's AND/OR gate over detect-time
+// accepts, applied here and nowhere else); cpe — the flat projection of
+// vulnerable+accepted criterions (walkCPECriteria assumes both).
+// DefinedProducts is cpe-only (always nil for pkg): the
+// part:vendor:product keys every criterion of the full tree DEFINES,
+// matched or not — the verified-product suppression input, aggregated
+// across roots by postConvert's collectVerifiedProducts.
+type condition struct {
+	Criteria        criteriaTypes.FilteredCriteria
+	Tag             segmentTypes.DetectionTag
+	DefinedProducts []string
+}
+
+// vulnerabilityData is detection plus the fetched Advisory/Vulnerability
+// contents for the rootID — the per-root element of detectResult.
+type vulnerabilityData struct {
+	ID              dataTypes.RootID
+	Detections      []detection
+	Advisories      []dbTypes.VulnerabilityDataAdvisory
+	Vulnerabilities []dbTypes.VulnerabilityDataVulnerability
+}
+
+// detectResult is detect()'s in-memory result, consumed by postConvert.
+type detectResult struct {
+	Detected []vulnerabilityData
+}
+
+// foldDetectionSeq consumes a detection stream with a pool of fold
+// workers: each element's evaluation warnings are harvested from the full
+// tree, then fold reduces the tree to a detection (returning keep=false
+// to drop the rootID entirely). Folding in parallel matters — the stream
+// side runs NumCPU workers, and a single consumer goroutine walking every
+// large tree (e.g. cpe_kernel's) becomes the pipeline bottleneck. Peak
+// memory holds the folded result plus only the in-flight full trees
+// (stream workers + channel buffer + fold workers, each bounded by
+// NumCPU).
+func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], fold func(detectTypes.VulnerabilityDataDetection) (detection, bool, error)) (map[dataTypes.RootID]detection, []warningEntry, error) {
+	var (
+		mu          sync.Mutex
+		m           = make(map[dataTypes.RootID]detection)
+		warnEntries []warningEntry
+	)
+
+	var g errgroup.Group
+	g.SetLimit(runtime.NumCPU())
+	var seqErr error
+	for rd, err := range seq {
+		if err != nil {
+			seqErr = err
+			break
+		}
+		g.Go(func() error {
+			var entries []warningEntry
+			for sid, conds := range rd.Detection.Contents {
+				for _, cond := range conds {
+					entries = collectCriteriaWarnings(cond.Criteria, sid, entries)
+				}
+			}
+
+			d, keep, err := fold(rd.Detection)
 			if err != nil {
-				return detectTypes.VulnerabilityDataDetection{}, xerrors.Errorf("prune criteria: %w", err)
+				return xerrors.Errorf("fold detection. RootID: %s, err: %w", rd.RootID, err)
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			warnEntries = mergeWarningEntries(warnEntries, entries)
+			if keep {
+				m[rd.RootID] = d
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, nil, err
+	}
+	if seqErr != nil {
+		return nil, nil, seqErr
+	}
+	return m, warnEntries, nil
+}
+
+// projectOSPkgDetection reduces an ospkg-ecosystem detection streamed out
+// of vuls2 to its affected branches: each condition's criteria tree is
+// gate-pruned with prunePkgCriteria, conditions whose tree prunes to
+// empty are dropped, and sources with no remaining conditions are
+// removed. The caller drops rootIDs whose Contents end up empty. The
+// cpe-ecosystem counterpart is projectCPEDetection.
+func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (detection, error) {
+	contents := make(map[sourceTypes.SourceID][]condition, len(d.Contents))
+	for sourceID, fconds := range d.Contents {
+		kept := make([]condition, 0, len(fconds))
+		for _, fcond := range fconds {
+			pruned, err := prunePkgCriteria(fcond.Criteria)
+			if err != nil {
+				return detection{}, xerrors.Errorf("prune criteria: %w", err)
 			}
 			if len(pruned.Criterias) == 0 && len(pruned.Criterions) == 0 {
 				continue
 			}
-			cond.Criteria = pruned
-			kept = append(kept, cond)
+			kept = append(kept, condition{Criteria: pruned, Tag: fcond.Tag})
 		}
 		if len(kept) > 0 {
 			contents[sourceID] = kept
 		}
 	}
-	d.Contents = contents
-	return d, nil
+	return detection{Ecosystem: d.Ecosystem, Contents: contents}, nil
 }
 
-// compactCPEDetection reduces a cpe-ecosystem detection streamed out of
-// vuls2 to a compact projection preserving exactly what this package reads
-// downstream, dropping the bulk of the decoded DB payload (deep AND/OR
-// nesting, version ranges, full CPEMatches enumerations):
+// projectCPEDetection reduces a cpe-ecosystem detection streamed out of
+// vuls2 via projectCPECriteria, per condition. Unlike the ospkg side, no
+// condition, source, or rootID is dropped: an empty walk-ready tree still
+// walks to nothing, and its DefinedProducts and Contents keys
+// (hasSuppressedCPESource, per-rootID vulnerability-data narrowing) stay
+// meaningful. The ospkg-ecosystem counterpart is projectOSPkgDetection.
+func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) detection {
+	contents := make(map[sourceTypes.SourceID][]condition, len(d.Contents))
+	for sourceID, fconds := range d.Contents {
+		conds := make([]condition, 0, len(fconds))
+		for _, fcond := range fconds {
+			walkReady, defined := projectCPECriteria(fcond.Criteria)
+			conds = append(conds, condition{Criteria: walkReady, Tag: fcond.Tag, DefinedProducts: defined})
+		}
+		contents[sourceID] = conds
+	}
+	return detection{Ecosystem: d.Ecosystem, Contents: contents}
+}
+
+// projectCPECriteria splits a cpe-ecosystem criteria tree into its two
+// downstream reads, dropping the bulk of the decoded DB payload (deep
+// AND/OR nesting, version ranges, full CPEMatches enumerations):
 //
-//   - walkCPECriteria folds AND and OR identically and reads only the
-//     vulnerable flag and Accepts of CPE criterions (after pruning
-//     non-vulnerable / non-CPE criterions), so the tree structure carries
-//     no information. Vulnerable criterions with a non-empty Accepts are
-//     kept flat under a single OR root, Accepts intact, in the walk's DFS
-//     order (children before own criterions) so folded CPE lists keep
-//     their order.
-//   - collectDefinedCPEProducts reads every criterion's DEFINED
-//     part:vendor:product (criterion CPE and CPEMatches, matched or not)
-//     for the verified-product suppression. Kept criterions carry their
-//     own CPE / CPEMatches reduced to part:vendor:product form; products
-//     defined only by dropped criterions are appended as vulnerable=false
-//     carrier criterions holding just the product CPE, in unspecified
-//     order — collectDefinedCPEProducts folds them into a set and
-//     walkCPECriteria never reads non-vulnerable criterions.
-//   - Contents keys (hasSuppressedCPESource, per-rootID vulnerability-data
-//     narrowing) and condition Tags are untouched: no condition, source,
-//     or rootID is dropped.
+//   - the walk-ready tree: walkCPECriteria folds AND and OR identically
+//     and reads only the vulnerable flag and Accepts of CPE criterions,
+//     so the tree structure carries no information. Vulnerable criterions
+//     with a non-empty Accepts are kept flat under a single OR root,
+//     Accepts intact, in DFS order (children before own criterions) so
+//     folded CPE lists keep their order; their CPE / CPEMatches are
+//     reduced to part:vendor:product form for debuggability (the walk
+//     never reads them).
+//   - the defined products: the part:vendor:product key of every CPE
+//     criterion's own CPE and CPEMatches, kept or dropped, matched or not
+//     (cond.Accept keeps non-matching criterions under
+//     FilteredCriterion.Criterion) — collectVerifiedProducts' input,
+//     sorted for determinism.
 //
 // Evaluation warnings must be harvested from the full tree before calling
 // this — the projection does not carry them.
-func compactCPEDetection(d detectTypes.VulnerabilityDataDetection) detectTypes.VulnerabilityDataDetection {
-	contents := make(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition, len(d.Contents))
-	for sourceID, fconds := range d.Contents {
-		compacted := make([]conditionTypes.FilteredCondition, 0, len(fconds))
-		for _, fcond := range fconds {
-			fcond.Criteria = compactCPECriteria(fcond.Criteria)
-			compacted = append(compacted, fcond)
-		}
-		contents[sourceID] = compacted
-	}
-	d.Contents = contents
-	return d
-}
-
-func compactCPECriteria(ca criteriaTypes.FilteredCriteria) criteriaTypes.FilteredCriteria {
+func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, []string) {
 	var (
 		kept    []criterionTypes.FilteredCriterion
 		carried = make(map[string]struct{})
-		pending = make(map[string]struct{})
+		defined = make(map[string]struct{})
 	)
 
 	var collect func(c criteriaTypes.FilteredCriteria)
@@ -102,68 +205,141 @@ func compactCPECriteria(ca criteriaTypes.FilteredCriteria) criteriaTypes.Filtere
 				continue
 			}
 
-			if cn.Criterion.CPE.Vulnerable && (len(cn.Accepts.CPE.Exact) > 0 || len(cn.Accepts.CPE.VersionUnconfirmed) > 0) {
-				compact := ccTypes.Criterion{Vulnerable: true}
-				if p, ok := productCPE(string(cn.Criterion.CPE.CPE)); ok {
-					compact.CPE = ccTypes.CPE(p)
-					carried[p] = struct{}{}
-				} else {
-					compact.CPE = cn.Criterion.CPE.CPE
-				}
-				for _, m := range cn.Criterion.CPE.CPEMatches {
-					p, ok := productCPE(string(m))
-					if !ok {
-						continue
-					}
-					if _, ok := carried[p]; ok {
-						continue
-					}
-					carried[p] = struct{}{}
-					compact.CPEMatches = append(compact.CPEMatches, ccTypes.CPE(p))
-				}
-				kept = append(kept, criterionTypes.FilteredCriterion{
-					Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &compact},
-					Accepts:   criterionTypes.AcceptQueries{CPE: cn.Accepts.CPE},
-				})
-				continue
-			}
-
-			if p, ok := productCPE(string(cn.Criterion.CPE.CPE)); ok {
-				pending[p] = struct{}{}
+			if key, ok := cpeProductKey(string(cn.Criterion.CPE.CPE)); ok {
+				defined[key] = struct{}{}
 			}
 			for _, m := range cn.Criterion.CPE.CPEMatches {
-				if p, ok := productCPE(string(m)); ok {
-					pending[p] = struct{}{}
+				if key, ok := cpeProductKey(string(m)); ok {
+					defined[key] = struct{}{}
 				}
 			}
+
+			if !cn.Criterion.CPE.Vulnerable || (len(cn.Accepts.CPE.Exact) == 0 && len(cn.Accepts.CPE.VersionUnconfirmed) == 0) {
+				continue
+			}
+			compact := ccTypes.Criterion{Vulnerable: true}
+			if p, ok := productCPE(string(cn.Criterion.CPE.CPE)); ok {
+				compact.CPE = ccTypes.CPE(p)
+				carried[p] = struct{}{}
+			} else {
+				compact.CPE = cn.Criterion.CPE.CPE
+			}
+			for _, m := range cn.Criterion.CPE.CPEMatches {
+				p, ok := productCPE(string(m))
+				if !ok {
+					continue
+				}
+				if _, ok := carried[p]; ok {
+					continue
+				}
+				carried[p] = struct{}{}
+				compact.CPEMatches = append(compact.CPEMatches, ccTypes.CPE(p))
+			}
+			kept = append(kept, criterionTypes.FilteredCriterion{
+				Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &compact},
+				Accepts:   criterionTypes.AcceptQueries{CPE: cn.Accepts.CPE},
+			})
 		}
 	}
 	collect(ca)
 
-	compacted := criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}
-	for p := range pending {
-		if _, ok := carried[p]; ok {
-			continue
-		}
-		compacted.Criterions = append(compacted.Criterions, criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{CPE: ccTypes.CPE(p)}},
-		})
+	return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}, slices.Sorted(maps.Keys(defined))
+}
+
+// prunePkgCriteria drops unaffected branches from a FilteredCriteria tree.
+//
+// AND parents fail (return empty) if any required child is unaffected, OR
+// parents skip unaffected children. The vuls2 util.Detect step now passes
+// every condition through unconditionally — this function is the actual
+// AND/OR gate. cpe-ecosystem conditions never come through here; their
+// accepts are judged by walkCPECriteria's walk instead.
+func prunePkgCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, error) {
+	pruned := criteriaTypes.FilteredCriteria{
+		Operator: c.Operator,
+		Criterias: func() []criteriaTypes.FilteredCriteria {
+			if len(c.Criterias) > 0 {
+				return make([]criteriaTypes.FilteredCriteria, 0, len(c.Criterias))
+			}
+			return nil
+		}(),
+		Criterions: func() []criterionTypes.FilteredCriterion {
+			if len(c.Criterions) > 0 {
+				return make([]criterionTypes.FilteredCriterion, 0, len(c.Criterions))
+			}
+			return nil
+		}(),
 	}
-	return compacted
+
+	for _, child := range c.Criterias {
+		child, err := prunePkgCriteria(child)
+		if err != nil {
+			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("prune criteria: %w", err)
+		}
+
+		if len(child.Criterias) == 0 && len(child.Criterions) == 0 {
+			switch c.Operator {
+			case criteriaTypes.CriteriaOperatorTypeAND:
+				return criteriaTypes.FilteredCriteria{}, nil
+			case criteriaTypes.CriteriaOperatorTypeOR:
+				continue
+			default:
+				return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+			}
+		}
+
+		pruned.Criterias = append(pruned.Criterias, child)
+	}
+
+	for _, cn := range c.Criterions {
+		isAffected, err := cn.Affected()
+		if err != nil {
+			return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("criterion affected: %w", err)
+		}
+
+		if !isAffected {
+			switch c.Operator {
+			case criteriaTypes.CriteriaOperatorTypeAND:
+				return criteriaTypes.FilteredCriteria{}, nil
+			case criteriaTypes.CriteriaOperatorTypeOR:
+				continue
+			default:
+				return criteriaTypes.FilteredCriteria{}, xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+			}
+		}
+
+		pruned.Criterions = append(pruned.Criterions, cn)
+	}
+
+	return pruned, nil
 }
 
 // productCPE reduces a CPE 2.3 FS string to its part:vendor:product form
 // (every other attribute ANY), the granularity cpeProductKey and the
-// cpe.Detect index operate at. The boolean is false when the input is not a
-// valid CPE 2.3 FS string — such entries contribute nothing downstream.
+// cpe.Detect index operate at. The boolean is false when the input is not
+// a valid CPE 2.3 FS form.
 func productCPE(cpe string) (string, bool) {
 	wfn, err := naming.UnbindFS(cpe)
 	if err != nil {
 		return "", false
 	}
-	out := common.NewWellFormedName()
-	out[common.AttributePart] = wfn.Get(common.AttributePart)
-	out[common.AttributeVendor] = wfn.Get(common.AttributeVendor)
-	out[common.AttributeProduct] = wfn.Get(common.AttributeProduct)
-	return naming.BindToFS(out), true
+	product := common.NewWellFormedName()
+	for _, attr := range []string{common.AttributePart, common.AttributeVendor, common.AttributeProduct} {
+		product.Set(attr, wfn.Get(attr))
+	}
+	return naming.BindToFS(product), true
+}
+
+// cpeProductKey returns the "part:vendor:product" key of a CPE 2.3
+// formatted string, matching the index key vuls2's cpe.Detect groups
+// scanned CPEs by. The boolean is false when the string is not a valid
+// CPE 2.3 FS form.
+func cpeProductKey(cpe string) (string, bool) {
+	wfn, err := naming.UnbindFS(cpe)
+	if err != nil {
+		return "", false
+	}
+	return fmt.Sprintf("%s:%s:%s",
+		wfn.GetString(common.AttributePart),
+		wfn.GetString(common.AttributeVendor),
+		wfn.GetString(common.AttributeProduct)), true
 }

@@ -3,7 +3,9 @@ package vuls2
 import (
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
+	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
+	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 )
 
 var (
@@ -22,15 +24,22 @@ var (
 
 	CollectVerifiedProducts = collectVerifiedProducts
 
-	CollectDefinedCPEProducts = collectDefinedCPEProducts
-	CompactCPECriteria        = compactCPECriteria
-	PruneUnaffectedDetection  = pruneUnaffectedDetection
-	WalkPkgCriteria           = walkPkgCriteria
+	ProjectOSPkgDetection = projectOSPkgDetection
+	ProjectCPEDetection   = projectCPEDetection
+	ProjectCPECriteria    = projectCPECriteria
+	WalkPkgCriteria       = walkPkgCriteria
 )
 
 type PackStatus = packStatus
 
 type Source source
+
+type (
+	Detection    = detection
+	Condition    = condition
+	VulnData     = vulnerabilityData
+	DetectResult = detectResult
+)
 
 // WarningEntry mirrors warningEntry with exported fields so the external
 // test package can construct and compare entries; the exported warning
@@ -72,4 +81,32 @@ func MergeWarningEntries(dst, add []WarningEntry) []WarningEntry {
 
 func RenderWarningEntries(entries []WarningEntry) []string {
 	return renderWarningEntries(toWarningEntries(entries))
+}
+
+// ProjectDetectResult converts a raw detectTypes.DetectResult fixture into
+// the fold-projected form detect() produces, using the production
+// projectors, so fixtures can stay written as raw DB trees.
+func ProjectDetectResult(detected detectTypes.DetectResult) (detectResult, error) {
+	out := detectResult{Detected: make([]vulnerabilityData, 0, len(detected.Detected))}
+	for _, v := range detected.Detected {
+		ds := make([]detection, 0, len(v.Detections))
+		for _, d := range v.Detections {
+			if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
+				ds = append(ds, projectCPEDetection(d))
+				continue
+			}
+			p, err := projectOSPkgDetection(d)
+			if err != nil {
+				return detectResult{}, err
+			}
+			ds = append(ds, p)
+		}
+		out.Detected = append(out.Detected, vulnerabilityData{
+			ID:              v.ID,
+			Detections:      ds,
+			Advisories:      v.Advisories,
+			Vulnerabilities: v.Vulnerabilities,
+		})
+	}
+	return out, nil
 }
