@@ -15,13 +15,13 @@ import (
 
 // pruneUnaffectedDetection reduces an ospkg-ecosystem detection streamed out
 // of vuls2 to its affected branches: each condition's criteria tree is
-// pruned with prunePkgCriteria (the same AND/OR gate walkPkgCriteria
-// applies before its walk, so the pruning is invisible downstream —
-// prunePkgCriteria is idempotent), conditions whose tree prunes to empty
-// are dropped, and sources with no remaining conditions are removed. The
-// caller drops rootIDs whose Contents end up empty. Evaluation warnings
-// must be harvested from the full tree before calling this — pruned
-// branches carry them away.
+// pruned with prunePkgCriteria — the AND/OR gate over detect-time accepts,
+// applied here and nowhere else, so downstream readers (walkPkgCriteria)
+// assume gated trees — conditions whose tree prunes to empty are dropped,
+// and sources with no remaining conditions are removed. The caller drops
+// rootIDs whose Contents end up empty. Evaluation warnings must be
+// harvested from the full tree before calling this — pruned branches
+// carry them away.
 func pruneUnaffectedDetection(d detectTypes.VulnerabilityDataDetection) (detectTypes.VulnerabilityDataDetection, error) {
 	contents := make(map[sourceTypes.SourceID][]conditionTypes.FilteredCondition, len(d.Contents))
 	for sourceID, conds := range d.Contents {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
+	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 
 	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
@@ -161,19 +162,12 @@ func TestCompactCPECriteriaInvariants(t *testing.T) {
 	}
 }
 
-// TestPruneUnaffectedDetectionInvariants checks the contract the streaming
-// ospkg fold relies on: walkPkgCriteria (which itself starts from
-// prunePkgCriteria — the same gate, making the early pruning idempotent)
-// projects the pruned detection onto identical pack statuses / KB IDs, and
-// conditions carrying no detection signal are exactly the ones dropped.
-func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
-	scanned := scanTypes.ScanResult{
-		Family: ecosystemTypes.EcosystemTypeRedHat,
-		OSPackages: []scanTypes.OSPackage{
-			{Name: "kernel", Version: "4.18.0", Release: "513.11.1.el8_9", Arch: "x86_64"},
-			{Name: "openssl", Version: "1.1.1k", Release: "12.el8_9", Arch: "x86_64"},
-		},
-	}
+// Test_pruneUnaffectedDetection: prunePkgCriteria's gate semantics are
+// covered by Test_prunePkgCriteria; here the wrapper's own behavior is
+// pinned — every condition's tree is pruned, conditions whose tree prunes
+// to empty are dropped, and sources with no remaining conditions are
+// removed.
+func Test_pruneUnaffectedDetection(t *testing.T) {
 	ecosystem := ecosystemTypes.Ecosystem("redhat:8")
 
 	vc := func(name string, accepts []int) criterionTypes.FilteredCriterion {
@@ -197,6 +191,7 @@ func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
 	tests := []struct {
 		name string
 		d    detectTypes.VulnerabilityDataDetection
+		want detectTypes.VulnerabilityDataDetection
 	}{
 		{
 			name: "OR keeps accepted, drops unaccepted",
@@ -207,6 +202,17 @@ func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
 						Criteria: criteriaTypes.FilteredCriteria{
 							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
 							Criterions: []criterionTypes.FilteredCriterion{vc("kernel", []int{0}), vc("kernel-debug", nil)},
+						},
+					}},
+				},
+			},
+			want: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystem,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.RedHatOVALv2: {{
+						Criteria: criteriaTypes.FilteredCriteria{
+							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{vc("kernel", []int{0})},
 						},
 					}},
 				},
@@ -235,6 +241,17 @@ func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
 					}},
 				},
 			},
+			want: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystem,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.RedHatCSAF: {{
+						Criteria: criteriaTypes.FilteredCriteria{
+							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{vc("openssl", []int{1})},
+						},
+					}},
+				},
+			},
 		},
 		{
 			name: "nested OR under AND survives when all gates pass",
@@ -252,6 +269,38 @@ func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
 					}},
 				},
 			},
+			want: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystem,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.RedHatOVALv2: {{
+						Criteria: criteriaTypes.FilteredCriteria{
+							Operator: criteriaTypes.CriteriaOperatorTypeAND,
+							Criterias: []criteriaTypes.FilteredCriteria{{
+								Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{vc("kernel", []int{0})},
+							}},
+						},
+					}},
+				},
+			},
+		},
+		{
+			name: "every source dropping empties Contents",
+			d: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystem,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.RedHatOVALv2: {{
+						Criteria: criteriaTypes.FilteredCriteria{
+							Operator:   criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{vc("kernel-debug", nil)},
+						},
+					}},
+				},
+			},
+			want: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystem,
+				Contents:  map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{},
+			},
 		},
 	}
 
@@ -261,28 +310,8 @@ func TestPruneUnaffectedDetectionInvariants(t *testing.T) {
 			if err != nil {
 				t.Fatalf("pruneUnaffectedDetection. error = %v", err)
 			}
-
-			for sid, conds := range tt.d.Contents {
-				var wantStatuses, gotStatuses [][]any
-				for _, cond := range conds {
-					ss, ks, err := vuls2.WalkPkgCriteria(tt.d.Ecosystem, sid, cond.Criteria, cond.Tag, scanned)
-					if err != nil {
-						t.Fatalf("walk original. error = %v", err)
-					}
-					if len(ss) > 0 || len(ks) > 0 {
-						wantStatuses = append(wantStatuses, []any{ss, ks})
-					}
-				}
-				for _, cond := range pruned.Contents[sid] {
-					ss, ks, err := vuls2.WalkPkgCriteria(tt.d.Ecosystem, sid, cond.Criteria, cond.Tag, scanned)
-					if err != nil {
-						t.Fatalf("walk pruned. error = %v", err)
-					}
-					gotStatuses = append(gotStatuses, []any{ss, ks})
-				}
-				if diff := gocmp.Diff(wantStatuses, gotStatuses, gocmp.Comparer(func(a, b vuls2.PackStatus) bool { return a == b })); diff != "" {
-					t.Errorf("source %s: walkPkgCriteria (-original +pruned):\n%s", sid, diff)
-				}
+			if diff := gocmp.Diff(tt.want, pruned, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("pruneUnaffectedDetection() (-expected +got):\n%s", diff)
 			}
 		})
 	}

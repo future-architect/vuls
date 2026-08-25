@@ -1628,17 +1628,14 @@ func prunePkgCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredC
 	return pruned, nil
 }
 
-// walkPkgCriteria evaluates a package/KB condition: prunePkgCriteria drops the
-// branches whose criterions did not accept (the AND/OR gate over detect-time
-// accepts), then the pruned tree is walked for package statuses and KB IDs.
-// The cpe-ecosystem counterpart is walkCPECriteria, which prunes on
-// evaluability instead and judges accepts during its own walk.
+// walkPkgCriteria walks a package/KB condition's criteria tree for package
+// statuses and KB IDs. The tree must already be gate-pruned with
+// prunePkgCriteria (the AND/OR gate over detect-time accepts): detect()'s
+// ospkg fold applies it to every streamed condition, so everything read
+// from a DetectResult here satisfies the precondition. The cpe-ecosystem
+// counterpart is walkCPECriteria, which prunes on evaluability instead
+// and judges accepts during its own walk.
 func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, error) {
-	pruned, err := prunePkgCriteria(ca)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to prune criteria. err: %w", err)
-	}
-
 	var walk func(ca criteriaTypes.FilteredCriteria) ([]packStatus, []string, bool, error)
 	walk = func(ca criteriaTypes.FilteredCriteria) ([]packStatus, []string, bool, error) {
 		var (
@@ -1730,7 +1727,7 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 		return statuses, kbIDs, false, nil
 	}
 
-	statuses, kbIDs, _, err := walk(pruned)
+	statuses, kbIDs, _, err := walk(ca)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed to walk criteria. err: %w", err)
 	}
