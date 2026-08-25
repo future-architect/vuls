@@ -212,44 +212,21 @@ func openSession(vuls2Conf config.Vuls2Conf, noProgress bool) (*session.Session,
 	return sesh, nil
 }
 
-// warningMessages renders the non-fatal evaluation warnings recorded on the
-// FilteredCriteria trees (data this build could not evaluate, e.g. produced
-// by a newer vuls-data-update) into scan-result warning lines. vuls2 hands
-// the trees over ungated, with out-of-vocabulary criterions carrying their
-// recorded warnings, so even a condition whose every criterion was skipped
-// is represented — postConvert's affected gating works on its own derived
-// data and never prunes these trees. One line per distinct
-// (source, warning), deduplicated with the upstream warning.Compare: each
-// line renders deterministically on its own, so callers can deduplicate
-// across passes by comparing the rendered strings. The source leads the
-// format on purpose — ScanResult.SortForJSONOutput orders the lines
-// lexicographically, so a drifting source's lines cluster together, then
-// by kind and cause. An empty Cause (the raw value for an unset datum, or
-// the constant for cause-less kinds like empty-range) is not rendered.
-// Line order here is unspecified — SortForJSONOutput normalizes it.
-func warningMessages(detected []detectTypes.VulnerabilityData) []string {
-	var entries []warningEntry
-	for _, data := range detected {
-		for _, d := range data.Detections {
-			for sid, conds := range d.Contents {
-				for _, cond := range conds {
-					entries = collectCriteriaWarnings(cond.Criteria, sid, entries)
-				}
-			}
-		}
-	}
-	return renderWarningEntries(entries)
-}
-
 type warningEntry struct {
 	source  sourceTypes.SourceID
 	warning warningTypes.Warning
 }
 
 // collectCriteriaWarnings appends the (source, warning) pairs recorded on
-// fca's criterions to entries, skipping pairs already present, and returns
-// the updated slice. The streaming detect fold calls this on each full
-// tree before reducing it.
+// fca's criterions to entries, skipping pairs already present (deduplicated
+// with the upstream warning.Compare), and returns the updated slice. These
+// are the non-fatal evaluation warnings for data this build could not
+// evaluate (e.g. produced by a newer vuls-data-update); vuls2 hands the
+// trees over ungated with out-of-vocabulary criterions carrying their
+// recorded warnings, so even a condition whose every criterion was skipped
+// is represented. The streaming detect fold calls this on each full tree
+// before reducing it — the reductions could otherwise drop the warnings
+// along with the criterions carrying them.
 func collectCriteriaWarnings(fca criteriaTypes.FilteredCriteria, sid sourceTypes.SourceID, entries []warningEntry) []warningEntry {
 	for _, ca := range fca.Criterias {
 		entries = collectCriteriaWarnings(ca, sid, entries)
@@ -281,6 +258,15 @@ func mergeWarningEntries(dst, add []warningEntry) []warningEntry {
 	return dst
 }
 
+// renderWarningEntries renders collected warning entries into scan-result
+// warning lines, one per entry. Each line renders deterministically on its
+// own, so callers can deduplicate across passes by comparing the rendered
+// strings. The source leads the format on purpose —
+// ScanResult.SortForJSONOutput orders the lines lexicographically, so a
+// drifting source's lines cluster together, then by kind and cause. An
+// empty Cause (the raw value for an unset datum, or the constant for
+// cause-less kinds like empty-range) is not rendered. Line order here is
+// unspecified — SortForJSONOutput normalizes it.
 func renderWarningEntries(entries []warningEntry) []string {
 	msgs := make([]string, 0, len(entries))
 	for _, e := range entries {
