@@ -1419,6 +1419,7 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 	}
 	return statuses, kbIDs, nil
 }
+
 func walkVulnerabilityDatas(m map[source]sourceData, vds []vulnerabilityData) error {
 	for _, vd := range vds {
 		am := make(map[source]models.DistroAdvisories)
