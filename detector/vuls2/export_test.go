@@ -85,7 +85,10 @@ func RenderWarningEntries(entries []WarningEntry) []string {
 
 // ProjectDetectResult converts a raw detectTypes.DetectResult fixture into
 // the fold-projected form detect() produces, using the production
-// projectors, so fixtures can stay written as raw DB trees.
+// projectors. Only Test_postConvert uses it: that test is deliberately a
+// package-level end-to-end check from raw DB trees to VulnInfos, while
+// the walk / collectVerifiedProducts / projector tests are unit tests
+// over their real (projected) input forms.
 func ProjectDetectResult(detected detectTypes.DetectResult) (detectResult, error) {
 	out := detectResult{Detected: make([]vulnerabilityData, 0, len(detected.Detected))}
 	for _, v := range detected.Detected {
