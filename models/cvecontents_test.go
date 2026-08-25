@@ -1,8 +1,14 @@
 package models
 
 import (
+	"fmt"
 	"reflect"
+	"slices"
 	"testing"
+
+	"github.com/aquasecurity/trivy-db/pkg/types"
+	"github.com/aquasecurity/trivy-db/pkg/vulnsrc"
+	"github.com/aquasecurity/trivy-db/pkg/vulnsrc/vulnerability"
 
 	"github.com/future-architect/vuls/constant"
 )
@@ -700,6 +706,18 @@ func TestNewCveContentType(t *testing.T) {
 			want: TrivyRapidFort,
 		},
 		{
+			name: "trivy:julia",
+			want: TrivyJulia,
+		},
+		{
+			name: "trivy:seal",
+			want: TrivySeal,
+		},
+		{
+			name: "trivy:redhat-csaf-vex",
+			want: TrivyRedHatCSAFVEX,
+		},
+		{
 			name: "unknown",
 			want: Unknown,
 		},
@@ -708,6 +726,48 @@ func TestNewCveContentType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewCveContentType(tt.name); got != tt.want {
 				t.Errorf("NewCveContentType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestNewCveContentTypeCoversTrivyDBSourceIDs fails when a trivy-db bump adds
+// a vulnerability source that has no CveContentType yet. Contents of an
+// unmapped type still enter CveContents (detector/library.go keys them as
+// "trivy:<SourceID>" from VendorSeverity/CVSS), but every ordering-based
+// accessor skips them, so their severities and references silently disappear
+// from reports.
+//
+// Neither trivy-db list alone covers every source that can key VendorSeverity:
+// vulnerability.AllSourceIDs is the severity-precedence list and deliberately
+// excludes vendor databases such as seal, while vulnsrc.All is the registry of
+// active updaters and lacks sources whose updater was retired but whose data
+// remains (e.g. arch-linux, osv). Their union does.
+func TestNewCveContentTypeCoversTrivyDBSourceIDs(t *testing.T) {
+	// Updater registry names that differ from the SourceID the updater stores
+	// vulnerability details under: the openSUSE variant of suse-cvrf saves
+	// details as vulnerability.SuseCVRF, so its registry name never keys
+	// VendorSeverity. When this test fails on a new name, either add a
+	// CveContentType for it or, if the updater stores under another SourceID,
+	// add the name here.
+	storageAliases := []types.SourceID{"opensuse-cvrf"}
+
+	sourceIDs := slices.Clone(vulnerability.AllSourceIDs)
+	for _, src := range vulnsrc.All {
+		if !slices.Contains(sourceIDs, src.Name()) && !slices.Contains(storageAliases, src.Name()) {
+			sourceIDs = append(sourceIDs, src.Name())
+		}
+	}
+	for _, id := range sourceIDs {
+		name := fmt.Sprintf("%s:%s", Trivy, id)
+		t.Run(name, func(t *testing.T) {
+			got := NewCveContentType(name)
+			if got == Unknown {
+				t.Errorf("NewCveContentType(%q) = Unknown; add a CveContentType for the trivy-db source %q", name, id)
+				return
+			}
+			if !slices.Contains(GetCveContentTypes(string(Trivy)), got) {
+				t.Errorf("GetCveContentTypes(Trivy) does not contain %v for the trivy-db source %q", got, id)
 			}
 		})
 	}

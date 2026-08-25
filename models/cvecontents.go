@@ -423,6 +423,12 @@ func NewCveContentType(name string) CveContentType {
 		return TrivyRootIO
 	case "trivy:rapidfort":
 		return TrivyRapidFort
+	case "trivy:julia":
+		return TrivyJulia
+	case "trivy:seal":
+		return TrivySeal
+	case "trivy:redhat-csaf-vex":
+		return TrivyRedHatCSAFVEX
 	case "GitHub":
 		return Trivy
 	default:
@@ -458,7 +464,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort, TrivyJulia, TrivySeal, TrivyRedHatCSAFVEX}
 	default:
 		return nil
 	}
@@ -647,6 +653,15 @@ const (
 	// TrivyRapidFort is TrivyRapidFort
 	TrivyRapidFort CveContentType = "trivy:rapidfort"
 
+	// TrivyJulia is TrivyJulia
+	TrivyJulia CveContentType = "trivy:julia"
+
+	// TrivySeal is TrivySeal
+	TrivySeal CveContentType = "trivy:seal"
+
+	// TrivyRedHatCSAFVEX is TrivyRedHatCSAFVEX
+	TrivyRedHatCSAFVEX CveContentType = "trivy:redhat-csaf-vex"
+
 	// GitHub is GitHub Security Alerts
 	GitHub CveContentType = "github"
 
@@ -719,6 +734,9 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyMinimOS,
 	TrivyRootIO,
 	TrivyRapidFort,
+	TrivyJulia,
+	TrivySeal,
+	TrivyRedHatCSAFVEX,
 	GitHub,
 }
 
