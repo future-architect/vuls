@@ -113,11 +113,15 @@ func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], fold func(detect
 			return nil
 		})
 	}
-	if err := g.Wait(); err != nil {
-		return nil, nil, err
-	}
+	// Join the fold workers before returning either way. A stream error
+	// outranks a worker error: the workers consume what the stream
+	// produced, so the stream side is the root cause when both fail.
+	werr := g.Wait()
 	if seqErr != nil {
 		return nil, nil, seqErr
+	}
+	if werr != nil {
+		return nil, nil, werr
 	}
 	return m, warnEntries, nil
 }
