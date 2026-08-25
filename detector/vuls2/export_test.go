@@ -1,11 +1,15 @@
 package vuls2
 
 import (
+	"iter"
+
+	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
+	"github.com/MaineK00n/vuls2/pkg/detect/util"
 )
 
 var (
@@ -112,4 +116,11 @@ func ProjectDetectResult(detected detectTypes.DetectResult) (detectResult, error
 		})
 	}
 	return out, nil
+}
+
+// FoldDetectionSeq exposes foldDetectionSeq with the warning entries
+// mapped to their exported mirror.
+func FoldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error)) (map[dataTypes.RootID]projectedDetection, []WarningEntry, error) {
+	m, entries, err := foldDetectionSeq(seq, project)
+	return m, fromWarningEntries(entries), err
 }

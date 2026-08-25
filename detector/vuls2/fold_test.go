@@ -1,11 +1,15 @@
 package vuls2_test
 
 import (
+	"errors"
+	"iter"
+	"strings"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
 	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 
+	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
@@ -17,9 +21,11 @@ import (
 	vcFixStatusTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/fixstatus"
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	vcBinaryPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/binary"
+	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
+	"github.com/MaineK00n/vuls2/pkg/detect/util"
 
 	vuls2 "github.com/future-architect/vuls/detector/vuls2"
 )
@@ -331,4 +337,97 @@ func Test_projectOSPkgDetection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_foldDetectionSeq(t *testing.T) {
+	warned := func(rootID string) util.RootDetection {
+		return util.RootDetection{
+			RootID: dataTypes.RootID(rootID),
+			Detection: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystemTypes.Ecosystem("redhat:8"),
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.RedHatOVALv2: {{
+						Criteria: criteriaTypes.FilteredCriteria{
+							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{{
+								Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+								Warnings:  []warningTypes.Warning{{Kind: warningTypes.KindEmptyRange}},
+							}},
+						},
+					}},
+				},
+			},
+		}
+	}
+	seqOf := func(rds []util.RootDetection, terminalErr error) iter.Seq2[util.RootDetection, error] {
+		return func(yield func(util.RootDetection, error) bool) {
+			for _, rd := range rds {
+				if !yield(rd, nil) {
+					return
+				}
+			}
+			if terminalErr != nil {
+				yield(util.RootDetection{}, terminalErr)
+			}
+		}
+	}
+	// mark projects a detection to a recognizable empty ProjectedDetection,
+	// dropping the tree (and the warnings riding on it).
+	mark := func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+		return vuls2.ProjectedDetection{Ecosystem: d.Ecosystem}, true, nil
+	}
+
+	t.Run("accumulates projections and harvests warnings before them", func(t *testing.T) {
+		m, warnings, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1"), warned("ROOT-2")}, nil), mark)
+		if err != nil {
+			t.Fatalf("foldDetectionSeq. error = %v", err)
+		}
+		want := map[dataTypes.RootID]vuls2.ProjectedDetection{
+			"ROOT-1": {Ecosystem: ecosystemTypes.Ecosystem("redhat:8")},
+			"ROOT-2": {Ecosystem: ecosystemTypes.Ecosystem("redhat:8")},
+		}
+		if diff := gocmp.Diff(want, m, gocmpopts.EquateEmpty()); diff != "" {
+			t.Errorf("result (-expected +got):\n%s", diff)
+		}
+		// The projection dropped the trees, so the warning can only have been
+		// harvested from the full tree beforehand (deduplicated across roots).
+		wantWarnings := []vuls2.WarningEntry{{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}}}
+		if diff := gocmp.Diff(wantWarnings, warnings); diff != "" {
+			t.Errorf("warnings (-expected +got):\n%s", diff)
+		}
+	})
+
+	t.Run("keep=false drops the rootID but keeps its warnings", func(t *testing.T) {
+		m, warnings, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, nil), func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+			return vuls2.ProjectedDetection{}, false, nil
+		})
+		if err != nil {
+			t.Fatalf("foldDetectionSeq. error = %v", err)
+		}
+		if len(m) != 0 {
+			t.Errorf("expected empty result, got %v", m)
+		}
+		if len(warnings) != 1 {
+			t.Errorf("expected the dropped root's warning to be kept, got %v", warnings)
+		}
+	})
+
+	t.Run("project error is terminal and carries the rootID", func(t *testing.T) {
+		_, _, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, nil), func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+			return vuls2.ProjectedDetection{}, false, errors.New("boom")
+		})
+		if err == nil || !strings.Contains(err.Error(), "ROOT-1") || !strings.Contains(err.Error(), "boom") {
+			t.Errorf("expected wrapped project error naming the root, got %v", err)
+		}
+	})
+
+	t.Run("stream error is terminal and outranks a project error", func(t *testing.T) {
+		streamErr := errors.New("stream broke")
+		_, _, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, streamErr), func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+			return vuls2.ProjectedDetection{}, false, errors.New("worker broke")
+		})
+		if !errors.Is(err, streamErr) {
+			t.Errorf("expected the stream error, got %v", err)
+		}
+	})
 }
