@@ -69,14 +69,16 @@ type detectResult struct {
 
 // foldDetectionSeq consumes a detection stream with a pool of fold
 // workers: each element's evaluation warnings are harvested from the full
-// tree, then fold reduces the tree to a detection (returning keep=false
-// to drop the rootID entirely). Folding in parallel matters — the stream
+// tree, then project reduces the tree to a detection (returning
+// keep=false to drop the rootID entirely) — typically one of the
+// project* functions below plus the caller's keep policy. Folding in
+// parallel matters — the stream
 // side runs NumCPU workers, and a single consumer goroutine walking every
 // large tree (e.g. cpe_kernel's) becomes the pipeline bottleneck. Peak
 // memory holds the folded result plus only the in-flight full trees
 // (stream workers + channel buffer + fold workers, each bounded by
 // NumCPU).
-func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], fold func(detectTypes.VulnerabilityDataDetection) (detection, bool, error)) (map[dataTypes.RootID]detection, []warningEntry, error) {
+func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(detectTypes.VulnerabilityDataDetection) (detection, bool, error)) (map[dataTypes.RootID]detection, []warningEntry, error) {
 	var (
 		mu          sync.Mutex
 		m           = make(map[dataTypes.RootID]detection)
@@ -99,7 +101,7 @@ func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], fold func(detect
 				}
 			}
 
-			d, keep, err := fold(rd.Detection)
+			d, keep, err := project(rd.Detection)
 			if err != nil {
 				return xerrors.Errorf("fold detection. RootID: %s, err: %w", rd.RootID, err)
 			}
