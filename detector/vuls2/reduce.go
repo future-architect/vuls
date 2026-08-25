@@ -62,7 +62,9 @@ func pruneUnaffectedDetection(d detectTypes.VulnerabilityDataDetection) (detectT
 //     for the verified-product suppression. Kept criterions carry their
 //     own CPE / CPEMatches reduced to part:vendor:product form; products
 //     defined only by dropped criterions are appended as vulnerable=false
-//     carrier criterions holding just the product CPE.
+//     carrier criterions holding just the product CPE, in unspecified
+//     order — collectDefinedCPEProducts folds them into a set and
+//     walkCPECriteria never reads non-vulnerable criterions.
 //   - Contents keys (hasSuppressedCPESource, per-rootID vulnerability-data
 //     narrowing) and condition Tags are untouched: no condition, source,
 //     or rootID is dropped.
@@ -87,8 +89,7 @@ func compactCPECriteria(ca criteriaTypes.FilteredCriteria) criteriaTypes.Filtere
 	var (
 		kept    []criterionTypes.FilteredCriterion
 		carried = make(map[string]struct{})
-		pending []string
-		seen    = make(map[string]struct{})
+		pending = make(map[string]struct{})
 	)
 
 	var collect func(c criteriaTypes.FilteredCriteria)
@@ -128,19 +129,11 @@ func compactCPECriteria(ca criteriaTypes.FilteredCriteria) criteriaTypes.Filtere
 			}
 
 			if p, ok := productCPE(string(cn.Criterion.CPE.CPE)); ok {
-				if _, dup := seen[p]; !dup {
-					seen[p] = struct{}{}
-					pending = append(pending, p)
-				}
+				pending[p] = struct{}{}
 			}
 			for _, m := range cn.Criterion.CPE.CPEMatches {
-				p, ok := productCPE(string(m))
-				if !ok {
-					continue
-				}
-				if _, dup := seen[p]; !dup {
-					seen[p] = struct{}{}
-					pending = append(pending, p)
+				if p, ok := productCPE(string(m)); ok {
+					pending[p] = struct{}{}
 				}
 			}
 		}
@@ -148,7 +141,7 @@ func compactCPECriteria(ca criteriaTypes.FilteredCriteria) criteriaTypes.Filtere
 	collect(ca)
 
 	compacted := criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}
-	for _, p := range pending {
+	for p := range pending {
 		if _, ok := carried[p]; ok {
 			continue
 		}
