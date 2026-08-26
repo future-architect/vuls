@@ -399,7 +399,7 @@ func Test_foldDetectionSeq(t *testing.T) {
 	})
 
 	t.Run("keep=false drops the rootID but keeps its warnings", func(t *testing.T) {
-		m, warnings, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, nil), func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+		m, warnings, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, nil), func(_ detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
 			return vuls2.ProjectedDetection{}, false, nil
 		})
 		if err != nil {
@@ -414,7 +414,7 @@ func Test_foldDetectionSeq(t *testing.T) {
 	})
 
 	t.Run("project error is terminal and carries the rootID", func(t *testing.T) {
-		_, _, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, nil), func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+		_, _, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, nil), func(_ detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
 			return vuls2.ProjectedDetection{}, false, errors.New("boom")
 		})
 		if err == nil || !strings.Contains(err.Error(), "ROOT-1") || !strings.Contains(err.Error(), "boom") {
@@ -433,7 +433,7 @@ func Test_foldDetectionSeq(t *testing.T) {
 				}
 			}
 		}
-		_, _, err := vuls2.FoldDetectionSeq(seq, func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+		_, _, err := vuls2.FoldDetectionSeq(seq, func(_ detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
 			return vuls2.ProjectedDetection{}, false, errors.New("boom")
 		})
 		if err == nil {
@@ -448,7 +448,7 @@ func Test_foldDetectionSeq(t *testing.T) {
 
 	t.Run("stream error is terminal and outranks a project error", func(t *testing.T) {
 		streamErr := errors.New("stream broke")
-		_, _, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, streamErr), func(d detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
+		_, _, err := vuls2.FoldDetectionSeq(seqOf([]util.RootDetection{warned("ROOT-1")}, streamErr), func(_ detectTypes.VulnerabilityDataDetection) (vuls2.ProjectedDetection, bool, error) {
 			return vuls2.ProjectedDetection{}, false, errors.New("worker broke")
 		})
 		if !errors.Is(err, streamErr) {

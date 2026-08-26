@@ -412,7 +412,9 @@ func productCPE(cpe string) (string, bool) {
 	}
 	product := common.NewWellFormedName()
 	for _, attr := range []string{common.AttributePart, common.AttributeVendor, common.AttributeProduct} {
-		product.Set(attr, wfn.Get(attr))
+		if err := product.Set(attr, wfn.Get(attr)); err != nil {
+			return "", false
+		}
 	}
 	return naming.BindToFS(product), true
 }
