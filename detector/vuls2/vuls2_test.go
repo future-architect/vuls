@@ -13136,6 +13136,62 @@ func Test_mergeVulnInfo(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Exercises the last tiebreak key and the CVSS 4.0 selection
+			// branch: equal scores and severities leave only the vector
+			// strings to order the pair, and the lexicographically greater
+			// vector must win from either merge order.
+			name: "equal score and severity break by vector string",
+			args: args{
+				a: models.VulnInfo{
+					CveID: "CVE-2025-0004",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:           models.UbuntuAPI,
+							CveID:          "CVE-2025-0004",
+							Cvss40Score:    5.1,
+							Cvss40Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+							Cvss40Severity: "medium",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}}]",
+							},
+						}},
+					},
+				},
+				b: models.VulnInfo{
+					CveID: "CVE-2025-0004",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:           models.UbuntuAPI,
+							CveID:          "CVE-2025-0004",
+							Title:          "title focal",
+							Cvss40Score:    5.1,
+							Cvss40Vector:   "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+							Cvss40Severity: "medium",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+							},
+						}},
+					},
+				},
+			},
+			want: models.VulnInfo{
+				CveID: "CVE-2025-0004",
+				CveContents: models.CveContents{
+					models.UbuntuAPI: []models.CveContent{{
+						Type:           models.UbuntuAPI,
+						CveID:          "CVE-2025-0004",
+						Title:          "title focal",
+						Cvss40Score:    5.1,
+						Cvss40Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+						Cvss40Severity: "medium",
+						Optional: map[string]string{
+							"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}},{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+						},
+					}},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
