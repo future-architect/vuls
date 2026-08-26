@@ -2,18 +2,18 @@ package vuls2
 
 import (
 	"context"
+	"fmt"
 	"iter"
+	"maps"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/xerrors"
-
 	"github.com/knqyf263/go-cpe/common"
 	"github.com/knqyf263/go-cpe/naming"
-
-	"fmt"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/xerrors"
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
@@ -26,9 +26,6 @@ import (
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
 	"github.com/MaineK00n/vuls2/pkg/detect/util"
-
-	"maps"
-	"slices"
 )
 
 // projectedDetection is one rootID's detection reduced by the fold to exactly what
