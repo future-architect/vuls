@@ -269,9 +269,9 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) (projectedDet
 //   - the walk-ready tree: vulnerable criterions with a non-empty
 //     Accepts, kept flat under a single OR root, Accepts intact, in DFS
 //     order (children before own criterions) so folded CPE lists keep
-//     their order; their CPE is reduced to part:vendor:product form for
+//     their order; their CPE string is carried verbatim for
 //     debuggability (the walk reads only the Accepts) and their
-//     CPEMatches are dropped. Flattening the AND/OR structure away is
+//     CPEMatches, Range, and CPEMatch payloads are dropped. Flattening the AND/OR structure away is
 //     deliberate go-cve-dictionary compatibility: it treats every
 //     vulnerable=true CPE in an applicability node as independently
 //     matchable, ignoring the operator, so a co-required product NVD
@@ -326,14 +326,8 @@ func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.Filter
 			if !cn.Criterion.CPE.Vulnerable || (len(cn.Accepts.CPE.Exact) == 0 && len(cn.Accepts.CPE.VersionUnconfirmed) == 0) {
 				continue
 			}
-			compact := ccTypes.Criterion{Vulnerable: true}
-			if p, ok := productCPE(string(cn.Criterion.CPE.CPE)); ok {
-				compact.CPE = ccTypes.CPE(p)
-			} else {
-				compact.CPE = cn.Criterion.CPE.CPE
-			}
 			kept = append(kept, criterionTypes.FilteredCriterion{
-				Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &compact},
+				Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{Vulnerable: true, CPE: cn.Criterion.CPE.CPE}},
 				Accepts:   criterionTypes.AcceptQueries{CPE: cn.Accepts.CPE},
 			})
 		}
@@ -411,24 +405,6 @@ func prunePkgCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredC
 	}
 
 	return pruned, nil
-}
-
-// productCPE reduces a CPE 2.3 FS string to its part:vendor:product form
-// (every other attribute ANY), the granularity cpeProductKey and the
-// cpe.Detect index operate at. The boolean is false when the input is not
-// a valid CPE 2.3 FS form.
-func productCPE(cpe string) (string, bool) {
-	wfn, err := naming.UnbindFS(cpe)
-	if err != nil {
-		return "", false
-	}
-	product := common.NewWellFormedName()
-	for _, attr := range []string{common.AttributePart, common.AttributeVendor, common.AttributeProduct} {
-		if err := product.Set(attr, wfn.Get(attr)); err != nil {
-			return "", false
-		}
-	}
-	return naming.BindToFS(product), true
 }
 
 // cpeProductKey returns the "part:vendor:product" key of a CPE 2.3

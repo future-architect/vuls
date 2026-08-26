@@ -46,8 +46,8 @@ func Test_projectCPECriteria(t *testing.T) {
 			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
 		}
 	}
-	// a kept (walk-ready) criterion: vulnerable, product-form CPE, Accepts
-	// intact, CPEMatches dropped
+	// a kept (walk-ready) criterion: vulnerable, CPE string verbatim,
+	// Accepts intact, CPEMatches/Range dropped
 	keptCriterion := func(cpe string, exact, vp []int) criterionTypes.FilteredCriterion {
 		return criterionTypes.FilteredCriterion{
 			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}},
@@ -69,8 +69,8 @@ func Test_projectCPECriteria(t *testing.T) {
 			wantDefined:  nil,
 		},
 		{
-			// The kept criterion's CPE is reduced to part:vendor:product
-			// form and its CPEMatches are dropped (the walk reads neither).
+			// The kept criterion carries its CPE string verbatim; CPEMatches
+			// and Range are dropped (the walk reads none of them).
 			name: "flat OR, one exact accept",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
@@ -154,8 +154,8 @@ func Test_projectCPECriteria(t *testing.T) {
 			wantDefined: map[string]struct{}{"h:vendorx:boardx": {}, "o:linux:linux_kernel": {}},
 		},
 		{
-			// An unparsable CPE cannot be product-reduced: the kept criterion
-			// carries it verbatim and no defined product is recorded.
+			// An unparsable CPE records no defined product but is still
+			// carried on the kept criterion.
 			name: "invalid CPE strings are tolerated",
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
