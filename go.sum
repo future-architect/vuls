@@ -70,8 +70,8 @@ github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf h1:Q
 github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
 github.com/MaineK00n/vuls-data-update v0.0.0-20260818092828-4b1dbcf513ff h1:sV6j5ZhoATbQKmP0tj+Uavnu1WMOffpmXD0pPnu76g8=
 github.com/MaineK00n/vuls-data-update v0.0.0-20260818092828-4b1dbcf513ff/go.mod h1:vH8USEvq0OVxOjD/WJMI18XkS4IXjwbXJWdlWbeyjm8=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260825091949-c3849985f436 h1:p31hUrCNgFuKih2orFf7uJVlCaQu1Gd2oei0NwUUzK8=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260825091949-c3849985f436/go.mod h1:98n1xxcp0+XUqoa1FWv058vNChNdwCftWBUgnRSdAf4=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260826014737-f0cf11c8c738 h1:A8Cnxl6U5dE6zSxzXoe6MmJgEiMN304oYt3cfGbrLyg=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20260826014737-f0cf11c8c738/go.mod h1:98n1xxcp0+XUqoa1FWv058vNChNdwCftWBUgnRSdAf4=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
