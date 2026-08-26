@@ -13145,11 +13145,11 @@ func Test_mergeVulnInfo(t *testing.T) {
 			clone := func(vi models.VulnInfo) models.VulnInfo {
 				bs, err := json.Marshal(vi)
 				if err != nil {
-					t.Fatalf("marshal vuln info: %s", err)
+					t.Fatalf("marshal vuln info: %v", err)
 				}
 				var c models.VulnInfo
 				if err := json.Unmarshal(bs, &c); err != nil {
-					t.Fatalf("unmarshal vuln info: %s", err)
+					t.Fatalf("unmarshal vuln info: %v", err)
 				}
 				return c
 			}
@@ -13162,7 +13162,7 @@ func Test_mergeVulnInfo(t *testing.T) {
 			} {
 				got, err := vuls2.MergeVulnInfo(clone(order.x), clone(order.y))
 				if err != nil {
-					t.Fatalf("%s: unexpected error: %s", order.name, err)
+					t.Fatalf("%s: unexpected error: %v", order.name, err)
 				}
 				if diff := gocmp.Diff(got, tt.want); diff != "" {
 					t.Errorf("%s mismatch (-got +want):\n%s", order.name, diff)
