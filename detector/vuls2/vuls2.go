@@ -1940,6 +1940,24 @@ func comparePack(a, b pack) (int, error) {
 	return r, nil
 }
 
+// compareCvssContent orders two same-type CVSS candidates during a merge.
+// Score alone decided before, but tracker-derived contents (Ubuntu/Debian)
+// carry only a severity string — both scores are zero — which left the
+// winner to merge order, itself a map iteration order upstream, so
+// severities flipped between runs. Ties break by vendor severity rank (the
+// DistroAdvisories comparator), then by the raw severity and vector strings
+// so any two distinct candidates order decisively; the raw-string keys
+// matter because severities outside the vendor table (e.g. Debian's
+// "unimportant") all rank equal.
+func compareCvssContent(scoreA, scoreB float64, severityA, severityB, vectorA, vectorB string) int {
+	return cmp.Or(
+		cmp.Compare(scoreA, scoreB),
+		severityVendorTypes.Compare("", severityA, severityB),
+		cmp.Compare(severityA, severityB),
+		cmp.Compare(vectorA, vectorB),
+	)
+}
+
 // mergeVulnInfo merges two VulnInfos for the same CVE WITHIN one vuls2 run:
 // postConvert builds one VulnInfo per detecting source segment (e.g. RHEL
 // CSAF and VEX, redhat:9 and epel:9) and folds them together here.
@@ -2049,12 +2067,11 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 						}
 					}
 
-					switch cmp.Compare(base.Cvss40Score, c.Cvss40Score) {
-					case -1:
+					if compareCvssContent(base.Cvss40Score, c.Cvss40Score, base.Cvss40Severity, c.Cvss40Severity, base.Cvss40Vector, c.Cvss40Vector) < 0 {
 						merged.Cvss40Score = c.Cvss40Score
 						merged.Cvss40Vector = c.Cvss40Vector
 						merged.Cvss40Severity = c.Cvss40Severity
-					default:
+					} else {
 						merged.Cvss40Score = base.Cvss40Score
 						merged.Cvss40Vector = base.Cvss40Vector
 						merged.Cvss40Severity = base.Cvss40Severity
@@ -2070,24 +2087,22 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 						merged.Cvss3Vector = base.Cvss3Vector
 						merged.Cvss3Severity = base.Cvss3Severity
 					default:
-						switch cmp.Compare(base.Cvss3Score, c.Cvss3Score) {
-						case -1:
+						if compareCvssContent(base.Cvss3Score, c.Cvss3Score, base.Cvss3Severity, c.Cvss3Severity, base.Cvss3Vector, c.Cvss3Vector) < 0 {
 							merged.Cvss3Score = c.Cvss3Score
 							merged.Cvss3Vector = c.Cvss3Vector
 							merged.Cvss3Severity = c.Cvss3Severity
-						default:
+						} else {
 							merged.Cvss3Score = base.Cvss3Score
 							merged.Cvss3Vector = base.Cvss3Vector
 							merged.Cvss3Severity = base.Cvss3Severity
 						}
 					}
 
-					switch cmp.Compare(base.Cvss2Score, c.Cvss2Score) {
-					case -1:
+					if compareCvssContent(base.Cvss2Score, c.Cvss2Score, base.Cvss2Severity, c.Cvss2Severity, base.Cvss2Vector, c.Cvss2Vector) < 0 {
 						merged.Cvss2Score = c.Cvss2Score
 						merged.Cvss2Vector = c.Cvss2Vector
 						merged.Cvss2Severity = c.Cvss2Severity
-					default:
+					} else {
 						merged.Cvss2Score = base.Cvss2Score
 						merged.Cvss2Vector = base.Cvss2Vector
 						merged.Cvss2Severity = base.Cvss2Severity
