@@ -308,7 +308,7 @@ func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.Filter
 		}
 		for _, child := range c.Criterias {
 			if err := collect(child); err != nil {
-				return err
+				return xerrors.Errorf("collect criteria: %w", err)
 			}
 		}
 		for _, cn := range c.Criterions {
