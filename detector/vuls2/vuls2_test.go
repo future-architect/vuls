@@ -14749,10 +14749,10 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendora:product1"}},
+										{DefinedProducts: map[string]struct{}{"a:vendora:product1": {}}},
 									},
 									sourceTypes.VulnCheckNISTNVD2: {
-										{DefinedProducts: []string{"a:vendora:product1"}},
+										{DefinedProducts: map[string]struct{}{"a:vendora:product1": {}}},
 									},
 								},
 							},
@@ -14792,7 +14792,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendorb:product2"}},
+										{DefinedProducts: map[string]struct{}{"a:vendorb:product2": {}}},
 									},
 								},
 							},
@@ -14816,7 +14816,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.JVNFeedDetail: {
-										{DefinedProducts: []string{"a:vendorb:product2"}},
+										{DefinedProducts: map[string]struct{}{"a:vendorb:product2": {}}},
 									},
 								},
 							},
@@ -14856,7 +14856,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.AppleSecurityReleases: {
-										{DefinedProducts: []string{"o:apple:macos"}},
+										{DefinedProducts: map[string]struct{}{"o:apple:macos": {}}},
 									},
 								},
 							},
@@ -14880,7 +14880,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.JVNFeedDetail: {
-										{DefinedProducts: []string{"o:apple:macos"}},
+										{DefinedProducts: map[string]struct{}{"o:apple:macos": {}}},
 									},
 								},
 							},
@@ -14920,7 +14920,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendor:prodx"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodx": {}}},
 									},
 								},
 							},
@@ -14944,7 +14944,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendor:prody"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prody": {}}},
 									},
 								},
 							},
@@ -14968,7 +14968,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.JVNFeedRSS: {
-										{DefinedProducts: []string{"a:vendor:prodx", "a:vendor:prody"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodx": {}, "a:vendor:prody": {}}},
 									},
 								},
 							},
@@ -15008,7 +15008,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.VulnCheckNISTNVD2: {
-										{DefinedProducts: []string{"a:vendor:prodz"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodz": {}}},
 									},
 								},
 							},
@@ -15042,10 +15042,10 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendor:prodp"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodp": {}}},
 									},
 									sourceTypes.VulnCheckNISTNVD2: {
-										{DefinedProducts: []string{"a:vendor:prodp"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodp": {}}},
 									},
 								},
 							},
@@ -15055,7 +15055,7 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendor:ignored"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:ignored": {}}},
 									},
 								},
 							},
@@ -15093,10 +15093,10 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{DefinedProducts: []string{"a:vendor:prodp"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodp": {}}},
 									},
 									sourceTypes.VulnCheckNISTNVD2: {
-										{DefinedProducts: []string{"a:vendor:prodw"}},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodw": {}}},
 									},
 								},
 							},

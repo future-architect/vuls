@@ -59,7 +59,7 @@ func Test_projectCPECriteria(t *testing.T) {
 		name         string
 		ca           criteriaTypes.FilteredCriteria
 		wantCriteria criteriaTypes.FilteredCriteria
-		wantDefined  []string
+		wantDefined  map[string]struct{}
 		wantErr      bool
 	}{
 		{
@@ -85,7 +85,7 @@ func Test_projectCPECriteria(t *testing.T) {
 					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, nil),
 				},
 			},
-			wantDefined: []string{"o:linux:linux_kernel"},
+			wantDefined: map[string]struct{}{"o:linux:linux_kernel": {}},
 		},
 		{
 			// The non-vulnerable hardware guard is dropped from the walk-ready
@@ -109,7 +109,7 @@ func Test_projectCPECriteria(t *testing.T) {
 					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", nil, []int{0}),
 				},
 			},
-			wantDefined: []string{"h:vendorx:boardx", "h:vendorx:boardy", "o:linux:linux_kernel"},
+			wantDefined: map[string]struct{}{"h:vendorx:boardx": {}, "h:vendorx:boardy": {}, "o:linux:linux_kernel": {}},
 		},
 		{
 			// A vulnerable criterion that accepted nothing is dropped from the
@@ -129,7 +129,7 @@ func Test_projectCPECriteria(t *testing.T) {
 					keptCriterion("cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*", []int{1}, nil),
 				},
 			},
-			wantDefined: []string{"a:vendorb:productb", "a:vendorc:productc"},
+			wantDefined: map[string]struct{}{"a:vendorb:productb": {}, "a:vendorc:productc": {}},
 		},
 		{
 			name: "nested OR under AND, both tiers accepted",
@@ -151,7 +151,7 @@ func Test_projectCPECriteria(t *testing.T) {
 					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, []int{1}),
 				},
 			},
-			wantDefined: []string{"h:vendorx:boardx", "o:linux:linux_kernel"},
+			wantDefined: map[string]struct{}{"h:vendorx:boardx": {}, "o:linux:linux_kernel": {}},
 		},
 		{
 			// An unparsable CPE cannot be product-reduced: the kept criterion

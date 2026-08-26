@@ -1222,9 +1222,7 @@ func collectVerifiedProducts(detected detectResult) map[dataTypes.RootID]map[str
 					continue
 				}
 				for _, cond := range conds {
-					for _, p := range cond.DefinedProducts {
-						set[p] = struct{}{}
-					}
+					maps.Copy(set, cond.DefinedProducts)
 				}
 			}
 		}

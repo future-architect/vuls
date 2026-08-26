@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"iter"
-	"maps"
 	"runtime"
 	"slices"
 	"strings"
@@ -43,14 +42,14 @@ type projectedDetection struct {
 // gate-pruned tree (prunePkgCriteria's AND/OR gate over detect-time
 // accepts, applied here and nowhere else); cpe — the flat projection of
 // vulnerable+accepted criterions (walkCPECriteria assumes both).
-// DefinedProducts is cpe-only (always nil for pkg): the
+// DefinedProducts is cpe-only (always nil for pkg): the set of
 // part:vendor:product keys every criterion of the full tree DEFINES,
 // matched or not — the verified-product suppression input, aggregated
 // across roots by postConvert's collectVerifiedProducts.
 type projectedCondition struct {
 	Criteria        criteriaTypes.FilteredCriteria
 	Tag             segmentTypes.DetectionTag
-	DefinedProducts []string
+	DefinedProducts map[string]struct{}
 }
 
 // vulnerabilityData is projectedDetection plus the fetched Advisory/Vulnerability
@@ -281,15 +280,14 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) (projectedDet
 //     kernel leg. Existing users relied on this flattening under
 //     go-cve-dictionary; keeping it trades AND precision for that
 //     compatibility, scoped to CPE detection only.
-//   - the defined products: the part:vendor:product key of every CPE
-//     criterion's own CPE and CPEMatches, kept or dropped, matched or not
-//     (cond.Accept keeps non-matching criterions under
-//     FilteredCriterion.Criterion) — collectVerifiedProducts' input,
-//     sorted for determinism.
+//   - the defined products: the set of part:vendor:product keys of every
+//     CPE criterion's own CPE and CPEMatches, kept or dropped, matched or
+//     not (cond.Accept keeps non-matching criterions under
+//     FilteredCriterion.Criterion) — collectVerifiedProducts' input.
 //
 // Evaluation warnings must be harvested from the full tree before calling
 // this — the projection does not carry them.
-func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, []string, error) {
+func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, map[string]struct{}, error) {
 	var (
 		kept    []criterionTypes.FilteredCriterion
 		defined = make(map[string]struct{})
@@ -345,7 +343,7 @@ func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.Filter
 		return criteriaTypes.FilteredCriteria{}, nil, err
 	}
 
-	return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}, slices.Sorted(maps.Keys(defined)), nil
+	return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}, defined, nil
 }
 
 // prunePkgCriteria drops unaffected branches from a FilteredCriteria tree.
