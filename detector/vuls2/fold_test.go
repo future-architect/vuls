@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -174,7 +175,10 @@ func Test_projectCPECriteria(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCriteria, gotDefined := vuls2.ProjectCPECriteria(tt.ca)
+			gotCriteria, gotDefined, err := vuls2.ProjectCPECriteria(tt.ca)
+			if err != nil {
+				t.Fatalf("projectCPECriteria. error = %v", err)
+			}
 			if diff := gocmp.Diff(tt.wantCriteria, gotCriteria, gocmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("projectCPECriteria() criteria (-expected +got):\n%s", diff)
 			}
@@ -183,6 +187,20 @@ func Test_projectCPECriteria(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("unexpected operator fails fast", func(t *testing.T) {
+		for _, ca := range []criteriaTypes.FilteredCriteria{
+			{Operator: criteriaTypes.CriteriaOperatorType("future-operator")},
+			{
+				Operator:  criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{{Operator: criteriaTypes.CriteriaOperatorType("future-operator")}},
+			},
+		} {
+			if _, _, err := vuls2.ProjectCPECriteria(ca); err == nil {
+				t.Errorf("expected an error for operator %q", "future-operator")
+			}
+		}
+	})
 }
 
 // Test_projectOSPkgDetection: prunePkgCriteria's gate semantics are
@@ -423,7 +441,10 @@ func Test_foldDetectionSeq(t *testing.T) {
 	})
 
 	t.Run("project error stops the stream consumption", func(t *testing.T) {
-		const n = 256
+		// The consumer can schedule up to the fold pool size before the
+		// first worker error cancels gctx, so the floor must scale with
+		// NumCPU for the assertion to hold on very wide hosts.
+		n := max(64, 2*runtime.NumCPU())
 		consumed := 0
 		seq := func(yield func(util.RootDetection, error) bool) {
 			for i := range n {

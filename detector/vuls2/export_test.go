@@ -99,7 +99,11 @@ func ProjectDetectResult(detected detectTypes.DetectResult) (detectResult, error
 		ds := make([]projectedDetection, 0, len(v.Detections))
 		for _, d := range v.Detections {
 			if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
-				ds = append(ds, projectCPEDetection(d))
+				p, err := projectCPEDetection(d)
+				if err != nil {
+					return detectResult{}, err
+				}
+				ds = append(ds, p)
 				continue
 			}
 			p, err := projectOSPkgDetection(d)

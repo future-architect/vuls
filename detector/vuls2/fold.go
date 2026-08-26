@@ -250,17 +250,20 @@ func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (projectedD
 // walks to nothing, and its DefinedProducts and Contents keys
 // (hasSuppressedCPESource, per-rootID vulnerability-data narrowing) stay
 // meaningful. The ospkg-ecosystem counterpart is projectOSPkgDetection.
-func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) projectedDetection {
+func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) (projectedDetection, error) {
 	contents := make(map[sourceTypes.SourceID][]projectedCondition, len(d.Contents))
 	for sourceID, fconds := range d.Contents {
 		conds := make([]projectedCondition, 0, len(fconds))
 		for _, fcond := range fconds {
-			walkReady, defined := projectCPECriteria(fcond.Criteria)
+			walkReady, defined, err := projectCPECriteria(fcond.Criteria)
+			if err != nil {
+				return projectedDetection{}, xerrors.Errorf("project criteria: %w", err)
+			}
 			conds = append(conds, projectedCondition{Criteria: walkReady, Tag: fcond.Tag, DefinedProducts: defined})
 		}
 		contents[sourceID] = conds
 	}
-	return projectedDetection{Ecosystem: d.Ecosystem, Contents: contents}
+	return projectedDetection{Ecosystem: d.Ecosystem, Contents: contents}, nil
 }
 
 // projectCPECriteria splits a cpe-ecosystem criteria tree into its two
@@ -289,16 +292,27 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) projectedDete
 //
 // Evaluation warnings must be harvested from the full tree before calling
 // this — the projection does not carry them.
-func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, []string) {
+func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, []string, error) {
 	var (
 		kept    []criterionTypes.FilteredCriterion
 		defined = make(map[string]struct{})
 	)
 
-	var collect func(c criteriaTypes.FilteredCriteria)
-	collect = func(c criteriaTypes.FilteredCriteria) {
+	var collect func(c criteriaTypes.FilteredCriteria) error
+	collect = func(c criteriaTypes.FilteredCriteria) error {
+		// The flattening deliberately ignores which of AND/OR the node is,
+		// but an operator outside that vocabulary still fails fast —
+		// matching prunePkgCriteria — rather than silently taking the OR
+		// path on corrupt or newer-vocabulary data.
+		switch c.Operator {
+		case criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR:
+		default:
+			return xerrors.Errorf("unexpected operator. expected: %q, actual: %q", []criteriaTypes.CriteriaOperatorType{criteriaTypes.CriteriaOperatorTypeAND, criteriaTypes.CriteriaOperatorTypeOR}, c.Operator)
+		}
 		for _, child := range c.Criterias {
-			collect(child)
+			if err := collect(child); err != nil {
+				return err
+			}
 		}
 		for _, cn := range c.Criterions {
 			if cn.Criterion.Type != criterionTypes.CriterionTypeCPE || cn.Criterion.CPE == nil {
@@ -328,10 +342,13 @@ func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.Filter
 				Accepts:   criterionTypes.AcceptQueries{CPE: cn.Accepts.CPE},
 			})
 		}
+		return nil
 	}
-	collect(ca)
+	if err := collect(ca); err != nil {
+		return criteriaTypes.FilteredCriteria{}, nil, err
+	}
 
-	return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}, slices.Sorted(maps.Keys(defined))
+	return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: kept}, slices.Sorted(maps.Keys(defined)), nil
 }
 
 // prunePkgCriteria drops unaffected branches from a FilteredCriteria tree.

@@ -550,7 +550,11 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []str
 	detections, warnEntries, err := func() (map[dataTypes.RootID]projectedDetection, []warningEntry, error) {
 		if len(sr.CPE) > 0 {
 			m, entries, err := foldDetectionSeq(cpe.Detect(sesh.Storage(), sr, runtime.NumCPU()), func(d detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error) {
-				return projectCPEDetection(d), true, nil
+				projected, err := projectCPEDetection(d)
+				if err != nil {
+					return projectedDetection{}, false, err
+				}
+				return projected, true, nil
 			})
 			if err != nil {
 				return nil, nil, xerrors.Errorf("Failed to detect cpe. err: %w", err)
