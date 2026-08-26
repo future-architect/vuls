@@ -160,6 +160,94 @@ func Test_preConvertPkgs(t *testing.T) {
 			},
 		},
 		{
+			// ubuntu is not in preConvertPkgs' repository allowlist: the
+			// scanner reports the CANDIDATE version's suite, not the pocket
+			// the installed build came from, so it must not reach the gate.
+			name: "ubuntu 24.04 drops the Repository the scanner reports",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "noble",
+					Family:     "ubuntu",
+					Release:    "24.04",
+					Packages: models.Packages{
+						"libglut3.12": models.Package{
+							Name:       "libglut3.12",
+							Version:    "3.4.0-1ubuntu0.1~esm1",
+							NewVersion: "3.4.0-1ubuntu0.2",
+							Repository: "noble-updates/universe",
+						},
+					},
+					SrcPackages: models.SrcPackages{
+						"freeglut": models.SrcPackage{
+							Name:        "freeglut",
+							Version:     "3.4.0-1ubuntu0.1~esm1",
+							BinaryNames: []string{"libglut3.12"},
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "noble",
+				Family:      ecosystemTypes.Ecosystem("ubuntu"),
+				Release:     "24.04",
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:       "libglut3.12",
+						Version:    "3.4.0-1ubuntu0.1~esm1",
+						NewVersion: "3.4.0-1ubuntu0.2",
+						SrcName:    "freeglut",
+						SrcVersion: "3.4.0-1ubuntu0.1~esm1",
+					},
+				},
+			},
+		},
+		{
+			// redhat IS in the allowlist — redhat-csaf / redhat-vex gate on
+			// repositories, so the value has to reach the query.
+			name: "redhat 9 keeps the Repository the scanner reports",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "rhel",
+					Family:     "redhat",
+					Release:    "9.4",
+					Packages: models.Packages{
+						"bash": models.Package{
+							Name:       "bash",
+							Version:    "5.1.8",
+							Release:    "9.el9",
+							Arch:       "x86_64",
+							Repository: "rhel-9-for-x86_64-baseos-rpms",
+						},
+					},
+					SrcPackages: models.SrcPackages{
+						"bash": models.SrcPackage{
+							Name:        "bash",
+							Version:     "5.1.8-9.el9",
+							BinaryNames: []string{"bash"},
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "rhel",
+				Family:      ecosystemTypes.Ecosystem("redhat"),
+				Release:     "9.4",
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:       "bash",
+						Version:    "5.1.8",
+						Release:    "9.el9",
+						Arch:       "x86_64",
+						Repository: "rhel-9-for-x86_64-baseos-rpms",
+						SrcName:    "bash",
+						SrcVersion: "5.1.8-9.el9",
+					},
+				},
+			},
+		},
+		{
 			name: "suse.linux.enterprise.server -> suse.linux.enterprise",
 			args: args{
 				sr: &models.ScanResult{
@@ -6318,6 +6406,618 @@ func Test_postConvert(t *testing.T) {
 								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
 								Optional: map[string]string{
 									"vuls2-sources": "[{\"root_id\":\"CVE-2025-0008\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"jammy_low\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ubuntu: a pocket only judges the builds installed from it",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:       "libglut3.12",
+							Version:    "2.8.1-6ubuntu0.1~esm1",
+							SrcName:    "freeglut",
+							SrcVersion: "2.8.1-6ubuntu0.1~esm1",
+						},
+						{
+							Name:       "libglut-dev",
+							Version:    "2.8.1-6ubuntu0.1~esm1",
+							SrcName:    "freeglut",
+							SrcVersion: "2.8.1-6ubuntu0.1~esm1",
+						},
+						{
+							Name:       "libcjson1",
+							Version:    "1.7.15-1",
+							SrcName:    "cjson",
+							SrcVersion: "1.7.15-1",
+						},
+						{
+							Name:       "libmagickcore-6.q16-6",
+							Version:    "6.9.11.60+dfsg-1.3ubuntu0.22.04.1+esm1",
+							SrcName:    "imagemagick",
+							SrcVersion: "6.9.11.60+dfsg-1.3ubuntu0.22.04.1+esm1",
+						},
+						{
+							Name:       "libssl3",
+							Version:    "3.0.2-0ubuntu1.10+fips.1",
+							SrcName:    "openssl",
+							SrcVersion: "3.0.2-0ubuntu1.10+fips.1",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2025-1001",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1001"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1001",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1001",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "esm-apps/jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class:  vcFixStatusTypes.ClassUnfixed,
+																		Vendor: "needed",
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "freeglut",
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0, 1},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "freeglut",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "2.8.1-6ubuntu0.1~esm1",
+																			},
+																		},
+																		Fixed: []string{"2.8.1-6ubuntu0.1~esm1"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{},
+															},
+														},
+													},
+												},
+												Tag: "esm-apps/jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-1002",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1002",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1002"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1002",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1002",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "esm-apps/jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class:  vcFixStatusTypes.ClassUnfixed,
+																		Vendor: "needed",
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "cjson",
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{2},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "cjson",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "1.7.15-1ubuntu0.1~esm1",
+																			},
+																		},
+																		Fixed: []string{"1.7.15-1ubuntu0.1~esm1"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{2},
+															},
+														},
+													},
+												},
+												Tag: "esm-apps/jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-1003",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1003",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1003"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1003",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1003",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "esm-apps/jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "imagemagick",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "6.9.11.60+dfsg-1.3ubuntu0.22.04.5",
+																			},
+																		},
+																		Fixed: []string{"6.9.11.60+dfsg-1.3ubuntu0.22.04.5"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{3},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "imagemagick",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "6.9.11.60+dfsg-1.3ubuntu0.22.04.1+esm1",
+																			},
+																		},
+																		Fixed: []string{"6.9.11.60+dfsg-1.3ubuntu0.22.04.1+esm1"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{},
+															},
+														},
+													},
+												},
+												Tag: "esm-apps/jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "CVE-2025-1004",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-1004",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.UbuntuCVETracker: {
+											dataTypes.RootID("CVE-2025-1004"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2025-1004",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type:   severityTypes.SeverityTypeVendor,
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																Vendor: new("low"),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																Source: "launchpad.net/ubuntu-cve-tracker",
+																URL:    "https://www.cve.org/CVERecord?id=CVE-2025-1004",
+															},
+														},
+														Published: new(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "jammy_low",
+														},
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+															Tag:       "fips-updates/jammy_low",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("ubuntu:22.04"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.UbuntuCVETracker: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "openssl",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "3.0.2-0ubuntu1.12",
+																			},
+																		},
+																		Fixed: []string{"3.0.2-0ubuntu1.12"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{4},
+															},
+														},
+													},
+												},
+												Tag: "jammy_low",
+											},
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassFixed,
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeSource,
+																		Source: &vcSourcePackageTypes.Package{
+																			Name: "openssl",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeDPKG,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "3.0.2-0ubuntu1.10+fips.2",
+																			},
+																		},
+																		Fixed: []string{"3.0.2-0ubuntu1.10+fips.2"},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{4},
+															},
+														},
+													},
+												},
+												Tag: "fips-updates/jammy_low",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-1002": models.VulnInfo{
+					CveID:       "CVE-2025-1002",
+					Confidences: models.Confidences{models.UbuntuAPIMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:        "libcjson1",
+							NotFixedYet: true,
+							FixState:    "needed",
+						},
+					},
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{
+							{
+								Type:          models.UbuntuAPI,
+								CveID:         "CVE-2025-1002",
+								Title:         "title",
+								Summary:       "description",
+								Cvss2Severity: "low",
+								Cvss3Severity: "low",
+								SourceLink:    "https://ubuntu.com/security/CVE-2025-1002",
+								References: models.References{
+									{
+										Link:   "https://www.cve.org/CVERecord?id=CVE-2025-1002",
+										Source: "CVE",
+										RefID:  "CVE-2025-1002",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-1002\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"jammy_low\"}}]",
+								},
+							},
+						},
+					},
+				},
+				"CVE-2025-1004": models.VulnInfo{
+					CveID:       "CVE-2025-1004",
+					Confidences: models.Confidences{models.UbuntuAPIMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:    "libssl3",
+							FixedIn: "3.0.2-0ubuntu1.10+fips.2",
+						},
+					},
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{
+							{
+								Type:          models.UbuntuAPI,
+								CveID:         "CVE-2025-1004",
+								Title:         "title",
+								Summary:       "description",
+								Cvss2Severity: "low",
+								Cvss3Severity: "low",
+								SourceLink:    "https://ubuntu.com/security/CVE-2025-1004",
+								References: models.References{
+									{
+										Link:   "https://www.cve.org/CVERecord?id=CVE-2025-1004",
+										Source: "CVE",
+										RefID:  "CVE-2025-1004",
+									},
+								},
+								Published:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2025-1004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:22.04\",\"tag\":\"fips-updates/jammy_low\"}}]",
 								},
 							},
 						},
