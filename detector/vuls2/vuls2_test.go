@@ -15338,19 +15338,25 @@ func Test_collectCriteriaWarnings(t *testing.T) {
 }
 
 func Test_mergeWarningEntries(t *testing.T) {
+	type args struct {
+		dst []vuls2.WarningEntry
+		add []vuls2.WarningEntry
+	}
 	tests := []struct {
-		name     string
-		dst, add []vuls2.WarningEntry
-		want     []vuls2.WarningEntry
+		name string
+		args args
+		want []vuls2.WarningEntry
 	}{
 		{
 			name: "duplicates collapse, new entries append",
-			dst: []vuls2.WarningEntry{
-				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
-			},
-			add: []vuls2.WarningEntry{
-				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
-				{Source: sourceTypes.RedHatCSAF, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+			args: args{
+				dst: []vuls2.WarningEntry{
+					{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				},
+				add: []vuls2.WarningEntry{
+					{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+					{Source: sourceTypes.RedHatCSAF, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				},
 			},
 			want: []vuls2.WarningEntry{
 				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
@@ -15359,10 +15365,12 @@ func Test_mergeWarningEntries(t *testing.T) {
 		},
 		{
 			name: "empty add keeps dst",
-			dst: []vuls2.WarningEntry{
-				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+			args: args{
+				dst: []vuls2.WarningEntry{
+					{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				},
+				add: nil,
 			},
-			add: nil,
 			want: []vuls2.WarningEntry{
 				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
 			},
@@ -15370,7 +15378,7 @@ func Test_mergeWarningEntries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := gocmp.Diff(tt.want, vuls2.MergeWarningEntries(tt.dst, tt.add)); diff != "" {
+			if diff := gocmp.Diff(tt.want, vuls2.MergeWarningEntries(tt.args.dst, tt.args.add)); diff != "" {
 				t.Errorf("mergeWarningEntries() (-expected +got):\n%s", diff)
 			}
 		})
