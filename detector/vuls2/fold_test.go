@@ -60,6 +60,7 @@ func Test_projectCPECriteria(t *testing.T) {
 		ca           criteriaTypes.FilteredCriteria
 		wantCriteria criteriaTypes.FilteredCriteria
 		wantDefined  []string
+		wantErr      bool
 	}{
 		{
 			name:         "empty",
@@ -171,13 +172,29 @@ func Test_projectCPECriteria(t *testing.T) {
 			},
 			wantDefined: nil,
 		},
+		{
+			name:    "unexpected operator fails fast",
+			ca:      criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorType("future-operator")},
+			wantErr: true,
+		},
+		{
+			name: "unexpected operator in a child fails fast",
+			ca: criteriaTypes.FilteredCriteria{
+				Operator:  criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{{Operator: criteriaTypes.CriteriaOperatorType("future-operator")}},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotCriteria, gotDefined, err := vuls2.ProjectCPECriteria(tt.ca)
-			if err != nil {
-				t.Fatalf("projectCPECriteria. error = %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("projectCPECriteria() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if diff := gocmp.Diff(tt.wantCriteria, gotCriteria, gocmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("projectCPECriteria() criteria (-expected +got):\n%s", diff)
@@ -187,20 +204,6 @@ func Test_projectCPECriteria(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("unexpected operator fails fast", func(t *testing.T) {
-		for _, ca := range []criteriaTypes.FilteredCriteria{
-			{Operator: criteriaTypes.CriteriaOperatorType("future-operator")},
-			{
-				Operator:  criteriaTypes.CriteriaOperatorTypeOR,
-				Criterias: []criteriaTypes.FilteredCriteria{{Operator: criteriaTypes.CriteriaOperatorType("future-operator")}},
-			},
-		} {
-			if _, _, err := vuls2.ProjectCPECriteria(ca); err == nil {
-				t.Errorf("expected an error for operator %q", "future-operator")
-			}
-		}
-	})
 }
 
 // Test_projectOSPkgDetection: prunePkgCriteria's gate semantics are
