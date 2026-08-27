@@ -13,6 +13,7 @@ import (
 	"github.com/google/subcommands"
 
 	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/detector/vuls2"
 	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/server"
 )
@@ -106,11 +107,19 @@ func (p *ServerCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...any) subcom
 		return subcommands.ExitUsageError
 	}
 
+	if !config.Conf.Vuls2.SkipUpdate {
+		vuls2.StartInitialFetch(config.Conf.Vuls2, config.Conf.NoProgress)
+	}
+
 	http.Handle("/vuls", server.VulsHandler{
 		ToLocalFile: p.toLocalFile,
 	})
 	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-		if _, err := fmt.Fprintf(w, "ok"); err != nil {
+		ok, msg := vuls2.Ready()
+		if !ok {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		if _, err := fmt.Fprintf(w, "%s", msg); err != nil {
 			logging.Log.Errorf("Failed to print server health. err: %+v", err)
 		}
 	})
