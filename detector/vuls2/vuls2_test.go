@@ -2,6 +2,7 @@ package vuls2_test
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -12961,6 +12962,267 @@ func Test_prunePkgCriteria(t *testing.T) {
 			}
 			if diff := gocmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("prunePkgCriteria() mismatch (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+// Test_mergeVulnInfo pins the CVSS winner selection to the content pair
+// itself, independent of merge order. postConvert folds VulnInfos in map
+// iteration order, so every case is run as both merge(a, b) and merge(b, a)
+// and must produce the same result. The tied-score cases mirror the
+// tracker-derived contents (severity string only, score 0 vs 0) whose
+// severities used to flip between runs.
+func Test_mergeVulnInfo(t *testing.T) {
+	type args struct {
+		a models.VulnInfo
+		b models.VulnInfo
+	}
+	tests := []struct {
+		name string
+		args args
+		want models.VulnInfo
+	}{
+		{
+			// Ubuntu emits per-release-tag segments for one CVE with severity
+			// strings only. The higher vendor severity rank must win the tie,
+			// even though the other segment ranks higher as a source (its
+			// "focal" tag wins the Title).
+			name: "tied zero scores break by vendor severity rank",
+			args: args{
+				a: models.VulnInfo{
+					CveID: "CVE-2025-0001",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:          models.UbuntuAPI,
+							CveID:         "CVE-2025-0001",
+							Title:         "title esm",
+							Cvss2Severity: "medium",
+							Cvss3Severity: "medium",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}}]",
+							},
+						}},
+					},
+				},
+				b: models.VulnInfo{
+					CveID: "CVE-2025-0001",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:          models.UbuntuAPI,
+							CveID:         "CVE-2025-0001",
+							Title:         "title focal",
+							Cvss2Severity: "negligible",
+							Cvss3Severity: "negligible",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+							},
+						}},
+					},
+				},
+			},
+			want: models.VulnInfo{
+				CveID: "CVE-2025-0001",
+				CveContents: models.CveContents{
+					models.UbuntuAPI: []models.CveContent{{
+						Type:          models.UbuntuAPI,
+						CveID:         "CVE-2025-0001",
+						Title:         "title focal",
+						Cvss2Severity: "medium",
+						Cvss3Severity: "medium",
+						Optional: map[string]string{
+							"vuls2-sources": "[{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}},{\"root_id\":\"CVE-2025-0001\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+						},
+					}},
+				},
+			},
+		},
+		{
+			// Debian's "unimportant" is outside the vendor severity table, so
+			// it ranks equal to the empty string; the raw-string fallback has
+			// to make the choice decisive.
+			name: "severities outside the vendor table break by raw string",
+			args: args{
+				a: models.VulnInfo{
+					CveID: "CVE-2025-0002",
+					CveContents: models.CveContents{
+						models.DebianSecurityTracker: []models.CveContent{{
+							Type:          models.DebianSecurityTracker,
+							CveID:         "CVE-2025-0002",
+							Title:         "title buster",
+							Cvss2Severity: "unimportant",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0002\",\"source_id\":\"debian-security-tracker-api\",\"segment\":{\"ecosystem\":\"debian:10\",\"tag\":\"buster\"}}]",
+							},
+						}},
+					},
+				},
+				b: models.VulnInfo{
+					CveID: "CVE-2025-0002",
+					CveContents: models.CveContents{
+						models.DebianSecurityTracker: []models.CveContent{{
+							Type:  models.DebianSecurityTracker,
+							CveID: "CVE-2025-0002",
+							Title: "title lts",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0002\",\"source_id\":\"debian-security-tracker-api\",\"segment\":{\"ecosystem\":\"debian:10\",\"tag\":\"buster/lts\"}}]",
+							},
+						}},
+					},
+				},
+			},
+			want: models.VulnInfo{
+				CveID: "CVE-2025-0002",
+				CveContents: models.CveContents{
+					models.DebianSecurityTracker: []models.CveContent{{
+						Type:          models.DebianSecurityTracker,
+						CveID:         "CVE-2025-0002",
+						Title:         "title lts",
+						Cvss2Severity: "unimportant",
+						Optional: map[string]string{
+							"vuls2-sources": "[{\"root_id\":\"CVE-2025-0002\",\"source_id\":\"debian-security-tracker-api\",\"segment\":{\"ecosystem\":\"debian:10\",\"tag\":\"buster\"}},{\"root_id\":\"CVE-2025-0002\",\"source_id\":\"debian-security-tracker-api\",\"segment\":{\"ecosystem\":\"debian:10\",\"tag\":\"buster/lts\"}}]",
+						},
+					}},
+				},
+			},
+		},
+		{
+			name: "higher score still wins regardless of severity rank",
+			args: args{
+				a: models.VulnInfo{
+					CveID: "CVE-2025-0003",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:          models.UbuntuAPI,
+							CveID:         "CVE-2025-0003",
+							Cvss3Score:    7.5,
+							Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+							Cvss3Severity: "low",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}}]",
+							},
+						}},
+					},
+				},
+				b: models.VulnInfo{
+					CveID: "CVE-2025-0003",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:          models.UbuntuAPI,
+							CveID:         "CVE-2025-0003",
+							Cvss3Score:    5.0,
+							Cvss3Vector:   "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+							Cvss3Severity: "critical",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+							},
+						}},
+					},
+				},
+			},
+			want: models.VulnInfo{
+				CveID: "CVE-2025-0003",
+				CveContents: models.CveContents{
+					models.UbuntuAPI: []models.CveContent{{
+						Type:          models.UbuntuAPI,
+						CveID:         "CVE-2025-0003",
+						Cvss3Score:    7.5,
+						Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+						Cvss3Severity: "low",
+						Optional: map[string]string{
+							"vuls2-sources": "[{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}},{\"root_id\":\"CVE-2025-0003\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+						},
+					}},
+				},
+			},
+		},
+		{
+			// Exercises the last tiebreak key and the CVSS 4.0 selection
+			// branch: equal scores and severities leave only the vector
+			// strings to order the pair, and the lexicographically greater
+			// vector must win from either merge order.
+			name: "equal score and severity break by vector string",
+			args: args{
+				a: models.VulnInfo{
+					CveID: "CVE-2025-0004",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:           models.UbuntuAPI,
+							CveID:          "CVE-2025-0004",
+							Cvss40Score:    5.1,
+							Cvss40Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+							Cvss40Severity: "medium",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}}]",
+							},
+						}},
+					},
+				},
+				b: models.VulnInfo{
+					CveID: "CVE-2025-0004",
+					CveContents: models.CveContents{
+						models.UbuntuAPI: []models.CveContent{{
+							Type:           models.UbuntuAPI,
+							CveID:          "CVE-2025-0004",
+							Title:          "title focal",
+							Cvss40Score:    5.1,
+							Cvss40Vector:   "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+							Cvss40Severity: "medium",
+							Optional: map[string]string{
+								"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+							},
+						}},
+					},
+				},
+			},
+			want: models.VulnInfo{
+				CveID: "CVE-2025-0004",
+				CveContents: models.CveContents{
+					models.UbuntuAPI: []models.CveContent{{
+						Type:           models.UbuntuAPI,
+						CveID:          "CVE-2025-0004",
+						Title:          "title focal",
+						Cvss40Score:    5.1,
+						Cvss40Vector:   "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+						Cvss40Severity: "medium",
+						Optional: map[string]string{
+							"vuls2-sources": "[{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"esm-apps/focal\"}},{\"root_id\":\"CVE-2025-0004\",\"source_id\":\"ubuntu-cve-tracker\",\"segment\":{\"ecosystem\":\"ubuntu:20.04\",\"tag\":\"focal\"}}]",
+						},
+					}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// mergeVulnInfo writes the combined vuls2-sources marker into the
+			// winning content's Optional map, so each order gets its own deep
+			// copy of the inputs.
+			clone := func(vi models.VulnInfo) models.VulnInfo {
+				bs, err := json.Marshal(vi)
+				if err != nil {
+					t.Fatalf("marshal vuln info: %v", err)
+				}
+				var c models.VulnInfo
+				if err := json.Unmarshal(bs, &c); err != nil {
+					t.Fatalf("unmarshal vuln info: %v", err)
+				}
+				return c
+			}
+			for _, order := range []struct {
+				name string
+				x, y models.VulnInfo
+			}{
+				{name: "merge(a, b)", x: tt.args.a, y: tt.args.b},
+				{name: "merge(b, a)", x: tt.args.b, y: tt.args.a},
+			} {
+				got, err := vuls2.MergeVulnInfo(clone(order.x), clone(order.y))
+				if err != nil {
+					t.Fatalf("%s: unexpected error: %v", order.name, err)
+				}
+				if diff := gocmp.Diff(got, tt.want); diff != "" {
+					t.Errorf("%s mismatch (-got +want):\n%s", order.name, diff)
+				}
 			}
 		})
 	}

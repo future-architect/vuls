@@ -12,6 +12,7 @@ var (
 
 	WalkCPECriteria      = walkCPECriteria
 	MergeIntoScannedCves = mergeIntoScannedCves
+	MergeVulnInfo        = mergeVulnInfo
 
 	CollectVerifiedProducts = collectVerifiedProducts
 
