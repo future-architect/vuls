@@ -150,6 +150,62 @@ func Test_shouldDownload(t *testing.T) {
 
 }
 
+func Test_mustFetchSync(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *types.Metadata
+		want     bool
+	}{
+		{
+			name: "no db file",
+			want: true,
+		},
+		{
+			name: "schema matches",
+			metadata: &types.Metadata{
+				LastModified:  *parse("2024-01-02T00:00:00Z"),
+				SchemaVersion: schemaVersionBoltDB(t),
+			},
+			want: false,
+		},
+		{
+			name: "schema mismatch",
+			metadata: &types.Metadata{
+				LastModified:  *parse("2024-01-02T00:00:00Z"),
+				SchemaVersion: schemaVersionBoltDB(t) + 1,
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := t.TempDir()
+			dbpath := filepath.Join(d, "vuls.db")
+			if tt.metadata != nil {
+				if err := putMetadata(*tt.metadata, dbpath); err != nil {
+					t.Fatalf("putMetadata err = %v", err)
+				}
+			}
+			got, err := vuls2.MustFetchSync(dbpath)
+			if err != nil {
+				t.Fatalf("mustFetchSync() error = %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("mustFetchSync() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_backgroundFetch_singleFlight(t *testing.T) {
+	vuls2.ResetBgFetch()
+	defer vuls2.ResetBgFetch()
+
+	if vuls2.BgFetchDownloading() {
+		t.Fatal("expected downloading=false initially")
+	}
+}
+
 func putMetadata(metadata types.Metadata, path string) error {
 	c := session.Config{
 		Type: "boltdb",
