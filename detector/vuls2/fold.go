@@ -24,7 +24,6 @@ import (
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	dbTypes "github.com/MaineK00n/vuls2/pkg/db/session/types"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
-	"github.com/MaineK00n/vuls2/pkg/detect/util"
 )
 
 // projectedDetection is one rootID's detection reduced by the fold to exactly what
@@ -148,7 +147,7 @@ func renderWarningEntries(entries []warningEntry) []string {
 // memory holds the folded result plus only the in-flight full trees
 // (stream workers + channel buffer + fold workers, each bounded by
 // NumCPU).
-func foldDetectionSeq(seq iter.Seq2[util.RootDetection, error], project func(detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error)) (map[dataTypes.RootID]projectedDetection, []warningEntry, error) {
+func foldDetectionSeq(seq iter.Seq2[detectTypes.RootDetection, error], project func(detectTypes.VulnerabilityDataDetection) (projectedDetection, bool, error)) (map[dataTypes.RootID]projectedDetection, []warningEntry, error) {
 	var (
 		mu          sync.Mutex
 		m           = make(map[dataTypes.RootID]projectedDetection)
