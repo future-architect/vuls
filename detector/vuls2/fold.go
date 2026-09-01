@@ -248,9 +248,15 @@ func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (projectedD
 func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) (projectedDetection, error) {
 	contents := make(map[sourceTypes.SourceID][]projectedCondition, len(d.Contents))
 	for sourceID, fconds := range d.Contents {
+		// DefinedProducts is only ever read for the verified sources
+		// (collectVerifiedProducts); building it for the others is pure
+		// cost — on a kernel CPE scan over half of the projection's
+		// UnbindFS calls would feed maps nothing reads. Both sides gate
+		// on the same verifiedCPESources list, so they cannot drift.
+		collectDefined := slices.Contains(verifiedCPESources, sourceID)
 		conds := make([]projectedCondition, 0, len(fconds))
 		for _, fcond := range fconds {
-			walkReady, defined, err := projectCPECriteria(fcond.Criteria)
+			walkReady, defined, err := projectCPECriteria(fcond.Criteria, collectDefined)
 			if err != nil {
 				return projectedDetection{}, xerrors.Errorf("project criteria: %w", err)
 			}
@@ -283,14 +289,20 @@ func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) (projectedDet
 //     CPE criterion's own CPE and CPEMatches, kept or dropped, matched or
 //     not (cond.Accept keeps non-matching criterions under
 //     FilteredCriterion.Criterion) — collectVerifiedProducts' input.
+//     Collected only when collectDefined is set (the caller sets it for
+//     verifiedCPESources only); otherwise the returned map is nil, which
+//     collectVerifiedProducts' maps.Copy treats as empty.
 //
 // Evaluation warnings must be harvested from the full tree before calling
 // this — the projection does not carry them.
-func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredCriteria, map[string]struct{}, error) {
+func projectCPECriteria(ca criteriaTypes.FilteredCriteria, collectDefined bool) (criteriaTypes.FilteredCriteria, map[string]struct{}, error) {
 	var (
 		kept    []criterionTypes.FilteredCriterion
-		defined = make(map[string]struct{})
+		defined map[string]struct{}
 	)
+	if collectDefined {
+		defined = make(map[string]struct{})
+	}
 
 	var collect func(c criteriaTypes.FilteredCriteria) error
 	collect = func(c criteriaTypes.FilteredCriteria) error {
@@ -313,12 +325,14 @@ func projectCPECriteria(ca criteriaTypes.FilteredCriteria) (criteriaTypes.Filter
 				continue
 			}
 
-			if key, ok := cpeProductKey(string(cn.Criterion.CPE.CPE)); ok {
-				defined[key] = struct{}{}
-			}
-			for _, m := range cn.Criterion.CPE.CPEMatches {
-				if key, ok := cpeProductKey(string(m)); ok {
+			if collectDefined {
+				if key, ok := cpeProductKey(string(cn.Criterion.CPE.CPE)); ok {
 					defined[key] = struct{}{}
+				}
+				for _, m := range cn.Criterion.CPE.CPEMatches {
+					if key, ok := cpeProductKey(string(m)); ok {
+						defined[key] = struct{}{}
+					}
 				}
 			}
 

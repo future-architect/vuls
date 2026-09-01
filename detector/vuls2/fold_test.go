@@ -24,6 +24,7 @@ import (
 	vcPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package"
 	vcBinaryPackageTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/package/binary"
 	warningTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/warning"
+	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	sourceTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/source"
 	detectTypes "github.com/MaineK00n/vuls2/pkg/detect/types"
@@ -188,7 +189,7 @@ func Test_projectCPECriteria(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCriteria, gotDefined, err := vuls2.ProjectCPECriteria(tt.ca)
+			gotCriteria, gotDefined, err := vuls2.ProjectCPECriteria(tt.ca, true)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("projectCPECriteria() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -355,6 +356,128 @@ func Test_projectOSPkgDetection(t *testing.T) {
 			}
 			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("projectOSPkgDetection() (-expected +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// Test_projectCPEDetection: projectCPECriteria's projection semantics are
+// covered by Test_projectCPECriteria; here the wrapper's own behavior is
+// pinned — the asymmetry with projectOSPkgDetection (no condition or
+// source is dropped, even when the walk-ready tree is empty) and the
+// DefinedProducts gate (collected per condition for verifiedCPESources,
+// nil for every other source, mirroring collectVerifiedProducts' read).
+func Test_projectCPEDetection(t *testing.T) {
+	cc := func(cpe string, exact []int, matches ...string) criterionTypes.FilteredCriterion {
+		c := ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe), Range: &ccRangeTypes.Range{}}
+		for _, m := range matches {
+			c.CPEMatches = append(c.CPEMatches, ccTypes.CPE(m))
+		}
+		return criterionTypes.FilteredCriterion{
+			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &c},
+			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact}},
+		}
+	}
+	kept := func(cpe string, exact []int) criterionTypes.FilteredCriterion {
+		return criterionTypes.FilteredCriterion{
+			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}},
+			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact}},
+		}
+	}
+	or := func(cns ...criterionTypes.FilteredCriterion) criteriaTypes.FilteredCriteria {
+		return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: cns}
+	}
+
+	const (
+		kernelCPE = "cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*"
+		xenCPE    = "cpe:2.3:o:xen:xen:-:*:*:*:*:*:*:*"
+		appCPE    = "cpe:2.3:a:vendora:producta:1.0:*:*:*:*:*:*:*"
+	)
+
+	tests := []struct {
+		name    string
+		d       detectTypes.VulnerabilityDataDetection
+		want    vuls2.ProjectedDetection
+		wantErr bool
+	}{
+		{
+			// Contrast with projectOSPkgDetection: the second condition's
+			// walk-ready tree is empty (no accepted criterion) but the
+			// condition survives with its DefinedProducts, and so does its
+			// source key.
+			name: "no condition or source dropped; DefinedProducts per condition for a verified source",
+			d: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.NVDFeedCVEv2: {
+						{
+							Criteria: or(cc(kernelCPE, []int{0}, xenCPE)),
+							Tag:      segmentTypes.DetectionTag("t1"),
+						},
+						{
+							Criteria: or(cc(appCPE, nil)),
+						},
+					},
+				},
+			},
+			want: vuls2.ProjectedDetection{
+				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
+					sourceTypes.NVDFeedCVEv2: {
+						{
+							Criteria:        or(kept(kernelCPE, []int{0})),
+							Tag:             segmentTypes.DetectionTag("t1"),
+							DefinedProducts: map[string]struct{}{"o:linux:linux_kernel": {}, "o:xen:xen": {}},
+						},
+						{
+							Criteria:        or(),
+							DefinedProducts: map[string]struct{}{"a:vendora:producta": {}},
+						},
+					},
+				},
+			},
+		},
+		{
+			// collectVerifiedProducts only reads DefinedProducts for
+			// verifiedCPESources; for every other source the projection
+			// skips the UnbindFS work and carries nil.
+			name: "DefinedProducts collection is gated to verified sources",
+			d: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.VulnCheckNISTNVD2: {{Criteria: or(cc(kernelCPE, []int{0}, xenCPE))}},
+				},
+			},
+			want: vuls2.ProjectedDetection{
+				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
+					sourceTypes.VulnCheckNISTNVD2: {{Criteria: or(kept(kernelCPE, []int{0}))}},
+				},
+			},
+		},
+		{
+			name: "unexpected operator propagates as an error",
+			d: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+					sourceTypes.NVDFeedCVEv2: {{Criteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorType("future-operator")}}},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := vuls2.ProjectCPEDetection(tt.d)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("projectCPEDetection() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("projectCPEDetection() (-expected +got):\n%s", diff)
 			}
 		})
 	}

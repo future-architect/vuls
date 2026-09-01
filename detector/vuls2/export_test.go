@@ -30,10 +30,7 @@ var (
 	ProjectOSPkgDetection = projectOSPkgDetection
 	ProjectCPEDetection   = projectCPEDetection
 	ProjectCPECriteria    = projectCPECriteria
-	WalkPkgCriteria       = walkPkgCriteria
 )
-
-type PackStatus = packStatus
 
 type Source source
 
