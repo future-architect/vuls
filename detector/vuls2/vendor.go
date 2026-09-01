@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -16,6 +17,8 @@ import (
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	advisoryTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/advisory"
 	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
+	conditionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition"
+	criteriaTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria"
 	criterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion"
 	noneexistcriterionTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/noneexistcriterion"
 	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
@@ -262,18 +265,12 @@ func ignoreCriterion(e ecosystemTypes.Ecosystem, cn criterionTypes.FilteredCrite
 			return false
 		}
 	case ecosystemTypes.EcosystemTypeUbuntu:
-		if func() bool {
-			lhs, _, _ := strings.Cut(string(tag), "_")
-			lhs, rhs, ok := strings.Cut(lhs, "/")
-			if !ok {
-				return false
-			}
-			services := []string{"esm", "esm-infra", "esm-apps", "esm-infra-legacy", "esm-apps-legacy", "ros-esm"}
-			if !slices.Contains(services, lhs) && !slices.Contains(services, rhs) {
-				return true
-			}
-			return false
-		}() {
+		// A tag naming a pocket this build does not know cannot be matched
+		// against the pocket an installed build came from, so its statements
+		// are unusable. Every pocket this build DOES know — the archive,
+		// Ubuntu Pro's and FIPS' — is kept here and narrowed to the installed
+		// builds that actually come from it by filterCriterion.
+		if tagPocket(tag) == pocketUnknown {
 			return true
 		}
 
@@ -295,7 +292,236 @@ func ignoreCriterion(e ecosystemTypes.Ecosystem, cn criterionTypes.FilteredCrite
 	}
 }
 
-func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, cn criterionTypes.FilteredCriterion) (criterionTypes.FilteredCriterion, error) {
+// pocket is the build lineage an Ubuntu package version belongs to.
+//
+// Ubuntu's CVE tracker states one release in several pockets, all of which
+// land in the same ecosystem (ubuntu:24.04) and are told apart only by the
+// detection tag: the plain <release> tag for the archive, and a
+// <service>/<release> (or <release>/<service>) tag for Ubuntu Pro's esm-*
+// pockets and for FIPS.
+//
+// Version numbers only order within one pocket's own build lineage. An archive
+// build always sorts ABOVE the esm-apps build that reserves the next archive
+// version (3.4.0-1ubuntu0.1~esm1 < 3.4.0-1ubuntu0.1), and a FIPS build sorts
+// above both (1.0.2g-1ubuntu4.fips.4.20.9 > 1.0.2g-1ubuntu4.20+esm9). So
+// comparing an installed version against ANOTHER pocket's fixed version
+// answers a question the data never asked, which is how a universe package the
+// archive never fixes (plain pocket "needed" forever) was reported as
+// vulnerable even when the installed ESM build carries the fix, and how an ESM
+// build gets reported against the archive's own, later, fixed version.
+//
+// esm-apps and esm-infra (and their -legacy variants) are separate pockets but
+// share one version convention, so they collapse into pocketESM: telling them
+// apart needs the installed build's apt origin, which the scanner does not
+// report yet.
+type pocket string
+
+const (
+	pocketUnknown pocket = ""
+	pocketArchive pocket = "archive"
+	pocketESM     pocket = "esm"
+	pocketFIPS    pocket = "fips"
+)
+
+// tagPocket returns the pocket an ubuntu-cve-tracker detection tag speaks for.
+// The tracker's release keys put the service on either side of the slash
+// (esm-apps/noble, but trusty/esm), so both sides are looked up.
+func tagPocket(tag segmentTypes.DetectionTag) pocket {
+	release, _, _ := strings.Cut(string(tag), "_")
+	lhs, rhs, ok := strings.Cut(release, "/")
+	if !ok {
+		return pocketArchive
+	}
+
+	for _, service := range []string{lhs, rhs} {
+		switch service {
+		case "esm", "esm-infra", "esm-apps", "esm-infra-legacy", "esm-apps-legacy", "ros-esm":
+			return pocketESM
+		case "fips", "fips-updates", "fips-preview":
+			return pocketFIPS
+		}
+	}
+	return pocketUnknown
+}
+
+// installedPocketRe matches Canonical's version-suffix convention for the
+// pockets outside the archive: ~esmN / +esmN / +esm.N for Ubuntu Pro builds,
+// .fips. / +fips.N for FIPS ones.
+var installedPocketRe = regexp.MustCompile(`[~+.](esm|fips)[.0-9]`)
+
+// installedPocket reports which pocket the installed build of p came from.
+//
+// The authoritative answer is the apt origin of the INSTALLED version, which
+// the Ubuntu scanner does not collect: models.Package.Repository holds the
+// CANDIDATE's suite, only for updatable packages, and only outside fast /
+// offline scans. Until it reports the installed origin, the pocket is read off
+// Canonical's version convention; when it does, this should consult
+// p.Repository first and keep the convention as the fallback.
+//
+// The convention does not cover every Ubuntu Pro build — esm-infra republishes
+// plain archive versions for CVEs fixed before a release left standard
+// support, and those carry no marker — so a marker-less Pro build reads as
+// pocketArchive here. pocketFallbacks is what keeps those detected.
+func installedPocket(p scanTypes.OSPackage) pocket {
+	for _, v := range []string{p.SrcVersion, p.SrcRelease, p.Version, p.Release} {
+		switch m := installedPocketRe.FindStringSubmatch(v); {
+		case m == nil:
+		case m[1] == "esm":
+			return pocketESM
+		case m[1] == "fips":
+			return pocketFIPS
+		}
+	}
+	return pocketArchive
+}
+
+// packageKey identifies the package a version criterion speaks about, so that
+// statements about the same package can be matched across pockets.
+type packageKey struct {
+	typ  versioncriterionpackageTypes.PackageType
+	name string
+}
+
+func packageKeyOf(p versioncriterionpackageTypes.Package) (packageKey, bool) {
+	switch p.Type {
+	case versioncriterionpackageTypes.PackageTypeBinary:
+		if p.Binary == nil {
+			return packageKey{}, false
+		}
+		return packageKey{typ: p.Type, name: p.Binary.Name}, true
+	case versioncriterionpackageTypes.PackageTypeSource:
+		if p.Source == nil {
+			return packageKey{}, false
+		}
+		return packageKey{typ: p.Type, name: p.Source.Name}, true
+	default:
+		return packageKey{}, false
+	}
+}
+
+// pocketFallbacks orders the pockets that may judge a build installed from a
+// given pocket, most specific first.
+//
+// An Ubuntu Pro build is built on top of an archive one, so the archive's
+// statement still applies when Pro says nothing about the package; and once a
+// release leaves standard support the Pro pockets continue the archive's own
+// builds, which is what covers the Pro builds installedPocket cannot recognise
+// (esm-infra republishes plain archive versions, carrying no marker).
+//
+// FIPS is an opt-in parallel lineage that replaces individual packages: a FIPS
+// build falls back to the others, but nothing falls back INTO FIPS. A host not
+// running FIPS builds must never be judged by FIPS statements — before this,
+// vuls dropped every FIPS tag outright to get that, at the cost of leaving
+// FIPS hosts judged by archive statements their builds sort above.
+func pocketFallbacks(p pocket) []pocket {
+	switch p {
+	case pocketESM:
+		return []pocket{pocketESM, pocketArchive}
+	case pocketFIPS:
+		return []pocket{pocketFIPS, pocketESM, pocketArchive}
+	default:
+		return []pocket{pocketArchive, pocketESM}
+	}
+}
+
+// pocketStatements records which pockets have a usable statement about each
+// package, across every condition of one root's detection for one source. It
+// is what lets narrowToPocket tell "this pocket says the installed build is
+// fine" apart from "this pocket says nothing about the package".
+//
+// Usable means the criterion survives ignoreCriterion: a pocket whose
+// statement is dropped there (an unknown pocket, an "ignored:" status) judges
+// nothing, and must not stop another pocket's statement from being used.
+// not-affected and needs-triage criterions DO count — they are that pocket's
+// answer for the package, even though they contribute no fix status.
+func pocketStatements(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, fconds []conditionTypes.FilteredCondition) map[packageKey]map[pocket]struct{} {
+	et, _, _ := strings.Cut(string(e), ":")
+	if et != ecosystemTypes.EcosystemTypeUbuntu || s != sourceTypes.UbuntuCVETracker {
+		return nil
+	}
+
+	m := make(map[packageKey]map[pocket]struct{})
+	for _, fcond := range fconds {
+		p := tagPocket(fcond.Tag)
+		if p == pocketUnknown {
+			continue
+		}
+
+		var walk func(ca criteriaTypes.FilteredCriteria)
+		walk = func(ca criteriaTypes.FilteredCriteria) {
+			for _, child := range ca.Criterias {
+				walk(child)
+			}
+
+			for _, cn := range ca.Criterions {
+				if cn.Criterion.Type != criterionTypes.CriterionTypeVersion || cn.Criterion.Version == nil {
+					continue
+				}
+				if ignoreCriterion(e, cn, fcond.Tag) {
+					continue
+				}
+				k, ok := packageKeyOf(cn.Criterion.Version.Package)
+				if !ok {
+					continue
+				}
+				if m[k] == nil {
+					m[k] = make(map[pocket]struct{})
+				}
+				m[k][p] = struct{}{}
+			}
+		}
+		walk(fcond.Criteria)
+	}
+
+	if len(m) == 0 {
+		return nil
+	}
+	return m
+}
+
+// narrowToPocket drops the scanned packages this criterion's pocket does not
+// get to judge.
+//
+// Ubuntu's pockets are separate build lineages whose version numbers do not
+// compare across pockets (see pocket), so exactly ONE pocket judges each
+// installed build: the first of its pocketFallbacks that says anything about
+// the package. A build no candidate pocket speaks about is dropped from every
+// criterion — no pocket may answer for it.
+func narrowToPocket(scanned scanTypes.ScanResult, cn criterionTypes.FilteredCriterion, tag segmentTypes.DetectionTag, stmts map[packageKey]map[pocket]struct{}) ([]int, error) {
+	if len(stmts) == 0 || len(cn.Accepts.Version) == 0 {
+		return cn.Accepts.Version, nil
+	}
+
+	k, ok := packageKeyOf(cn.Criterion.Version.Package)
+	if !ok {
+		return cn.Accepts.Version, nil
+	}
+	ps, ok := stmts[k]
+	if !ok {
+		return cn.Accepts.Version, nil
+	}
+
+	tp := tagPocket(tag)
+	accepts := make([]int, 0, len(cn.Accepts.Version))
+	for _, index := range cn.Accepts.Version {
+		if len(scanned.OSPackages) <= index {
+			return nil, xerrors.Errorf("Too large OSPackage index. len(OSPackage): %d, index: %d", len(scanned.OSPackages), index)
+		}
+
+		for _, p := range pocketFallbacks(installedPocket(scanned.OSPackages[index])) {
+			if _, ok := ps[p]; !ok {
+				continue
+			}
+			if p == tp {
+				accepts = append(accepts, index)
+			}
+			break
+		}
+	}
+	return accepts, nil
+}
+
+func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, cn criterionTypes.FilteredCriterion, tag segmentTypes.DetectionTag, stmts map[packageKey]map[pocket]struct{}) (criterionTypes.FilteredCriterion, error) {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
@@ -357,12 +583,8 @@ func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, c
 		switch cn.Criterion.Type {
 		case criterionTypes.CriterionTypeVersion:
 			if cn.Criterion.Version != nil {
-				switch cn.Criterion.Version.Package.Type {
-				case versioncriterionpackageTypes.PackageTypeSource:
-					if !models.IsKernelSourcePackage(constant.Ubuntu, cn.Criterion.Version.Package.Source.Name) {
-						return cn, nil
-					}
-
+				if cn.Criterion.Version.Package.Type == versioncriterionpackageTypes.PackageTypeSource &&
+					models.IsKernelSourcePackage(constant.Ubuntu, cn.Criterion.Version.Package.Source.Name) {
 					m := make(map[string][]string)
 					for _, p := range scanned.OSPackages {
 						sn := fmt.Sprintf("%s:%d:%s-%s", models.RenameKernelSourcePackageName(constant.Ubuntu, p.SrcName), func() int {
@@ -401,11 +623,15 @@ func filterCriterion(e ecosystemTypes.Ecosystem, scanned scanTypes.ScanResult, c
 						}
 					}
 					cn.Accepts.Version = accepts
-
-					return cn, nil
-				default:
-					return cn, nil
 				}
+
+				// Ubuntu's pockets are separate build lineages; only the one
+				// an installed build came from may judge it.
+				accepts, err := narrowToPocket(scanned, cn, tag, stmts)
+				if err != nil {
+					return criterionTypes.FilteredCriterion{}, xerrors.Errorf("Failed to narrow to pocket. err: %w", err)
+				}
+				cn.Accepts.Version = accepts
 			}
 			return cn, nil
 		default:

@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
+	segmentTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
+	scanTypes "github.com/MaineK00n/vuls2/pkg/scan/types"
 
 	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
@@ -232,6 +234,60 @@ func Test_splitCveContentBySource(t *testing.T) {
 			// label must never be written into it.
 			if _, ok := tt.args.base.Optional["source"]; ok {
 				t.Errorf("splitCveContentBySource() mutated base.Optional: %#v", tt.args.base.Optional)
+			}
+		})
+	}
+}
+
+func Test_tagPocket(t *testing.T) {
+	tests := []struct {
+		name string
+		tag  segmentTypes.DetectionTag
+		want pocket
+	}{
+		{name: "plain release", tag: "noble_medium", want: pocketArchive},
+		{name: "plain release without priority", tag: "noble", want: pocketArchive},
+		{name: "esm-apps", tag: "esm-apps/noble_medium", want: pocketESM},
+		{name: "esm-infra", tag: "esm-infra/xenial_low", want: pocketESM},
+		{name: "esm-infra-legacy", tag: "esm-infra-legacy/trusty_medium", want: pocketESM},
+		{name: "esm-apps-legacy", tag: "esm-apps-legacy/xenial_medium", want: pocketESM},
+		// The tracker also writes the service on the right of the slash.
+		{name: "release/esm", tag: "trusty/esm_medium", want: pocketESM},
+		{name: "fips", tag: "fips/xenial_low", want: pocketFIPS},
+		{name: "fips-updates", tag: "fips-updates/jammy_low", want: pocketFIPS},
+		{name: "unknown service", tag: "realtime/jammy_low", want: pocketUnknown},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tagPocket(tt.tag); got != tt.want {
+				t.Errorf("tagPocket() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_installedPocket(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  scanTypes.OSPackage
+		want pocket
+	}{
+		{name: "archive", pkg: scanTypes.OSPackage{Version: "3.4.0-1", SrcVersion: "3.4.0-1"}, want: pocketArchive},
+		{name: "esm reserving the next archive version", pkg: scanTypes.OSPackage{Version: "3.4.0-1ubuntu0.1~esm1", SrcVersion: "3.4.0-1ubuntu0.1~esm1"}, want: pocketESM},
+		{name: "esm above the current archive version", pkg: scanTypes.OSPackage{Version: "6.1.1-3ubuntu5+esm10", SrcVersion: "6.1.1-3ubuntu5+esm10"}, want: pocketESM},
+		{name: "esm with a dotted counter", pkg: scanTypes.OSPackage{Version: "5.15.0-70.77+esm.1", SrcVersion: "5.15.0-70.77+esm.1"}, want: pocketESM},
+		{name: "fips", pkg: scanTypes.OSPackage{Version: "1.0.2g-1ubuntu4.fips.4.20.9", SrcVersion: "1.0.2g-1ubuntu4.fips.4.20.9"}, want: pocketFIPS},
+		{name: "fips with a plus", pkg: scanTypes.OSPackage{Version: "5.15.0-70.77+fips.1", SrcVersion: "5.15.0-70.77+fips.1"}, want: pocketFIPS},
+		// esm-infra republishes plain archive versions for CVEs fixed before a
+		// release left standard support; those Pro builds are indistinguishable
+		// from archive ones and fall back through pocketFallbacks instead.
+		{name: "esm build carrying no marker reads as archive", pkg: scanTypes.OSPackage{Version: "4.15.0-1146.161~14.04.1", SrcVersion: "4.15.0-1146.161~14.04.1"}, want: pocketArchive},
+		{name: "binary version alone is enough", pkg: scanTypes.OSPackage{Version: "3.4.0-1ubuntu0.1~esm1"}, want: pocketESM},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := installedPocket(tt.pkg); got != tt.want {
+				t.Errorf("installedPocket() = %v, want %v", got, tt.want)
 			}
 		})
 	}

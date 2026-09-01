@@ -490,8 +490,42 @@ func preConvertPkgs(sr *models.ScanResult) scanTypes.ScanResult {
 		base.NewVersion = p.NewVersion
 		base.NewRelease = p.NewRelease
 		base.Arch = p.Arch
-		base.Repository = p.Repository
-		base.ModularityLabel = p.ModularityLabel
+		// Repository is where the INSTALLED build came from, which is what
+		// vuls2's repository gate matches a criterion against. Carry it only
+		// for the ecosystems whose data actually gates on it — redhat (centos
+		// resolves to the redhat ecosystem too), amazon and alpine.
+		//
+		// Everywhere else the value is at best unused and at worst wrong:
+		// MergeNewVersion overwrites it with the CANDIDATE version's
+		// repository whenever an update is pending, and the Debian family
+		// fills that from `apt-cache policy` with an apt suite
+		// (noble-updates/main) which can never equal a pocket
+		// ubuntu-cve-tracker names. Gating on it would drop the criteria for
+		// exactly the packages whose fix is already published, silently.
+		//
+		// An allowlist rather than a denylist so a family added later, or a
+		// scanner that starts reporting something new, defaults to not
+		// gating: that only ever loses filtering, never a detection.
+		switch sr.Family {
+		case constant.RedHat, constant.CentOS, constant.Amazon, constant.Alpine:
+			base.Repository = p.Repository
+		}
+		// ModularityLabel names an RPM module stream. It is not matched on
+		// its own: vuls2 folds it into the package name —
+		// mysql:8.0::community-mysql — and only the ecosystems whose data
+		// emits that form can match it: redhat (centos resolves to the redhat
+		// ecosystem too), alma, rocky, oracle and fedora.
+		//
+		// The fold runs for the binary name of every family, so a value that
+		// leaks in elsewhere rewrites the name into something no criterion
+		// carries, and one that is not NAME:STREAM(:VERSION:CONTEXT:ARCH)
+		// shaped fails the whole query with an error.
+		//
+		// An allowlist for the same reason as Repository above.
+		switch sr.Family {
+		case constant.RedHat, constant.CentOS, constant.Alma, constant.Rocky, constant.Oracle, constant.Fedora:
+			base.ModularityLabel = p.ModularityLabel
+		}
 		pkgs[p.Name] = base
 	}
 
@@ -989,6 +1023,13 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 	for _, v := range vs {
 		for _, d := range v.Detections {
 			for sourceID, fconds := range d.Contents {
+				// The conditions of one detection are not always independent:
+				// for Ubuntu they are the same release seen through the
+				// archive, Ubuntu Pro and FIPS pockets. filterCriterion needs
+				// to know which pockets speak about a package at all, so it is
+				// collected once here, over all the sibling conditions.
+				stmts := pocketStatements(d.Ecosystem, sourceID, fconds)
+
 				for _, fcond := range fconds {
 					var (
 						statuses   []packStatus
@@ -1030,7 +1071,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 							exactCpes, vpCpes = exact, vp
 						}
 					default:
-						s, k, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
+						s, k, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned, stmts)
 						if err != nil {
 							return xerrors.Errorf("Failed to walk pkg criteria. err: %w", err)
 						}
@@ -1544,7 +1585,12 @@ func prunePkgCriteria(c criteriaTypes.FilteredCriteria) (criteriaTypes.FilteredC
 // accepts), then the pruned tree is walked for package statuses and KB IDs.
 // The cpe-ecosystem counterpart is walkCPECriteria, which prunes on
 // evaluability instead and judges accepts during its own walk.
-func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult) ([]packStatus, []string, error) {
+//
+// stmts carries what the SIBLING conditions of this one say, which
+// filterCriterion needs for ecosystems whose conditions are alternative views
+// of the same release rather than independent ones (Ubuntu's archive / Pro /
+// FIPS pockets). It is nil for every other ecosystem.
+func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, ca criteriaTypes.FilteredCriteria, tag segmentTypes.DetectionTag, scanned scanTypes.ScanResult, stmts map[packageKey]map[pocket]struct{}) ([]packStatus, []string, error) {
 	pruned, err := prunePkgCriteria(ca)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("Failed to prune criteria. err: %w", err)
@@ -1590,7 +1636,7 @@ func walkPkgCriteria(e ecosystemTypes.Ecosystem, sourceID sourceTypes.SourceID, 
 					continue
 				}
 
-				fcn, err := filterCriterion(e, scanned, cn)
+				fcn, err := filterCriterion(e, scanned, cn, tag, stmts)
 				if err != nil {
 					return nil, nil, false, xerrors.Errorf("Failed to filter criterion. err: %w", err)
 				}
