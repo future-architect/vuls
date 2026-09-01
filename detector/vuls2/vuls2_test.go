@@ -248,6 +248,82 @@ func Test_preConvertPkgs(t *testing.T) {
 			},
 		},
 		{
+			// redhat IS in the ModularityLabel allowlist too — redhat-oval /
+			// redhat-vex emit mysql:8.0::community-mysql, which vuls2 can only
+			// match if the label reaches the query and gets folded in.
+			name: "redhat 9 keeps the ModularityLabel the scanner reports",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "rhel",
+					Family:     "redhat",
+					Release:    "9.4",
+					Packages: models.Packages{
+						"community-mysql": models.Package{
+							Name:            "community-mysql",
+							Version:         "8.0.32",
+							Release:         "1.module_el9+15.el9",
+							Arch:            "x86_64",
+							ModularityLabel: "mysql:8.0:9020020230103135305:rhel9",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "rhel",
+				Family:      ecosystemTypes.Ecosystem("redhat"),
+				Release:     "9.4",
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:            "community-mysql",
+						Version:         "8.0.32",
+						Release:         "1.module_el9+15.el9",
+						Arch:            "x86_64",
+						ModularityLabel: "mysql:8.0:9020020230103135305:rhel9",
+					},
+				},
+			},
+		},
+		{
+			// The two allowlists are independent: amazon gates on repositories
+			// but no amazon data source emits a modular package name, so a
+			// MODULARITYLABEL the scanner picked up would only rewrite the
+			// binary name out of every criterion's reach.
+			name: "amazon 2023 keeps the Repository but drops the ModularityLabel",
+			args: args{
+				sr: &models.ScanResult{
+					ServerName: "al2023",
+					Family:     "amazon",
+					Release:    "2023",
+					Packages: models.Packages{
+						"bash": models.Package{
+							Name:            "bash",
+							Version:         "5.2.15",
+							Release:         "1.amzn2023.0.2",
+							Arch:            "x86_64",
+							Repository:      "amazonlinux",
+							ModularityLabel: "bash:5.2:1:x86_64",
+						},
+					},
+				},
+			},
+			want: scanTypes.ScanResult{
+				JSONVersion: 0,
+				ServerName:  "al2023",
+				Family:      ecosystemTypes.Ecosystem("amazon"),
+				Release:     "2023",
+				OSPackages: []scanTypes.OSPackage{
+					{
+						Name:       "bash",
+						Version:    "5.2.15",
+						Release:    "1.amzn2023.0.2",
+						Arch:       "x86_64",
+						Repository: "amazonlinux",
+					},
+				},
+			},
+		},
+		{
 			name: "suse.linux.enterprise.server -> suse.linux.enterprise",
 			args: args{
 				sr: &models.ScanResult{
