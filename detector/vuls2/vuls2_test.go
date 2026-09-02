@@ -12454,7 +12454,14 @@ func Test_postConvert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := vuls2.PostConvert(tt.args.scanned, tt.args.detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
+			// postConvert consumes detect()'s fold-projected form; project the
+			// fixtures with the production projectors so they can stay written
+			// as raw DB trees.
+			detected, err := vuls2.ProjectDetectResult(tt.args.detected)
+			if err != nil {
+				t.Fatalf("projectDetectResult. error = %v", err)
+			}
+			got, err := vuls2.PostConvert(tt.args.scanned, detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -13426,9 +13433,11 @@ func Test_mergeIntoScannedCves(t *testing.T) {
 // up the AND/OR tree, applies the JVN source demotion, and de-duplicates with
 // exact taking precedence over vendor:product for the same scanned CPE.
 func Test_walkCPECriteria(t *testing.T) {
-	// cpeCriterion builds a vulnerable CPE FilteredCriterion whose accepted
-	// query indices are pre-classified by tier. The criterion CPE string is
-	// irrelevant to projection (only the Vulnerable flag matters, for pruning).
+	// cpeCriterion builds one leg of a walk-ready tree (projectCPECriteria's
+	// output form): a vulnerable CPE FilteredCriterion whose accepted query
+	// indices are pre-classified by tier. The walk reads only the Accepts.
+	// AND folding, guard removal, and unaccepted-criterion dropping are
+	// projection concerns, covered by Test_projectCPECriteria.
 	cpeCriterion := func(exact, versionUnconfirmed []int) criterionTypes.FilteredCriterion {
 		return criterionTypes.FilteredCriterion{
 			Criterion: criterionTypes.Criterion{
@@ -13455,6 +13464,7 @@ func Test_walkCPECriteria(t *testing.T) {
 		args      args
 		wantExact []string
 		wantVP    []string
+		wantErr   bool
 	}{
 		{
 			name: "exact-quality index -> exact tier",
@@ -13494,10 +13504,10 @@ func Test_walkCPECriteria(t *testing.T) {
 			wantVP:    []string{"cpe:2.3:a:vendor:other:2.0:*:*:*:*:*:*:*"},
 		},
 		{
-			name: "AND of exact-only legs -> exact",
+			name: "two exact legs both report",
 			args: args{
 				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
+					Operator: criteriaTypes.CriteriaOperatorTypeOR,
 					Criterions: []criterionTypes.FilteredCriterion{
 						cpeCriterion([]int{0}, nil),
 						cpeCriterion([]int{1}, nil),
@@ -13506,40 +13516,6 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
 			},
 			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
-		},
-		{
-			// AND folds as OR (go-cve-dictionary flatten compatibility): each
-			// leg keeps its own tier instead of the conjunction being demoted.
-			name: "AND folds as OR: each leg keeps its own tier",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterions: []criterionTypes.FilteredCriterion{
-						cpeCriterion([]int{0}, nil),
-						cpeCriterion(nil, []int{1}),
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
-			},
-			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
-			wantVP:    []string{"cpe:2.3:o:vendor:os:2.0:*:*:*:*:*:*:*"},
-		},
-		{
-			// AND folds as OR: an unsatisfied co-required leg (e.g. the Xen
-			// hypervisor the scan lacks in CVE-2021-28039) no longer vetoes the
-			// satisfied leg — the matched product is still reported.
-			name: "AND with an unsatisfied leg still reports the satisfied leg",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterions: []criterionTypes.FilteredCriterion{
-						cpeCriterion([]int{0}, nil),
-						cpeCriterion(nil, nil),
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
-			},
-			wantExact: []string{"cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "same scanned CPE in exact and vendor:product -> exact wins",
@@ -13581,28 +13557,6 @@ func Test_walkCPECriteria(t *testing.T) {
 				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-		},
-		{
-			name: "vulnerable=false guard is pruned, sibling exact survives",
-			args: args{
-				criteria: criteriaTypes.FilteredCriteria{
-					Operator: criteriaTypes.CriteriaOperatorTypeAND,
-					Criterions: []criterionTypes.FilteredCriterion{
-						cpeCriterion([]int{0}, nil),
-						{
-							Criterion: criterionTypes.Criterion{
-								Type: criterionTypes.CriterionTypeCPE,
-								CPE: new(ccTypes.Criterion{
-									Vulnerable: false,
-									CPE:        ccTypes.CPE("cpe:2.3:h:vendor:hardware:-:*:*:*:*:*:*:*"),
-								}),
-							},
-						},
-					},
-				},
-				scanned: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
-			},
-			wantExact: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
 		{
 			name: "empty condition -> nothing",
@@ -13731,12 +13685,31 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
+		{
+			// The walk-ready guard is the only place a projector/walker
+			// mismatch surfaces (an ospkg-projected tree reaching this
+			// walker); the two cases pin both halves of the precondition.
+			name:    "non-OR operator is not walk-ready",
+			args:    args{criteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeAND}},
+			wantErr: true,
+		},
+		{
+			name: "nested criterias are not walk-ready",
+			args: args{criteria: criteriaTypes.FilteredCriteria{
+				Operator:  criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{{Operator: criteriaTypes.CriteriaOperatorTypeOR}},
+			}},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.noJVNCPEs, tt.args.verifiedProducts)
-			if err != nil {
-				t.Fatalf("walkCPECriteria() error = %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("walkCPECriteria() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if diff := gocmp.Diff(exact, tt.wantExact); diff != "" {
 				t.Errorf("exact mismatch (-got +want):\n%s", diff)
@@ -14779,7 +14752,7 @@ func Test_enrichCTI(t *testing.T) {
 func Test_collectVerifiedProducts(t *testing.T) {
 	tests := []struct {
 		name     string
-		detected detectTypes.DetectResult
+		detected vuls2.DetectResult
 		want     map[dataTypes.RootID]map[string]map[string]struct{}
 	}{
 		{
@@ -14787,43 +14760,19 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			// root and define the same product: the product is derived for the
 			// root's CVE.
 			name: "same root: verified NVD product derived for suppressed VulnCheck",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "CVE-2024-0001",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendora:product1:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendora:product1": {}}},
 									},
 									sourceTypes.VulnCheckNISTNVD2: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendora:product1:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendora:product1": {}}},
 									},
 								},
 							},
@@ -14854,28 +14803,16 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			// under a JVNDB-* root. The derived set is keyed to the suppressed
 			// root via the shared CVE ID; the verified-only root is absent.
 			name: "cross-root: NVD under CVE root feeds JVN under JVNDB root",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "CVE-2024-0002",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendorb:product2:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendorb:product2": {}}},
 									},
 								},
 							},
@@ -14894,24 +14831,12 @@ func Test_collectVerifiedProducts(t *testing.T) {
 					},
 					{
 						ID: "JVNDB-2024-000002",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.JVNFeedDetail: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendorb:product2:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendorb:product2": {}}},
 									},
 								},
 							},
@@ -14942,28 +14867,16 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			// vendor's own exact version bound outranks JVN's version-less
 			// apple:macos match on the same CVE.
 			name: "cross-root: apple under support-article root feeds JVN under JVNDB root",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "128067",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.AppleSecurityReleases: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:o:apple:macos:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"o:apple:macos": {}}},
 									},
 								},
 							},
@@ -14982,24 +14895,12 @@ func Test_collectVerifiedProducts(t *testing.T) {
 					},
 					{
 						ID: "JVNDB-2026-000003",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.JVNFeedDetail: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:o:apple:macos:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"o:apple:macos": {}}},
 									},
 								},
 							},
@@ -15030,28 +14931,16 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			// CVE-2024-0012 and vice versa. JVN's JVNDB-* root is the realistic
 			// multi-CVE carrier here — VulnCheck / NVD are rooted per CVE ID.
 			name: "multi-CVE suppressed root keeps per-CVE product sets separate",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "CVE-2024-0011",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodx:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodx": {}}},
 									},
 								},
 							},
@@ -15070,24 +14959,12 @@ func Test_collectVerifiedProducts(t *testing.T) {
 					},
 					{
 						ID: "CVE-2024-0012",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prody:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prody": {}}},
 									},
 								},
 							},
@@ -15106,30 +14983,12 @@ func Test_collectVerifiedProducts(t *testing.T) {
 					},
 					{
 						ID: "JVNDB-2024-000099",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.JVNFeedRSS: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodx:*:*:*:*:*:*:*:*")}),
-														},
-													},
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prody:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodx": {}, "a:vendor:prody": {}}},
 									},
 								},
 							},
@@ -15160,28 +15019,16 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			// A suppressed root whose CVE has no verified-source product yields
 			// no entry (nothing to suppress).
 			name: "suppressed root with no verified product yields no entry",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "CVE-2024-0004",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.VulnCheckNISTNVD2: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodz:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodz": {}}},
 									},
 								},
 							},
@@ -15203,52 +15050,22 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			want: nil,
 		},
 		{
-			// The primary CPE and its CPEMatches (version variants of the same
-			// product) both fold to one part:vendor:product key, and a verified
-			// detection in a non-CPE ecosystem is ignored.
-			name: "CPEMatches fold to the product key; non-CPE ecosystem ignored",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			// A verified detection in a non-CPE ecosystem is ignored, even if
+			// it somehow carried defined products.
+			name: "non-CPE ecosystem ignored",
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "CVE-2024-0005",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE: new(ccTypes.Criterion{
-																CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*"),
-																CPEMatches: []ccTypes.CPE{
-																	ccTypes.CPE("cpe:2.3:a:vendor:prodp:1.0:*:*:*:*:*:*:*"),
-																},
-															}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodp": {}}},
 									},
 									sourceTypes.VulnCheckNISTNVD2: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodp": {}}},
 									},
 								},
 							},
@@ -15256,21 +15073,9 @@ func Test_collectVerifiedProducts(t *testing.T) {
 								// Non-CPE ecosystem: even a verified source here is
 								// ignored by collectVerifiedProducts.
 								Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:ignored:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:ignored": {}}},
 									},
 								},
 							},
@@ -15299,43 +15104,19 @@ func Test_collectVerifiedProducts(t *testing.T) {
 			// A suppressed source's own products must NOT be treated as verified:
 			// only NVD's prodp is derived, not VulnCheck's prodw.
 			name: "suppressed source's own products are not treated as verified",
-			detected: detectTypes.DetectResult{
-				Detected: []detectTypes.VulnerabilityData{
+			detected: vuls2.DetectResult{
+				Detected: []vuls2.VulnData{
 					{
 						ID: "CVE-2024-0006",
-						Detections: []detectTypes.VulnerabilityDataDetection{
+						Detections: []vuls2.ProjectedDetection{
 							{
 								Ecosystem: ecosystemTypes.EcosystemTypeCPE,
-								Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+								Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 									sourceTypes.NVDAPICVE: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodp:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodp": {}}},
 									},
 									sourceTypes.VulnCheckNISTNVD2: {
-										{
-											Criteria: criteriaTypes.FilteredCriteria{
-												Operator: criteriaTypes.CriteriaOperatorTypeOR,
-												Criterions: []criterionTypes.FilteredCriterion{
-													{
-														Criterion: criterionTypes.Criterion{
-															Type: criterionTypes.CriterionTypeCPE,
-															CPE:  new(ccTypes.Criterion{CPE: ccTypes.CPE("cpe:2.3:a:vendor:prodw:*:*:*:*:*:*:*:*")}),
-														},
-													},
-												},
-											},
-										},
+										{DefinedProducts: map[string]struct{}{"a:vendor:prodw": {}}},
 									},
 								},
 							},
@@ -15483,92 +15264,181 @@ func TestDetectCPEs(t *testing.T) {
 	}
 }
 
-func Test_warningMessages(t *testing.T) {
+func Test_collectCriteriaWarnings(t *testing.T) {
+	type call struct {
+		conds  []conditionTypes.FilteredCondition
+		source sourceTypes.SourceID
+	}
 	tests := []struct {
-		name     string
-		detected []detectTypes.VulnerabilityData
-		want     []string
+		name  string
+		calls []call
+		want  []vuls2.WarningEntry
 	}{
 		{
-			name:     "no warnings yields none",
-			detected: []detectTypes.VulnerabilityData{{ID: "ROOT-ID"}},
-			want:     []string{},
+			name: "no warnings yields none",
+			calls: []call{{
+				conds:  []conditionTypes.FilteredCondition{{Criteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR}}},
+				source: sourceTypes.RedHatOVALv2,
+			}},
+			want: nil,
 		},
 		{
-			// One line per distinct (source, warning), deduplicated via the
-			// upstream warning.Compare: duplicates — including one nested a
-			// level down — collapse, an unset ("") cause and a cause-less
-			// kind both render kind-only lines, and the same warning under
-			// another source stays a separate line. Line order carries no
-			// guarantee (ScanResult.SortForJSONOutput normalizes it in
-			// production), so the comparison sorts both sides.
-			name: "one line per source and warning",
-			detected: []detectTypes.VulnerabilityData{
+			// One entry per distinct (source, warning): duplicates collapse
+			// within a tree, across trees of the same source, and from a
+			// criterion nested a level down, while the same warning under
+			// another source stays a separate entry.
+			name: "one entry per source and warning",
+			calls: []call{
 				{
-					ID: "ROOT-ID",
-					Detections: []detectTypes.VulnerabilityDataDetection{{
-						Ecosystem: ecosystemTypes.Ecosystem("redhat:9"),
-						Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-							sourceTypes.RedHatOVALv2: {
-								{
-									Criteria: criteriaTypes.FilteredCriteria{
-										Operator: criteriaTypes.CriteriaOperatorTypeOR,
-										Criterions: []criterionTypes.FilteredCriterion{{
-											Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
-											Warnings: []warningTypes.Warning{
-												{Kind: warningTypes.KindEmptyRange},
-												{Kind: warningTypes.KindUnevaluablePackageType},
-												{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"},
-											},
-										}},
+					source: sourceTypes.RedHatOVALv2,
+					conds: []conditionTypes.FilteredCondition{
+						{
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{{
+									Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+									Warnings: []warningTypes.Warning{
+										{Kind: warningTypes.KindEmptyRange},
+										{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"},
 									},
-								},
-								{
-									Criteria: criteriaTypes.FilteredCriteria{
-										Operator: criteriaTypes.CriteriaOperatorTypeOR,
-										Criterias: []criteriaTypes.FilteredCriteria{{
-											Operator: criteriaTypes.CriteriaOperatorTypeAND,
-											Criterions: []criterionTypes.FilteredCriterion{{
-												Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
-												Warnings: []warningTypes.Warning{
-													{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"},
-													{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"},
-													{Kind: warningTypes.KindUnevaluablePackageType, Cause: "future-package"},
-												},
-											}},
-										}},
-									},
-								},
+								}},
 							},
-							sourceTypes.RedHatCSAF: {
-								{
-									Criteria: criteriaTypes.FilteredCriteria{
-										Operator: criteriaTypes.CriteriaOperatorTypeOR,
-										Criterions: []criterionTypes.FilteredCriterion{{
-											Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
-											Warnings:  []warningTypes.Warning{{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
-										}},
-									},
-								},
+						},
+						{
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterias: []criteriaTypes.FilteredCriteria{{
+									Operator: criteriaTypes.CriteriaOperatorTypeAND,
+									Criterions: []criterionTypes.FilteredCriterion{{
+										Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+										Warnings: []warningTypes.Warning{
+											{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"},
+											{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"},
+										},
+									}},
+								}},
 							},
+						},
+					},
+				},
+				{
+					source: sourceTypes.RedHatCSAF,
+					conds: []conditionTypes.FilteredCondition{{
+						Criteria: criteriaTypes.FilteredCriteria{
+							Operator: criteriaTypes.CriteriaOperatorTypeOR,
+							Criterions: []criterionTypes.FilteredCriterion{{
+								Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionType("future-criterion")},
+								Warnings:  []warningTypes.Warning{{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
+							}},
 						},
 					}},
 				},
 			},
+			want: []vuls2.WarningEntry{
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-b"}},
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
+				{Source: sourceTypes.RedHatCSAF, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var entries []vuls2.WarningEntry
+			for _, c := range tt.calls {
+				for _, cond := range c.conds {
+					entries = vuls2.CollectCriteriaWarnings(cond.Criteria, c.source, entries)
+				}
+			}
+			if diff := gocmp.Diff(tt.want, entries, gocmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("collectCriteriaWarnings() (-expected +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_mergeWarningEntries(t *testing.T) {
+	type args struct {
+		dst []vuls2.WarningEntry
+		add []vuls2.WarningEntry
+	}
+	tests := []struct {
+		name string
+		args args
+		want []vuls2.WarningEntry
+	}{
+		{
+			name: "duplicates collapse, new entries append",
+			args: args{
+				dst: []vuls2.WarningEntry{
+					{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				},
+				add: []vuls2.WarningEntry{
+					{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+					{Source: sourceTypes.RedHatCSAF, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				},
+			},
+			want: []vuls2.WarningEntry{
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				{Source: sourceTypes.RedHatCSAF, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+			},
+		},
+		{
+			name: "empty add keeps dst",
+			args: args{
+				dst: []vuls2.WarningEntry{
+					{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				},
+				add: nil,
+			},
+			want: []vuls2.WarningEntry{
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if diff := gocmp.Diff(tt.want, vuls2.MergeWarningEntries(tt.args.dst, tt.args.add)); diff != "" {
+				t.Errorf("mergeWarningEntries() (-expected +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_renderWarningEntries(t *testing.T) {
+	tests := []struct {
+		name    string
+		entries []vuls2.WarningEntry
+		want    []string
+	}{
+		{
+			name:    "no entries yields none",
+			entries: nil,
+			want:    []string{},
+		},
+		{
+			// An unset ("") cause and a cause-less kind both render kind-only
+			// lines; a set cause is quoted after the kind, with the source
+			// leading the parenthesized fields.
+			name: "one line per entry",
+			entries: []vuls2.WarningEntry{
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindEmptyRange}},
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluablePackageType, Cause: ""}},
+				{Source: sourceTypes.RedHatOVALv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
+				{Source: sourceTypes.RedHatCSAF, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "future-range-a"}},
+			},
 			want: []string{
 				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: empty-range). Detection may be incomplete; updating vuls may resolve this.`,
 				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type). Detection may be incomplete; updating vuls may resolve this.`,
-				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-package-type, cause: "future-package"). Detection may be incomplete; updating vuls may resolve this.`,
 				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
-				`vuls2 skipped data it cannot evaluate (source: redhat-ovalv2, kind: unevaluable-range-type, cause: "future-range-b"). Detection may be incomplete; updating vuls may resolve this.`,
 				`vuls2 skipped data it cannot evaluate (source: redhat-csaf, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := gocmp.Diff(tt.want, vuls2.WarningMessages(tt.detected), gocmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
-				t.Errorf("warningMessages() (-expected +got):\n%s", diff)
+			if diff := gocmp.Diff(tt.want, vuls2.RenderWarningEntries(tt.entries)); diff != "" {
+				t.Errorf("renderWarningEntries() (-expected +got):\n%s", diff)
 			}
 		})
 	}
