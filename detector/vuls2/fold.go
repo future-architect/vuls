@@ -219,6 +219,15 @@ func foldDetectionSeq(seq iter.Seq2[detectTypes.RootDetection, error], project f
 // removed. The caller drops rootIDs whose Contents end up empty. The
 // cpe-ecosystem counterpart is projectCPEDetection.
 func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (projectedDetection, error) {
+	// detect() picks this projector by which Detect stream it folds, while
+	// the walker downstream (walkVulnerabilityDetections) dispatches on
+	// d.Ecosystem; the two agree only through vuls2's stamping invariant.
+	// The projections are mutually incompatible, so fail loudly where a
+	// disagreement would otherwise be walked silently as a pkg tree.
+	if d.Ecosystem == ecosystemTypes.EcosystemTypeCPE {
+		return projectedDetection{}, xerrors.Errorf("ospkg projection of a cpe detection. ecosystem: %s", d.Ecosystem)
+	}
+
 	contents := make(map[sourceTypes.SourceID][]projectedCondition, len(d.Contents))
 	for sourceID, fconds := range d.Contents {
 		kept := make([]projectedCondition, 0, len(fconds))
@@ -246,6 +255,14 @@ func projectOSPkgDetection(d detectTypes.VulnerabilityDataDetection) (projectedD
 // (hasSuppressedCPESource, per-rootID vulnerability-data narrowing) stay
 // meaningful. The ospkg-ecosystem counterpart is projectOSPkgDetection.
 func projectCPEDetection(d detectTypes.VulnerabilityDataDetection) (projectedDetection, error) {
+	// Mirror of projectOSPkgDetection's check: an ospkg-shaped tree
+	// reaching walkCPECriteria would trip its walk-ready guard and fail
+	// the report; catching the mismatch at projection time names the
+	// actual mistake instead.
+	if d.Ecosystem != ecosystemTypes.EcosystemTypeCPE {
+		return projectedDetection{}, xerrors.Errorf("cpe projection of a non-cpe detection. ecosystem: %s", d.Ecosystem)
+	}
+
 	contents := make(map[sourceTypes.SourceID][]projectedCondition, len(d.Contents))
 	for sourceID, fconds := range d.Contents {
 		// DefinedProducts is only ever read for the verified sources

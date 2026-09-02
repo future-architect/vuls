@@ -328,10 +328,21 @@ func Test_projectOSPkgDetection(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		d    detectTypes.VulnerabilityDataDetection
-		want vuls2.ProjectedDetection
+		name    string
+		d       detectTypes.VulnerabilityDataDetection
+		want    vuls2.ProjectedDetection
+		wantErr bool
 	}{
+		{
+			// The projector is picked per Detect stream while the walker
+			// dispatches on Ecosystem; a cpe detection reaching the ospkg
+			// projector is the mismatch the assertion pins.
+			name: "cpe detection is rejected",
+			d: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+			},
+			wantErr: true,
+		},
 		{
 			name: "OR keeps accepted, drops unaccepted",
 			d: detectTypes.VulnerabilityDataDetection{
@@ -446,8 +457,11 @@ func Test_projectOSPkgDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := vuls2.ProjectOSPkgDetection(tt.d)
-			if err != nil {
-				t.Fatalf("projectOSPkgDetection. error = %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("projectOSPkgDetection() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if diff := gocmp.Diff(tt.want, got, gocmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("projectOSPkgDetection() (-expected +got):\n%s", diff)
@@ -607,6 +621,15 @@ func Test_projectCPEDetection(t *testing.T) {
 				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
 					sourceTypes.NVDFeedCVEv2: {{Criteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorType("future-operator")}}},
 				},
+			},
+			wantErr: true,
+		},
+		{
+			// Mirror of Test_projectOSPkgDetection's "cpe detection is
+			// rejected": an ospkg detection reaching the cpe projector.
+			name: "non-cpe detection is rejected",
+			d: detectTypes.VulnerabilityDataDetection{
+				Ecosystem: ecosystemTypes.Ecosystem("redhat:8"),
 			},
 			wantErr: true,
 		},
