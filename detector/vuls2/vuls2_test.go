@@ -13464,6 +13464,7 @@ func Test_walkCPECriteria(t *testing.T) {
 		args      args
 		wantExact []string
 		wantVP    []string
+		wantErr   bool
 	}{
 		{
 			name: "exact-quality index -> exact tier",
@@ -13684,12 +13685,31 @@ func Test_walkCPECriteria(t *testing.T) {
 			},
 			wantVP: []string{"cpe:2.3:a:vendor:product:9.9.9:*:*:*:*:*:*:*"},
 		},
+		{
+			// The walk-ready guard is the only place a projector/walker
+			// mismatch surfaces (an ospkg-projected tree reaching this
+			// walker); the two cases pin both halves of the precondition.
+			name:    "non-OR operator is not walk-ready",
+			args:    args{criteria: criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeAND}},
+			wantErr: true,
+		},
+		{
+			name: "nested criterias are not walk-ready",
+			args: args{criteria: criteriaTypes.FilteredCriteria{
+				Operator:  criteriaTypes.CriteriaOperatorTypeOR,
+				Criterias: []criteriaTypes.FilteredCriteria{{Operator: criteriaTypes.CriteriaOperatorTypeOR}},
+			}},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exact, vp, err := vuls2.WalkCPECriteria(tt.args.sourceID, tt.args.criteria, scanTypes.ScanResult{CPE: tt.args.scanned}, tt.args.noJVNCPEs, tt.args.verifiedProducts)
-			if err != nil {
-				t.Fatalf("walkCPECriteria() error = %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("walkCPECriteria() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
 			}
 			if diff := gocmp.Diff(exact, tt.wantExact); diff != "" {
 				t.Errorf("exact mismatch (-got +want):\n%s", diff)
