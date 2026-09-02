@@ -33,28 +33,6 @@ import (
 )
 
 func Test_projectCPECriteria(t *testing.T) {
-	cpeCriterion := func(vulnerable bool, cpe string, exact, vp []int, matches ...string) criterionTypes.FilteredCriterion {
-		c := ccTypes.Criterion{Vulnerable: vulnerable, CPE: ccTypes.CPE(cpe)}
-		if vulnerable {
-			c.Range = &ccRangeTypes.Range{}
-		}
-		for _, m := range matches {
-			c.CPEMatches = append(c.CPEMatches, ccTypes.CPE(m))
-		}
-		return criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &c},
-			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
-		}
-	}
-	// a kept (walk-ready) criterion: vulnerable, CPE string verbatim,
-	// Accepts intact, CPEMatches/Range dropped
-	keptCriterion := func(cpe string, exact, vp []int) criterionTypes.FilteredCriterion {
-		return criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}},
-			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact, VersionUnconfirmed: vp}},
-		}
-	}
-
 	tests := []struct {
 		name         string
 		ca           criteriaTypes.FilteredCriteria
@@ -75,14 +53,33 @@ func Test_projectCPECriteria(t *testing.T) {
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					cpeCriterion(true, "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, nil,
-						"cpe:2.3:o:linux:linux_kernel:5.10.1:*:*:*:*:*:*:*", "cpe:2.3:o:linux:linux_kernel:5.10.2:*:*:*:*:*:*:*"),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &ccTypes.Criterion{
+								Vulnerable: true,
+								CPE:        "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*",
+								Range:      &ccRangeTypes.Range{},
+								CPEMatches: []ccTypes.CPE{
+									"cpe:2.3:o:linux:linux_kernel:5.10.1:*:*:*:*:*:*:*",
+									"cpe:2.3:o:linux:linux_kernel:5.10.2:*:*:*:*:*:*:*",
+								},
+							},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+					},
 				},
 			},
 			wantCriteria: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, nil),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*"},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+					},
 				},
 			},
 			wantDefined: map[string]struct{}{"o:linux:linux_kernel": {}},
@@ -97,16 +94,40 @@ func Test_projectCPECriteria(t *testing.T) {
 				Criterias: []criteriaTypes.FilteredCriteria{{
 					Operator: criteriaTypes.CriteriaOperatorTypeAND,
 					Criterions: []criterionTypes.FilteredCriterion{
-						cpeCriterion(true, "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", nil, []int{0}),
-						cpeCriterion(false, "cpe:2.3:h:vendorx:boardx:-:*:*:*:*:*:*:*", nil, nil,
-							"cpe:2.3:h:vendorx:boardy:-:*:*:*:*:*:*:*"),
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: &ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*",
+									Range:      &ccRangeTypes.Range{},
+								},
+							},
+							Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}}},
+						},
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: &ccTypes.Criterion{
+									Vulnerable: false,
+									CPE:        "cpe:2.3:h:vendorx:boardx:-:*:*:*:*:*:*:*",
+									CPEMatches: []ccTypes.CPE{"cpe:2.3:h:vendorx:boardy:-:*:*:*:*:*:*:*"},
+								},
+							},
+						},
 					},
 				}},
 			},
 			wantCriteria: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", nil, []int{0}),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*"},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}}},
+					},
 				},
 			},
 			wantDefined: map[string]struct{}{"h:vendorx:boardx": {}, "h:vendorx:boardy": {}, "o:linux:linux_kernel": {}},
@@ -118,15 +139,40 @@ func Test_projectCPECriteria(t *testing.T) {
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					cpeCriterion(true, "cpe:2.3:a:vendorc:productc:*:*:*:*:*:*:*:*", nil, nil,
-						"cpe:2.3:a:vendorc:productc:1.2.3:*:*:*:*:*:*:*"),
-					cpeCriterion(true, "cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*", []int{1}, nil),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &ccTypes.Criterion{
+								Vulnerable: true,
+								CPE:        "cpe:2.3:a:vendorc:productc:*:*:*:*:*:*:*:*",
+								Range:      &ccRangeTypes.Range{},
+								CPEMatches: []ccTypes.CPE{"cpe:2.3:a:vendorc:productc:1.2.3:*:*:*:*:*:*:*"},
+							},
+						},
+					},
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &ccTypes.Criterion{
+								Vulnerable: true,
+								CPE:        "cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*",
+								Range:      &ccRangeTypes.Range{},
+							},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{1}}},
+					},
 				},
 			},
 			wantCriteria: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					keptCriterion("cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*", []int{1}, nil),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "cpe:2.3:a:vendorb:productb:*:*:*:*:*:*:*:*"},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{1}}},
+					},
 				},
 			},
 			wantDefined: map[string]struct{}{"a:vendorb:productb": {}, "a:vendorc:productc": {}},
@@ -138,17 +184,41 @@ func Test_projectCPECriteria(t *testing.T) {
 				Criterias: []criteriaTypes.FilteredCriteria{{
 					Operator: criteriaTypes.CriteriaOperatorTypeOR,
 					Criterions: []criterionTypes.FilteredCriterion{
-						cpeCriterion(true, "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, []int{1}),
+						{
+							Criterion: criterionTypes.Criterion{
+								Type: criterionTypes.CriterionTypeCPE,
+								CPE: &ccTypes.Criterion{
+									Vulnerable: true,
+									CPE:        "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*",
+									Range:      &ccRangeTypes.Range{},
+								},
+							},
+							Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}, VersionUnconfirmed: []int{1}}},
+						},
 					},
 				}},
 				Criterions: []criterionTypes.FilteredCriterion{
-					cpeCriterion(false, "cpe:2.3:h:vendorx:boardx:-:*:*:*:*:*:*:*", nil, nil),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &ccTypes.Criterion{
+								Vulnerable: false,
+								CPE:        "cpe:2.3:h:vendorx:boardx:-:*:*:*:*:*:*:*",
+							},
+						},
+					},
 				},
 			},
 			wantCriteria: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					keptCriterion("cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*", []int{0}, []int{1}),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*"},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}, VersionUnconfirmed: []int{1}}},
+					},
 				},
 			},
 			wantDefined: map[string]struct{}{"h:vendorx:boardx": {}, "o:linux:linux_kernel": {}},
@@ -160,14 +230,39 @@ func Test_projectCPECriteria(t *testing.T) {
 			ca: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					cpeCriterion(true, "not-a-cpe", []int{0}, nil, "also-not-a-cpe"),
-					cpeCriterion(false, "not-a-cpe-either", nil, nil),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &ccTypes.Criterion{
+								Vulnerable: true,
+								CPE:        "not-a-cpe",
+								Range:      &ccRangeTypes.Range{},
+								CPEMatches: []ccTypes.CPE{"also-not-a-cpe"},
+							},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+					},
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE: &ccTypes.Criterion{
+								Vulnerable: false,
+								CPE:        "not-a-cpe-either",
+							},
+						},
+					},
 				},
 			},
 			wantCriteria: criteriaTypes.FilteredCriteria{
 				Operator: criteriaTypes.CriteriaOperatorTypeOR,
 				Criterions: []criterionTypes.FilteredCriterion{
-					keptCriterion("not-a-cpe", []int{0}, nil),
+					{
+						Criterion: criterionTypes.Criterion{
+							Type: criterionTypes.CriterionTypeCPE,
+							CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "not-a-cpe"},
+						},
+						Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+					},
 				},
 			},
 			wantDefined: nil,
@@ -368,32 +463,6 @@ func Test_projectOSPkgDetection(t *testing.T) {
 // DefinedProducts gate (collected per condition for verifiedCPESources,
 // nil for every other source, mirroring collectVerifiedProducts' read).
 func Test_projectCPEDetection(t *testing.T) {
-	cc := func(cpe string, exact []int, matches ...string) criterionTypes.FilteredCriterion {
-		c := ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe), Range: &ccRangeTypes.Range{}}
-		for _, m := range matches {
-			c.CPEMatches = append(c.CPEMatches, ccTypes.CPE(m))
-		}
-		return criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &c},
-			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact}},
-		}
-	}
-	kept := func(cpe string, exact []int) criterionTypes.FilteredCriterion {
-		return criterionTypes.FilteredCriterion{
-			Criterion: criterionTypes.Criterion{Type: criterionTypes.CriterionTypeCPE, CPE: &ccTypes.Criterion{Vulnerable: true, CPE: ccTypes.CPE(cpe)}},
-			Accepts:   criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: exact}},
-		}
-	}
-	or := func(cns ...criterionTypes.FilteredCriterion) criteriaTypes.FilteredCriteria {
-		return criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR, Criterions: cns}
-	}
-
-	const (
-		kernelCPE = "cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*"
-		xenCPE    = "cpe:2.3:o:xen:xen:-:*:*:*:*:*:*:*"
-		appCPE    = "cpe:2.3:a:vendora:producta:1.0:*:*:*:*:*:*:*"
-	)
-
 	tests := []struct {
 		name    string
 		d       detectTypes.VulnerabilityDataDetection
@@ -411,11 +480,41 @@ func Test_projectCPEDetection(t *testing.T) {
 				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
 					sourceTypes.NVDFeedCVEv2: {
 						{
-							Criteria: or(cc(kernelCPE, []int{0}, xenCPE)),
-							Tag:      segmentTypes.DetectionTag("t1"),
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{
+									{
+										Criterion: criterionTypes.Criterion{
+											Type: criterionTypes.CriterionTypeCPE,
+											CPE: &ccTypes.Criterion{
+												Vulnerable: true,
+												CPE:        "cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*",
+												Range:      &ccRangeTypes.Range{},
+												CPEMatches: []ccTypes.CPE{"cpe:2.3:o:xen:xen:-:*:*:*:*:*:*:*"},
+											},
+										},
+										Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+									},
+								},
+							},
+							Tag: segmentTypes.DetectionTag("t1"),
 						},
 						{
-							Criteria: or(cc(appCPE, nil)),
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{
+									{
+										Criterion: criterionTypes.Criterion{
+											Type: criterionTypes.CriterionTypeCPE,
+											CPE: &ccTypes.Criterion{
+												Vulnerable: true,
+												CPE:        "cpe:2.3:a:vendora:producta:1.0:*:*:*:*:*:*:*",
+												Range:      &ccRangeTypes.Range{},
+											},
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -425,12 +524,23 @@ func Test_projectCPEDetection(t *testing.T) {
 				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
 					sourceTypes.NVDFeedCVEv2: {
 						{
-							Criteria:        or(kept(kernelCPE, []int{0})),
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{
+									{
+										Criterion: criterionTypes.Criterion{
+											Type: criterionTypes.CriterionTypeCPE,
+											CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*"},
+										},
+										Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+									},
+								},
+							},
 							Tag:             segmentTypes.DetectionTag("t1"),
 							DefinedProducts: map[string]struct{}{"o:linux:linux_kernel": {}, "o:xen:xen": {}},
 						},
 						{
-							Criteria:        or(),
+							Criteria:        criteriaTypes.FilteredCriteria{Operator: criteriaTypes.CriteriaOperatorTypeOR},
 							DefinedProducts: map[string]struct{}{"a:vendora:producta": {}},
 						},
 					},
@@ -445,13 +555,48 @@ func Test_projectCPEDetection(t *testing.T) {
 			d: detectTypes.VulnerabilityDataDetection{
 				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 				Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
-					sourceTypes.VulnCheckNISTNVD2: {{Criteria: or(cc(kernelCPE, []int{0}, xenCPE))}},
+					sourceTypes.VulnCheckNISTNVD2: {
+						{
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{
+									{
+										Criterion: criterionTypes.Criterion{
+											Type: criterionTypes.CriterionTypeCPE,
+											CPE: &ccTypes.Criterion{
+												Vulnerable: true,
+												CPE:        "cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*",
+												Range:      &ccRangeTypes.Range{},
+												CPEMatches: []ccTypes.CPE{"cpe:2.3:o:xen:xen:-:*:*:*:*:*:*:*"},
+											},
+										},
+										Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			want: vuls2.ProjectedDetection{
 				Ecosystem: ecosystemTypes.EcosystemTypeCPE,
 				Contents: map[sourceTypes.SourceID][]vuls2.ProjectedCondition{
-					sourceTypes.VulnCheckNISTNVD2: {{Criteria: or(kept(kernelCPE, []int{0}))}},
+					sourceTypes.VulnCheckNISTNVD2: {
+						{
+							Criteria: criteriaTypes.FilteredCriteria{
+								Operator: criteriaTypes.CriteriaOperatorTypeOR,
+								Criterions: []criterionTypes.FilteredCriterion{
+									{
+										Criterion: criterionTypes.Criterion{
+											Type: criterionTypes.CriterionTypeCPE,
+											CPE:  &ccTypes.Criterion{Vulnerable: true, CPE: "cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*"},
+										},
+										Accepts: criterionTypes.AcceptQueries{CPE: criterionTypes.CPEAccepts{Exact: []int{0}}},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
