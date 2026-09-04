@@ -59,7 +59,7 @@ func Test_comparePackStatus_solarisIPS(t *testing.T) {
 	ps := func(fixedIn string, notFixed bool) packStatus {
 		return packStatus{
 			rangeType: vcAffectedRangeTypes.RangeTypeSolarisIPS,
-			status:    models.PackageFixStatus{Name: "entire", FixedIn: fixedIn, NotFixedYet: notFixed},
+			status:    models.PackageFixStatus{Name: "pkg", FixedIn: fixedIn, NotFixedYet: notFixed},
 		}
 	}
 	tests := []struct {
@@ -67,7 +67,7 @@ func Test_comparePackStatus_solarisIPS(t *testing.T) {
 		a, b packStatus
 		want int
 	}{
-		{name: "lower level first", a: ps("11.4-11.4.93", false), b: ps("11.4-11.4.94", false), want: -1},
+		{name: "lower branch first", a: ps("11.4-11.4.93", false), b: ps("11.4-11.4.94", false), want: -1},
 		{name: "equal", a: ps("11.4-11.4.94", false), b: ps("11.4-11.4.94", false), want: 0},
 		{name: "not fixed yet sorts after fixed", a: ps("", true), b: ps("11.4-11.4.94", false), want: +1},
 		{name: "date bounds", a: ps("0.5.11:20160119T000000Z", false), b: ps("0.5.11:20151020T000000Z", false), want: +1},

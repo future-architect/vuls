@@ -483,6 +483,10 @@ func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) str
 			}
 		})
 	case vcAffectedRangeTypes.RangeTypeSolarisIPS:
+		// The solaris-ips comparator skips a component that only one side
+		// has, so it is not a total order over a mixed set; the Solaris data
+		// gives one bound per criterion, and bounds of one criterion share a
+		// shape, so the maximum is well defined here.
 		return slices.MaxFunc(fixed, func(x, y string) int {
 			return compareSolarisIPS(x, y)
 		})
