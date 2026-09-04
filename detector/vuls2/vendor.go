@@ -482,8 +482,33 @@ func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) str
 				return vx.Compare(vy)
 			}
 		})
+	case vcAffectedRangeTypes.RangeTypeSolarisIPS:
+		return slices.MaxFunc(fixed, func(x, y string) int {
+			return compareSolarisIPS(x, y)
+		})
 	default:
 		return fixed[0]
+	}
+}
+
+// compareSolarisIPS orders two IPS (pkg(7)) versions with the comparator
+// of the range type; a version the comparator rejects sorts first, and two
+// rejected versions are equal, the same convention the apk and dpkg cases
+// use for unparsable versions.
+func compareSolarisIPS(x, y string) int {
+	n, err := vcAffectedRangeTypes.RangeTypeSolarisIPS.CompareVersions(ecosystemTypes.EcosystemTypeSolaris, x, y)
+	if err == nil {
+		return n
+	}
+	_, errx := vcAffectedRangeTypes.RangeTypeSolarisIPS.CompareVersions(ecosystemTypes.EcosystemTypeSolaris, x, x)
+	_, erry := vcAffectedRangeTypes.RangeTypeSolarisIPS.CompareVersions(ecosystemTypes.EcosystemTypeSolaris, y, y)
+	switch {
+	case errx != nil && erry != nil:
+		return 0
+	case errx != nil:
+		return -1
+	default:
+		return +1
 	}
 }
 
@@ -541,6 +566,8 @@ func comparePackStatus(a, b packStatus) (int, error) {
 				default:
 					return va.Compare(vb)
 				}
+			case vcAffectedRangeTypes.RangeTypeSolarisIPS:
+				return compareSolarisIPS(a.status.FixedIn, b.status.FixedIn)
 			default:
 				return 0
 			}
@@ -682,6 +709,14 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 		return models.Reference{
 			Link:   fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", da.AdvisoryID),
 			Source: "MICROSOFT",
+			RefID:  da.AdvisoryID,
+		}, nil
+	case ecosystemTypes.EcosystemTypeSolaris:
+		// The advisory id is the slug of the public Oracle security alert
+		// page (bulletinjul2026, cpujul2026).
+		return models.Reference{
+			Link:   fmt.Sprintf("https://www.oracle.com/security-alerts/%s.html", da.AdvisoryID),
+			Source: "ORACLE",
 			RefID:  da.AdvisoryID,
 		}, nil
 	default:
@@ -1015,6 +1050,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		return models.SUSE
 	case ecosystemTypes.EcosystemTypeMicrosoft:
 		return models.Microsoft
+	case ecosystemTypes.EcosystemTypeSolaris:
+		return models.Solaris
 	default:
 		return models.NewCveContentType(et)
 	}
@@ -1208,6 +1245,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAmazon,
 		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeAlpine:
 		return models.OvalMatch
+	case ecosystemTypes.EcosystemTypeSolaris:
+		return models.OracleSolarisAdvisoryMatch
 	case ecosystemTypes.EcosystemTypeDebian:
 		switch s {
 		case sourceTypes.DebianSecurityTrackerSalsa, sourceTypes.DebianSecurityTrackerAPI:
