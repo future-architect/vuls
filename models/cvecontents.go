@@ -527,6 +527,9 @@ const (
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
 
+	// Solaris is Oracle Solaris
+	Solaris CveContentType = "solaris"
+
 	// Amazon is Amazon Linux
 	Amazon CveContentType = "amazon"
 
