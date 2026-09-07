@@ -1069,8 +1069,8 @@ func (o *redhatBase) rpmQa() string {
 
 func (o *redhatBase) rpmQf() string {
 	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM}\n" `
-	const newer = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM}\n"`
-	const modularity = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM} %{MODULARITYLABEL}\n"`
+	const newer = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM}\n" `
+	const modularity = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM} %{MODULARITYLABEL}\n" `
 	switch o.Distro.Family {
 	case constant.OpenSUSE:
 		if o.Distro.Release == "tumbleweed" {
