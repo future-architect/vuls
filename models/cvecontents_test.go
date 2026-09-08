@@ -791,6 +791,10 @@ func TestGetCveContentTypes(t *testing.T) {
 			want:   []CveContentType{Ubuntu, UbuntuAPI},
 		},
 		{
+			family: constant.Solaris,
+			want:   []CveContentType{Solaris},
+		},
+		{
 			family: constant.FreeBSD,
 			want:   nil,
 		},
