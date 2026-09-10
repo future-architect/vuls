@@ -802,6 +802,12 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://www.cve.org/CVERecord?id=%s", v.Content.ID)
 	case models.Microsoft:
 		return fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", v.Content.ID)
+	case models.Solaris:
+		// Oracle publishes Solaris fixes per advisory (a quarterly Third Party
+		// Bulletin or Critical Patch Update), whose public URL slug is the
+		// root ID (e.g. bulletinjul2026, cpujul2026), so the per-CVE source
+		// link points at that advisory page.
+		return fmt.Sprintf("https://www.oracle.com/security-alerts/%s.html", rootID)
 	default:
 		return ""
 	}
