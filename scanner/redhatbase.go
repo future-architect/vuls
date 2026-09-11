@@ -999,7 +999,7 @@ func (o *redhatBase) procPathToFQPN(execCommand string) (string, error) {
 }
 
 func (o *redhatBase) getOwnerPkgs(paths []string) (names []string, _ error) {
-	cmd := o.rpmQf() + strings.Join(paths, " ")
+	cmd := fmt.Sprintf("%s %s", o.rpmQf(), strings.Join(paths, " "))
 	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
 	// rpm exit code means `the number` of errors.
 	// https://listman.redhat.com/archives/rpm-list/2005-July/msg00071.html
@@ -1068,7 +1068,7 @@ func (o *redhatBase) rpmQa() string {
 }
 
 func (o *redhatBase) rpmQf() string {
-	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM}\n" `
+	const old = `rpm -qf --queryformat "%{NAME} %{EPOCH} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM}\n"`
 	const newer = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM}\n"`
 	const modularity = `rpm -qf --queryformat "%{NAME} %{EPOCHNUM} %{VERSION} %{RELEASE} %{ARCH} %{SOURCERPM} %{MODULARITYLABEL}\n"`
 	switch o.Distro.Family {
