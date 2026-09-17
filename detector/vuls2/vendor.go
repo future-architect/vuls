@@ -482,37 +482,8 @@ func selectFixedIn(rangeType vcAffectedRangeTypes.RangeType, fixed []string) str
 				return vx.Compare(vy)
 			}
 		})
-	case vcAffectedRangeTypes.RangeTypeSolarisIPS:
-		// The solaris-ips comparator skips a component that only one side
-		// has, so it is not a total order over a mixed set; the Solaris data
-		// gives one bound per criterion, and bounds of one criterion share a
-		// shape, so the maximum is well defined here.
-		return slices.MaxFunc(fixed, func(x, y string) int {
-			return compareSolarisIPS(x, y)
-		})
 	default:
 		return fixed[0]
-	}
-}
-
-// compareSolarisIPS orders two IPS (pkg(7)) versions with the comparator
-// of the range type; a version the comparator rejects sorts first, and two
-// rejected versions are equal, the same convention the apk and dpkg cases
-// use for unparsable versions.
-func compareSolarisIPS(x, y string) int {
-	n, err := vcAffectedRangeTypes.RangeTypeSolarisIPS.CompareVersions(ecosystemTypes.EcosystemTypeSolaris, x, y)
-	if err == nil {
-		return n
-	}
-	_, errx := vcAffectedRangeTypes.RangeTypeSolarisIPS.CompareVersions(ecosystemTypes.EcosystemTypeSolaris, x, x)
-	_, erry := vcAffectedRangeTypes.RangeTypeSolarisIPS.CompareVersions(ecosystemTypes.EcosystemTypeSolaris, y, y)
-	switch {
-	case errx != nil && erry != nil:
-		return 0
-	case errx != nil:
-		return -1
-	default:
-		return +1
 	}
 }
 
@@ -570,8 +541,6 @@ func comparePackStatus(a, b packStatus) (int, error) {
 				default:
 					return va.Compare(vb)
 				}
-			case vcAffectedRangeTypes.RangeTypeSolarisIPS:
-				return compareSolarisIPS(a.status.FixedIn, b.status.FixedIn)
 			default:
 				return 0
 			}
