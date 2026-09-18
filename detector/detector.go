@@ -238,7 +238,7 @@ func DetectPkgCves(r *models.ScanResult, sesh *vuls2.Session) error {
 		}
 	case constant.RedHat, constant.CentOS, constant.Fedora, constant.Alma, constant.Rocky, constant.Oracle, constant.Amazon,
 		constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop,
-		constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine:
+		constant.Debian, constant.Raspbian, constant.Ubuntu, constant.Alpine, constant.Solaris:
 		switch {
 		case r.ScannedVia == "trivy":
 			// trivy runs its own detection; vuls2 OS-package detection is skipped.
