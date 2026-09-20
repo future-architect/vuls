@@ -736,11 +736,21 @@ func splitFileName(filename string) (name, ver, rel, epoch, arch string, err err
 	ver = basename[verIndex+1 : relIndex]
 
 	epochIndex := strings.Index(basename, ":")
-	if epochIndex != -1 {
+	// The doc-comment format puts the optional epoch as a leading "<n>:"
+	// prefix. A colon found anywhere past the version boundary belongs to
+	// some other field (e.g. "name-1:1.40.16-rel.arch", emitted by some
+	// dnf builds) and must not be treated as an epoch — otherwise the
+	// `basename[epochIndex+1 : verIndex]` slice below inverts and panics.
+	if epochIndex != -1 && epochIndex < verIndex {
 		epoch = basename[:epochIndex]
+	} else {
+		epochIndex = -1
 	}
 
 	name = basename[epochIndex+1 : verIndex]
+	if name == "" {
+		return "", "", "", "", "", xerrors.Errorf("unexpected file name. expected: %q, actual: %q", "(<epoch>:)<name>-<version>-(<release>)(.|-)<arch>.rpm", filename)
+	}
 	return name, ver, rel, epoch, arch, nil
 }
 

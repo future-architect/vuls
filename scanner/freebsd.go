@@ -280,6 +280,12 @@ func (o *bsd) parsePkgVersion(stdout string) models.Packages {
 				Version: ver,
 			}
 		case "<":
+			// Expected format: "<name>-<ver> < needs updating (index has <new>)"
+			// — 7 whitespace-separated fields. A truncated line that survives
+			// the earlier len < 2 guard would otherwise panic on fields[6].
+			if len(fields) < 7 {
+				continue
+			}
 			candidate := strings.TrimSuffix(fields[6], ")")
 			packs[name] = models.Package{
 				Name:       name,
@@ -331,11 +337,18 @@ func (o *bsd) parseBlock(block string) (packName string, cveIDs []string, vulnID
 	lines := strings.SplitSeq(block, "\n")
 	for l := range lines {
 		if strings.HasSuffix(l, " is vulnerable:") {
-			packVer := strings.Fields(l)[0]
-			splitted := strings.Split(packVer, "-")
+			fields := strings.Fields(l)
+			if len(fields) == 0 {
+				continue
+			}
+			splitted := strings.Split(fields[0], "-")
 			packName = strings.Join(splitted[:len(splitted)-1], "-")
 		} else if strings.HasPrefix(l, "CVE:") {
-			cveIDs = append(cveIDs, strings.Fields(l)[1])
+			fields := strings.Fields(l)
+			if len(fields) < 2 {
+				continue
+			}
+			cveIDs = append(cveIDs, fields[1])
 		} else if strings.HasPrefix(l, "WWW:") {
 			splitted := strings.Split(l, "/")
 			vulnID = strings.TrimSuffix(splitted[len(splitted)-1], ".html")

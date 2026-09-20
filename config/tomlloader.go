@@ -294,7 +294,16 @@ func setDefaultIfEmpty(server *ServerInfo) error {
 	return nil
 }
 
-func toCpeURI(cpename string) (string, error) {
+func toCpeURI(cpename string) (uri string, err error) {
+	// go-cpe's BindToURI / UnbindURI panic on some malformed inputs (e.g.
+	// embedded backslash-escapes); convert that into an error so a single
+	// bad CPE in user config can never bring the process down.
+	defer func() {
+		if r := recover(); r != nil {
+			uri = ""
+			err = xerrors.Errorf("Failed to parse CPE %q: %v", cpename, r)
+		}
+	}()
 	if strings.HasPrefix(cpename, "cpe:2.3:") {
 		wfn, err := naming.UnbindFS(cpename)
 		if err != nil {
