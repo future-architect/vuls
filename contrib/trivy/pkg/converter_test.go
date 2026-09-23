@@ -942,6 +942,259 @@ func TestConvert(t *testing.T) {
 				SrcPackages: models.SrcPackages{},
 			},
 		},
+		{
+			// Trivy skips OS advisory matching for packages it classified as
+			// third-party, so the class must reach the scan result: without it
+			// "no CVE" and "not matched" are indistinguishable downstream.
+			name: "ClassOSPkg propagates Repository.Class to Package",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "nvidia-container-toolkit",
+								Version:    "1.17.8",
+								Release:    "1",
+								SrcName:    "nvidia-container-toolkit",
+								SrcVersion: "1.17.8",
+								SrcRelease: "1",
+								Arch:       "amd64",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassThirdParty},
+							},
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassOfficial},
+							},
+							{
+								Name:       "bash",
+								Version:    "5.2.37",
+								Release:    "2",
+								SrcName:    "bash",
+								SrcVersion: "5.2.37",
+								SrcRelease: "2",
+								Arch:       "amd64",
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Packages: models.Packages{
+					"nvidia-container-toolkit": {
+						Name:            "nvidia-container-toolkit",
+						Version:         "1.17.8-1",
+						Arch:            "amd64",
+						RepositoryClass: "third-party",
+					},
+					"libssl3t64": {
+						Name:            "libssl3t64",
+						Version:         "3.5.5-1~deb13u1",
+						Arch:            "amd64",
+						RepositoryClass: "official",
+					},
+					"bash": {
+						Name:    "bash",
+						Version: "5.2.37-2",
+						Arch:    "amd64",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"nvidia-container-toolkit": {
+						Name:        "nvidia-container-toolkit",
+						Version:     "1.17.8-1",
+						BinaryNames: []string{"nvidia-container-toolkit"},
+					},
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
+					},
+					"bash": {
+						Name:        "bash",
+						Version:     "5.2.37-2",
+						BinaryNames: []string{"bash"},
+					},
+				},
+			},
+		},
+		{
+			// The kept entry carries the class of the version that was kept,
+			// not of the last duplicate seen.
+			name: "duplicate packages, Repository.Class of the newer version wins",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.4",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassThirdParty},
+							},
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassOfficial},
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Warnings: []string{
+					"Duplicate OS package detected: libssl3t64 (3.5.4-1~deb13u1, 3.5.5-1~deb13u1). The newest version is kept, but false-positive CVEs may remain.",
+				},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:            "libssl3t64",
+						Version:         "3.5.5-1~deb13u1",
+						Arch:            "amd64",
+						RepositoryClass: "official",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
+					},
+				},
+			},
+		},
+		{
+			// Reverse order: the older duplicate must not overwrite the class
+			// of the entry that is kept.
+			name: "duplicate packages reverse order, Repository.Class of the newer version wins",
+			args: args{
+				results: types.Results{
+					{
+						Target: "debian 13.3",
+						Class:  types.ClassOSPkg,
+						Type:   ftypes.Debian,
+						Packages: []ftypes.Package{
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.5",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.5",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassOfficial},
+							},
+							{
+								Name:       "libssl3t64",
+								Version:    "3.5.4",
+								Release:    "1~deb13u1",
+								SrcName:    "openssl",
+								SrcVersion: "3.5.4",
+								SrcRelease: "1~deb13u1",
+								Arch:       "amd64",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassThirdParty},
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeContainerImage,
+				artifactName: "test:latest",
+			},
+			want: &models.ScanResult{
+				JSONVersion:     models.JSONVersion,
+				ScannedCves:     models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{},
+				Warnings: []string{
+					"Duplicate OS package detected: libssl3t64 (3.5.4-1~deb13u1, 3.5.5-1~deb13u1). The newest version is kept, but false-positive CVEs may remain.",
+				},
+				Packages: models.Packages{
+					"libssl3t64": {
+						Name:            "libssl3t64",
+						Version:         "3.5.5-1~deb13u1",
+						Arch:            "amd64",
+						RepositoryClass: "official",
+					},
+				},
+				SrcPackages: models.SrcPackages{
+					"openssl": {
+						Name:        "openssl",
+						Version:     "3.5.5-1~deb13u1",
+						BinaryNames: []string{"libssl3t64"},
+					},
+				},
+			},
+		},
+		{
+			// Only the rpm and dpkg analyzers set Repository.Class, so library
+			// packages are out of scope: models.Library has no counterpart.
+			name: "ClassLangPkg ignores Repository.Class",
+			args: args{
+				results: types.Results{
+					{
+						Target: "package-lock.json",
+						Class:  types.ClassLangPkg,
+						Type:   ftypes.Npm,
+						Packages: []ftypes.Package{
+							{
+								Name:       "express",
+								Version:    "4.18.0",
+								Repository: ftypes.PackageRepository{Class: ftypes.RepositoryClassThirdParty},
+							},
+						},
+					},
+				},
+				artifactType: ftypes.TypeFilesystem,
+				artifactName: "package-lock.json",
+			},
+			want: &models.ScanResult{
+				JSONVersion: models.JSONVersion,
+				ScannedCves: models.VulnInfos{},
+				LibraryScanners: models.LibraryScanners{
+					{
+						Type:         ftypes.Npm,
+						LockfilePath: "package-lock.json",
+						Libs: []models.Library{
+							{
+								Name:         "express",
+								Version:      "4.18.0",
+								Relationship: "unknown",
+							},
+						},
+					},
+				},
+				Packages:    models.Packages{},
+				SrcPackages: models.SrcPackages{},
+			},
+		},
 	}
 
 	for _, tt := range tests {
