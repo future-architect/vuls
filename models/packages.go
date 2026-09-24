@@ -87,6 +87,14 @@ type Package struct {
 	Changelog        *Changelog           `json:"changelog,omitempty"`
 	AffectedProcs    []AffectedProcess    `json:",omitempty"`
 	NeedRestartProcs []NeedRestartProcess `json:",omitempty"`
+
+	// RepositoryClass is how the scanner classified the distribution channel of
+	// the package: "", "official" or "third-party". It is unrelated to the
+	// Repository field above, which holds the apt/yum repository name.
+	// Only Trivy sets it, passed through from its Package.Repository.Class;
+	// "third-party" there means Trivy skipped OS advisory matching for the
+	// package, so the absence of CVEs is not evidence that it is unaffected.
+	RepositoryClass string `json:"repositoryClass,omitempty"`
 }
 
 // FQPN returns Fully-Qualified-Package-Name
