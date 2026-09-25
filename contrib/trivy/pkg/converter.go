@@ -211,16 +211,18 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 					// loop above, even when the version is identical.
 					if compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
 						pkgs[p.Name] = models.Package{
-							Name:    p.Name,
-							Version: pv,
-							Arch:    p.Arch,
+							Name:            p.Name,
+							Version:         pv,
+							Arch:            p.Arch,
+							RepositoryClass: string(p.Repository.Class),
 						}
 					}
 				} else {
 					pkgs[p.Name] = models.Package{
-						Name:    p.Name,
-						Version: pv,
-						Arch:    p.Arch,
+						Name:            p.Name,
+						Version:         pv,
+						Arch:            p.Arch,
+						RepositoryClass: string(p.Repository.Class),
 					}
 				}
 
