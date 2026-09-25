@@ -1190,6 +1190,9 @@ const (
 	// WindowsRoughMatchStr :
 	WindowsRoughMatchStr = "WindowsRoughMatch"
 
+	// OracleSolarisAdvisoryMatchStr :
+	OracleSolarisAdvisoryMatchStr = "OracleSolarisAdvisoryMatch"
+
 	// TrivyMatchStr :
 	TrivyMatchStr = "TrivyMatch"
 
@@ -1233,6 +1236,9 @@ var (
 
 	// WindowsRoughMatch is a ranking how confident the CVE-ID was detected correctly
 	WindowsRoughMatch = Confidence{30, WindowsRoughMatchStr, 0}
+
+	// OracleSolarisAdvisoryMatch is a ranking how confident the CVE-ID was detected correctly
+	OracleSolarisAdvisoryMatch = Confidence{100, OracleSolarisAdvisoryMatchStr, 0}
 
 	// TrivyMatch is a ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}

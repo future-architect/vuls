@@ -68,6 +68,9 @@ const (
 	// Alpine is
 	Alpine = "alpine"
 
+	// Solaris is Oracle Solaris
+	Solaris = "solaris"
+
 	// ServerTypePseudo is used for ServerInfo.Type, r.Family
 	ServerTypePseudo = "pseudo"
 
