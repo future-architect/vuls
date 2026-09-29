@@ -331,6 +331,8 @@ func NewCveContentType(name string) CveContentType {
 		return Fedora
 	case "oracle":
 		return Oracle
+	case "solaris":
+		return Solaris
 	case "ubuntu":
 		return Ubuntu
 	case "debian", "debian-oval":
@@ -701,6 +703,7 @@ var AllCveContetTypes = CveContentTypes{
 	Fedora,
 	SUSE,
 	Alpine,
+	Solaris,
 	Microsoft,
 	WpScan,
 	Trivy,
