@@ -702,6 +702,10 @@ func TestNewCveContentType(t *testing.T) {
 			want: RedHat,
 		},
 		{
+			name: "solaris",
+			want: Solaris,
+		},
+		{
 			name: "trivy:rapidfort",
 			want: TrivyRapidFort,
 		},
@@ -789,6 +793,10 @@ func TestGetCveContentTypes(t *testing.T) {
 		{
 			family: constant.Ubuntu,
 			want:   []CveContentType{Ubuntu, UbuntuAPI},
+		},
+		{
+			family: constant.Solaris,
+			want:   []CveContentType{Solaris},
 		},
 		{
 			family: constant.FreeBSD,

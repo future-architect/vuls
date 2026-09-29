@@ -331,6 +331,8 @@ func NewCveContentType(name string) CveContentType {
 		return Fedora
 	case "oracle":
 		return Oracle
+	case "solaris":
+		return Solaris
 	case "ubuntu":
 		return Ubuntu
 	case "debian", "debian-oval":
@@ -459,6 +461,8 @@ func GetCveContentTypes(family string) []CveContentType {
 		return []CveContentType{SUSE}
 	case constant.Alpine:
 		return []CveContentType{Alpine}
+	case constant.Solaris:
+		return []CveContentType{Solaris}
 	case constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer:
 		return []CveContentType{Apple}
 	case constant.Windows:
@@ -526,6 +530,9 @@ const (
 
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
+
+	// Solaris is Oracle Solaris
+	Solaris CveContentType = "solaris"
 
 	// Amazon is Amazon Linux
 	Amazon CveContentType = "amazon"
@@ -696,6 +703,7 @@ var AllCveContetTypes = CveContentTypes{
 	Fedora,
 	SUSE,
 	Alpine,
+	Solaris,
 	Microsoft,
 	WpScan,
 	Trivy,

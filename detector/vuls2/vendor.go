@@ -684,6 +684,14 @@ func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da mo
 			Source: "MICROSOFT",
 			RefID:  da.AdvisoryID,
 		}, nil
+	case ecosystemTypes.EcosystemTypeSolaris:
+		// The advisory id is the slug of the public Oracle security alert
+		// page (bulletinjul2026, cpujul2026).
+		return models.Reference{
+			Link:   fmt.Sprintf("https://www.oracle.com/security-alerts/%s.html", da.AdvisoryID),
+			Source: "ORACLE",
+			RefID:  da.AdvisoryID,
+		}, nil
 	default:
 		return models.Reference{}, xerrors.Errorf("unsupported family: %s", et)
 	}
@@ -763,6 +771,12 @@ func cveContentSourceLink(ccType models.CveContentType, v vulnerabilityTypes.Vul
 		return fmt.Sprintf("https://www.cve.org/CVERecord?id=%s", v.Content.ID)
 	case models.Microsoft:
 		return fmt.Sprintf("https://msrc.microsoft.com/update-guide/vulnerability/%s", v.Content.ID)
+	case models.Solaris:
+		// Oracle publishes Solaris fixes per advisory (a quarterly Third Party
+		// Bulletin or Critical Patch Update), whose public URL slug is the
+		// root ID (e.g. bulletinjul2026, cpujul2026), so the per-CVE source
+		// link points at that advisory page.
+		return fmt.Sprintf("https://www.oracle.com/security-alerts/%s.html", rootID)
 	default:
 		return ""
 	}
@@ -1015,6 +1029,8 @@ func toCveContentType(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID) models
 		return models.SUSE
 	case ecosystemTypes.EcosystemTypeMicrosoft:
 		return models.Microsoft
+	case ecosystemTypes.EcosystemTypeSolaris:
+		return models.Solaris
 	default:
 		return models.NewCveContentType(et)
 	}
@@ -1208,6 +1224,8 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 	case ecosystemTypes.EcosystemTypeRedHat, ecosystemTypes.EcosystemTypeFedora, ecosystemTypes.EcosystemTypeAlma, ecosystemTypes.EcosystemTypeRocky, ecosystemTypes.EcosystemTypeOracle, ecosystemTypes.EcosystemTypeAmazon,
 		ecosystemTypes.EcosystemTypeSUSELinuxEnterprise, ecosystemTypes.EcosystemTypeOpenSUSE, ecosystemTypes.EcosystemTypeOpenSUSELeap, ecosystemTypes.EcosystemTypeOpenSUSETumbleweed, ecosystemTypes.EcosystemTypeAlpine:
 		return models.OvalMatch
+	case ecosystemTypes.EcosystemTypeSolaris:
+		return models.OracleSolarisAdvisoryMatch
 	case ecosystemTypes.EcosystemTypeDebian:
 		switch s {
 		case sourceTypes.DebianSecurityTrackerSalsa, sourceTypes.DebianSecurityTrackerAPI:
