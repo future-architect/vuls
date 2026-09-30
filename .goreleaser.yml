@@ -8,6 +8,9 @@ release:
   github:
     owner: future-architect
     name: vuls
+  # Mark releases for tags with a semver pre-release suffix (e.g. v0.41.0-rc.2)
+  # as pre-release; final tags (e.g. v0.41.0) stay regular releases.
+  prerelease: auto
 builds:
 - id: vuls
   env:
