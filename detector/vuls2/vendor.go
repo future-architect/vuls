@@ -548,6 +548,38 @@ func comparePackStatus(a, b packStatus) (int, error) {
 	), nil
 }
 
+// comparePackStatusTie orders two statuses that comparePackStatus left tied,
+// so that postConvert keeps the same one as the merged package's status on
+// every run.
+//
+// comparePackStatus returns 0 whenever neither side is preferable on the
+// facts it ranks: NotFixedYet, then the FixedIn version where the range type
+// has a comparator. Statuses tied that way can still differ in what the
+// report shows — FixState is the vendor's own fix text, and it differs
+// between roots that report the same CVE × package (several advisories or
+// revisions for one CVE, or sources whose criteria carry no fixed version).
+// postConvert folds those roots in map order, so with "first seen wins" the
+// FixState in the report changed between runs of the same scan result
+// against the same DB.
+//
+// The keys are the raw strings in the order they matter to a reader:
+// FixState, then FixedIn, then the range type. Byte order carries no meaning
+// here (a "greater" FixState is not a later fix); the point is that any two
+// distinct statuses order the same way in every run. 0 means the two are
+// indistinguishable in the report, so either may be kept.
+//
+// This breaks the tie for the representative only. postConvert still merges
+// the root tags of tied statuses, so every tied root stays detectable and
+// keeps its DistroAdvisory. That is why it is not folded into
+// comparePackStatus, where a non-zero result drops the losing root.
+func comparePackStatusTie(a, b packStatus) int {
+	return cmp.Or(
+		cmp.Compare(a.status.FixState, b.status.FixState),
+		cmp.Compare(a.status.FixedIn, b.status.FixedIn),
+		cmp.Compare(a.rangeType, b.rangeType),
+	)
+}
+
 func advisoryReference(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, da models.DistroAdvisory) (models.Reference, error) {
 	et, v, _ := strings.Cut(string(e), ":")
 

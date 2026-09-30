@@ -7223,6 +7223,259 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// Two roots report the same CVE x package with nothing to rank them
+			// on (same class, no fixed version), so comparePackStatus ties. The
+			// FixState shown must not depend on which root the map walk visits
+			// first, and both roots must keep their DistroAdvisory.
+			name: "suse: tied statuses pick the FixState by content, keep every root",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					OSPackages: []scanTypes.OSPackage{
+						{
+							Name:    "binutils",
+							Version: "2.37",
+							Release: "7.26.1",
+							Arch:    "x86_64",
+						},
+					},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "SUSE-SU-2024:0001-1",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "SUSE-SU-2024:0001-1",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("SUSE-SU-2024:0001-1"): {
+												{
+													Content: advisoryContentTypes.Content{
+														ID: "SUSE-SU-2024:0001-1",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("SUSE-SU-2024:0001-1"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2024-0001",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class:  vcFixStatusTypes.ClassFixed,
+																		Vendor: "fixed by the second bulletin",
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name: "binutils",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0:2.41-150100.7.46.1",
+																			},
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							ID: "SUSE-SU-2024:0002-1",
+							Advisories: []dbTypes.VulnerabilityDataAdvisory{
+								{
+									ID: "SUSE-SU-2024:0002-1",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]advisoryTypes.Advisory{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("SUSE-SU-2024:0002-1"): {
+												{
+													Content: advisoryContentTypes.Content{
+														ID: "SUSE-SU-2024:0002-1",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-0001",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.SUSEOVAL: {
+											dataTypes.RootID("SUSE-SU-2024:0002-1"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2024-0001",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.Ecosystem("suse.linux.enterprise:15"),
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.SUSEOVAL: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeVersion,
+																Version: new(versioncriterionTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class:  vcFixStatusTypes.ClassFixed,
+																		Vendor: "fixed by the first bulletin",
+																	}),
+																	Package: vcPackageTypes.Package{
+																		Type: vcPackageTypes.PackageTypeBinary,
+																		Binary: &vcBinaryPackageTypes.Package{
+																			Name: "binutils",
+																		},
+																	},
+																	Affected: &vcAffectedTypes.Affected{
+																		Type: vcAffectedRangeTypes.RangeTypeRPM,
+																		Range: []vcAffectedRangeTypes.Range{
+																			{
+																				LessThan: "0:2.41-150100.7.46.1",
+																			},
+																		},
+																	},
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																Version: []int{0},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-0001": {
+					CveID:       "CVE-2024-0001",
+					Confidences: models.Confidences{models.OvalMatch},
+					AffectedPackages: models.PackageFixStatuses{
+						{
+							Name:     "binutils",
+							FixState: "fixed by the second bulletin",
+						},
+					},
+					DistroAdvisories: models.DistroAdvisories{
+						{
+							AdvisoryID: "SUSE-SU-2024:0001-1",
+							Issued:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+						{
+							AdvisoryID: "SUSE-SU-2024:0002-1",
+							Issued:     time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+							Updated:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					CveContents: models.CveContents{
+						models.SUSE: []models.CveContent{
+							{
+								Type:       models.SUSE,
+								CveID:      "CVE-2024-0001",
+								SourceLink: "https://www.suse.com/security/cve/CVE-2024-0001.html",
+								References: models.References{
+									{
+										Link:   "https://www.suse.com/security/cve/SUSE-SU-2024:0001-1.html",
+										Source: "SUSE",
+										RefID:  "SUSE-SU-2024:0001-1",
+									},
+									{
+										Link:   "https://www.suse.com/security/cve/SUSE-SU-2024:0002-1.html",
+										Source: "SUSE",
+										RefID:  "SUSE-SU-2024:0002-1",
+									},
+								},
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"SUSE-SU-2024:0001-1\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}},{\"root_id\":\"SUSE-SU-2024:0002-1\",\"source_id\":\"suse-oval\",\"segment\":{\"ecosystem\":\"suse.linux.enterprise:15\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "suse: kernel livepatch 1, in less-than range",
 			args: args{
 				scanned: scanTypes.ScanResult{
@@ -12461,18 +12714,24 @@ func Test_postConvert(t *testing.T) {
 			if err != nil {
 				t.Fatalf("projectDetectResult. error = %v", err)
 			}
-			got, err := vuls2.PostConvert(tt.args.scanned, detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			diff, err := compareVulnInfos(got, tt.want)
-			if err != nil {
-				t.Errorf("postConvert() compareVulnInfos() error = %v", err)
-				return
-			}
-			if diff != "" {
-				t.Errorf("postConvert() mismatch (-got +want):\n%s", diff)
+			// postConvert folds its sources in map order. Run each case a few
+			// times so a result that depends on that order shows up as a
+			// failure rather than as a flake.
+			for range 8 {
+				got, err := vuls2.PostConvert(tt.args.scanned, detected, tt.args.fsToOriginalCPE, tt.args.noJVNCPEs)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("postConvert() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				diff, err := compareVulnInfos(got, tt.want)
+				if err != nil {
+					t.Errorf("postConvert() compareVulnInfos() error = %v", err)
+					return
+				}
+				if diff != "" {
+					t.Errorf("postConvert() mismatch (-got +want):\n%s", diff)
+					return
+				}
 			}
 		})
 	}

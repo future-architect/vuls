@@ -746,6 +746,12 @@ func postConvert(scanned scanTypes.ScanResult, detected detectResult, fsToOrigin
 								rootID: src.RootID,
 								tag:    src.Segment.Tag,
 							})
+							// Tied roots all stay in rootTags, but only one status
+							// reaches the report. Choose it by content rather than
+							// by which root this map walk happened to visit first.
+							if s := (packStatus{rangeType: status.rangeType, status: status.status}); comparePackStatusTie(s, p.packStatus) > 0 {
+								p.packStatus = s
+							}
 						case -1:
 							p = pack{
 								ecosystem: src.Segment.Ecosystem,

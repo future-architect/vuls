@@ -8,6 +8,7 @@ import (
 
 	dataTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data"
 	cweTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/cwe"
+	vcAffectedRangeTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/condition/criteria/criterion/versioncriterion/affected/range"
 	ecosystemTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/detection/segment/ecosystem"
 	severityTypes "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity"
 	v31 "github.com/MaineK00n/vuls-data-update/pkg/extract/types/data/severity/cvss/v31"
@@ -364,6 +365,69 @@ func Test_toVuls0Confidence(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := toVuls0Confidence(tt.args.e, tt.args.s, tt.args.sd); got != tt.want {
 				t.Errorf("toVuls0Confidence() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_comparePackStatusTie(t *testing.T) {
+	type args struct {
+		a packStatus
+		b packStatus
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "identical",
+			args: args{
+				a: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed in advisory 1", FixedIn: "0:1.0-1"}},
+				b: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed in advisory 1", FixedIn: "0:1.0-1"}},
+			},
+			want: 0,
+		},
+		{
+			name: "fix state decides",
+			args: args{
+				a: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed in advisory 2"}},
+				b: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed in advisory 1"}},
+			},
+			want: +1,
+		},
+		{
+			name: "fix state decides before fixed in",
+			args: args{
+				a: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "a", FixedIn: "0:2.0-1"}},
+				b: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "b", FixedIn: "0:1.0-1"}},
+			},
+			want: -1,
+		},
+		{
+			name: "same fix state, fixed in decides",
+			args: args{
+				a: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeUnknown, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed", FixedIn: "1.0"}},
+				b: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeUnknown, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed", FixedIn: ""}},
+			},
+			want: +1,
+		},
+		{
+			name: "same strings, range type decides",
+			args: args{
+				a: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeUnknown, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed"}},
+				b: packStatus{rangeType: vcAffectedRangeTypes.RangeTypeRPM, status: models.PackageFixStatus{Name: "pkg", FixState: "fixed"}},
+			},
+			want: +1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := comparePackStatusTie(tt.args.a, tt.args.b); got != tt.want {
+				t.Errorf("comparePackStatusTie(a, b) = %d, want %d", got, tt.want)
+			}
+			if got := comparePackStatusTie(tt.args.b, tt.args.a); got != -tt.want {
+				t.Errorf("comparePackStatusTie(b, a) = %d, want %d", got, -tt.want)
 			}
 		})
 	}
