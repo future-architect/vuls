@@ -71,7 +71,7 @@ Vuls is a tool created to solve the problems listed above. It has the following 
   - [Red Hat Security Advisories](https://access.redhat.com/security/security-updates/)
   - [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
   - [Ubuntu CVE Tracker](https://people.canonical.com/~ubuntu-security/cve/)
-  - [Microsoft CVRF](https://api.msrc.microsoft.com/cvrf/v2.0/swagger/index)
+  - [Microsoft CVRF](https://api.msrc.microsoft.com/cvrf/v2.0/Updates)
 
 - Commands(yum, zypper, pkg-audit)
   - RHSA / ALAS / ELSA / FreeBSD-SA
