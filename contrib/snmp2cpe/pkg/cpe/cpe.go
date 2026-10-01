@@ -68,9 +68,13 @@ func Convert(result snmp.Result) []string {
 		} else {
 			h, v, ok := strings.Cut(result.SysDescr0, " version ")
 			if ok {
+				vfields := strings.Fields(v)
+				if len(vfields) == 0 {
+					break
+				}
 				cpes = append(cpes,
 					fmt.Sprintf("cpe:2.3:h:juniper:%s:-:*:*:*:*:*:*:*", strings.ToLower(h)),
-					fmt.Sprintf("cpe:2.3:o:juniper:screenos:%s:*:*:*:*:*:*:*", strings.ToLower(strings.Fields(v)[0])),
+					fmt.Sprintf("cpe:2.3:o:juniper:screenos:%s:*:*:*:*:*:*:*", strings.ToLower(vfields[0])),
 				)
 			}
 		}
