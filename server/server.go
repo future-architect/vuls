@@ -62,6 +62,8 @@ func (h VulsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	logging.Log.Infof("%s: Scan request received. Detecting vulnerabilities...", r.FormatServerName())
+
 	// Share one lazily-opened vuls2 db session across this request's package
 	// detection and the enrichment that follows, so the read cache detection
 	// warms is reused by enrichment rather than opened and rebuilt twice.
