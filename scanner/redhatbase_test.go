@@ -879,6 +879,24 @@ func TestParseNeedsRestarting(t *testing.T) {
 	}
 }
 
+func TestNormalizeNeedsRestartingComm(t *testing.T) {
+	var tests = []struct {
+		in  string
+		out string
+	}{
+		{"sshd:", "sshd"},
+		{"(sd-pam)", "sd-pam"},
+		{"-bash", "bash"},
+		{"auditd", "auditd"},
+	}
+
+	for _, tt := range tests {
+		if got := normalizeNeedsRestartingComm(tt.in); got != tt.out {
+			t.Errorf("normalizeNeedsRestartingComm(%q) = %q, want %q", tt.in, got, tt.out)
+		}
+	}
+}
+
 func Test_redhatBase_parseRpmQfLine(t *testing.T) {
 	type fields struct {
 		base base

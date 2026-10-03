@@ -940,6 +940,23 @@ func (o *redhatBase) needsRestarting() error {
 	return nil
 }
 
+// normalizeNeedsRestartingComm strips the notations needs-restarting's
+// non-path entries wrap a process name in, so the remaining token is a bare
+// command `which` can resolve on PATH:
+//   - a trailing ":" from a re-labeled argv0, e.g. "sshd: vagrant [priv]"
+//   - the kernel's "(name)" accounting-process convention, e.g. "(sd-pam)"
+//   - the shell's leading "-" login-shell marker, e.g. "-bash"
+//
+// Without this, `which` was called on "sshd:", "(sd-pam)", or "-bash"
+// verbatim, failed, and silently dropped the process from restart tracking.
+func normalizeNeedsRestartingComm(token string) string {
+	token = strings.TrimSuffix(token, ":")
+	if strings.HasPrefix(token, "(") && strings.HasSuffix(token, ")") {
+		token = strings.TrimSuffix(strings.TrimPrefix(token, "("), ")")
+	}
+	return strings.TrimPrefix(token, "-")
+}
+
 func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRestartProcess) {
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
@@ -956,7 +973,7 @@ func (o *redhatBase) parseNeedsRestarting(stdout string) (procs []models.NeedRes
 
 		path := ss[1]
 		if path != "" && !strings.HasPrefix(path, "/") {
-			path = strings.Fields(path)[0]
+			path = normalizeNeedsRestartingComm(strings.Fields(path)[0])
 			// [ec2-user@ip-172-31-11-139 ~]$ sudo needs-restarting
 			// 2024 : auditd
 			// [ec2-user@ip-172-31-11-139 ~]$ type -p auditd
