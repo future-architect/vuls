@@ -1671,7 +1671,7 @@ func enrichNVD(vi *models.VulnInfo, rootMap map[dataTypes.RootID][]vulnerability
 				continue
 			}
 
-			var rs models.References
+			var rs models.References //nolint:prealloc
 			for _, r := range v.Content.References {
 				rs = append(rs, toReference(r.URL))
 			}

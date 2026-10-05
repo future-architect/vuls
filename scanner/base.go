@@ -1072,13 +1072,12 @@ func (l *base) detectWordPress(shell string) (*models.WordPressPackages, error) 
 		return nil, err
 	}
 
-	pkgs := models.WordPressPackages{
-		models.WpPackage{
-			Name:    models.WPCore,
-			Version: ver,
-			Type:    models.WPCore,
-		},
-	}
+	pkgs := make(models.WordPressPackages, 0, 1+len(themes)+len(plugins))
+	pkgs = append(pkgs, models.WpPackage{
+		Name:    models.WPCore,
+		Version: ver,
+		Type:    models.WPCore,
+	})
 	pkgs = append(pkgs, themes...)
 	pkgs = append(pkgs, plugins...)
 	return &pkgs, nil
