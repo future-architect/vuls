@@ -801,7 +801,7 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 
 	// Go
 	case parserGoMod:
-		return parseLockfile(ctx, ftypes.GoModule, filePath, r, gomod.NewParser(true, false))
+		return parseLockfile(ctx, ftypes.GoModule, filePath, r, goModParser{gomod.NewParser(true, false)})
 	case parserExecutable:
 		return parseExecutableBinary(ctx, filePath, r)
 
@@ -852,6 +852,20 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 // and increases the scanner-only binary size.
 type lockfileParser interface {
 	Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error)
+}
+
+// goModParser adapts Trivy's go.mod parser to lockfileParser. Since Trivy
+// v0.75.0 its Parse also reports whether indirect requirements were skipped
+// (modules below Go 1.17), which Trivy's fanal analyzer uses to decide whether
+// to merge go.sum. We do not merge go.sum (see dispatch.go), so the flag is
+// dropped and the result is the same as before.
+type goModParser struct {
+	*gomod.Parser
+}
+
+func (p goModParser) Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error) {
+	pkgs, deps, _, err := p.Parser.Parse(ctx, r)
+	return pkgs, deps, err
 }
 
 // applyDependsOn populates Package.DependsOn from the parser's dependency graph.
