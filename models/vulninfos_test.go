@@ -766,6 +766,28 @@ func TestCvss3Scores(t *testing.T) {
 				},
 			}},
 		},
+		// Cisco CVRF/CSAF CVSS v3 data participates in score aggregation.
+		{
+			in: VulnInfo{
+				CveContents: CveContents{
+					Cisco: []CveContent{{
+						Type:          Cisco,
+						Cvss3Severity: "CRITICAL",
+						Cvss3Score:    9.8,
+						Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					}},
+				},
+			},
+			out: []CveContentCvss{{
+				Type: Cisco,
+				Value: Cvss{
+					Type:     CVSS3,
+					Score:    9.8,
+					Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					Severity: "CRITICAL",
+				},
+			}},
+		},
 		// Empty
 		{
 			in:  VulnInfo{},
