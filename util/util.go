@@ -127,7 +127,7 @@ func proxyEnv() string {
 		"HTTPS_PROXY",
 	}
 	for _, key := range keys {
-		httpProxyEnv.WriteString(fmt.Sprintf(` %s="%s"`, key, config.Conf.HTTPProxy))
+		fmt.Fprintf(&httpProxyEnv, ` %s="%s"`, key, config.Conf.HTTPProxy)
 	}
 	return httpProxyEnv.String()
 }

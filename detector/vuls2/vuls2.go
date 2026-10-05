@@ -1788,7 +1788,7 @@ func mergeVulnInfo(a, b models.VulnInfo) (models.VulnInfo, error) {
 				})
 				if i >= 0 {
 					base := ccs[c.Type][i]
-					var src1 []source
+					var src1 []source //nolint:prealloc
 					if err := json.Unmarshal([]byte(base.Optional["vuls2-sources"]), &src1); err != nil {
 						return models.VulnInfo{}, xerrors.Errorf("Failed to unmarshal sources. err: %w", err)
 					}

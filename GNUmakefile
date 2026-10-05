@@ -14,7 +14,7 @@
 	compare-lockfile
 
 SRCS = $(shell git ls-files '*.go')
-GO := CGO_ENABLED=0 GOEXPERIMENT=jsonv2 go
+GO := CGO_ENABLED=0 go
 PKGS = $(shell $(GO) list ./...)
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
