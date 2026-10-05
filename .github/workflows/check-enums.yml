@@ -48,8 +48,6 @@ jobs:
       - name: Diff known enum sets against vuls-data-update nightly
         id: diff
         shell: bash
-        env:
-          GOEXPERIMENT: jsonv2
         run: |
           nightly=$(git ls-remote https://github.com/MaineK00n/vuls-data-update.git refs/heads/nightly | cut -f1)
           echo "comparing against vuls-data-update nightly @ $nightly"
@@ -119,7 +117,7 @@ jobs:
 
           1. In MaineK00n/vuls2: `go get github.com/MaineK00n/vuls-data-update@$NIGHTLY && go mod tidy`, test, PR, merge.
           2. Here: `go get github.com/MaineK00n/vuls2@<commit the step-1 merge produced on vuls2 nightly> && go mod tidy` — vuls2 PRs land on its nightly branch; pin the merge commit hash rather than `@nightly`, which resolves through the module proxy and can lag behind the branch tip. Module graph resolution raises the direct vuls-data-update requirement to the same version. Open a PR with `Fixes #<this issue>`.
-          3. Verify parity before pushing: `GOEXPERIMENT=jsonv2 go run github.com/MaineK00n/vuls-data-update/tools/print-enums` for the pinned version vs `...@$NIGHTLY` — the diff must be empty (or re-run this workflow via workflow_dispatch on the PR branch).
+          3. Verify parity before pushing: `go run github.com/MaineK00n/vuls-data-update/tools/print-enums` for the pinned version vs `...@$NIGHTLY` — the diff must be empty (or re-run this workflow via workflow_dispatch on the PR branch).
 
           In each bump PR, list the incoming merged PRs (`gh api 'repos/MaineK00n/<repo>/compare/<old>...<new>' --jq '.commits[].commit.message | split("\n")[0]'`) so reviewers can see what the bump pulls in.
           BODY_EOF
