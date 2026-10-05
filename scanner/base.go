@@ -801,7 +801,7 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 
 	// Go
 	case parserGoMod:
-		return parseLockfile(ctx, ftypes.GoModule, filePath, r, goModParser{gomod.NewParser(true, false)})
+		return parseGoMod(ctx, filePath, r)
 	case parserExecutable:
 		return parseExecutableBinary(ctx, filePath, r)
 
@@ -852,20 +852,6 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 // and increases the scanner-only binary size.
 type lockfileParser interface {
 	Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error)
-}
-
-// goModParser adapts Trivy's go.mod parser to lockfileParser. Since Trivy
-// v0.75.0 its Parse also reports whether indirect requirements were skipped
-// (modules below Go 1.17), which Trivy's fanal analyzer uses to decide whether
-// to merge go.sum. We do not merge go.sum (see dispatch.go), so the flag is
-// dropped and the result is the same as before.
-type goModParser struct {
-	*gomod.Parser
-}
-
-func (p goModParser) Parse(ctx context.Context, r xio.ReadSeekerAt) ([]ftypes.Package, []ftypes.Dependency, error) {
-	pkgs, deps, _, err := p.Parser.Parse(ctx, r)
-	return pkgs, deps, err
 }
 
 // applyDependsOn populates Package.DependsOn from the parser's dependency graph.
@@ -976,6 +962,27 @@ func parseYarn(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftype
 	applyDependsOn(pkgs, depGraph)
 	return &ftypes.Application{
 		Type:     ftypes.Yarn,
+		FilePath: filePath,
+		Packages: pkgs,
+	}, nil
+}
+
+// parseGoMod handles go.mod which has a different parser signature (4 return
+// values including whether indirect requirements were skipped). Trivy's fanal
+// analyzer uses that flag (set for modules below Go 1.17) to decide whether to
+// merge go.sum. We do not merge go.sum (see dispatch.go), so it is dropped.
+func parseGoMod(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftypes.Application, error) {
+	p := gomod.NewParser(true, false)
+	pkgs, depGraph, _, err := p.Parse(ctx, r)
+	if err != nil {
+		return nil, xerrors.Errorf("parse error: %w", err)
+	}
+	if len(pkgs) == 0 {
+		return nil, nil
+	}
+	applyDependsOn(pkgs, depGraph)
+	return &ftypes.Application{
+		Type:     ftypes.GoModule,
 		FilePath: filePath,
 		Packages: pkgs,
 	}, nil
