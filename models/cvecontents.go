@@ -431,6 +431,8 @@ func NewCveContentType(name string) CveContentType {
 		return TrivySeal
 	case "trivy:redhat-csaf-vex":
 		return TrivyRedHatCSAFVEX
+	case "trivy:echo-osv":
+		return TrivyEchoOSV
 	case "GitHub":
 		return Trivy
 	default:
@@ -468,7 +470,7 @@ func GetCveContentTypes(family string) []CveContentType {
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort, TrivyJulia, TrivySeal, TrivyRedHatCSAFVEX}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort, TrivyJulia, TrivySeal, TrivyRedHatCSAFVEX, TrivyEchoOSV}
 	default:
 		return nil
 	}
@@ -669,6 +671,9 @@ const (
 	// TrivyRedHatCSAFVEX is TrivyRedHatCSAFVEX
 	TrivyRedHatCSAFVEX CveContentType = "trivy:redhat-csaf-vex"
 
+	// TrivyEchoOSV is TrivyEchoOSV
+	TrivyEchoOSV CveContentType = "trivy:echo-osv"
+
 	// GitHub is GitHub Security Alerts
 	GitHub CveContentType = "github"
 
@@ -745,6 +750,7 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyJulia,
 	TrivySeal,
 	TrivyRedHatCSAFVEX,
+	TrivyEchoOSV,
 	GitHub,
 }
 
