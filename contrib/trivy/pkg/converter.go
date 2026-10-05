@@ -68,7 +68,7 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 				notFixedYet = true
 				fixState = "Affected"
 			}
-			var references models.References
+			var references models.References //nolint:prealloc
 			for _, reference := range vuln.References {
 				references = append(references, models.Reference{
 					Source: "trivy",
