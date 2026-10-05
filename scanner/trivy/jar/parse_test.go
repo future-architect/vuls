@@ -26,9 +26,9 @@ func TestParseManifest(t *testing.T) {
 			},
 			lineBreak: "\n",
 			want: jar.Manifest{
-				ImplementationTitle:    " xercesImpl",
-				ImplementationVersion:  " 2.12.2",
-				ImplementationVendorID: " xerces",
+				ImplementationTitle:    "xercesImpl",
+				ImplementationVersion:  "2.12.2",
+				ImplementationVendorID: "xerces",
 			},
 		},
 		{
@@ -41,9 +41,9 @@ func TestParseManifest(t *testing.T) {
 			},
 			lineBreak: "\r\n",
 			want: jar.Manifest{
-				ImplementationTitle:    " xercesImpl",
-				ImplementationVersion:  " 2.12.2",
-				ImplementationVendorID: " xerces",
+				ImplementationTitle:    "xercesImpl",
+				ImplementationVersion:  "2.12.2",
+				ImplementationVendorID: "xerces",
 			},
 		},
 		{
@@ -63,16 +63,16 @@ func TestParseManifest(t *testing.T) {
 			},
 			lineBreak: "\r\n",
 			want: jar.Manifest{
-				ImplementationTitle:    " guava",
-				ImplementationVersion:  " 31.1",
-				ImplementationVendor:   " Google",
-				ImplementationVendorID: " com.google.guava",
-				SpecificationTitle:     " Guava",
-				SpecificationVersion:   " 31",
-				SpecificationVendor:    " Google LLC",
-				BundleName:             " Guava",
-				BundleVersion:          " 31.1.0",
-				BundleSymbolicName:     " com.google.guava",
+				ImplementationTitle:    "guava",
+				ImplementationVersion:  "31.1",
+				ImplementationVendor:   "Google",
+				ImplementationVendorID: "com.google.guava",
+				SpecificationTitle:     "Guava",
+				SpecificationVersion:   "31",
+				SpecificationVendor:    "Google LLC",
+				BundleName:             "Guava",
+				BundleVersion:          "31.1.0",
+				BundleSymbolicName:     "com.google.guava",
 			},
 		},
 		{
@@ -88,7 +88,7 @@ func TestParseManifest(t *testing.T) {
 			},
 			lineBreak: "\r\n",
 			want: jar.Manifest{
-				BundleVersion: " 1.2.3",
+				BundleVersion: "1.2.3",
 			},
 		},
 		{
@@ -106,9 +106,9 @@ func TestParseManifest(t *testing.T) {
 			},
 			lineBreak: "\n",
 			want: jar.Manifest{
-				ImplementationTitle:    " xercesImpl",
-				ImplementationVersion:  " 2.12.2",
-				ImplementationVendorID: " xerces",
+				ImplementationTitle:    "xercesImpl",
+				ImplementationVersion:  "2.12.2",
+				ImplementationVendorID: "xerces",
 			},
 		},
 		{
@@ -125,9 +125,9 @@ func TestParseManifest(t *testing.T) {
 			},
 			lineBreak: "\r",
 			want: jar.Manifest{
-				ImplementationTitle:    " long-title",
-				ImplementationVersion:  " 1.2.3",
-				ImplementationVendorID: " example",
+				ImplementationTitle:    "long-title",
+				ImplementationVersion:  "1.2.3",
+				ImplementationVendorID: "example",
 			},
 		},
 	}
