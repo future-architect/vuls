@@ -2245,6 +2245,33 @@ func TestVulnInfo_Cvss40Scores(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "cisco",
+			fields: fields{
+				CveID: "CVE-2019-1688",
+				CveContents: CveContents{
+					Cisco: []CveContent{
+						{
+							Type:           Cisco,
+							Cvss40Score:    7.7,
+							Cvss40Vector:   "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:H/SC:N/SI:N/SA:N",
+							Cvss40Severity: "HIGH",
+						},
+					},
+				},
+			},
+			want: []CveContentCvss{
+				{
+					Type: Cisco,
+					Value: Cvss{
+						Type:     CVSS40,
+						Score:    7.7,
+						Severity: "HIGH",
+						Vector:   "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:H/SC:N/SI:N/SA:N",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
