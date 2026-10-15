@@ -1083,6 +1083,22 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
+			name:     "Windows 11 Version 26H2 supported",
+			fields:   fields{family: constant.Windows, release: "Windows 11 Version 26H2 for x64-based Systems"},
+			now:      time.Date(2026, 10, 13, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "Windows 11 Version 26H2 eol since 2029-10-10",
+			fields:   fields{family: constant.Windows, release: "Windows 11 Version 26H2 for x64-based Systems"},
+			now:      time.Date(2029, 10, 10, 0, 0, 0, 0, time.UTC),
+			stdEnded: true,
+			extEnded: true,
+			found:    true,
+		},
+		{
 			name:     "Mac OS X 10.15 EOL",
 			fields:   fields{family: constant.MacOSX, release: "10.15.7"},
 			now:      time.Date(2023, 7, 25, 23, 59, 59, 0, time.UTC),

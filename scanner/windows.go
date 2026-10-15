@@ -917,6 +917,10 @@ var (
 				name:  "Windows 11 Version 25H2",
 			},
 			{
+				build: "26300",
+				name:  "Windows 11 Version 26H2",
+			},
+			{
 				build: "28000",
 				name:  "Windows 11 Version 26H1",
 			},
@@ -3493,6 +3497,12 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8875", kb: "5101650"},
 				{revision: "8894", kb: "5121767"},
 				{revision: "8973", kb: "5101684"},
+				{revision: "9168", kb: "5121003"},
+				{revision: "9278", kb: "5120998"},
+				{revision: "9445", kb: "5124008"},
+				{revision: "9457", kb: "5129195"},
+				{revision: "9550", kb: "5124010"},
+				{revision: "9711", kb: "5127648"},
 			},
 		},
 		// https://support.microsoft.com/en-us/topic/windows-11-version-25h2-update-history-99c7f493-df2a-4832-bd2d-6706baa0dec0
@@ -3525,6 +3535,20 @@ var windowsReleases = map[string]map[string]updateProgram{
 				{revision: "8875", kb: "5101650"},
 				{revision: "8894", kb: "5121767"},
 				{revision: "8973", kb: "5101684"},
+				{revision: "9168", kb: "5121003"},
+				{revision: "9278", kb: "5120998"},
+				{revision: "9445", kb: "5124008"},
+				{revision: "9457", kb: "5129195"},
+				{revision: "9550", kb: "5124010"},
+				{revision: "9711", kb: "5127648"},
+			},
+		},
+		// https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information (Version 26H2 (OS build 26300))
+		"26300": {
+			rollup: []windowsRelease{
+				{revision: "9457", kb: ""},
+				{revision: "9550", kb: "5124010"},
+				{revision: "9711", kb: "5127648"},
 			},
 		},
 		// https://support.microsoft.com/en-us/topic/windows-11-version-26h1-update-history-253c73cd-cab1-4bfd-94dc-76c452273fc9
