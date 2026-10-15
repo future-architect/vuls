@@ -1127,6 +1127,17 @@ func Test_windows_detectKBsFromKernelVersion(t *testing.T) {
 			},
 		},
 		{
+			name: "10.0.26300.9711",
+			base: base{
+				Distro:     config.Distro{Release: "Windows 11 Version 26H2 for x64-based Systems"},
+				osPackages: osPackages{Kernel: models.Kernel{Version: "10.0.26300.9711"}},
+			},
+			want: models.WindowsKB{
+				Applied:   []string{"5124010", "5127648"},
+				Unapplied: nil,
+			},
+		},
+		{
 			name: "err",
 			base: base{
 				Distro:     config.Distro{Release: "Windows 10 Version 22H2 for x64-based Systems"},
