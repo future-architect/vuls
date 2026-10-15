@@ -249,8 +249,9 @@ func (s *SrcPackage) AddBinaryName(name string) {
 	s.BinaryNames = append(s.BinaryNames, name)
 }
 
-// SrcPackages is Map of SrcPackage
-// { "package-name": SrcPackage }
+// SrcPackages maps source package identities to their metadata. Keys are usually
+// package names. Debian-family scans use "name@version" when multiple versions of
+// one source package coexist; consumers should read Name and Version from values.
 type SrcPackages map[string]SrcPackage
 
 // FindByBinName finds by bin-package-name
