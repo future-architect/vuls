@@ -2,9 +2,14 @@ package scanner
 
 import (
 	"cmp"
+	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -789,11 +794,12 @@ bash:
 	}
 
 	for _, tt := range tests {
-		packages, services := r.parseCheckRestart(tt.in)
-		for name, ePack := range tt.out {
-			if !reflect.DeepEqual(ePack, packages[name]) {
-				t.Errorf("expected %v, actual %v", ePack, packages[name])
-			}
+		packages, services, err := r.parseCheckRestart(tt.in, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := gocmp.Diff(tt.out, packages); diff != "" {
+			t.Errorf("packages mismatch (-want +got):\n%s", diff)
 		}
 		if !reflect.DeepEqual(tt.unknownServices, services) {
 			t.Errorf("expected %s, actual %s", tt.unknownServices, services)
@@ -1116,4 +1122,196 @@ linux-virtual,ii ,5.15.0.69.67,linux-meta,5.15.0.69.67
 			}
 		})
 	}
+}
+
+func TestParseCheckRestartTrixie(t *testing.T) {
+	stdout := `8 non-ignored program(s) or unit(s) need restarting (see checkrestart(8))
+The following systemd units started programmes that are using deleted files:
+apache2.service:
+	Program /usr/sbin/apache2 (PID: 1007, CMDLINE: '/usr/sbin/apache2 -k start')
+	Deleted Program /usr/sbin/apache2 (PID: 1189)
+custom-worker.service:
+	Script /opt/worker's app/run (PID: 2000, EXE: '/usr/bin/python3', CMDLINE: 'python3 /opt/worker/run')
+unpackaged.service:
+	Program /opt/unpackaged (PID: 2001)
+The following packages provided processes that are using deleted files and might be restartable via systemd:
+openssh-server:arm64:
+	Program /usr/sbin/sshd (PID: 3000, CMDLINE: 'sshd: user [priv]')
+The following packages provided processes that are using deleted files and might be restarted by an initscript:
+cron:
+	Program /usr/sbin/cron (PID: 4000)
+The following are using deleted files but there is no suggested way to restart them:
+bash:
+	Program /usr/bin/bash (PID: 5000, CMDLINE: '-bash')
+Unpackaged: local-worker:
+	Program /opt/local-worker (PID: 5001)
+Systemd commands:
+systemctl try-restart apache2.service
+Init script commands:
+service cron restart # suggested - from package:cron
+`
+	var paths []string
+	lookup := func(in []string) ([]string, error) {
+		paths = append(paths, in...)
+		switch in[0] {
+		case "/usr/sbin/apache2":
+			return []string{"apache2-bin"}, nil
+		case "/opt/worker's app/run":
+			return []string{"worker"}, nil
+		case "/opt/unpackaged":
+			return nil, nil
+		default:
+			t.Fatalf("unexpected package lookup: %v", in)
+			return nil, nil
+		}
+	}
+	got, services, err := newDebian(config.ServerInfo{}).parseCheckRestart(stdout, lookup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := models.NewPackages(
+		models.Package{Name: "apache2-bin", NeedRestartProcs: []models.NeedRestartProcess{
+			{PID: "1007", Path: "/usr/sbin/apache2", ServiceName: "apache2.service", InitSystem: systemd, HasInit: true},
+			{PID: "1189", Path: "/usr/sbin/apache2", ServiceName: "apache2.service", InitSystem: systemd, HasInit: true},
+		}},
+		models.Package{Name: "worker", NeedRestartProcs: []models.NeedRestartProcess{
+			{PID: "2000", Path: "/opt/worker's app/run", ServiceName: "custom-worker.service", InitSystem: systemd, HasInit: true},
+		}},
+		models.Package{Name: "openssh-server", NeedRestartProcs: []models.NeedRestartProcess{
+			{PID: "3000", Path: "/usr/sbin/sshd", HasInit: true},
+		}},
+		models.Package{Name: "cron", NeedRestartProcs: []models.NeedRestartProcess{
+			{PID: "4000", Path: "/usr/sbin/cron", ServiceName: "cron", HasInit: true},
+		}},
+		models.Package{Name: "bash", NeedRestartProcs: []models.NeedRestartProcess{
+			{PID: "5000", Path: "/usr/bin/bash", HasInit: false},
+		}},
+	)
+	if diff := gocmp.Diff(want, got); diff != "" {
+		t.Errorf("packages mismatch (-want +got):\n%s", diff)
+	}
+	if len(services) != 0 {
+		t.Errorf("unexpected unknown services: %v", services)
+	}
+	if wantPaths := []string{"/usr/sbin/apache2", "/usr/sbin/apache2", "/opt/worker's app/run", "/opt/unpackaged"}; !reflect.DeepEqual(paths, wantPaths) {
+		t.Errorf("looked up %v, want %v", paths, wantPaths)
+	}
+}
+
+func TestParseCheckRestartTrixieLookupError(t *testing.T) {
+	stdout := "The following systemd units started programmes that are using deleted files:\ncron.service:\n\tProgram /usr/sbin/cron (PID: 626)"
+	_, _, err := newDebian(config.ServerInfo{}).parseCheckRestart(stdout, func([]string) ([]string, error) {
+		return nil, os.ErrPermission
+	})
+	if !errors.Is(err, os.ErrPermission) {
+		t.Fatalf("expected package lookup permission error, got %v", err)
+	}
+}
+
+func TestParseCheckRestartTrixieMalformed(t *testing.T) {
+	stdout := `Program /orphan (PID: 100)
+The following systemd units started programmes that are using deleted files:
+cron.service:
+	Program /usr/sbin/cron
+	Program /usr/sbin/cron (PID: invalid)
+	Program /usr/sbin/cron (PID: 626
+	Program <unknown: PID: 627> (PID: 627)
+`
+	got, _, err := newDebian(config.ServerInfo{}).parseCheckRestart(stdout, func(in []string) ([]string, error) {
+		t.Fatalf("unexpected package lookup for malformed output: %v", in)
+		return nil, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Errorf("unexpected packages: %v", got)
+	}
+}
+
+func TestCheckRestartExitStatus(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("local scanner commands require /bin/sh")
+	}
+	for _, tt := range []struct {
+		status  int
+		stdout  string
+		wantErr bool
+		wantPID string
+	}{
+		{status: 0, stdout: "0 non-ignored program(s) or unit(s) need restarting"},
+		{status: 1, stdout: "The following systemd units started programmes that are using deleted files:\napache2.service:\n\tProgram /usr/sbin/apache2 (PID: 1007)", wantPID: "1007"},
+		{status: 3, stdout: "checkrestart failed", wantErr: true},
+	} {
+		t.Run(fmt.Sprint(tt.status), func(t *testing.T) {
+			dir := t.TempDir()
+			for name, script := range map[string]string{
+				"stat":         "#!/bin/sh\nprintf '%s\\n' systemd\n",
+				"checkrestart": "#!/bin/sh\nprintf '%s\\n' \"$CHECKRESTART_OUTPUT\"\nexit \"$CHECKRESTART_STATUS\"\n",
+				"dpkg":         "#!/bin/sh\nprintf '%s\\n' 'apache2-bin: /usr/sbin/apache2'\n",
+			} {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte(script), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("PATH", dir)
+			t.Setenv("CHECKRESTART_STATUS", fmt.Sprint(tt.status))
+			t.Setenv("CHECKRESTART_OUTPUT", tt.stdout)
+			d := newDebian(config.ServerInfo{Host: "localhost", Port: "local", User: "root"})
+			d.Packages = models.NewPackages(models.Package{Name: "apache2-bin", Version: "2.4"})
+			err := d.checkrestart()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("checkrestart() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			want := models.Package{Name: "apache2-bin", Version: "2.4"}
+			if tt.wantPID != "" {
+				want.NeedRestartProcs = []models.NeedRestartProcess{{PID: tt.wantPID, Path: "/usr/sbin/apache2", ServiceName: "apache2.service", InitSystem: systemd, HasInit: true}}
+			}
+			if diff := gocmp.Diff(want, d.Packages["apache2-bin"]); diff != "" {
+				t.Errorf("package mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func testDebianGetOwnerPkgsQuotesPaths(t *testing.T, container bool) {
+	if runtime.GOOS == "windows" {
+		t.Skip("local scanner commands require /bin/sh")
+	}
+	dir := t.TempDir()
+	argsFile := filepath.Join(dir, "args")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$DPKG_ARGS_FILE\"\nprintf '%s\\n' 'worker: /opt/worker'\n"
+	if err := os.WriteFile(filepath.Join(dir, "dpkg"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	t.Setenv("DPKG_ARGS_FILE", argsFile)
+	d := newDebian(config.ServerInfo{Host: "localhost", Port: "local", User: "root"})
+	if container {
+		d.ServerInfo.Container = config.Container{ContainerID: "test"}
+		// Stand in for docker exec, preserving the nested shell invocation.
+		if err := os.WriteFile(filepath.Join(dir, "docker"), []byte("#!/bin/sh\nshift 4\nexec \"$@\"\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	paths := []string{"/opt/worker's app/run", "/opt/$(not-a-command);`also-not-a-command`"}
+	got, err := d.getOwnerPkgs(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, []string{"worker"}) {
+		t.Errorf("owner packages = %v, want [worker]", got)
+	}
+	args, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "-S\n" + strings.Join(paths, "\n") + "\n"; string(args) != want {
+		t.Errorf("dpkg arguments = %q, want %q", args, want)
+	}
+}
+
+func TestDebianGetOwnerPkgsQuotesPaths(t *testing.T) {
+	t.Run("local", func(t *testing.T) { testDebianGetOwnerPkgsQuotesPaths(t, false) })
+	t.Run("container", func(t *testing.T) { testDebianGetOwnerPkgsQuotesPaths(t, true) })
 }
