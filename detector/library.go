@@ -57,7 +57,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	log.InitLogger(logOpts.Debug, logOpts.Quiet)
 
 	logging.Log.Info("Updating library db...")
-	if err := downloadDB("", trivyOpts, noProgress, false); err != nil {
+	if err := downloadDB("", trivyOpts, noProgress); err != nil {
 		return xerrors.Errorf("Failed to download trivy DB. err: %w", err)
 	}
 	if err := trivydb.Init(filepath.Join(trivyOpts.TrivyCacheDBDir, "db")); err != nil {
@@ -109,7 +109,7 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	return nil
 }
 
-func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipUpdate bool) error {
+func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress bool) error {
 	if len(trivyOpts.TrivyDBRepositories) == 0 {
 		trivyOpts.TrivyDBRepositories = DefaultTrivyDBRepositories
 	}
@@ -139,7 +139,7 @@ func downloadDB(appVersion string, trivyOpts config.TrivyOpts, noProgress, skipU
 	}
 	client := db.NewClient(filepath.Join(trivyOpts.TrivyCacheDBDir, "db"), noProgress, db.WithDBRepository(refs))
 	ctx := context.Background()
-	needsUpdate, err := client.NeedsUpdate(ctx, appVersion, skipUpdate)
+	needsUpdate, err := client.NeedsUpdate(ctx, appVersion, trivyOpts.TrivySkipDBUpdate)
 	if err != nil {
 		return xerrors.Errorf("Failed to check NeedsUpdate. err: %w", err)
 	}
