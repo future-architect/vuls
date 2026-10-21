@@ -9980,6 +9980,143 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// A non-suppressed CPE source is walked once per root and the
+			// result is shared by every CVE the root reports: both CVEs of
+			// this multi-CVE Fortinet root are detected, and each judges its
+			// confidence from its own (identical) matches. The accept is
+			// version-unconfirmed, so both report FortinetVendorProductMatch
+			// rather than falling through to the exact tier.
+			name: "cpe fortinet multi-CVE root, version-unconfirmed accept -> every CVE FortinetVendorProductMatch",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:fortinet:fortiportal:7.4.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:fortinet:fortiportal:7.4.0:*:*:*:*:*:*:*": {"cpe:/a:fortinet:fortiportal:7.4.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "FG-IR-25-032",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2025-54838",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.FortinetCVRF: {
+											dataTypes.RootID("FG-IR-25-032"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2025-54838",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									ID: "CVE-2025-54839",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.FortinetCVRF: {
+											dataTypes.RootID("FG-IR-25-032"): []vulnerabilityTypes.Vulnerability{
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID: "CVE-2025-54839",
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.FortinetCVRF: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:fortinet:fortiportal:-:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2025-54838": {
+					CveID:       "CVE-2025-54838",
+					Confidences: models.Confidences{models.FortinetVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:fortinet:fortiportal:7.4.0"},
+					CveContents: models.CveContents{
+						models.Fortinet: []models.CveContent{
+							{
+								Type:         models.Fortinet,
+								CveID:        "CVE-2025-54838",
+								SourceLink:   "https://www.fortiguard.com/psirt/FG-IR-25-032",
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"FG-IR-25-032\",\"source_id\":\"fortinet-cvrf\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+				"CVE-2025-54839": {
+					CveID:       "CVE-2025-54839",
+					Confidences: models.Confidences{models.FortinetVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:fortinet:fortiportal:7.4.0"},
+					CveContents: models.CveContents{
+						models.Fortinet: []models.CveContent{
+							{
+								Type:         models.Fortinet,
+								CveID:        "CVE-2025-54839",
+								SourceLink:   "https://www.fortiguard.com/psirt/FG-IR-25-032",
+								Published:    time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"FG-IR-25-032\",\"source_id\":\"fortinet-cvrf\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// The same FG-IR advisory / CVE is present in BOTH Fortinet sources
 			// (csaf rich stub, cvrf bare stub). They detect independently and
 			// merge: csaf is preferred (compareSourceID tier 5 > cvrf tier 4), so
@@ -11730,6 +11867,136 @@ func Test_postConvert(t *testing.T) {
 				"CVE-2024-3401": {
 					CveID:       "CVE-2024-3401",
 					Confidences: models.Confidences{models.VulncheckExactVersionMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
+					CveContents: models.CveContents{
+						models.Vulncheck: []models.CveContent{
+							{
+								Type:          models.Vulncheck,
+								CveID:         "CVE-2024-3401",
+								Title:         "title",
+								Summary:       "description",
+								Cvss3Score:    9.8,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+								Cvss3Severity: "CRITICAL",
+								SourceLink:    "https://console.vulncheck.com/cve/CVE-2024-3401",
+								References: models.References{
+									{
+										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2024-3401",
+										Source: "NVD",
+										RefID:  "CVE-2024-3401",
+									},
+								},
+								Published:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2024-3401\",\"source_id\":\"vulncheck-nist-nvd2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// The version-unconfirmed counterpart of "cpe vulncheck exact
+			// accept -> Vulncheck content" above: a version=NA criterion
+			// accepting a concrete scan version is VersionUnconfirmed, so the
+			// low models.VulncheckVendorProductMatch is reported. VulnCheck is
+			// a suppressed source whose matches are recorded per CVE; the
+			// confidence must be judged from those, not fall through to the
+			// exact tier for lack of a match it never looked up.
+			name: "cpe vulncheck version-unconfirmed accept -> VulncheckVendorProductMatch",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2024-3401",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-3401",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.VulnCheckNISTNVD2: {
+											dataTypes.RootID("CVE-2024-3401"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-3401",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:       "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+																	BaseScore:    9.8,
+																	BaseSeverity: "CRITICAL",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2024-3401",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.VulnCheckNISTNVD2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-3401": {
+					CveID:       "CVE-2024-3401",
+					Confidences: models.Confidences{models.VulncheckVendorProductMatch},
 					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
 					CveContents: models.CveContents{
 						models.Vulncheck: []models.CveContent{

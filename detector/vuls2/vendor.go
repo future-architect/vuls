@@ -1135,7 +1135,12 @@ func toCvss(e ecosystemTypes.Ecosystem, src sourceTypes.SourceID, ss []severityT
 	return cvss2, cvss3, cvss4
 }
 
-func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd sourceData) models.Confidence {
+// toVuls0Confidence maps a source's detection of one VulnInfo to a vuls0
+// Confidence. cm is that VulnInfo's own CPE matches from this source
+// (sourceData.cpes[id]) — a confidence describes one source's evidence for one
+// CVE, so it must never be judged from matches recorded for a sibling ID. It
+// is consulted only for the cpe ecosystem.
+func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, cm cpeMatches) models.Confidence {
 	et, _, _ := strings.Cut(string(e), ":")
 
 	switch et {
@@ -1152,14 +1157,14 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		// filterable, while cpematch-expanded criteria give most products a
 		// true exact match instead.
 		//
-		// A source whose every CPE accept is version-unconfirmed (vpCpes
-		// populated but exactCpes empty) reports the low *VendorProductMatch
-		// confidence — the vuls2 counterpart of go-cve-dictionary's
-		// VendorProductMatch — instead of the exact-match one. exactCpes and
-		// vpCpes are the only detection signals a cpe-ecosystem source can
-		// carry (packStatuses / kbIDs come from Version / KB criteria, which
-		// never appear under this ecosystem).
-		if len(sd.exactCpes) == 0 && len(sd.vpCpes) > 0 {
+		// A source whose every CPE accept for this VulnInfo is
+		// version-unconfirmed (cm.vp populated but cm.exact empty) reports the
+		// low *VendorProductMatch confidence — the vuls2 counterpart of
+		// go-cve-dictionary's VendorProductMatch — instead of the exact-match
+		// one. CPE matches are the only detection signal a cpe-ecosystem
+		// source can carry (packStatuses / kbIDs come from Version / KB
+		// criteria, which never appear under this ecosystem).
+		if len(cm.exact) == 0 && len(cm.vp) > 0 {
 			switch s {
 			case sourceTypes.NVDAPICVE, sourceTypes.NVDFeedCVEv1, sourceTypes.NVDFeedCVEv2:
 				return models.NvdVendorProductMatch
@@ -1192,11 +1197,13 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, sd so
 		case sourceTypes.VulnCheckNISTNVD2:
 			return models.VulncheckExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
-			// Unreachable: walkCPECriteria demotes every JVN match to the
-			// vendor:product tier (isJVNCPESource), so a JVN source never
-			// carries exact-tier CPEs and always lands in the
-			// VendorProductMatch branch above. Mapped to JvnVendorProductMatch
-			// for safety should that demotion ever change.
+			// walkCPECriteria demotes every JVN match to the vendor:product
+			// tier (isJVNCPESource), so a detected JVN VulnInfo always lands
+			// in the VendorProductMatch branch above. This case is reached
+			// only for a JVN VulnInfo with no matches of its own (cm empty,
+			// e.g. a suppressed sibling CVE of a multi-CVE root), which
+			// postConvert drops as undetectable. Mapped to
+			// JvnVendorProductMatch for safety should that ever change.
 			return models.JvnVendorProductMatch
 		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
 			return models.FortinetExactVersionMatch
