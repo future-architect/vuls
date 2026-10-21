@@ -348,21 +348,24 @@ func Test_toVuls0Confidence(t *testing.T) {
 	type args struct {
 		e  ecosystemTypes.Ecosystem
 		s  sourceTypes.SourceID
-		sd sourceData
+		cm cpeMatches
 	}
 	tests := []struct {
 		name string
 		args args
 		want models.Confidence
 	}{
-		{name: "cpe exact match from nvd", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.NVDAPICVE, sd: sourceData{exactCpes: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.NvdExactVersionMatch},
-		{name: "cpe vendor:product match from nvd", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.NVDAPICVE, sd: sourceData{vpCpes: []string{"cpe:2.3:a:x:y:*:*:*:*:*:*:*:*"}}}, want: models.NvdVendorProductMatch},
+		{name: "cpe exact match from nvd", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.NVDAPICVE, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.NvdExactVersionMatch},
+		{name: "cpe vendor:product match from nvd", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.NVDAPICVE, cm: cpeMatches{vp: []string{"cpe:2.3:a:x:y:*:*:*:*:*:*:*:*"}}}, want: models.NvdVendorProductMatch},
+		{name: "cpe exact match from vulncheck", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.VulncheckExactVersionMatch},
+		{name: "cpe vendor:product match from vulncheck", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{vp: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.VulncheckVendorProductMatch},
+		{name: "cpe exact and vendor:product match from vulncheck -> exact", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}, vp: []string{"cpe:2.3:a:x:z:1.0:*:*:*:*:*:*:*"}}}, want: models.VulncheckExactVersionMatch},
 		{name: "alpine", args: args{e: ecosystemTypes.Ecosystem("alpine:3.20"), s: sourceTypes.AlpineSecDB}, want: models.OvalMatch},
 		{name: "solaris", args: args{e: ecosystemTypes.Ecosystem("solaris:11.4"), s: sourceTypes.SourceID("oracle-solaris")}, want: models.OracleSolarisAdvisoryMatch},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := toVuls0Confidence(tt.args.e, tt.args.s, tt.args.sd); got != tt.want {
+			if got := toVuls0Confidence(tt.args.e, tt.args.s, tt.args.cm); got != tt.want {
 				t.Errorf("toVuls0Confidence() = %+v, want %+v", got, tt.want)
 			}
 		})

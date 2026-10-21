@@ -11761,6 +11761,136 @@ func Test_postConvert(t *testing.T) {
 			},
 		},
 		{
+			// The version-unconfirmed counterpart of "cpe vulncheck exact
+			// accept -> Vulncheck content" above: a version=NA criterion
+			// accepting a concrete scan version is VersionUnconfirmed, so the
+			// low models.VulncheckVendorProductMatch is reported. VulnCheck is
+			// a suppressed source whose matches are recorded per CVE; the
+			// confidence must be judged from those, not fall through to the
+			// exact tier for lack of a match it never looked up.
+			name: "cpe vulncheck version-unconfirmed accept -> VulncheckVendorProductMatch",
+			args: args{
+				scanned: scanTypes.ScanResult{
+					CPE: []string{
+						"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*",
+					},
+				},
+				fsToOriginalCPE: map[string][]string{
+					"cpe:2.3:a:vendor:product:0.0.0:*:*:*:*:*:*:*": {"cpe:/a:vendor:product:0.0.0"},
+				},
+				detected: detectTypes.DetectResult{
+					Detected: []detectTypes.VulnerabilityData{
+						{
+							ID: "CVE-2024-3401",
+							Vulnerabilities: []dbTypes.VulnerabilityDataVulnerability{
+								{
+									ID: "CVE-2024-3401",
+									Contents: map[sourceTypes.SourceID]map[dataTypes.RootID][]vulnerabilityTypes.Vulnerability{
+										sourceTypes.VulnCheckNISTNVD2: {
+											dataTypes.RootID("CVE-2024-3401"): {
+												{
+													Content: vulnerabilityContentTypes.Content{
+														ID:          "CVE-2024-3401",
+														Title:       "title",
+														Description: "description",
+														Severity: []severityTypes.Severity{
+															{
+																Type: severityTypes.SeverityTypeCVSSv31,
+																CVSSv31: new(cvssV31Types.CVSSv31{
+																	Vector:       "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+																	BaseScore:    9.8,
+																	BaseSeverity: "CRITICAL",
+																}),
+															},
+														},
+														References: []referenceTypes.Reference{
+															{
+																URL: "https://nvd.nist.gov/vuln/detail/CVE-2024-3401",
+															},
+														},
+														Published: new(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+													},
+													Segments: []segmentTypes.Segment{
+														{
+															Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Detections: []detectTypes.VulnerabilityDataDetection{
+								{
+									Ecosystem: ecosystemTypes.EcosystemTypeCPE,
+									Contents: map[sourceTypes.SourceID][]conditionTypes.FilteredCondition{
+										sourceTypes.VulnCheckNISTNVD2: {
+											{
+												Criteria: criteriaTypes.FilteredCriteria{
+													Operator: criteriaTypes.CriteriaOperatorTypeOR,
+													Criterions: []criterionTypes.FilteredCriterion{
+														{
+															Criterion: criterionTypes.Criterion{
+																Type: criterionTypes.CriterionTypeCPE,
+																CPE: new(ccTypes.Criterion{
+																	Vulnerable: true,
+																	FixStatus: new(vcFixStatusTypes.FixStatus{
+																		Class: vcFixStatusTypes.ClassUnknown,
+																	}),
+																	CPE: ccTypes.CPE("cpe:2.3:a:vendor:product:-:*:*:*:*:*:*:*"),
+																}),
+															},
+															Accepts: criterionTypes.AcceptQueries{
+																CPE: criterionTypes.CPEAccepts{VersionUnconfirmed: []int{0}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: models.VulnInfos{
+				"CVE-2024-3401": {
+					CveID:       "CVE-2024-3401",
+					Confidences: models.Confidences{models.VulncheckVendorProductMatch},
+					CpeURIs:     []string{"cpe:/a:vendor:product:0.0.0"},
+					CveContents: models.CveContents{
+						models.Vulncheck: []models.CveContent{
+							{
+								Type:          models.Vulncheck,
+								CveID:         "CVE-2024-3401",
+								Title:         "title",
+								Summary:       "description",
+								Cvss3Score:    9.8,
+								Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+								Cvss3Severity: "CRITICAL",
+								SourceLink:    "https://console.vulncheck.com/cve/CVE-2024-3401",
+								References: models.References{
+									{
+										Link:   "https://nvd.nist.gov/vuln/detail/CVE-2024-3401",
+										Source: "NVD",
+										RefID:  "CVE-2024-3401",
+									},
+								},
+								Published:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+								LastModified: time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC),
+								Optional: map[string]string{
+									"vuls2-sources": "[{\"root_id\":\"CVE-2024-3401\",\"source_id\":\"vulncheck-nist-nvd2\",\"segment\":{\"ecosystem\":\"cpe\"}}]",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			// The direct rejected counterpart of "cpe vulncheck exact accept ->
 			// Vulncheck content" above: identical scanned CPE and accepted CPE
 			// detection, but the vulnerability description is a CVE.org rejection

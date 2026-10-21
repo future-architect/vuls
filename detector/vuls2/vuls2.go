@@ -634,25 +634,35 @@ type sourceData struct {
 	vulninfos        models.VulnInfos
 	packStatuses     []packStatus
 	kbIDs            []string
-	// exactCpes holds scanned CPEs the criterion accepted at Exact quality
-	// (Accepts.CPE.Exact) — the version was confirmed. They are reported with
-	// the high ExactVersionMatch confidence.
-	exactCpes []string
-	// vpCpes holds scanned CPEs the criterion accepted only at
-	// VersionUnconfirmed quality (Accepts.CPE.VersionUnconfirmed) — the
-	// version could not be pinned (e.g. a version=NA criterion, or a
-	// version=NA query). They are reported with the low VendorProductMatch
-	// confidence instead of ExactVersionMatch — the vuls2 replacement for
-	// go-cve-dictionary's fuzzy CPE reporting.
-	vpCpes []string
-	// exactCpesByCVE / vpCpesByCVE hold the per-CVE matched CPEs for SUPPRESSED
-	// CPE sources (VulnCheck / JVN). Those sources are walked once per
-	// constituent CVE with that CVE's own verified-product set, so a verified
-	// product for one CVE never suppresses a sibling and the AND/OR criteria
-	// satisfaction stays correct per CVE. Non-suppressed sources keep using the
-	// per-root exactCpes / vpCpes above.
-	exactCpesByCVE map[string][]string
-	vpCpesByCVE    map[string][]string
+	// cpes holds the scanned CPEs this source's CPE conditions accepted, keyed
+	// by the VulnInfo ID they back (the CVE ID, or the advisory ID of an
+	// advisory-only VulnInfo). It is the ONLY record of CPE matches, for every
+	// source, so every reader — the CpeURIs / detectable gating in postConvert
+	// and the confidence in toVuls0Confidence — looks a VulnInfo's matches up
+	// the same way and never has to know how the source was walked:
+	//   - suppressed sources (VulnCheck / JVN) are walked once per constituent
+	//     CVE with that CVE's own verified-product set, so a verified product
+	//     for one CVE never suppresses a sibling and the AND/OR criteria
+	//     satisfaction stays correct per CVE;
+	//   - every other source is walked once per root and the result is shared
+	//     by every ID the root reports (see reportIDsOf).
+	cpes map[string]cpeMatches
+}
+
+// cpeMatches is the scanned CPEs a source's CPE conditions accepted for one
+// VulnInfo, split into vuls0's two confidence tiers.
+type cpeMatches struct {
+	// exact holds scanned CPEs accepted at Exact quality (Accepts.CPE.Exact) —
+	// the version was confirmed. They are reported with the high
+	// ExactVersionMatch confidence.
+	exact []string
+	// vp holds scanned CPEs accepted only at VersionUnconfirmed quality
+	// (Accepts.CPE.VersionUnconfirmed) — the version could not be pinned (e.g.
+	// a version=NA criterion against a concrete query, or a version=NA query
+	// against a version-bearing criterion). They are reported with the low
+	// VendorProductMatch confidence instead of ExactVersionMatch — the vuls2
+	// replacement for go-cve-dictionary's fuzzy CPE reporting.
+	vp []string
 }
 
 type rootTag struct {
@@ -707,10 +717,9 @@ func postConvert(scanned scanTypes.ScanResult, detected detectResult, fsToOrigin
 	}
 
 	type affected struct {
-		packm     map[string]pack
-		kbIDs     []string
-		exactCpes []string
-		vpCpes    []string
+		packm map[string]pack
+		kbIDs []string
+		cpes  cpeMatches
 	}
 
 	am := make(map[string]affected)
@@ -779,24 +788,16 @@ func postConvert(scanned scanTypes.ScanResult, detected detectResult, fsToOrigin
 				}
 			}
 
-			// Suppressed CPE sources (VulnCheck / JVN) were walked per CVE, so
-			// pick this vulninfo's own matched CPEs rather than the per-root
-			// union — a verified product for a sibling CVE must not surface or
-			// gate this one.
-			exactForCVE, vpForCVE := vd.exactCpes, vd.vpCpes
-			if isSuppressedCPESource(src.SourceID) {
-				exactForCVE = vd.exactCpesByCVE[vi.CveID]
-				vpForCVE = vd.vpCpesByCVE[vi.CveID]
-			}
+			cm := vd.cpes[vi.CveID]
 
 			base.kbIDs = appendMissing(base.kbIDs, vd.kbIDs)
-			base.exactCpes = appendMissing(base.exactCpes, exactForCVE)
-			base.vpCpes = appendMissing(base.vpCpes, vpForCVE)
+			base.cpes.exact = appendMissing(base.cpes.exact, cm.exact)
+			base.cpes.vp = appendMissing(base.cpes.vp, cm.vp)
 
 			// A KB/CPE detection signal marks this CVE emittable. packStatuses
 			// are deliberately excluded — packages are gated separately through
 			// comparePack's per-source winner selection.
-			if len(vd.kbIDs) > 0 || len(exactForCVE) > 0 || len(vpForCVE) > 0 {
+			if len(vd.kbIDs) > 0 || len(cm.exact) > 0 || len(cm.vp) > 0 {
 				if !slices.Contains(vd.detectableCveIDs, vi.CveID) {
 					vd.detectableCveIDs = append(vd.detectableCveIDs, vi.CveID)
 				}
@@ -869,9 +870,9 @@ func postConvert(scanned scanTypes.ScanResult, detected detectResult, fsToOrigin
 		// walkCPECriteria sources cpes from scanned.CPE). Exact-match CPEs
 		// take precedence; the version-unconfirmed CPEs only fill CpeURIs
 		// when the CVE has no exact match at all.
-		cpes := am[vi.CveID].exactCpes
+		cpes := am[vi.CveID].cpes.exact
 		if len(cpes) == 0 {
-			cpes = am[vi.CveID].vpCpes
+			cpes = am[vi.CveID].cpes.vp
 		}
 		if len(cpes) > 0 {
 			out := make([]string, 0, len(cpes))
@@ -909,12 +910,9 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 			for sourceID, fconds := range d.Contents {
 				for _, fcond := range fconds {
 					var (
-						statuses   []packStatus
-						kbIDs      []string
-						exactCpes  []string
-						vpCpes     []string
-						exactByCVE map[string][]string
-						vpByCVE    map[string][]string
+						statuses []packStatus
+						kbIDs    []string
+						cpes     map[string]cpeMatches
 					)
 					switch d.Ecosystem {
 					case ecosystemTypes.EcosystemTypeCPE:
@@ -927,25 +925,32 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 							// isCpeURIAlsoDefinedInVerifiedDataSource. Per-CVE keeps a
 							// verified product for one CVE from suppressing a sibling
 							// and keeps AND/OR satisfaction correct per CVE.
-							exactByCVE, vpByCVE = make(map[string][]string), make(map[string][]string)
 							for _, cveID := range cveIDsOf(v) {
 								exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned, noJVNCPEs, verifiedProductsByRoot[v.ID][cveID])
 								if err != nil {
 									return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 								}
-								if len(exact) > 0 {
-									exactByCVE[cveID] = append(exactByCVE[cveID], exact...)
-								}
-								if len(vp) > 0 {
-									vpByCVE[cveID] = append(vpByCVE[cveID], vp...)
+								if len(exact) > 0 || len(vp) > 0 {
+									if cpes == nil {
+										cpes = make(map[string]cpeMatches)
+									}
+									cpes[cveID] = cpeMatches{exact: exact, vp: vp}
 								}
 							}
 						} else {
+							// The criteria are the root's, not any one CVE's, so
+							// the single walk backs every ID the root reports.
 							exact, vp, err := walkCPECriteria(sourceID, fcond.Criteria, scanned, noJVNCPEs, nil)
 							if err != nil {
 								return xerrors.Errorf("Failed to walk cpe criteria. err: %w", err)
 							}
-							exactCpes, vpCpes = exact, vp
+							if len(exact) > 0 || len(vp) > 0 {
+								ids := reportIDsOf(v)
+								cpes = make(map[string]cpeMatches, len(ids))
+								for _, id := range ids {
+									cpes[id] = cpeMatches{exact: exact, vp: vp}
+								}
+							}
 						}
 					default:
 						s, k, err := walkPkgCriteria(d.Ecosystem, sourceID, fcond.Criteria, fcond.Tag, scanned)
@@ -961,7 +966,7 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// something", and an empty entry would emit contents
 					// for an undetected CVE. A suppressed source's per-CVE
 					// result counts as a signal here too.
-					if len(statuses) == 0 && len(kbIDs) == 0 && len(exactCpes) == 0 && len(vpCpes) == 0 && len(exactByCVE) == 0 && len(vpByCVE) == 0 {
+					if len(statuses) == 0 && len(kbIDs) == 0 && len(cpes) == 0 {
 						continue
 					}
 
@@ -978,19 +983,15 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// it accumulates these across a CVE's sources.
 					base.packStatuses = append(base.packStatuses, statuses...)
 					base.kbIDs = append(base.kbIDs, kbIDs...)
-					base.exactCpes = append(base.exactCpes, exactCpes...)
-					base.vpCpes = append(base.vpCpes, vpCpes...)
-					for cveID, cpes := range exactByCVE {
-						if base.exactCpesByCVE == nil {
-							base.exactCpesByCVE = make(map[string][]string)
+					for id, cm := range cpes {
+						if base.cpes == nil {
+							base.cpes = make(map[string]cpeMatches)
 						}
-						base.exactCpesByCVE[cveID] = append(base.exactCpesByCVE[cveID], cpes...)
-					}
-					for cveID, cpes := range vpByCVE {
-						if base.vpCpesByCVE == nil {
-							base.vpCpesByCVE = make(map[string][]string)
+						prev := base.cpes[id]
+						base.cpes[id] = cpeMatches{
+							exact: append(slices.Clip(prev.exact), cm.exact...),
+							vp:    append(slices.Clip(prev.vp), cm.vp...),
 						}
-						base.vpCpesByCVE[cveID] = append(base.vpCpesByCVE[cveID], cpes...)
 					}
 					m[src] = base
 				}
@@ -1256,6 +1257,26 @@ func collectVerifiedProducts(detected detectResult) map[dataTypes.RootID]map[str
 		}
 	}
 	return out
+}
+
+// reportIDsOf returns every ID a detection's root can surface as a VulnInfo:
+// its CVE IDs (cveIDsOf) and, for the advisory-only fallback in
+// walkVulnerabilityDatas, its advisory IDs. A non-suppressed CPE source's
+// matches are recorded under each of them, so whichever VulnInfo the root ends
+// up producing finds its matches by its own ID.
+func reportIDsOf(v vulnerabilityData) []string {
+	ids := make(map[string]struct{})
+	for _, id := range cveIDsOf(v) {
+		ids[id] = struct{}{}
+	}
+	for _, vda := range v.Advisories {
+		for _, rm := range vda.Contents {
+			for _, a := range rm[v.ID] {
+				ids[string(a.Content.ID)] = struct{}{}
+			}
+		}
+	}
+	return slices.Collect(maps.Keys(ids))
 }
 
 // cveIDsOf returns the CVE IDs carried by a detection's vulnerability content.
@@ -1564,7 +1585,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []vulnerabilityData) er
 
 							return models.VulnInfo{
 								CveID:            string(v.Content.ID),
-								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd)},
+								Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, sd.cpes[string(v.Content.ID)])},
 								DistroAdvisories: fdas,
 								Exploits:         exploits,
 								Mitigations:      mitigations,
@@ -1616,7 +1637,7 @@ func walkVulnerabilityDatas(m map[source]sourceData, vds []vulnerabilityData) er
 
 				vinfo := models.VulnInfo{
 					CveID:            da.AdvisoryID,
-					Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, m[src])},
+					Confidences:      models.Confidences{toVuls0Confidence(src.Segment.Ecosystem, src.SourceID, m[src].cpes[da.AdvisoryID])},
 					DistroAdvisories: models.DistroAdvisories{da},
 					CveContents: models.NewCveContents(models.CveContent{
 						Type:         cctype,
