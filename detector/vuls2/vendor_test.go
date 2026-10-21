@@ -358,8 +358,8 @@ func Test_toVuls0Confidence(t *testing.T) {
 		{name: "cpe exact match from nvd", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.NVDAPICVE, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.NvdExactVersionMatch},
 		{name: "cpe vendor:product match from nvd", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.NVDAPICVE, cm: cpeMatches{vp: []string{"cpe:2.3:a:x:y:*:*:*:*:*:*:*:*"}}}, want: models.NvdVendorProductMatch},
 		{name: "cpe exact match from vulncheck", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.VulncheckExactVersionMatch},
-		{name: "cpe vendor:product match from vulncheck", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{vp: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}}}, want: models.VulncheckVendorProductMatch},
-		{name: "cpe exact and vendor:product match from vulncheck -> exact", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}, vp: []string{"cpe:2.3:a:x:z:1.0:*:*:*:*:*:*:*"}}}, want: models.VulncheckExactVersionMatch},
+		{name: "cpe vendor:product match from vulncheck", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{vp: []string{"cpe:2.3:a:x:y:-:*:*:*:*:*:*:*"}}}, want: models.VulncheckVendorProductMatch},
+		{name: "cpe exact and vendor:product match from vulncheck -> exact", args: args{e: ecosystemTypes.Ecosystem("cpe"), s: sourceTypes.VulnCheckNISTNVD2, cm: cpeMatches{exact: []string{"cpe:2.3:a:x:y:1.0:*:*:*:*:*:*:*"}, vp: []string{"cpe:2.3:a:x:z:-:*:*:*:*:*:*:*"}}}, want: models.VulncheckExactVersionMatch},
 		{name: "alpine", args: args{e: ecosystemTypes.Ecosystem("alpine:3.20"), s: sourceTypes.AlpineSecDB}, want: models.OvalMatch},
 		{name: "solaris", args: args{e: ecosystemTypes.Ecosystem("solaris:11.4"), s: sourceTypes.SourceID("oracle-solaris")}, want: models.OracleSolarisAdvisoryMatch},
 	}
