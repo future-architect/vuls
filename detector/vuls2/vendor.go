@@ -1197,11 +1197,13 @@ func toVuls0Confidence(e ecosystemTypes.Ecosystem, s sourceTypes.SourceID, cm cp
 		case sourceTypes.VulnCheckNISTNVD2:
 			return models.VulncheckExactVersionMatch
 		case sourceTypes.JVNFeedRSS, sourceTypes.JVNFeedDetail:
-			// Unreachable: walkCPECriteria demotes every JVN match to the
-			// vendor:product tier (isJVNCPESource), so a JVN source never
-			// carries exact-tier CPEs and always lands in the
-			// VendorProductMatch branch above. Mapped to JvnVendorProductMatch
-			// for safety should that demotion ever change.
+			// walkCPECriteria demotes every JVN match to the vendor:product
+			// tier (isJVNCPESource), so a detected JVN VulnInfo always lands
+			// in the VendorProductMatch branch above. This case is reached
+			// only for a JVN VulnInfo with no matches of its own (cm empty,
+			// e.g. a suppressed sibling CVE of a multi-CVE root), which
+			// postConvert drops as undetectable. Mapped to
+			// JvnVendorProductMatch for safety should that ever change.
 			return models.JvnVendorProductMatch
 		case sourceTypes.FortinetCVRF, sourceTypes.FortinetCSAF:
 			return models.FortinetExactVersionMatch

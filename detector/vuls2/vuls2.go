@@ -635,11 +635,12 @@ type sourceData struct {
 	packStatuses     []packStatus
 	kbIDs            []string
 	// cpes holds the scanned CPEs this source's CPE conditions accepted, keyed
-	// by the VulnInfo ID they back (the CVE ID, or the advisory ID of an
-	// advisory-only VulnInfo). It is the ONLY record of CPE matches, for every
-	// source, so every reader — the CpeURIs / detectable gating in postConvert
-	// and the confidence in toVuls0Confidence — looks a VulnInfo's matches up
-	// the same way and never has to know how the source was walked:
+	// by the VulnInfo ID they back (the CVE ID, or — for non-suppressed
+	// sources — the advisory ID of an advisory-only VulnInfo). It is the ONLY
+	// record of CPE matches, for every source, so every reader — the CpeURIs /
+	// detectable gating in postConvert and the confidence in toVuls0Confidence
+	// — looks a VulnInfo's matches up the same way and never has to know how
+	// the source was walked:
 	//   - suppressed sources (VulnCheck / JVN) are walked once per constituent
 	//     CVE with that CVE's own verified-product set, so a verified product
 	//     for one CVE never suppresses a sibling and the AND/OR criteria
@@ -964,8 +965,8 @@ func walkVulnerabilityDetections(m map[source]sourceData, scanned scanTypes.Scan
 					// WITHOUT registering it in m: the downstream walk
 					// treats presence in m as "this source detected
 					// something", and an empty entry would emit contents
-					// for an undetected CVE. A suppressed source's per-CVE
-					// result counts as a signal here too.
+					// for an undetected CVE. A CPE source's per-ID result
+					// counts as a signal too.
 					if len(statuses) == 0 && len(kbIDs) == 0 && len(cpes) == 0 {
 						continue
 					}
