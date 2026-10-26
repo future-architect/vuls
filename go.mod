@@ -1,6 +1,6 @@
 module github.com/future-architect/vuls
 
-go 1.27.0
+go 1.27.3
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.2
