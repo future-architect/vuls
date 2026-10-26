@@ -14625,7 +14625,7 @@ func compareVulnInfos(a, b models.VulnInfos) (string, error) {
 				) < 0
 			}),
 		}...); diff != "" {
-			sb.WriteString(fmt.Sprintf("%s: %s\n", k, diff))
+			fmt.Fprintf(&sb, "%s: %s\n", k, diff)
 		}
 	}
 

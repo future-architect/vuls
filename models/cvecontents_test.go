@@ -722,6 +722,10 @@ func TestNewCveContentType(t *testing.T) {
 			want: TrivyRedHatCSAFVEX,
 		},
 		{
+			name: "trivy:echo-osv",
+			want: TrivyEchoOSV,
+		},
+		{
 			name: "unknown",
 			want: Unknown,
 		},
