@@ -66,7 +66,8 @@ func DetectLibsCves(r *models.ScanResult, trivyOpts config.TrivyOpts, logOpts lo
 	defer trivydb.Close()
 
 	var javaDBClient *javadb.DBClient
-	defer javaDBClient.Close()
+	// Close the client opened in the loop below, not the nil receiver evaluated when the defer is registered.
+	defer func() { _ = javaDBClient.Close() }()
 	for i, lib := range r.LibraryScanners {
 		d := libraryDetector{
 			scanner:               lib,
