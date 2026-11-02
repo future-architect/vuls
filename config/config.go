@@ -86,6 +86,7 @@ type TrivyOpts struct {
 	TrivyCacheDBDir         string   `json:"trivyCacheDBDir,omitempty"`
 	TrivyDBRepositories     []string `json:"trivyDBRepositories,omitempty"`
 	TrivyJavaDBRepositories []string `json:"trivyJavaDBRepositories,omitempty"`
+	TrivySkipDBUpdate       bool     `json:"trivySkipDBUpdate,omitempty"`
 	TrivySkipJavaDBUpdate   bool     `json:"trivySkipJavaDBUpdate,omitempty"`
 	DetectDevLockfilePaths  []string `json:"detectDevLockfilePaths,omitempty"`
 }

@@ -507,7 +507,7 @@ func (v VulnInfo) Summaries(lang, myFamily string) (values []CveContentStr) {
 
 // Cvss2Scores returns CVSS V2 Scores
 func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, Nvd, Vulncheck, Mitre, Jvn, Euvd}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Solaris, Nvd, Vulncheck, Mitre, Jvn, Euvd}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -533,7 +533,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
-	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Paloalto, Fortinet, Nvd, Vulncheck, Mitre, Jvn, Euvd}, GetCveContentTypes(string(Trivy))...)
+	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Paloalto, Fortinet, Solaris, Nvd, Vulncheck, Mitre, Jvn, Euvd}, GetCveContentTypes(string(Trivy))...)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -1190,6 +1190,9 @@ const (
 	// WindowsRoughMatchStr :
 	WindowsRoughMatchStr = "WindowsRoughMatch"
 
+	// OracleSolarisAdvisoryMatchStr :
+	OracleSolarisAdvisoryMatchStr = "OracleSolarisAdvisoryMatch"
+
 	// TrivyMatchStr :
 	TrivyMatchStr = "TrivyMatch"
 
@@ -1233,6 +1236,9 @@ var (
 
 	// WindowsRoughMatch is a ranking how confident the CVE-ID was detected correctly
 	WindowsRoughMatch = Confidence{30, WindowsRoughMatchStr, 0}
+
+	// OracleSolarisAdvisoryMatch is a ranking how confident the CVE-ID was detected correctly
+	OracleSolarisAdvisoryMatch = Confidence{100, OracleSolarisAdvisoryMatchStr, 0}
 
 	// TrivyMatch is a ranking how confident the CVE-ID was detected correctly
 	TrivyMatch = Confidence{100, TrivyMatchStr, 0}

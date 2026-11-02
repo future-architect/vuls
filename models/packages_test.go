@@ -1,7 +1,9 @@
 package models
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/k0kubun/pp"
@@ -295,6 +297,41 @@ func TestPackage_FormatVersionFromTo(t *testing.T) {
 			}
 			if got := p.FormatVersionFromTo(tt.args.stat); got != tt.want {
 				t.Errorf("Package.FormatVersionFromTo() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPackage_RepositoryClassOmitEmpty(t *testing.T) {
+	tests := []struct {
+		name            string
+		repositoryClass string
+		wantKey         bool
+	}{
+		{
+			name:            "unset packages keep the previous JSON",
+			repositoryClass: "",
+			wantKey:         false,
+		},
+		{
+			name:            "official",
+			repositoryClass: "official",
+			wantKey:         true,
+		},
+		{
+			name:            "third-party",
+			repositoryClass: "third-party",
+			wantKey:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bs, err := json.Marshal(Package{Name: "bash", RepositoryClass: tt.repositoryClass})
+			if err != nil {
+				t.Fatalf("json.Marshal() error = %v", err)
+			}
+			if got := strings.Contains(string(bs), `"repositoryClass"`); got != tt.wantKey {
+				t.Errorf("json.Marshal() = %s, has repositoryClass = %v, want %v", bs, got, tt.wantKey)
 			}
 		})
 	}

@@ -68,13 +68,19 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 				notFixedYet = true
 				fixState = "Affected"
 			}
-			var references models.References
-			for _, reference := range vuln.References {
-				references = append(references, models.Reference{
-					Source: "trivy",
-					Link:   reference,
-				})
-			}
+			references := func() models.References {
+				if len(vuln.References) == 0 {
+					return nil
+				}
+				references := make(models.References, 0, len(vuln.References))
+				for _, reference := range vuln.References {
+					references = append(references, models.Reference{
+						Source: "trivy",
+						Link:   reference,
+					})
+				}
+				return references
+			}()
 
 			slices.SortFunc(references, func(a, b models.Reference) int {
 				return cmp.Compare(a.Link, b.Link)
@@ -211,16 +217,18 @@ func Convert(results types.Results, artifactType ftypes.ArtifactType, artifactNa
 					// loop above, even when the version is identical.
 					if compareVersions(trivyResult.Type, pv, existing.Version) >= 0 {
 						pkgs[p.Name] = models.Package{
-							Name:    p.Name,
-							Version: pv,
-							Arch:    p.Arch,
+							Name:            p.Name,
+							Version:         pv,
+							Arch:            p.Arch,
+							RepositoryClass: string(p.Repository.Class),
 						}
 					}
 				} else {
 					pkgs[p.Name] = models.Package{
-						Name:    p.Name,
-						Version: pv,
-						Arch:    p.Arch,
+						Name:            p.Name,
+						Version:         pv,
+						Arch:            p.Arch,
+						RepositoryClass: string(p.Repository.Class),
 					}
 				}
 

@@ -25,7 +25,7 @@ var (
 
 // maxManifestSize, scanManifestLines, parseManifestMainSection and
 // addAttribute are ported from unexported code in
-// github.com/aquasecurity/trivy@v0.74.0 pkg/dependency/parser/java/jar/parse.go,
+// github.com/aquasecurity/trivy@v0.75.0 pkg/dependency/parser/java/jar/parse.go,
 // minus the license-related attributes vuls does not model. Re-diff against
 // upstream when bumping trivy.
 
@@ -340,33 +340,37 @@ func parseManifestMainSection(r io.Reader) (manifest, error) {
 }
 
 func (m *manifest) addAttribute(line string) {
-	// Skip variables. e.g. Bundle-Name: %bundleName
-	fields := strings.Fields(line)
-	if len(fields) <= 1 || strings.HasPrefix(fields[1], "%") {
+	// Per the manifest grammar a value always starts with a single space
+	// ("value: SPACE *otherchar newline *continuation"), so splitting on the
+	// first ":" and trimming gives the value directly. Skip lines with no
+	// value at all and variables, e.g. Bundle-Name: %bundleName.
+	key, value, ok := strings.Cut(line, ":")
+	value = strings.TrimSpace(value)
+	if !ok || value == "" || strings.HasPrefix(value, "%") {
 		return
 	}
 
-	switch {
-	case strings.HasPrefix(line, "Implementation-Version:"):
-		m.implementationVersion = strings.TrimPrefix(line, "Implementation-Version:")
-	case strings.HasPrefix(line, "Implementation-Title:"):
-		m.implementationTitle = strings.TrimPrefix(line, "Implementation-Title:")
-	case strings.HasPrefix(line, "Implementation-Vendor:"):
-		m.implementationVendor = strings.TrimPrefix(line, "Implementation-Vendor:")
-	case strings.HasPrefix(line, "Implementation-Vendor-Id:"):
-		m.implementationVendorID = strings.TrimPrefix(line, "Implementation-Vendor-Id:")
-	case strings.HasPrefix(line, "Specification-Version:"):
-		m.specificationVersion = strings.TrimPrefix(line, "Specification-Version:")
-	case strings.HasPrefix(line, "Specification-Title:"):
-		m.specificationTitle = strings.TrimPrefix(line, "Specification-Title:")
-	case strings.HasPrefix(line, "Specification-Vendor:"):
-		m.specificationVendor = strings.TrimPrefix(line, "Specification-Vendor:")
-	case strings.HasPrefix(line, "Bundle-Version:"):
-		m.bundleVersion = strings.TrimPrefix(line, "Bundle-Version:")
-	case strings.HasPrefix(line, "Bundle-Name:"):
-		m.bundleName = strings.TrimPrefix(line, "Bundle-Name:")
-	case strings.HasPrefix(line, "Bundle-SymbolicName:"):
-		m.bundleSymbolicName = strings.TrimPrefix(line, "Bundle-SymbolicName:")
+	switch key {
+	case "Implementation-Version":
+		m.implementationVersion = value
+	case "Implementation-Title":
+		m.implementationTitle = value
+	case "Implementation-Vendor":
+		m.implementationVendor = value
+	case "Implementation-Vendor-Id":
+		m.implementationVendorID = value
+	case "Specification-Version":
+		m.specificationVersion = value
+	case "Specification-Title":
+		m.specificationTitle = value
+	case "Specification-Vendor":
+		m.specificationVendor = value
+	case "Bundle-Version":
+		m.bundleVersion = value
+	case "Bundle-Name":
+		m.bundleName = value
+	case "Bundle-SymbolicName":
+		m.bundleSymbolicName = value
 	}
 }
 
@@ -404,9 +408,8 @@ func (m manifest) determineGroupID() (string, error) {
 		groupID = m.bundleSymbolicName
 
 		// e.g. "com.fasterxml.jackson.core.jackson-databind" => "com.fasterxml.jackson.core"
-		idx := strings.LastIndex(m.bundleSymbolicName, ".")
-		if idx > 0 {
-			groupID = m.bundleSymbolicName[:idx]
+		if prefix, _, found := strings.CutLast(m.bundleSymbolicName, "."); found {
+			groupID = prefix
 		}
 	case m.implementationVendor != "":
 		groupID = m.implementationVendor
@@ -415,7 +418,7 @@ func (m manifest) determineGroupID() (string, error) {
 	default:
 		return "", xerrors.New("No groupID found")
 	}
-	return strings.TrimSpace(groupID), nil
+	return groupID, nil
 }
 
 func (m manifest) determineArtifactID() (string, error) {
@@ -430,7 +433,7 @@ func (m manifest) determineArtifactID() (string, error) {
 	default:
 		return "", xerrors.New("No artifactID found")
 	}
-	return strings.TrimSpace(artifactID), nil
+	return artifactID, nil
 }
 
 func (m manifest) determineVersion() (string, error) {
@@ -445,7 +448,7 @@ func (m manifest) determineVersion() (string, error) {
 	default:
 		return "", xerrors.New("No version found")
 	}
-	return strings.TrimSpace(version), nil
+	return version, nil
 }
 
 func removeLibraryDuplicates(libs []jarLibrary) []jarLibrary {

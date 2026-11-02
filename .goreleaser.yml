@@ -8,11 +8,13 @@ release:
   github:
     owner: future-architect
     name: vuls
+  # Mark releases for tags with a semver pre-release suffix (e.g. v0.41.0-rc.2)
+  # as pre-release; final tags (e.g. v0.41.0) stay regular releases.
+  prerelease: auto
 builds:
 - id: vuls
   env:
   - CGO_ENABLED=0
-  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -31,7 +33,6 @@ builds:
 - id: vuls-scanner
   env:
   - CGO_ENABLED=0
-  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -52,7 +53,6 @@ builds:
 - id: trivy-to-vuls
   env:
   - CGO_ENABLED=0
-  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -73,7 +73,6 @@ builds:
 - id: future-vuls
   env:
   - CGO_ENABLED=0
-  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows
@@ -94,7 +93,6 @@ builds:
 - id: snmp2cpe
   env:
   - CGO_ENABLED=0
-  - GOEXPERIMENT=jsonv2
   goos:
   - linux
   - windows

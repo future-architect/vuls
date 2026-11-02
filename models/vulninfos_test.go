@@ -507,6 +507,30 @@ func TestCvss2Scores(t *testing.T) {
 		in  VulnInfo
 		out []CveContentCvss
 	}{
+		// Solaris: older Oracle advisories carry CVSS v2 base scores
+		{
+			in: VulnInfo{
+				CveContents: CveContents{
+					Solaris: []CveContent{{
+						Type:          Solaris,
+						Cvss2Severity: "MEDIUM",
+						Cvss2Score:    5.0,
+						Cvss2Vector:   "AV:N/AC:L/Au:N/C:P/I:N/A:N",
+					}},
+				},
+			},
+			out: []CveContentCvss{
+				{
+					Type: Solaris,
+					Value: Cvss{
+						Type:     CVSS2,
+						Score:    5.0,
+						Vector:   "AV:N/AC:L/Au:N/C:P/I:N/A:N",
+						Severity: "MEDIUM",
+					},
+				},
+			},
+		},
 		{
 			in: VulnInfo{
 				CveContents: CveContents{
@@ -647,6 +671,30 @@ func TestCvss3Scores(t *testing.T) {
 		in  VulnInfo
 		out []CveContentCvss
 	}{
+		// Solaris: Oracle's advisories carry CVSS v3 base scores
+		{
+			in: VulnInfo{
+				CveContents: CveContents{
+					Solaris: []CveContent{{
+						Type:          Solaris,
+						Cvss3Severity: "HIGH",
+						Cvss3Score:    7.5,
+						Cvss3Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+					}},
+				},
+			},
+			out: []CveContentCvss{
+				{
+					Type: Solaris,
+					Value: Cvss{
+						Type:     CVSS3,
+						Score:    7.5,
+						Vector:   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+						Severity: "HIGH",
+					},
+				},
+			},
+		},
 		{
 			in: VulnInfo{
 				CveContents: CveContents{

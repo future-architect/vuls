@@ -101,6 +101,7 @@ func (*ReportCmd) Usage() string {
 		[-trivy-cachedb-dir=/path/to/dir]
 		[-trivy-db-repository="OCI-repository-for-trivy-db"]
 		[-trivy-java-db-repository="OCI-repository-for-trivy-java-db"]
+		[-trivy-skip-db-update]
 		[-trivy-skip-java-db-update]
 
 		[RFC3339 datetime format under results dir]
@@ -193,6 +194,7 @@ func (p *ReportCmd) SetFlags(f *flag.FlagSet) {
 	javaDBRepos := stringArrayFlag{target: &config.Conf.TrivyJavaDBRepositories}
 	f.Var(&javaDBRepos, "trivy-java-db-repository", "Trivy Java DB Repository in a comma-separated list")
 
+	f.BoolVar(&config.Conf.TrivySkipDBUpdate, "trivy-skip-db-update", false, "Skip Trivy DB Update")
 	f.BoolVar(&config.Conf.TrivySkipJavaDBUpdate, "trivy-skip-java-db-update", false, "Skip Trivy Java DB Update")
 }
 

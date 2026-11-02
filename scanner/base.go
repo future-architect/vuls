@@ -801,7 +801,7 @@ func parseByType(ctx context.Context, pt parserType, filePath string, r xio.Read
 
 	// Go
 	case parserGoMod:
-		return parseLockfile(ctx, ftypes.GoModule, filePath, r, gomod.NewParser(true, false))
+		return parseGoMod(ctx, filePath, r)
 	case parserExecutable:
 		return parseExecutableBinary(ctx, filePath, r)
 
@@ -967,6 +967,27 @@ func parseYarn(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftype
 	}, nil
 }
 
+// parseGoMod handles go.mod which has a different parser signature (4 return
+// values including whether indirect requirements were skipped). Trivy's fanal
+// analyzer uses that flag (set for modules below Go 1.17) to decide whether to
+// merge go.sum. We do not merge go.sum (see dispatch.go), so it is dropped.
+func parseGoMod(ctx context.Context, filePath string, r xio.ReadSeekerAt) (*ftypes.Application, error) {
+	p := gomod.NewParser(true, false)
+	pkgs, depGraph, _, err := p.Parse(ctx, r)
+	if err != nil {
+		return nil, xerrors.Errorf("parse error: %w", err)
+	}
+	if len(pkgs) == 0 {
+		return nil, nil
+	}
+	applyDependsOn(pkgs, depGraph)
+	return &ftypes.Application{
+		Type:     ftypes.GoModule,
+		FilePath: filePath,
+		Packages: pkgs,
+	}, nil
+}
+
 func (l *base) buildWpCliCmd(wpCliArgs string, suppressStderr bool, shell string) string {
 	cmd := fmt.Sprintf("%s %s --path=%s", l.ServerInfo.WordPress.CmdPath, wpCliArgs, l.ServerInfo.WordPress.DocRoot)
 	if !l.ServerInfo.WordPress.NoSudo {
@@ -1058,13 +1079,12 @@ func (l *base) detectWordPress(shell string) (*models.WordPressPackages, error) 
 		return nil, err
 	}
 
-	pkgs := models.WordPressPackages{
-		models.WpPackage{
-			Name:    models.WPCore,
-			Version: ver,
-			Type:    models.WPCore,
-		},
-	}
+	pkgs := make(models.WordPressPackages, 0, 1+len(themes)+len(plugins))
+	pkgs = append(pkgs, models.WpPackage{
+		Name:    models.WPCore,
+		Version: ver,
+		Type:    models.WPCore,
+	})
 	pkgs = append(pkgs, themes...)
 	pkgs = append(pkgs, plugins...)
 	return &pkgs, nil

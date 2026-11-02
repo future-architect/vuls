@@ -209,7 +209,7 @@ func (e *emailSender) Send(subject, body string) (err error) {
 
 	var header strings.Builder
 	for k, v := range headers {
-		header.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
+		fmt.Fprintf(&header, "%s: %s\r\n", k, v)
 	}
 	if err := e.sendMail(net.JoinHostPort(emailConf.SMTPAddr, emailConf.SMTPPort), fmt.Sprintf("%s\r\n%s", header.String(), body)); err != nil {
 		return xerrors.Errorf("Failed to send emails: %w", err)

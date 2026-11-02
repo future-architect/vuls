@@ -331,6 +331,8 @@ func NewCveContentType(name string) CveContentType {
 		return Fedora
 	case "oracle":
 		return Oracle
+	case "solaris":
+		return Solaris
 	case "ubuntu":
 		return Ubuntu
 	case "debian", "debian-oval":
@@ -429,6 +431,8 @@ func NewCveContentType(name string) CveContentType {
 		return TrivySeal
 	case "trivy:redhat-csaf-vex":
 		return TrivyRedHatCSAFVEX
+	case "trivy:echo-osv":
+		return TrivyEchoOSV
 	case "GitHub":
 		return Trivy
 	default:
@@ -459,12 +463,14 @@ func GetCveContentTypes(family string) []CveContentType {
 		return []CveContentType{SUSE}
 	case constant.Alpine:
 		return []CveContentType{Alpine}
+	case constant.Solaris:
+		return []CveContentType{Solaris}
 	case constant.MacOSX, constant.MacOSXServer, constant.MacOS, constant.MacOSServer:
 		return []CveContentType{Apple}
 	case constant.Windows:
 		return []CveContentType{Microsoft}
 	case string(Trivy):
-		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort, TrivyJulia, TrivySeal, TrivyRedHatCSAFVEX}
+		return []CveContentType{Trivy, TrivyNVD, TrivyRedHat, TrivyRedHatOVAL, TrivyDebian, TrivyUbuntu, TrivyCentOS, TrivyRocky, TrivyFedora, TrivyAmazon, TrivyAzure, TrivyOracleOVAL, TrivySuseCVRF, TrivyAlpine, TrivyArchLinux, TrivyAlma, TrivyCBLMariner, TrivyPhoton, TrivyCoreOS, TrivyBottlerocket, TrivyRubySec, TrivyPhpSecurityAdvisories, TrivyNodejsSecurityWg, TrivyGHSA, TrivyGLAD, TrivyOSV, TrivyWolfi, TrivyChainguard, TrivyBitnamiVulndb, TrivyK8sVulnDB, TrivyGoVulnDB, TrivyAqua, TrivyEcho, TrivyMinimOS, TrivyRootIO, TrivyRapidFort, TrivyJulia, TrivySeal, TrivyRedHatCSAFVEX, TrivyEchoOSV}
 	default:
 		return nil
 	}
@@ -526,6 +532,9 @@ const (
 
 	// Oracle is Oracle Linux
 	Oracle CveContentType = "oracle"
+
+	// Solaris is Oracle Solaris
+	Solaris CveContentType = "solaris"
 
 	// Amazon is Amazon Linux
 	Amazon CveContentType = "amazon"
@@ -662,6 +671,9 @@ const (
 	// TrivyRedHatCSAFVEX is TrivyRedHatCSAFVEX
 	TrivyRedHatCSAFVEX CveContentType = "trivy:redhat-csaf-vex"
 
+	// TrivyEchoOSV is TrivyEchoOSV
+	TrivyEchoOSV CveContentType = "trivy:echo-osv"
+
 	// GitHub is GitHub Security Alerts
 	GitHub CveContentType = "github"
 
@@ -696,6 +708,7 @@ var AllCveContetTypes = CveContentTypes{
 	Fedora,
 	SUSE,
 	Alpine,
+	Solaris,
 	Microsoft,
 	WpScan,
 	Trivy,
@@ -737,6 +750,7 @@ var AllCveContetTypes = CveContentTypes{
 	TrivyJulia,
 	TrivySeal,
 	TrivyRedHatCSAFVEX,
+	TrivyEchoOSV,
 	GitHub,
 }
 
