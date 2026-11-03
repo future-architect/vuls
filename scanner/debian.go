@@ -460,7 +460,12 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 		}
 	}
 
-	srcs := models.SrcPackages{}
+	type sourceVersion struct {
+		name    string
+		version string
+	}
+	grouped := map[sourceVersion]models.SrcPackage{}
+	versionCounts := map[string]int{}
 	for _, p := range srcPacks {
 		if models.IsKernelSourcePackage(o.getDistro().Family, p.Name) && !slices.ContainsFunc(runningKernelSrcPacks, func(e models.SrcPackage) bool {
 			return p.Name == e.Name && p.Version == e.Version
@@ -468,12 +473,26 @@ func (o *debian) parseInstalledPackages(stdout string) (models.Packages, models.
 			continue
 		}
 
-		if pack, ok := srcs[p.Name]; ok {
+		key := sourceVersion{name: p.Name, version: p.Version}
+		if pack, ok := grouped[key]; ok {
 			for _, bn := range pack.BinaryNames {
 				p.AddBinaryName(bn)
 			}
+		} else {
+			versionCounts[p.Name]++
 		}
-		srcs[p.Name] = p
+		grouped[key] = p
+	}
+
+	srcs := models.SrcPackages{}
+	for _, p := range grouped {
+		key := p.Name
+		if versionCounts[p.Name] > 1 {
+			// Keep both versions, with keys independent of dpkg's output order.
+			// Debian source package names cannot contain "@".
+			key += "@" + p.Version
+		}
+		srcs[key] = p
 	}
 
 	bins := models.Packages{}
