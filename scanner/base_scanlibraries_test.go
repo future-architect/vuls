@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/future-architect/vuls/config"
@@ -16,8 +17,11 @@ import (
 // (ScanResult.Warnings) rather than errs (ScanResult.Errors).
 //
 // It exercises the real exec path via a local server (Port "local"), so it
-// shells out to stat/cat and therefore only runs on a unix-like host.
+// reads real files through the local shell. A test stat command keeps the
+// permission check independent of the host's GNU/BSD stat implementation.
 func TestBaseScanLibraries_PartialFailure(t *testing.T) {
+	setupScanLibrariesTestCommands(t)
+
 	// A malformed npm lockfile whose leading '{' is removed so parsing fails.
 	malformed := filepath.Join(t.TempDir(), "package-lock.json")
 	if err := os.WriteFile(malformed, []byte("\n\"name\": \"broken\",\n"), 0644); err != nil {
@@ -64,8 +68,10 @@ func TestBaseScanLibraries_PartialFailure(t *testing.T) {
 // warns nor errs is populated.
 //
 // Like the partial-failure test it drives the real exec path via a local
-// server, so it shells out to stat/cat and only runs on a unix-like host.
+// server, using the same host-independent permission check.
 func TestBaseScanLibraries_Success(t *testing.T) {
+	setupScanLibrariesTestCommands(t)
+
 	// A valid npm v2 lockfile shared with the integration testdata.
 	valid, err := filepath.Abs(filepath.Join("..", "integration", "data", "lockfile", "npm-v2", "package-lock.json"))
 	if err != nil {
@@ -96,4 +102,27 @@ func TestBaseScanLibraries_Success(t *testing.T) {
 	if len(l.errs) != 0 {
 		t.Errorf("len(errs) = %d, want 0", len(l.errs))
 	}
+}
+
+func setupScanLibrariesTestCommands(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("local scanner commands require /bin/sh")
+	}
+
+	// These tests exercise lockfile parsing and warning propagation, not stat.
+	// Both fixtures are regular JSON files, so supply deterministic permissions
+	// while still checking the command arguments and that the file exists.
+	dir := t.TempDir()
+	script := `#!/bin/sh
+if [ "$#" -ne 3 ] || [ "$1" != "-c" ] || [ "$2" != "%a" ]; then
+    exit 2
+fi
+[ -f "$3" ] || exit 1
+printf '644\n'
+`
+	if err := os.WriteFile(filepath.Join(dir, "stat"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
