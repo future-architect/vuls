@@ -534,6 +534,7 @@ func (v VulnInfo) Cvss2Scores() (values []CveContentCvss) {
 // Cvss3Scores returns CVSS V3 Score
 func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 	order := append([]CveContentType{RedHatAPI, RedHat, Rocky, SUSE, Microsoft, Paloalto, Fortinet, Solaris, Nvd, Vulncheck, Mitre, Jvn, Euvd}, GetCveContentTypes(string(Trivy))...)
+	order = append(order, Cisco)
 	for _, ctype := range order {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
@@ -607,7 +608,7 @@ func (v VulnInfo) Cvss3Scores() (values []CveContentCvss) {
 
 // Cvss40Scores returns CVSS V4 Score
 func (v VulnInfo) Cvss40Scores() (values []CveContentCvss) {
-	for _, ctype := range []CveContentType{Paloalto, Mitre, Nvd, Vulncheck, Euvd} {
+	for _, ctype := range []CveContentType{Paloalto, Mitre, Nvd, Vulncheck, Euvd, Cisco} {
 		if conts, found := v.CveContents[ctype]; found {
 			for _, cont := range conts {
 				if cont.Cvss40Score == 0 && cont.Cvss40Severity == "" {
