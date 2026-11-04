@@ -1111,13 +1111,7 @@ func (w *windows) scanPackages() error {
 				if err != nil {
 					return xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
 				}
-				for _, name := range missingVendorPkgs {
-					if vendor, ok := regVendors[name]; ok && vendor != "" {
-						pkg := installed[name]
-						pkg.Vendor = vendor
-						installed[name] = pkg
-					}
-				}
+				fillMissingVendors(installed, regVendors)
 			}
 		}
 
@@ -1223,6 +1217,20 @@ func (w *windows) parseRegistryPublishers(stdout string) (map[string]string, err
 	}
 
 	return result, nil
+}
+
+// fillMissingVendors fills Vendor of packages whose Vendor is empty with the registry Publisher
+// whose DisplayName exactly matches the package Name.
+func fillMissingVendors(installed models.Packages, regVendors map[string]string) {
+	for name, pkg := range installed {
+		if pkg.Vendor != "" {
+			continue
+		}
+		if vendor, ok := regVendors[name]; ok && vendor != "" {
+			pkg.Vendor = vendor
+			installed[name] = pkg
+		}
+	}
 }
 
 func (w *windows) scanKBs() (*models.WindowsKB, error) {

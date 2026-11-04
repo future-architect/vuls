@@ -819,6 +819,68 @@ Publisher   : https://go.dev`,
 	}
 }
 
+func Test_fillMissingVendors(t *testing.T) {
+	type args struct {
+		installed  models.Packages
+		regVendors map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want models.Packages
+	}{
+		{
+			name: "fill empty vendor",
+			args: args{
+				installed: models.Packages{
+					"Git":                                 {Name: "Git", Version: "2.35.1.2", Vendor: "The Git Development Community"},
+					"Oracle Database 11g Express Edition": {Name: "Oracle Database 11g Express Edition", Version: "11.2.0"},
+				},
+				regVendors: map[string]string{
+					"Oracle Database 11g Express Edition": "Oracle Corporation",
+					"Git":                                 "Other Vendor",
+				},
+			},
+			want: models.Packages{
+				"Git":                                 {Name: "Git", Version: "2.35.1.2", Vendor: "The Git Development Community"},
+				"Oracle Database 11g Express Edition": {Name: "Oracle Database 11g Express Edition", Version: "11.2.0", Vendor: "Oracle Corporation"},
+			},
+		},
+		{
+			name: "registry publisher empty",
+			args: args{
+				installed:  models.Packages{"SomeApp": {Name: "SomeApp", Version: "1.0"}},
+				regVendors: map[string]string{"SomeApp": ""},
+			},
+			want: models.Packages{"SomeApp": {Name: "SomeApp", Version: "1.0"}},
+		},
+		{
+			name: "not in registry",
+			args: args{
+				installed:  models.Packages{"SomeApp": {Name: "SomeApp", Version: "1.0"}},
+				regVendors: map[string]string{"AnotherApp": "SomeVendor"},
+			},
+			want: models.Packages{"SomeApp": {Name: "SomeApp", Version: "1.0"}},
+		},
+		{
+			name: "nil registry",
+			args: args{
+				installed:  models.Packages{"SomeApp": {Name: "SomeApp", Version: "1.0"}},
+				regVendors: nil,
+			},
+			want: models.Packages{"SomeApp": {Name: "SomeApp", Version: "1.0"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fillMissingVendors(tt.args.installed, tt.args.regVendors)
+			if !reflect.DeepEqual(tt.args.installed, tt.want) {
+				t.Errorf("fillMissingVendors() got = %v, want %v", tt.args.installed, tt.want)
+			}
+		})
+	}
+}
+
 func Test_parseGetHotfix(t *testing.T) {
 	type args struct {
 		stdout string
