@@ -5,8 +5,11 @@ import (
 	"os"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
+	"github.com/future-architect/vuls/config"
+	"github.com/future-architect/vuls/constant"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -462,5 +465,157 @@ vuls ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEm
 		if key != tt.expected.key {
 			t.Errorf("expected key %s, actual %s", tt.expected.key, key)
 		}
+	}
+}
+
+const (
+	testWindowsPkgList = `Name         : Git
+Version      : 2.35.1.2
+ProviderName : Programs
+Publisher    : The Git Development Community
+
+Name         : Oracle Database 11g Express Edition
+Version      : 11.2.0
+ProviderName : msi
+
+Name         : 2022-12 x64 ベース システム用 Windows 10 Version 21H2 の累積更新プログラム (KB5021233)
+Version      :
+ProviderName : msu
+`
+	testWindowsRegistry = `DisplayName : Git
+Publisher   : Other Vendor
+
+DisplayName : Oracle Database 11g Express Edition
+Publisher   : Oracle Corporation
+
+DisplayName : PowerShell 7-x64
+Publisher   : Microsoft Corporation
+`
+	testWindowsRegistryMissingPublisher = `DisplayName : Git
+Publisher   : Other Vendor
+
+DisplayName : Oracle Database 11g Express Edition
+
+DisplayName : PowerShell 7-x64
+Publisher   : Microsoft Corporation
+`
+	testAlmaPkgList = `dnf 0 4.14.0 17.el9.alma.1 noarch dnf-4.14.0-17.el9.alma.1.src.rpm (none)
+nginx 1 1.24.0 4.module_el9.5.0+122+220a1c6b.alma.1 x86_64 nginx-1.24.0-4.module_el9.5.0+122+220a1c6b.alma.1.src.rpm nginx:1.24:9050020241004144538:8cf767d6
+kernel-core 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel 0 5.14.0 70.13.1.el9_0 x86_64 kernel-5.14.0-70.13.1.el9_0.src.rpm (none)
+kernel-core 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`
+	testNonWindowsRegistry = "DisplayName : dnf\nPublisher   : SomeVendor\n\nDisplayName : nginx\nPublisher   : SomeVendor\n"
+)
+
+func TestParseInstalledPkgsWithRegistry(t *testing.T) {
+	windowsDistro := config.Distro{Family: constant.Windows}
+	windowsWant := models.Packages{
+		"Git":                                 {Name: "Git", Version: "2.35.1.2", Vendor: "The Git Development Community"},
+		"Oracle Database 11g Express Edition": {Name: "Oracle Database 11g Express Edition", Version: "11.2.0", Vendor: "Oracle Corporation"},
+	}
+	almaDistro := config.Distro{Family: constant.Alma, Release: "9.0"}
+	almaKernel := models.Kernel{Release: "5.14.0-70.13.1.el9_0.x86_64"}
+	debianDistro := config.Distro{Family: constant.Debian, Release: "8.10"}
+	debianKernel := models.Kernel{Release: "3.16.0-4-amd64"}
+
+	tests := []struct {
+		name         string
+		distro       config.Distro
+		kernel       models.Kernel
+		pkgList      string
+		registryList string
+		// want is compared with the result when wantPackages is true.
+		wantPackages bool
+		want         models.Packages
+		// sameAsParseInstalledPkgs compares the result with ParseInstalledPkgs.
+		sameAsParseInstalledPkgs bool
+		emptyVendorNames         []string
+	}{
+		{
+			name:         "windows: fill msi vendor from registry",
+			distro:       windowsDistro,
+			kernel:       models.Kernel{},
+			pkgList:      testWindowsPkgList,
+			registryList: testWindowsRegistry,
+			wantPackages: true,
+			want:         windowsWant,
+		},
+		{
+			name:         "windows: registry missing publisher",
+			distro:       windowsDistro,
+			kernel:       models.Kernel{},
+			pkgList:      testWindowsPkgList,
+			registryList: testWindowsRegistryMissingPublisher,
+			wantPackages: true,
+			want: models.Packages{
+				"Git":                                 {Name: "Git", Version: "2.35.1.2", Vendor: "The Git Development Community"},
+				"Oracle Database 11g Express Edition": {Name: "Oracle Database 11g Express Edition", Version: "11.2.0"},
+			},
+		},
+		{
+			name:                     "windows: no registry",
+			distro:                   windowsDistro,
+			kernel:                   models.Kernel{},
+			pkgList:                  testWindowsPkgList,
+			registryList:             "",
+			sameAsParseInstalledPkgs: true,
+		},
+		{
+			name:         "windows: CRLF line endings",
+			distro:       windowsDistro,
+			kernel:       models.Kernel{},
+			pkgList:      strings.ReplaceAll(testWindowsPkgList, "\n", "\r\n"),
+			registryList: strings.ReplaceAll(testWindowsRegistry, "\n", "\r\n"),
+			wantPackages: true,
+			want:         windowsWant,
+		},
+		{
+			name:                     "non-windows (alma 9.0): registry is ignored",
+			distro:                   almaDistro,
+			kernel:                   almaKernel,
+			pkgList:                  testAlmaPkgList,
+			registryList:             testNonWindowsRegistry,
+			sameAsParseInstalledPkgs: true,
+			emptyVendorNames:         []string{"dnf", "nginx"},
+		},
+		{
+			name:                     "non-windows (debian): registry is ignored",
+			distro:                   debianDistro,
+			kernel:                   debianKernel,
+			pkgList:                  "",
+			registryList:             testNonWindowsRegistry,
+			sameAsParseInstalledPkgs: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPkgs, gotSrcPkgs, err := ParseInstalledPkgsWithRegistry(tt.distro, tt.kernel, tt.pkgList, tt.registryList)
+			if tt.wantPackages {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !reflect.DeepEqual(gotPkgs, tt.want) {
+					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, tt.want)
+				}
+			}
+			if tt.sameAsParseInstalledPkgs {
+				wantPkgs, wantSrcPkgs, wantErr := ParseInstalledPkgs(tt.distro, tt.kernel, tt.pkgList)
+				if (err != nil) != (wantErr != nil) {
+					t.Fatalf("error got = %v, want %v", err, wantErr)
+				}
+				if !reflect.DeepEqual(gotPkgs, wantPkgs) {
+					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, wantPkgs)
+				}
+				if !reflect.DeepEqual(gotSrcPkgs, wantSrcPkgs) {
+					t.Errorf("ParseInstalledPkgsWithRegistry() srcPackages got = %v, want %v", gotSrcPkgs, wantSrcPkgs)
+				}
+			}
+			for _, name := range tt.emptyVendorNames {
+				if v := gotPkgs[name].Vendor; v != "" {
+					t.Errorf("Packages[%q].Vendor = %q, want empty", name, v)
+				}
+			}
+		})
 	}
 }
