@@ -610,7 +610,7 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 			gotPkgs, gotSrcPkgs, err := ParseInstalledPkgsWithRegistry(tt.distro, tt.kernel, tt.pkgList, tt.registryList)
 			if tt.wantErr {
 				if err == nil {
-					t.Fatalf("ParseInstalledPkgsWithRegistry() error = nil, want error")
+					t.Fatal("ParseInstalledPkgsWithRegistry() error = nil, want error")
 				}
 				if gotPkgs != nil || gotSrcPkgs != nil {
 					t.Errorf("ParseInstalledPkgsWithRegistry() = %v, %v, want nil, nil", gotPkgs, gotSrcPkgs)
@@ -626,9 +626,9 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 				}
 			}
 			if tt.sameAsParseInstalledPkgs {
-				wantPkgs, wantSrcPkgs, wantErr := ParseInstalledPkgs(tt.distro, tt.kernel, tt.pkgList)
-				if wantErr != nil {
-					t.Fatalf("ParseInstalledPkgs() unexpected error: %v", wantErr)
+				wantPkgs, wantSrcPkgs, refErr := ParseInstalledPkgs(tt.distro, tt.kernel, tt.pkgList)
+				if refErr != nil {
+					t.Fatalf("ParseInstalledPkgs() unexpected error: %v", refErr)
 				}
 				if !reflect.DeepEqual(gotPkgs, wantPkgs) {
 					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, wantPkgs)
