@@ -531,6 +531,7 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 		// sameAsParseInstalledPkgs compares the result with ParseInstalledPkgs.
 		sameAsParseInstalledPkgs bool
 		emptyVendorNames         []string
+		wantErr                  bool
 	}{
 		{
 			name:         "windows: fill msi vendor from registry",
@@ -587,22 +588,47 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 			registryList:             testNonWindowsRegistry,
 			sameAsParseInstalledPkgs: true,
 		},
+		{
+			name:         "windows: invalid pkgList",
+			distro:       windowsDistro,
+			kernel:       models.Kernel{},
+			pkgList:      "Name\n",
+			registryList: testWindowsRegistry,
+			wantErr:      true,
+		},
+		{
+			name:         "windows: registry line too long",
+			distro:       windowsDistro,
+			kernel:       models.Kernel{},
+			pkgList:      testWindowsPkgList,
+			registryList: strings.Repeat("a", 70000),
+			wantErr:      true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotPkgs, gotSrcPkgs, err := ParseInstalledPkgsWithRegistry(tt.distro, tt.kernel, tt.pkgList, tt.registryList)
-			if tt.wantPackages {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("ParseInstalledPkgsWithRegistry() error = nil, want error")
 				}
+				if gotPkgs != nil || gotSrcPkgs != nil {
+					t.Errorf("ParseInstalledPkgsWithRegistry() = %v, %v, want nil, nil", gotPkgs, gotSrcPkgs)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ParseInstalledPkgsWithRegistry() unexpected error: %v", err)
+			}
+			if tt.wantPackages {
 				if !reflect.DeepEqual(gotPkgs, tt.want) {
 					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, tt.want)
 				}
 			}
 			if tt.sameAsParseInstalledPkgs {
 				wantPkgs, wantSrcPkgs, wantErr := ParseInstalledPkgs(tt.distro, tt.kernel, tt.pkgList)
-				if (err != nil) != (wantErr != nil) {
-					t.Fatalf("error got = %v, want %v", err, wantErr)
+				if wantErr != nil {
+					t.Fatalf("ParseInstalledPkgs() unexpected error: %v", wantErr)
 				}
 				if !reflect.DeepEqual(gotPkgs, wantPkgs) {
 					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, wantPkgs)
