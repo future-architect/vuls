@@ -581,6 +581,14 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 			emptyVendorNames:         []string{"dnf", "nginx"},
 		},
 		{
+			name:                     "non-windows (alma 9.0): invalid registry is not parsed",
+			distro:                   almaDistro,
+			kernel:                   almaKernel,
+			pkgList:                  testAlmaPkgList,
+			registryList:             strings.Repeat("a", 70000),
+			sameAsParseInstalledPkgs: true,
+		},
+		{
 			name:                     "non-windows (debian): registry is ignored",
 			distro:                   debianDistro,
 			kernel:                   debianKernel,
