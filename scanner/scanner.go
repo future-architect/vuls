@@ -304,22 +304,18 @@ func ParseInstalledPkgsWithRegistry(distro config.Distro, kernel models.Kernel, 
 		return ParseInstalledPkgs(distro, kernel, pkgList)
 	}
 
-	w := &windows{base: base{
-		Distro:     distro,
-		osPackages: osPackages{Kernel: kernel},
-		log:        logging.Log,
-	}}
-	installed, srcPackages, err := w.parseInstalledPackages(pkgList)
+	installed, srcPackages, err := ParseInstalledPkgs(distro, kernel, pkgList)
 	if err != nil {
 		return nil, nil, err
 	}
-	if registryList != "" {
-		regVendors, err := w.parseRegistryPublishers(registryList)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
-		}
-		fillMissingVendors(installed, regVendors)
+	if registryList == "" {
+		return installed, srcPackages, nil
 	}
+	regVendors, err := (&windows{}).parseRegistryPublishers(registryList)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
+	}
+	fillMissingVendors(installed, regVendors)
 	return installed, srcPackages, nil
 }
 
