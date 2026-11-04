@@ -295,6 +295,30 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 	return osType.parseInstalledPackages(pkgList)
 }
 
+// ParseInstalledPkgsWithRegistry parses installed pkgs like ParseInstalledPkgs.
+// For Windows, it also fills missing package vendors from registryList, the output of the
+// registry Uninstall key query (DisplayName, Publisher), in the same way as the scanner does.
+// registryList is ignored for other OS families.
+func ParseInstalledPkgsWithRegistry(distro config.Distro, kernel models.Kernel, pkgList, registryList string) (models.Packages, models.SrcPackages, error) {
+	if distro.Family != constant.Windows {
+		return ParseInstalledPkgs(distro, kernel, pkgList)
+	}
+
+	installed, srcPackages, err := ParseInstalledPkgs(distro, kernel, pkgList)
+	if err != nil {
+		return nil, nil, err
+	}
+	if registryList == "" {
+		return installed, srcPackages, nil
+	}
+	regVendors, err := (&windows{}).parseRegistryPublishers(registryList)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
+	}
+	fillMissingVendors(installed, regVendors)
+	return installed, srcPackages, nil
+}
+
 // initServers detect the kind of OS distribution of target servers
 func (s Scanner) initServers() error {
 	hosts, errHosts := s.detectServerOSes()
