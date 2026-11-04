@@ -176,8 +176,7 @@ Vuls has some options to detect the vulnerabilities
 
 ## Document
 
-For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)  
-[日本語翻訳ドキュメント](https://vuls.io/ja/)
+For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)
 
 ----
 
