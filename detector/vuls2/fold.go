@@ -120,6 +120,13 @@ func mergeWarningEntries(dst, add []warningEntry) []warningEntry {
 // empty Cause (the raw value for an unset datum, or the constant for
 // cause-less kinds like empty-range) is not rendered. Line order here is
 // unspecified — SortForJSONOutput normalizes it.
+//
+// The sentence around the fields depends on the kind. Most kinds mean data
+// outside this build's vocabulary, which a newer vuls may evaluate. A
+// pattern-query-range warning is about the query instead: the CPE in the
+// config has a wildcard version, which the CVE's version range cannot be
+// evaluated against, so only the names the CVE enumerates were matched;
+// no update changes that, a concrete version in the config does.
 func renderWarningEntries(entries []warningEntry) []string {
 	msgs := make([]string, 0, len(entries))
 	for _, e := range entries {
@@ -131,7 +138,15 @@ func renderWarningEntries(entries []warningEntry) []string {
 		if e.warning.Cause != "" {
 			parts = append(parts, fmt.Sprintf("cause: %q", e.warning.Cause))
 		}
-		msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", ")))
+		fields := strings.Join(parts, ", ")
+		switch e.warning.Kind {
+		case warningTypes.KindPatternQueryRange:
+			msgs = append(msgs, fmt.Sprintf("vuls2 matched a CPE with a wildcard version by name only (%s). The CVE's version range was not evaluated against it; give the CPE a concrete version to have the range evaluated.", fields))
+		case warningTypes.KindUnevaluablePackedEncoding:
+			msgs = append(msgs, fmt.Sprintf("vuls2 skipped packed cpematch data it cannot decode (%s). Detection for CPEs with a wildcard version may be incomplete; updating vuls may resolve this.", fields))
+		default:
+			msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", fields))
+		}
 	}
 	return msgs
 }
