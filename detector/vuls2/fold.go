@@ -125,7 +125,8 @@ func mergeWarningEntries(dst, add []warningEntry) []warningEntry {
 // outside this build's vocabulary, which a newer vuls may evaluate. A
 // pattern-query-range warning is about the query instead: the CPE in the
 // config has a wildcard version, which the CVE's version range cannot be
-// evaluated against, so only the names the CVE enumerates were matched;
+// evaluated against, so the query was evaluated against the names the CVE
+// enumerates only (it is recorded whether or not that produced a match);
 // no update changes that, a concrete version in the config does.
 func renderWarningEntries(entries []warningEntry) []string {
 	msgs := make([]string, 0, len(entries))
@@ -141,7 +142,7 @@ func renderWarningEntries(entries []warningEntry) []string {
 		fields := strings.Join(parts, ", ")
 		switch e.warning.Kind {
 		case warningTypes.KindPatternQueryRange:
-			msgs = append(msgs, fmt.Sprintf("vuls2 matched a CPE with a wildcard version by name only (%s). The CVE's version range was not evaluated against it; give the CPE a concrete version to have the range evaluated.", fields))
+			msgs = append(msgs, fmt.Sprintf("vuls2 evaluated a CPE with a wildcard version against the CVE's enumerated names only (%s). The CVE's version range was not evaluated against it; give the CPE a concrete version to have the range evaluated.", fields))
 		case warningTypes.KindUnevaluablePackedEncoding:
 			msgs = append(msgs, fmt.Sprintf("vuls2 skipped packed cpematch data it cannot decode (%s). Detection for CPEs with a wildcard version may be incomplete; updating vuls may resolve this.", fields))
 		default:

@@ -15705,14 +15705,16 @@ func Test_renderWarningEntries(t *testing.T) {
 			// The kinds the cpe criterion records about the query, or about
 			// packed data, carry their own sentence: a wildcard version in
 			// the config is not resolved by an update, and packed data from
-			// a newer vuls-data-update only affects such queries.
+			// a newer vuls-data-update only affects such queries. The
+			// pattern-query-range line does not claim a match: the kind is
+			// recorded for a None result too.
 			name: "cpe criterion kinds",
 			entries: []vuls2.WarningEntry{
 				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindPatternQueryRange, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},
 				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluablePackedEncoding, Cause: "future-encoding"}},
 			},
 			want: []string{
-				`vuls2 matched a CPE with a wildcard version by name only (source: nvd-feed-cve-v2, kind: pattern-query-range, cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"). The CVE's version range was not evaluated against it; give the CPE a concrete version to have the range evaluated.`,
+				`vuls2 evaluated a CPE with a wildcard version against the CVE's enumerated names only (source: nvd-feed-cve-v2, kind: pattern-query-range, cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"). The CVE's version range was not evaluated against it; give the CPE a concrete version to have the range evaluated.`,
 				`vuls2 skipped packed cpematch data it cannot decode (source: nvd-feed-cve-v2, kind: unevaluable-packed-encoding, cause: "future-encoding"). Detection for CPEs with a wildcard version may be incomplete; updating vuls may resolve this.`,
 			},
 		},
