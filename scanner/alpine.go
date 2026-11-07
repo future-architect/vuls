@@ -301,6 +301,9 @@ func (o *alpine) parseApkVersion(stdout string) (models.Packages, error) {
 		ss := strings.Split(line, "<")
 		namever := strings.TrimSpace(ss[0])
 		tt := strings.Split(namever, "-")
+		if len(tt) < 3 {
+			continue
+		}
 		name := strings.Join(tt[:len(tt)-2], "-")
 		packs[name] = models.Package{
 			Name:       name,
