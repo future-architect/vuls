@@ -70,10 +70,10 @@ github.com/MaineK00n/go-microsoft-version v0.0.0-20261029064356-a5b20527022c h1:
 github.com/MaineK00n/go-microsoft-version v0.0.0-20261029064356-a5b20527022c/go.mod h1:GNf+Vhnxk8/pW56jsxAeFCBP0VCgVQlLIJ812UnAj9c=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf h1:QDz92+GEPbIR4HTw2EGNgYqH+T9jxmO/OvFMfY715PE=
 github.com/MaineK00n/go-paloalto-version v0.0.0-20260324210858-f043171ba2bf/go.mod h1:ELOxzfAd4oAe4niMmoZlSiJwzf1DF+DjNdjsUcuqAR8=
-github.com/MaineK00n/vuls-data-update v0.0.0-20261106043854-278dd25f5cbd h1:1hU9/gRHkfQv63GLmAaSge/deguhjhf8Leovj35K51M=
-github.com/MaineK00n/vuls-data-update v0.0.0-20261106043854-278dd25f5cbd/go.mod h1:+9HQbZUNH6gqvOUTt8/8nEmOV/JnxjcfguR1MdwItno=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20261106070325-157f7f4ea493 h1:kcxbFPpriLFhPvRRjvgCz/tZs3hROe7Ag+FUxGQRba8=
-github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20261106070325-157f7f4ea493/go.mod h1:Tk52/HWRdsjE6tzixYdjMr8Cf5d93zgRhMscC/fNU0w=
+github.com/MaineK00n/vuls-data-update v0.0.0-20261108004038-681f47deed4d h1:o/9M4Ki1yra+vTrGFZr1GYEhODlO83PksHLSlybEHc0=
+github.com/MaineK00n/vuls-data-update v0.0.0-20261108004038-681f47deed4d/go.mod h1:+9HQbZUNH6gqvOUTt8/8nEmOV/JnxjcfguR1MdwItno=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20261109010557-8c943f3ba6fc h1:mJlXQs4miyVeKQi6QWyEK1ZKM5W9KMtBha8s4E7iiKk=
+github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20261109010557-8c943f3ba6fc/go.mod h1:qwOUtHDKqwScuQnzGFBAnxqIcr+H8XeSE5Z8SiIl3SA=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
