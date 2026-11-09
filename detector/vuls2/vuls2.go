@@ -227,7 +227,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	// DetectPkgs and DetectCPEs both route through here. detect harvests
 	// the warnings while streaming, before the trees are reduced — the
 	// reduced result no longer carries them. They are rendered here, where
-	// fsToOriginalCPE is at hand to quote a CPE as the config spells it.
+	// fsToOriginalCPE is at hand to quote a CPE as the caller supplied it.
 	for _, msg := range renderWarningEntries(warnEntries, fsToOriginalCPE) {
 		if !slices.Contains(r.Warnings, msg) {
 			r.Warnings = append(r.Warnings, msg)

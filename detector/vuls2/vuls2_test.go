@@ -15724,11 +15724,12 @@ func Test_renderWarningEntries(t *testing.T) {
 			},
 		},
 		{
-			// The pattern-query-range cause is quoted as the config spells
-			// it: the FS form vuls2 was handed maps back to the user's
-			// form(s), one line per form, so the user finds the CPE in the
-			// config. The map does not touch the other kinds' causes.
-			name: "pattern-query-range cause in the config's form",
+			// The pattern-query-range cause is quoted as the caller
+			// supplied the CPE (the form VulnInfo.CpeURIs shows): the FS
+			// form vuls2 was handed maps back to the supplied form(s), one
+			// line per form. The map does not touch the other kinds'
+			// causes.
+			name: "pattern-query-range cause in the supplied form",
 			entries: []vuls2.WarningEntry{
 				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindPatternQueryRange, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},
 				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},

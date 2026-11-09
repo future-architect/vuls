@@ -162,9 +162,11 @@ var (
 // does not depend on which source's ranges were skipped, so one line per
 // CPE stands for every source that recorded it. Its cause is the query in
 // the CPE 2.3 FS form vuls2 was handed, which fsToOriginalCPE (see
-// postConvert) maps back to the form(s) the config spells it in; the line
-// quotes those, one line per form, so the CPE reads as the user wrote it.
-// A cause missing from the map is quoted as is.
+// postConvert) maps back to the form(s) the caller supplied; the line
+// quotes those, one line per form, so the CPE reads as VulnInfo.CpeURIs
+// shows it. For a config-loaded CPE that is the URI the config loader
+// normalizes every CpeNames entry to, whatever form the file spells it
+// in. A cause missing from the map is quoted as is.
 func renderWarningEntries(entries []warningEntry, fsToOriginalCPE map[string][]string) []string {
 	msgs := make([]string, 0, len(entries))
 	for _, e := range entries {
