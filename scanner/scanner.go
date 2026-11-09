@@ -61,6 +61,7 @@ type osTypeInterface interface {
 	convertToModel() models.ScanResult
 
 	parseInstalledPackages(string) (models.Packages, models.SrcPackages, error)
+	fillOptionalInformation(models.Packages, parseOptions) error
 
 	runningContainers() ([]config.Container, error)
 	exitedContainers() ([]config.Container, error)
@@ -252,8 +253,29 @@ func ViaHTTP(header http.Header, body string, toLocalFile bool) (models.ScanResu
 	}
 }
 
+// ParseOption is an option for ParseInstalledPkgs.
+type ParseOption func(*parseOptions)
+
+// parseOptions holds additional inputs for ParseInstalledPkgs.
+// Each OS type reads only the fields relevant to it.
+type parseOptions struct {
+	windowsUninstallRegistry string
+}
+
+// WithWindowsUninstallRegistry passes the output of WindowsUninstallRegistryCmd.
+// It is ignored for OS families other than Windows.
+func WithWindowsUninstallRegistry(stdout string) ParseOption {
+	return func(o *parseOptions) { o.windowsUninstallRegistry = stdout }
+}
+
 // ParseInstalledPkgs parses installed pkgs line
-func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList string) (models.Packages, models.SrcPackages, error) {
+// Additional inputs for specific OS families can be passed via opts (e.g. WithWindowsUninstallRegistry).
+func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList string, opts ...ParseOption) (models.Packages, models.SrcPackages, error) {
+	var o parseOptions
+	for _, opt := range opts {
+		opt(&o)
+	}
+
 	base := base{
 		Distro: distro,
 		osPackages: osPackages{
@@ -292,30 +314,13 @@ func ParseInstalledPkgs(distro config.Distro, kernel models.Kernel, pkgList stri
 		return models.Packages{}, models.SrcPackages{}, xerrors.Errorf("Server mode for %s is not implemented yet", base.Distro.Family)
 	}
 
-	return osType.parseInstalledPackages(pkgList)
-}
-
-// ParseInstalledPkgsWithRegistry parses installed pkgs like ParseInstalledPkgs.
-// For Windows, it also fills missing package vendors from registryList, the output of the
-// registry Uninstall key query (DisplayName, Publisher), in the same way as the scanner does.
-// registryList is ignored for other OS families.
-func ParseInstalledPkgsWithRegistry(distro config.Distro, kernel models.Kernel, pkgList, registryList string) (models.Packages, models.SrcPackages, error) {
-	if distro.Family != constant.Windows {
-		return ParseInstalledPkgs(distro, kernel, pkgList)
-	}
-
-	installed, srcPackages, err := ParseInstalledPkgs(distro, kernel, pkgList)
+	installed, srcPackages, err := osType.parseInstalledPackages(pkgList)
 	if err != nil {
+		return installed, srcPackages, err
+	}
+	if err := osType.fillOptionalInformation(installed, o); err != nil {
 		return nil, nil, err
 	}
-	if registryList == "" {
-		return installed, srcPackages, nil
-	}
-	regVendors, err := (&windows{}).parseRegistryPublishers(registryList)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
-	}
-	fillMissingVendors(installed, regVendors)
 	return installed, srcPackages, nil
 }
 
