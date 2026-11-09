@@ -79,8 +79,8 @@ func MergeWarningEntries(dst, add []WarningEntry) []WarningEntry {
 	return fromWarningEntries(mergeWarningEntries(toWarningEntries(dst), toWarningEntries(add)))
 }
 
-func RenderWarningEntries(entries []WarningEntry) []string {
-	return renderWarningEntries(toWarningEntries(entries))
+func RenderWarningEntries(entries []WarningEntry, fsToOriginalCPE map[string][]string) []string {
+	return renderWarningEntries(toWarningEntries(entries), fsToOriginalCPE)
 }
 
 // ProjectDetectResult converts a raw detectTypes.DetectResult fixture into

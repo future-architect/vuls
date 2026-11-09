@@ -210,7 +210,7 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 		return xerrors.Errorf("Failed to open db session. err: %w", err)
 	}
 
-	vuls2Detected, warningMsgs, err := detect(sesh, vuls2Scanned)
+	vuls2Detected, warnEntries, err := detect(sesh, vuls2Scanned)
 	if err != nil {
 		return xerrors.Errorf("Failed to detect. err: %w", err)
 	}
@@ -226,8 +226,9 @@ func detectWith(r *models.ScanResult, vuls2Scanned scanTypes.ScanResult, fsToOri
 	// against warnings already registered by the other vuls2 pass:
 	// DetectPkgs and DetectCPEs both route through here. detect harvests
 	// the warnings while streaming, before the trees are reduced — the
-	// reduced result no longer carries them.
-	for _, msg := range warningMsgs {
+	// reduced result no longer carries them. They are rendered here, where
+	// fsToOriginalCPE is at hand to quote a CPE as the config spells it.
+	for _, msg := range renderWarningEntries(warnEntries, fsToOriginalCPE) {
 		if !slices.Contains(r.Warnings, msg) {
 			r.Warnings = append(r.Warnings, msg)
 		}
@@ -537,9 +538,9 @@ func preConvertCPEs(sr *models.ScanResult, cpes []CPE) (scanTypes.ScanResult, ma
 // what this package reads downstream (projectOSPkgDetection /
 // projectCPEDetection) — so peak memory holds the projected result plus
 // only the in-flight full trees. The second return value carries the
-// rendered warning lines, which can no longer be derived from the
-// (projected) result.
-func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []string, error) {
+// warning entries, which can no longer be derived from the (projected)
+// result; the caller renders them (renderWarningEntries).
+func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []warningEntry, error) {
 	// The two entry points feed exclusive inputs: preConvertPkgs converts
 	// OS packages / Microsoft KB only, preConvertCPEs the CPE list only.
 	// Receiving both means a caller bypassed them.
@@ -614,7 +615,7 @@ func detect(sesh *session.Session, sr scanTypes.ScanResult) (detectResult, []str
 
 	return detectResult{
 		Detected: slices.Collect(maps.Values(detected)),
-	}, renderWarningEntries(warnEntries), nil
+	}, warnEntries, nil
 }
 
 type source struct {
