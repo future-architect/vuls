@@ -508,7 +508,7 @@ kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none
 	testNonWindowsRegistry = "DisplayName : dnf\nPublisher   : SomeVendor\n\nDisplayName : nginx\nPublisher   : SomeVendor\n"
 )
 
-func TestParseInstalledPkgsWithRegistry(t *testing.T) {
+func TestParseInstalledPkgsWithWindowsUninstallRegistry(t *testing.T) {
 	windowsDistro := config.Distro{Family: constant.Windows}
 	windowsWant := models.Packages{
 		"Git":                                 {Name: "Git", Version: "2.35.1.2", Vendor: "The Git Development Community"},
@@ -615,22 +615,22 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPkgs, gotSrcPkgs, err := ParseInstalledPkgsWithRegistry(tt.distro, tt.kernel, tt.pkgList, tt.registryList)
+			gotPkgs, gotSrcPkgs, err := ParseInstalledPkgs(tt.distro, tt.kernel, tt.pkgList, WithWindowsUninstallRegistry(tt.registryList))
 			if tt.wantErr {
 				if err == nil {
-					t.Fatal("ParseInstalledPkgsWithRegistry() error = nil, want error")
+					t.Fatal("ParseInstalledPkgs() error = nil, want error")
 				}
 				if gotPkgs != nil || gotSrcPkgs != nil {
-					t.Errorf("ParseInstalledPkgsWithRegistry() = %v, %v, want nil, nil", gotPkgs, gotSrcPkgs)
+					t.Errorf("ParseInstalledPkgs() = %v, %v, want nil, nil", gotPkgs, gotSrcPkgs)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("ParseInstalledPkgsWithRegistry() unexpected error: %v", err)
+				t.Fatalf("ParseInstalledPkgs() unexpected error: %v", err)
 			}
 			if tt.wantPackages {
 				if !reflect.DeepEqual(gotPkgs, tt.want) {
-					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, tt.want)
+					t.Errorf("ParseInstalledPkgs() packages got = %v, want %v", gotPkgs, tt.want)
 				}
 			}
 			if tt.sameAsParseInstalledPkgs {
@@ -639,10 +639,10 @@ func TestParseInstalledPkgsWithRegistry(t *testing.T) {
 					t.Fatalf("ParseInstalledPkgs() unexpected error: %v", refErr)
 				}
 				if !reflect.DeepEqual(gotPkgs, wantPkgs) {
-					t.Errorf("ParseInstalledPkgsWithRegistry() packages got = %v, want %v", gotPkgs, wantPkgs)
+					t.Errorf("ParseInstalledPkgs() packages got = %v, want %v", gotPkgs, wantPkgs)
 				}
 				if !reflect.DeepEqual(gotSrcPkgs, wantSrcPkgs) {
-					t.Errorf("ParseInstalledPkgsWithRegistry() srcPackages got = %v, want %v", gotSrcPkgs, wantSrcPkgs)
+					t.Errorf("ParseInstalledPkgs() srcPackages got = %v, want %v", gotSrcPkgs, wantSrcPkgs)
 				}
 			}
 			for _, name := range tt.emptyVendorNames {
