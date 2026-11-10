@@ -15674,9 +15674,10 @@ func Test_mergeWarningEntries(t *testing.T) {
 
 func Test_renderWarningEntries(t *testing.T) {
 	tests := []struct {
-		name    string
-		entries []vuls2.WarningEntry
-		want    []string
+		name            string
+		entries         []vuls2.WarningEntry
+		fsToOriginalCPE map[string][]string
+		want            []string
 	}{
 		{
 			name:    "no entries yields none",
@@ -15701,10 +15702,51 @@ func Test_renderWarningEntries(t *testing.T) {
 				`vuls2 skipped data it cannot evaluate (source: redhat-csaf, kind: unevaluable-range-type, cause: "future-range-a"). Detection may be incomplete; updating vuls may resolve this.`,
 			},
 		},
+		{
+			// The kinds the cpe criterion records about the query, or about
+			// packed data, carry their own sentence: a wildcard version in
+			// the config is not resolved by an update, and packed data from
+			// a newer vuls-data-update only affects such queries. The
+			// pattern-query-range line does not claim a match (the kind is
+			// recorded for a None result too) and names no source: the
+			// advice does not depend on it, so the entries of two sources
+			// render as one line. The cause is quoted as is when the map
+			// has no entry for it.
+			name: "cpe criterion kinds",
+			entries: []vuls2.WarningEntry{
+				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindPatternQueryRange, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},
+				{Source: sourceTypes.Fortinet, Warning: warningTypes.Warning{Kind: warningTypes.KindPatternQueryRange, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},
+				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluablePackedEncoding, Cause: "future-encoding"}},
+			},
+			want: []string{
+				`vuls2 evaluated a CPE with a wildcard version against enumerated names only (kind: pattern-query-range, cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"). Version ranges were not evaluated against it; give the CPE a concrete version to have them evaluated.`,
+				`vuls2 skipped packed cpematch data it cannot decode (source: nvd-feed-cve-v2, kind: unevaluable-packed-encoding, cause: "future-encoding"). Detection for CPEs with a wildcard version may be incomplete; updating vuls may resolve this.`,
+			},
+		},
+		{
+			// The pattern-query-range cause is quoted as the caller
+			// supplied the CPE (the form VulnInfo.CpeURIs shows): the FS
+			// form vuls2 was handed maps back to the supplied form(s), one
+			// line per form. The map does not touch the other kinds'
+			// causes.
+			name: "pattern-query-range cause in the supplied form",
+			entries: []vuls2.WarningEntry{
+				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindPatternQueryRange, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},
+				{Source: sourceTypes.NVDFeedCVEv2, Warning: warningTypes.Warning{Kind: warningTypes.KindUnevaluableRangeType, Cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"}},
+			},
+			fsToOriginalCPE: map[string][]string{
+				"cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*": {"cpe:/a:google:chrome:12.%02", "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"},
+			},
+			want: []string{
+				`vuls2 evaluated a CPE with a wildcard version against enumerated names only (kind: pattern-query-range, cause: "cpe:/a:google:chrome:12.%02"). Version ranges were not evaluated against it; give the CPE a concrete version to have them evaluated.`,
+				`vuls2 evaluated a CPE with a wildcard version against enumerated names only (kind: pattern-query-range, cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"). Version ranges were not evaluated against it; give the CPE a concrete version to have them evaluated.`,
+				`vuls2 skipped data it cannot evaluate (source: nvd-feed-cve-v2, kind: unevaluable-range-type, cause: "cpe:2.3:a:google:chrome:12.*:*:*:*:*:*:*:*"). Detection may be incomplete; updating vuls may resolve this.`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := gocmp.Diff(tt.want, vuls2.RenderWarningEntries(tt.entries)); diff != "" {
+			if diff := gocmp.Diff(tt.want, vuls2.RenderWarningEntries(tt.entries, tt.fsToOriginalCPE)); diff != "" {
 				t.Errorf("renderWarningEntries() (-expected +got):\n%s", diff)
 			}
 		})

@@ -111,27 +111,92 @@ func mergeWarningEntries(dst, add []warningEntry) []warningEntry {
 	return dst
 }
 
-// renderWarningEntries renders collected warning entries into scan-result
-// warning lines, one per entry. Each line renders deterministically on its
+// warningSentence is the sentence a rendered warning line wraps around its
+// parenthesized fields: "<lead> (<fields>). <trail>".
+type warningSentence struct {
+	lead  string
+	trail string
+}
+
+// warningSentences holds the sentence per warning kind that has its own;
+// defaultWarningSentence covers the rest. Most kinds mean data outside
+// this build's vocabulary, which a newer vuls may evaluate, and the
+// default says so. A pattern-query-range warning is about the query
+// instead: the CPE in the config has a wildcard version, which a version
+// range cannot be evaluated against, so the query was evaluated against
+// the enumerated names only (it is recorded whether or not that produced
+// a match); no update changes that, a concrete version in the config does.
+// An unevaluable-packed-encoding warning is about data, but only a query
+// with a wildcard version is affected by the skip, so its sentence says
+// which detections may be incomplete.
+var (
+	warningSentences = map[warningTypes.Kind]warningSentence{
+		warningTypes.KindPatternQueryRange: {
+			lead:  "vuls2 evaluated a CPE with a wildcard version against enumerated names only",
+			trail: "Version ranges were not evaluated against it; give the CPE a concrete version to have them evaluated.",
+		},
+		warningTypes.KindUnevaluablePackedEncoding: {
+			lead:  "vuls2 skipped packed cpematch data it cannot decode",
+			trail: "Detection for CPEs with a wildcard version may be incomplete; updating vuls may resolve this.",
+		},
+	}
+	defaultWarningSentence = warningSentence{
+		lead:  "vuls2 skipped data it cannot evaluate",
+		trail: "Detection may be incomplete; updating vuls may resolve this.",
+	}
+)
+
+// renderWarningEntries renders collected warning entries into distinct
+// scan-result warning lines. Each line renders deterministically on its
 // own, so callers can deduplicate across passes by comparing the rendered
-// strings. The source leads the format on purpose —
-// ScanResult.SortForJSONOutput orders the lines lexicographically, so a
-// drifting source's lines cluster together, then by kind and cause. An
-// empty Cause (the raw value for an unset datum, or the constant for
+// strings. The fields read source, kind, cause in that order, and the
+// sentence depends on the kind (warningSentences), so
+// ScanResult.SortForJSONOutput, which orders the lines lexicographically,
+// clusters the lines of one sentence, and within it those of one source.
+// An empty Cause (the raw value for an unset datum, or the constant for
 // cause-less kinds like empty-range) is not rendered. Line order here is
 // unspecified — SortForJSONOutput normalizes it.
-func renderWarningEntries(entries []warningEntry) []string {
+//
+// A pattern-query-range entry is rendered without its source: the warning
+// is about the query, and the advice (a concrete version in the config)
+// does not depend on which source's ranges were skipped, so one line per
+// CPE stands for every source that recorded it. Its cause is the query in
+// the CPE 2.3 FS form vuls2 was handed, which fsToOriginalCPE (see
+// postConvert) maps back to the form(s) the caller supplied; the line
+// quotes those, one line per form, so the CPE reads as VulnInfo.CpeURIs
+// shows it. For a config-loaded CPE that is the URI the config loader
+// normalizes every CpeNames entry to, whatever form the file spells it
+// in. A cause missing from the map is quoted as is.
+func renderWarningEntries(entries []warningEntry, fsToOriginalCPE map[string][]string) []string {
 	msgs := make([]string, 0, len(entries))
 	for _, e := range entries {
+		sentence, ok := warningSentences[e.warning.Kind]
+		if !ok {
+			sentence = defaultWarningSentence
+		}
+
 		var parts []string
-		if e.source != "" {
+		if e.source != "" && e.warning.Kind != warningTypes.KindPatternQueryRange {
 			parts = append(parts, fmt.Sprintf("source: %s", e.source))
 		}
 		parts = append(parts, fmt.Sprintf("kind: %s", e.warning.Kind))
-		if e.warning.Cause != "" {
-			parts = append(parts, fmt.Sprintf("cause: %q", e.warning.Cause))
+
+		causes := []string{e.warning.Cause}
+		if e.warning.Kind == warningTypes.KindPatternQueryRange {
+			if origs, ok := fsToOriginalCPE[e.warning.Cause]; ok {
+				causes = origs
+			}
 		}
-		msgs = append(msgs, fmt.Sprintf("vuls2 skipped data it cannot evaluate (%s). Detection may be incomplete; updating vuls may resolve this.", strings.Join(parts, ", ")))
+		for _, cause := range causes {
+			fields := parts
+			if cause != "" {
+				fields = append(slices.Clone(parts), fmt.Sprintf("cause: %q", cause))
+			}
+			msg := fmt.Sprintf("%s (%s). %s", sentence.lead, strings.Join(fields, ", "), sentence.trail)
+			if !slices.Contains(msgs, msg) {
+				msgs = append(msgs, msg)
+			}
+		}
 	}
 	return msgs
 }
