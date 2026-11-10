@@ -23,6 +23,11 @@ import (
 	ufilepath "github.com/future-architect/vuls/scanner/utils/filepath/windows"
 )
 
+// WindowsUninstallRegistryCmd is the PowerShell command that the scanner runs to read
+// DisplayName and Publisher from the registry Uninstall keys.
+// Pass its output to WithWindowsUninstallRegistry.
+const WindowsUninstallRegistryCmd = `Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*','HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue | Select-Object DisplayName, Publisher | Format-List | Out-String -Width 1024`
+
 // inherit OsTypeInterface
 type windows struct {
 	base
@@ -1106,17 +1111,9 @@ func (w *windows) scanPackages() error {
 			}
 		}
 		if len(missingVendorPkgs) > 0 {
-			if r := w.exec(w.translateCmd("Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Select-Object DisplayName, Publisher | Format-List"), noSudo); r.isSuccess() {
-				regVendors, err := w.parseRegistryPublishers(r.Stdout)
-				if err != nil {
-					return xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
-				}
-				for _, name := range missingVendorPkgs {
-					if vendor, ok := regVendors[name]; ok && vendor != "" {
-						pkg := installed[name]
-						pkg.Vendor = vendor
-						installed[name] = pkg
-					}
+			if r := w.exec(w.translateCmd(WindowsUninstallRegistryCmd), noSudo); r.isSuccess() {
+				if err := w.fillOptionalInformation(installed, parseOptions{windowsUninstallRegistry: r.Stdout}); err != nil {
+					return err
 				}
 			}
 		}
@@ -1223,6 +1220,34 @@ func (w *windows) parseRegistryPublishers(stdout string) (map[string]string, err
 	}
 
 	return result, nil
+}
+
+// fillMissingVendors fills Vendor of packages whose Vendor is empty with the registry Publisher
+// whose DisplayName exactly matches the package Name.
+func fillMissingVendors(installed models.Packages, regVendors map[string]string) {
+	for name, pkg := range installed {
+		if pkg.Vendor != "" {
+			continue
+		}
+		if vendor, ok := regVendors[name]; ok && vendor != "" {
+			pkg.Vendor = vendor
+			installed[name] = pkg
+		}
+	}
+}
+
+// fillOptionalInformation fills missing package vendors from the registry Uninstall key output
+// passed via WithWindowsUninstallRegistry.
+func (w *windows) fillOptionalInformation(installed models.Packages, o parseOptions) error {
+	if o.windowsUninstallRegistry == "" {
+		return nil
+	}
+	regVendors, err := w.parseRegistryPublishers(o.windowsUninstallRegistry)
+	if err != nil {
+		return xerrors.Errorf("Failed to parse registry publishers. err: %w", err)
+	}
+	fillMissingVendors(installed, regVendors)
+	return nil
 }
 
 func (w *windows) scanKBs() (*models.WindowsKB, error) {
