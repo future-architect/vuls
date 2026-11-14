@@ -1178,12 +1178,16 @@ func (o *debian) checkrestart() error {
 
 	cmd := "LANGUAGE=en_US.UTF-8 checkrestart"
 	r := o.exec(cmd, sudo)
-	if !r.isSuccess() {
+	// checkrestart exits with 1 when processes need restarting.
+	if !r.isSuccess(0, 1) {
 		return xerrors.Errorf(
 			"Failed to %s. status: %d, stdout: %s, stderr: %s",
 			cmd, r.ExitStatus, r.Stdout, r.Stderr)
 	}
-	packs, unknownServices := o.parseCheckRestart(r.Stdout)
+	packs, unknownServices, err := o.parseCheckRestart(r.Stdout, o.getOwnerPkgs)
+	if err != nil {
+		return err
+	}
 	pidService := map[string]string{}
 	if initName == upstart {
 		for _, s := range unknownServices {
@@ -1208,7 +1212,7 @@ func (o *debian) checkrestart() error {
 		pack.NeedRestartProcs = p.NeedRestartProcs
 
 		for j, proc := range pack.NeedRestartProcs {
-			if !proc.HasInit {
+			if !proc.HasInit || proc.InitSystem == systemd {
 				continue
 			}
 			pack.NeedRestartProcs[j].InitSystem = initName
@@ -1235,12 +1239,13 @@ func (o *debian) checkrestart() error {
 	return nil
 }
 
-func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
+func (o *debian) parseCheckRestart(stdout string, getOwnerPkgs func([]string) ([]string, error)) (models.Packages, []string, error) {
 	services := []string{}
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "service") && strings.HasSuffix(line, "restart") {
+		line, _, _ := strings.Cut(scanner.Text(), "#")
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "service ") && strings.HasSuffix(line, " restart") {
 			ss := strings.Fields(line)
 			if len(ss) != 3 {
 				continue
@@ -1252,10 +1257,48 @@ func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
 	packs := models.Packages{}
 	packName := ""
 	hasInit := true
+	// debian-goodies 0.88 groups processes by systemd unit as well as package.
+	// The unit name is not necessarily the name of the package owning the program.
+	systemdUnit := ""
+	bySystemdUnit := false
+	processLine := regexp.MustCompile(`^(?:Deleted )?(?:Program|Script) (/.+?) \(PID: ([0-9]+)(?:,.*)?\)$`)
 	scanner = bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
 		line := scanner.Text()
+		process := processLine.FindStringSubmatch(strings.TrimSpace(line))
 		switch {
+		case strings.HasPrefix(line, "Unpackaged: "):
+			packName = ""
+		case line == "The following systemd units started programmes that are using deleted files:":
+			bySystemdUnit, hasInit = true, true
+		case strings.HasPrefix(line, "The following packages provided processes that are using deleted files"):
+			bySystemdUnit, hasInit = false, true
+		case line == "The following are using deleted files but there is no suggested way to restart them:":
+			bySystemdUnit, hasInit = false, false
+		case len(process) == 3:
+			if packName == "" {
+				continue
+			}
+			proc := models.NeedRestartProcess{PID: process[2], Path: process[1], HasInit: hasInit}
+			if slices.Contains(services, packName) {
+				proc.ServiceName = packName
+			}
+			names := []string{packName}
+			if bySystemdUnit {
+				var err error
+				names, err = getOwnerPkgs([]string{proc.Path})
+				if err != nil {
+					return nil, nil, xerrors.Errorf("Failed to find owner packages of %s: %w", proc.Path, err)
+				}
+				proc.ServiceName = systemdUnit
+				proc.InitSystem = systemd
+			}
+			for _, name := range names {
+				p := packs[name]
+				p.Name = name
+				p.NeedRestartProcs = append(p.NeedRestartProcs, proc)
+				packs[name] = p
+			}
 		case strings.HasSuffix(line, "do not seem to have an associated init script to restart them:"):
 			hasInit = false
 		case strings.HasSuffix(line, ":") && len(strings.Fields(line)) == 1:
@@ -1263,9 +1306,13 @@ func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
 			// "openssh-server:" -> "openssh-server"
 			// "openssh-server:i386:" -> "openssh-server"
 			packName, _, _ = strings.Cut(line, ":")
+			systemdUnit = strings.TrimSuffix(line, ":")
 		case strings.HasPrefix(line, "\t"):
 			ss := strings.Fields(line)
-			if len(ss) != 2 {
+			if len(ss) != 2 || packName == "" {
+				continue
+			}
+			if _, err := strconv.Atoi(ss[0]); err != nil {
 				continue
 			}
 
@@ -1303,12 +1350,21 @@ func (o *debian) parseCheckRestart(stdout string) (models.Packages, []string) {
 			unknownServices = append(unknownServices, s)
 		}
 	}
-	return packs, unknownServices
+	return packs, unknownServices, nil
 }
 
 func (o *debian) getOwnerPkgs(paths []string) (pkgNames []string, err error) {
-	cmd := "dpkg -S " + strings.Join(paths, " ")
-	r := o.exec(util.PrependProxyEnv(cmd), noSudo)
+	// Paths can contain spaces or shell metacharacters (including process output).
+	quotedPaths := make([]string, 0, len(paths))
+	for _, path := range paths {
+		quotedPaths = append(quotedPaths, "'"+strings.ReplaceAll(path, "'", "'\\''")+"'")
+	}
+	cmd := util.PrependProxyEnv("dpkg -S " + strings.Join(quotedPaths, " "))
+	if o.ServerInfo.IsContainer() {
+		// decorateCmd wraps container commands in another pair of single quotes.
+		cmd = strings.ReplaceAll(cmd, "'", "'\\''")
+	}
+	r := o.exec(cmd, noSudo)
 	if !r.isSuccess(0, 1) {
 		return nil, xerrors.Errorf("Failed to SSH: %s", r)
 	}
