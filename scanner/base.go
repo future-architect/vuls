@@ -550,6 +550,12 @@ func (l *base) setLogger(logger logging.Logger) {
 	l.log = logger
 }
 
+// fillOptionalInformation does nothing by default.
+// OS types that accept additional inputs via parseOptions override it.
+func (l *base) fillOptionalInformation(models.Packages, parseOptions) error {
+	return nil
+}
+
 const (
 	systemd  = "systemd"
 	upstart  = "upstart"
