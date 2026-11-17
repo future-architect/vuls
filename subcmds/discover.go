@@ -83,15 +83,6 @@ func (p *DiscoverCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...any) subc
 func printConfigToml(ips []string) (err error) {
 	const tomlTemplate = `
 
-# https://vuls.io/docs/en/config.toml.html#database-section
-[cveDict]
-#type = ["sqlite3", "mysql", "postgres", "redis", "http" ]
-#sqlite3Path = "/path/to/cve.sqlite3"
-#url        = ""
-#debugSQL = false
-#timeoutSec = 0
-#timeoutSecPerRequest = 0
-
 [vuls2]
 #Path = "/path/to/vuls.db"
 #Repository = "ghcr.io/vulsio/vuls-nightly-db:<schema-version>"
