@@ -94,15 +94,11 @@ ONE_SEC_AFTER_JSON_DIR := '${BASE_DIR}/$(ONE_SEC_AFTER)'
 LIBS := 'bundler' 'dart' 'elixir' 'pip' 'pipenv' 'poetry-v1' 'poetry-v2' 'pylock' 'uv' 'composer' 'composer-vendor-pear' 'composer-vendor-packagist' 'npm-v1' 'npm-v2' 'npm-v3' 'yarn' 'pnpm' 'pnpm-v9' 'bun' 'cargo' 'gomod' 'gosum' 'gobinary' 'jar' 'jar-wrong-name-log4j-core' 'war' 'pom' 'gradle' 'nuget-lock' 'nuget-config' 'dotnet-deps' 'dotnet-package-props' 'conan-v1' 'conan-v2' 'swift-cocoapods' 'swift-swift' 'rust-binary' 'seal-npm' 'seal-pip' 'seal-gomod'
 
 diff:
-	# git clone git@github.com:vulsio/vulsctl.git
-	# cd vulsctl/docker
-	# ./update-all.sh
-	# cd /path/to/vuls
 	# vim integration/int-config.toml
 	# ln -s vuls vuls.new
 	# ln -s oldvuls vuls.old
-	# make int
-    # (ex. test 10 times: for i in `seq 10`; do make int ARGS=-quiet ; done)
+	# make diff
+	# (vuls.db is fetched into the current directory on the first report; set [vuls2] in int-config.toml to change it)
 ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
 	mv ${BASE_DIR} /tmp/${NOW}
 endif
@@ -119,63 +115,6 @@ endif
 	cp ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	- cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
 	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${ONE_SEC_AFTER}
-
-	$(call sed-d)
-	- diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
-	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
-	$(call count-cve)
-
-diff-redis:
-	# docker network create redis-nw
-    # docker run --name redis -d --network redis-nw -p 127.0.0.1:6379:6379 redis
-	# git clone git@github.com:vulsio/vulsctl.git
-	# cd vulsctl/docker
-	# ./update-all-redis.sh
-	# (or export DOCKER_NETWORK=redis-nw; cd /home/ubuntu/vulsctl/docker; ./update-all.sh --dbtype redis --dbpath "redis://redis/0")
-	# vim integration/int-redis-config.toml
-	# ln -s vuls vuls.new
-	# ln -s oldvuls vuls.old
-	# make int-redis
-ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR} /tmp/${NOW}
-endif
-	mkdir -p ${NOW_JSON_DIR}
-	sleep 1
-	./vuls.old scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${NOW_JSON_DIR}
-	- cp integration/data/results/*.json ${NOW_JSON_DIR}
-	./vuls.old report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${NOW}
-
-	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	sleep 1
-	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	- cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
-
-	$(call sed-d)
-	- diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
-	echo "old: ${NOW_JSON_DIR} , new: ${ONE_SEC_AFTER_JSON_DIR}"
-	$(call count-cve)
-
-diff-rdb-redis:
-ifneq ($(shell ls -U1 ${BASE_DIR} | wc -l), 0)
-	mv ${BASE_DIR} /tmp/${NOW}
-endif
-	mkdir -p ${NOW_JSON_DIR}
-	sleep 1
-	# new vs new
-	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${NOW_JSON_DIR}
-	cp integration/data/results/*.json ${NOW_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-config.toml ${NOW}
-
-	mkdir -p ${ONE_SEC_AFTER_JSON_DIR}
-	sleep 1
-	./vuls.new scan -config=./integration/int-config.toml --results-dir=${BASE_DIR} ${LIBS}
-	cp -f ${BASE_DIR}/$(CURRENT)/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	cp integration/data/results/*.json ${ONE_SEC_AFTER_JSON_DIR}
-	./vuls.new report --format-json --refresh-cve --results-dir=${BASE_DIR} -config=./integration/int-redis-config.toml ${ONE_SEC_AFTER}
 
 	$(call sed-d)
 	- diff -c ${NOW_JSON_DIR} ${ONE_SEC_AFTER_JSON_DIR}
@@ -219,8 +158,6 @@ build-integration:
 	# $ ln -s ./vuls.${prev} ./vuls.old
 	# then
 	# $ make diff
-	# $ make diff-redis
-	# $ make diff-rdb-redis
 
 
 define sed-d
@@ -228,10 +165,6 @@ define sed-d
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/scannedAt/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedAt/d' {} \;
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"Type":/d' {} \;
-	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
-	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/"SQLite3Path":/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedVersion/d' {} \;
 	find ${ONE_SEC_AFTER_JSON_DIR} -type f -exec sed -i -e '/reportedVersion/d' {} \;
 	find ${NOW_JSON_DIR} -type f -exec sed -i -e '/reportedRevision/d' {} \;
