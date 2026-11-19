@@ -2024,11 +2024,14 @@ func enrichAdvisoryKEV(rootMap map[dataTypes.RootID][]advisoryTypes.Advisory) []
 
 			if a.Content.KEV.ENISA != nil {
 				k.ENISA = &models.ENISAKEV{
-					DateReported:           a.Content.KEV.ENISA.DateReported,
-					PatchedSince:           a.Content.KEV.ENISA.PatchedSince,
-					OriginSource:           a.Content.KEV.ENISA.OriginSource,
-					ExploitationType:       a.Content.KEV.ENISA.ExploitationType,
-					ThreatActorsExploiting: a.Content.KEV.ENISA.ThreatActorsExploiting,
+					DateReported: a.Content.KEV.ENISA.DateReported,
+					PatchedSince: a.Content.KEV.ENISA.PatchedSince,
+					OriginSource: a.Content.KEV.ENISA.OriginSource,
+					// The deprecated fields stay filled for consumers that have not moved to the slices yet.
+					ExploitationType:       a.Content.KEV.ENISA.ExploitationType,       //nolint:staticcheck // SA1019: intentionally kept filled
+					ThreatActorsExploiting: a.Content.KEV.ENISA.ThreatActorsExploiting, //nolint:staticcheck // SA1019: intentionally kept filled
+					ExploitationTypes:      a.Content.KEV.ENISA.ExploitationTypes,
+					ThreatActors:           a.Content.KEV.ENISA.ThreatActors,
 				}
 			}
 

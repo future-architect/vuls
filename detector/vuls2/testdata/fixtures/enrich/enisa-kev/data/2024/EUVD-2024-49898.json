@@ -10,7 +10,17 @@
 					"enisa": {
 						"date_reported": "2025-01-17T00:00:00Z",
 						"patched_since": "tbc",
-						"origin_source": "cnw"
+						"origin_source": "cnw",
+						"exploitation_type": "cybercrime, APT",
+						"threat_actors_exploiting": "UNC6586, Example Group",
+						"exploitation_types": [
+							"APT",
+							"cybercrime"
+						],
+						"threat_actors": [
+							"Example Group",
+							"UNC6586"
+						]
 					}
 				}
 			}

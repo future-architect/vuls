@@ -14337,9 +14337,13 @@ func Test_enrich(t *testing.T) {
 							VendorProject: "Ivanti",
 							Product:       "CSA (Cloud Services Appliance)",
 							ENISA: &models.ENISAKEV{
-								DateReported: time.Date(2025, time.January, 17, 0, 0, 0, 0, time.UTC),
-								PatchedSince: "tbc",
-								OriginSource: "cnw",
+								DateReported:           time.Date(2025, time.January, 17, 0, 0, 0, 0, time.UTC),
+								PatchedSince:           "tbc",
+								OriginSource:           "cnw",
+								ExploitationType:       "cybercrime, APT",        //nolint:staticcheck // SA1019: the deprecated field stays filled
+								ThreatActorsExploiting: "UNC6586, Example Group", //nolint:staticcheck // SA1019: the deprecated field stays filled
+								ExploitationTypes:      []string{"APT", "cybercrime"},
+								ThreatActors:           []string{"Example Group", "UNC6586"},
 							},
 						},
 					},
