@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.12.0
 	github.com/MaineK00n/vuls-data-update v0.0.0-20261119091632-bde4f9c5f6e4
-	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20261119095345-4106f978cc65
+	github.com/MaineK00n/vuls2 v0.0.1-alpha.0.20261120082320-34e81a2b866c
 	github.com/Ullaakut/nmap/v2 v2.2.2
 	github.com/aquasecurity/trivy v0.76.2
 	github.com/aquasecurity/trivy-db v0.0.0-20261012084708-cbebf2ecd6df
