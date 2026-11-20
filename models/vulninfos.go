@@ -1044,11 +1044,15 @@ type VulnCheckReportedExploitation struct {
 
 // ENISAKEV has ENISA KEV only data
 type ENISAKEV struct {
-	DateReported           time.Time `json:"date_reported,omitzero"`
-	PatchedSince           string    `json:"patched_since,omitempty"`
-	OriginSource           string    `json:"origin_source,omitempty"`
-	ExploitationType       string    `json:"exploitation_type,omitempty"`
-	ThreatActorsExploiting string    `json:"threat_actors_exploiting,omitempty"`
+	DateReported time.Time `json:"date_reported,omitzero"`
+	PatchedSince string    `json:"patched_since,omitempty"`
+	OriginSource string    `json:"origin_source,omitempty"`
+	// Deprecated: Use ExploitationTypes. It holds the same values joined with ", " in the upstream order, whereas ExploitationTypes is sorted.
+	ExploitationType string `json:"exploitation_type,omitempty"`
+	// Deprecated: Use ThreatActors. It holds the same values joined with ", " in the upstream order, whereas ThreatActors is sorted.
+	ThreatActorsExploiting string   `json:"threat_actors_exploiting,omitempty"`
+	ExploitationTypes      []string `json:"exploitation_types,omitempty"`
+	ThreatActors           []string `json:"threat_actors,omitempty"`
 }
 
 // AlertDict has target cve JPCERT and USCERT alert data
