@@ -174,6 +174,19 @@ Vuls has some options to detect the vulnerabilities
 
 ----
 
+## Related Project: uzomuzo
+
+<a href="https://github.com/future-architect/uzomuzo-oss">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/future-architect/uzomuzo-oss/main/docs/assets/logo/uzomuzo-wordmark-white.png">
+    <img src="https://raw.githubusercontent.com/future-architect/uzomuzo-oss/main/docs/assets/logo/uzomuzo-wordmark.png" alt="uzomuzo" width="240">
+  </picture>
+</a>
+
+Vuls finds known vulnerabilities (CVEs). [uzomuzo](https://github.com/future-architect/uzomuzo-oss), from the author of Vuls, finds dependencies that are no longer maintained, which have no CVE yet but will get no fix when one is found, and ranks which dependencies to remove first.
+
+----
+
 ## Document
 
 For more information such as Installation, Tutorial, Usage, visit [vuls.io](https://vuls.io/)  
