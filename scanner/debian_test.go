@@ -1117,3 +1117,68 @@ linux-virtual,ii ,5.15.0.69.67,linux-meta,5.15.0.69.67
 		})
 	}
 }
+
+func Test_parseUpstreamRelease(t *testing.T) {
+	tests := []struct {
+		name        string
+		stdout      string
+		wantDistro  string
+		wantRelease string
+		wantOK      bool
+	}{
+		{
+			name: "Linux Mint 22.3 (Ubuntu 24.04)",
+			stdout: `DISTRIB_ID=Ubuntu
+DISTRIB_RELEASE=24.04
+DISTRIB_CODENAME=noble
+DISTRIB_DESCRIPTION="Ubuntu Noble Numbat"
+`,
+			wantDistro:  "ubuntu",
+			wantRelease: "24.04",
+			wantOK:      true,
+		},
+		{
+			name:        "quoted values",
+			stdout:      "DISTRIB_ID=\"Ubuntu\"\nDISTRIB_RELEASE=\"22.04\"\n",
+			wantDistro:  "ubuntu",
+			wantRelease: "22.04",
+			wantOK:      true,
+		},
+		{
+			name:        "Debian upstream",
+			stdout:      "DISTRIB_ID=Debian\nDISTRIB_RELEASE=12\n",
+			wantDistro:  "debian",
+			wantRelease: "12",
+			wantOK:      true,
+		},
+		{
+			name:   "unsupported upstream",
+			stdout: "DISTRIB_ID=Arch\nDISTRIB_RELEASE=rolling\n",
+			wantOK: false,
+		},
+		{
+			name:   "missing release",
+			stdout: "DISTRIB_ID=Ubuntu\n",
+			wantOK: false,
+		},
+		{
+			name:   "empty",
+			stdout: "",
+			wantOK: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDistro, gotRelease, gotOK := parseUpstreamRelease(tt.stdout)
+			if gotOK != tt.wantOK {
+				t.Fatalf("ok = %v, want %v", gotOK, tt.wantOK)
+			}
+			if !tt.wantOK {
+				return
+			}
+			if gotDistro != tt.wantDistro || gotRelease != tt.wantRelease {
+				t.Errorf("got %q %q, want %q %q", gotDistro, gotRelease, tt.wantDistro, tt.wantRelease)
+			}
+		})
+	}
+}
