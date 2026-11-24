@@ -308,7 +308,7 @@ kernel-default-4.4.59-92.20.2.x86_64         Thu 01 Jun 2017 01:02:03 AM UTC`,
 			result: execResult{
 				Stdout: `kernel-default-3.0.101-108.87.1               Thu 07 Mar 2019 01:02:03 AM UTC
 kernel-default-3.0.101-108.84.1               Wed 16 Jan 2019 01:02:03 AM UTC
-package                                       kernel-default-base is not installed`,
+package kernel-default-base is not installed`,
 				ExitStatus: 1,
 			},
 			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
