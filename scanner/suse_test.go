@@ -8,6 +8,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -282,12 +283,36 @@ package kernel-azure-base is not installed`,
 			name:   "kernel not installed",
 			kernel: models.Kernel{Release: "6.8.0-138-generic"},
 			result: execResult{
-				Stdout: `package kernel-generic is not installed
-package kernel-generic-base is not installed`,
+				Stdout: `package kernel-generic-base is not installed
+package kernel-generic is not installed`,
 				ExitStatus: 2,
 			},
 			wantPkgNames: []string{"kernel-generic", "kernel-generic-base"},
 			want:         false,
+		},
+		{
+			name:   "kernel-default and kernel-default-base of the same version no-reboot",
+			kernel: models.Kernel{Release: "4.4.74-92.35-default"},
+			result: execResult{
+				Stdout: `kernel-default-base-4.4.74-92.35.1.x86_64    Wed 12 Jul 2017 01:02:03 AM UTC
+kernel-default-4.4.74-92.35.1.x86_64         Wed 12 Jul 2017 01:02:03 AM UTC
+kernel-default-base-4.4.59-92.20.2.x86_64    Thu 01 Jun 2017 01:02:03 AM UTC
+kernel-default-4.4.59-92.20.2.x86_64         Thu 01 Jun 2017 01:02:03 AM UTC`,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         false,
+		},
+		{
+			name:   "kernel-default without arch needs-reboot",
+			kernel: models.Kernel{Release: "3.0.101-108.84-default"},
+			result: execResult{
+				Stdout: `kernel-default-3.0.101-108.87.1               Thu 07 Mar 2019 01:02:03 AM UTC
+kernel-default-3.0.101-108.84.1               Wed 16 Jan 2019 01:02:03 AM UTC
+package                                       kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
 		},
 		{
 			name:         "rpm failed",
@@ -297,14 +322,19 @@ package kernel-generic-base is not installed`,
 			wantErr:      true,
 		},
 		{
-			name:    "unknown kernel flavor",
-			kernel:  models.Kernel{Release: ""},
-			wantErr: true,
+			name:   "unknown kernel flavor",
+			kernel: models.Kernel{Release: "6.12.1"},
+			want:   false,
+		},
+		{
+			name:   "unexpected kernel flavor",
+			kernel: models.Kernel{Release: "6.12.0-1-x';touch /tmp/pwn;'"},
+			want:   false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &suse{redhatBase: redhatBase{base: base{osPackages: osPackages{Kernel: tt.kernel}}}}
+			o := &suse{redhatBase: redhatBase{base: base{osPackages: osPackages{Kernel: tt.kernel}, log: logging.NewIODiscardLogger()}}}
 			var gotPkgNames []string
 			got, err := o.rebootRequired(func(pkgNames []string) execResult {
 				gotPkgNames = pkgNames

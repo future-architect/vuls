@@ -203,13 +203,17 @@ func (o *suse) scanPackages() (err error) {
 	return nil
 }
 
+var suseKernelFlavorPattern = regexp.MustCompile(`^[0-9A-Za-z_]+$`)
+
 // rebootRequired reports whether the last installed kernel of the running flavor differs from the running kernel.
 // The running kernel can be provided by kernel-<flavor>-base instead of kernel-<flavor> (e.g. openSUSE Leap Minimal VM), so both are queried.
 func (o *suse) rebootRequired(fn func(pkgNames []string) execResult) (bool, error) {
 	// e.g. 6.12.0-160000.41-default -> running: 6.12.0-160000.41, flavor: default
 	i := strings.LastIndex(o.Kernel.Release, "-")
-	if i < 0 {
-		return false, xerrors.Errorf("Failed to detect the flavor of the running kernel. release: %q", o.Kernel.Release)
+	if i < 0 || !suseKernelFlavorPattern.MatchString(o.Kernel.Release[i+1:]) {
+		// e.g. the kernel of a container host. The flavor is also passed to the shell, so do not use an unexpected one.
+		o.log.Debugf("Failed to detect the flavor of the running kernel. release: %q", o.Kernel.Release)
+		return false, nil
 	}
 	running, flavor := o.Kernel.Release[:i], o.Kernel.Release[i+1:]
 
