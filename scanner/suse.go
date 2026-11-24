@@ -176,7 +176,10 @@ func (o *suse) scanPackages() (err error) {
 		return err
 	}
 
-	o.Kernel.RebootRequired, err = o.rebootRequired()
+	fn := func(pkgNames []string) execResult {
+		return o.exec(fmt.Sprintf("rpm -q --last %s", strings.Join(pkgNames, " ")), noSudo)
+	}
+	o.Kernel.RebootRequired, err = o.rebootRequired(fn)
 	if err != nil {
 		err = xerrors.Errorf("Failed to detect the kernel reboot required: %w", err)
 		o.log.Warnf("err: %+v", err)
@@ -200,15 +203,43 @@ func (o *suse) scanPackages() (err error) {
 	return nil
 }
 
-func (o *suse) rebootRequired() (bool, error) {
-	r := o.exec("rpm -q --last kernel-default", noSudo)
-	if !r.isSuccess() {
-		o.log.Warnf("Failed to detect the last installed kernel : %v", r)
-		// continue scanning
-		return false, nil
+// rebootRequired reports whether the last installed kernel of the running flavor differs from the running kernel.
+// The running kernel can be provided by kernel-<flavor>-base instead of kernel-<flavor> (e.g. openSUSE Leap Minimal VM), so both are queried.
+func (o *suse) rebootRequired(fn func(pkgNames []string) execResult) (bool, error) {
+	// e.g. 6.12.0-160000.41-default -> running: 6.12.0-160000.41, flavor: default
+	i := strings.LastIndex(o.Kernel.Release, "-")
+	if i < 0 {
+		return false, xerrors.Errorf("Failed to detect the flavor of the running kernel. release: %q", o.Kernel.Release)
 	}
-	stdout := strings.Fields(r.Stdout)[0]
-	return !strings.Contains(stdout, strings.TrimSuffix(o.Kernel.Release, "-default")), nil
+	running, flavor := o.Kernel.Release[:i], o.Kernel.Release[i+1:]
+
+	pkgNames := []string{fmt.Sprintf("kernel-%s", flavor), fmt.Sprintf("kernel-%s-base", flavor)}
+	r := fn(pkgNames)
+	// rpm -q exits with the number of packages that are not installed
+	if !r.isSuccess(0, 1, 2) {
+		return false, xerrors.Errorf("Failed to detect the last installed kernel : %v", r)
+	}
+
+	// $ rpm -q --last kernel-default kernel-default-base
+	// kernel-default-base-6.12.0-160000.41.1.160000.2.33.x86_64 Tue Nov 24 09:51:20 2026
+	// kernel-default-base-6.12.0-160000.40.1.160000.2.29.x86_64 Tue Nov 24 09:51:07 2026
+	// package kernel-default is not installed
+	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) == 0 || !strings.HasPrefix(fields[0], "kernel-") {
+			continue
+		}
+		// The running kernel release omits the build counter of kernel-<flavor>, and kernel-<flavor>-base appends its own release to that of kernel-<flavor>.
+		// e.g. both kernel-default-6.12.0-160000.41.1 and kernel-default-base-6.12.0-160000.41.1.160000.2.33 run as 6.12.0-160000.41-default
+		for _, n := range pkgNames {
+			if strings.HasPrefix(fields[0], fmt.Sprintf("%s-%s.", n, running)) {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func (o *suse) scanUpdatablePackages() (models.Packages, error) {

@@ -296,6 +296,34 @@ java-1.8.0-amazon-corretto 1 1.8.0_432.b06 1.amzn2 x86_64 java-1.8.0-amazon-corr
 				},
 			},
 		},
+		{
+			name: "opensuse.leap 16.0, kernel-default-base",
+			fields: fields{base: base{
+				Distro:     config.Distro{Family: constant.OpenSUSELeap, Release: "16.0"},
+				osPackages: osPackages{Kernel: models.Kernel{Release: "6.12.0-160000.40-default"}},
+				log:        logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default-base 0 6.12.0 160000.40.1.160000.2.29 x86_64 kernel-default-base-6.12.0-160000.40.1.160000.2.29.src.rpm
+kernel-default-base 0 6.12.0 160000.41.1.160000.2.33 x86_64 kernel-default-base-6.12.0-160000.41.1.160000.2.33.src.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default-base": models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.40.1.160000.2.29",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default-base": models.SrcPackage{
+					Name:        "kernel-default-base",
+					Version:     "6.12.0-160000.40.1.160000.2.29",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-base"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

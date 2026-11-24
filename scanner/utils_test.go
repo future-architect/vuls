@@ -129,6 +129,96 @@ func Test_isRunningKernel(t *testing.T) {
 			wantRunning:  false,
 		},
 		{
+			name: "SUSE kernel-default-base and running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.41.1.160000.2.33",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "16.0",
+				kernel: models.Kernel{
+					Release: "6.12.0-160000.41-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  true,
+		},
+		{
+			name: "SUSE kernel-default-base but not running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.40.1.160000.2.29",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "16.0",
+				kernel: models.Kernel{
+					Release: "6.12.0-160000.41-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  false,
+		},
+		{
+			name: "SUSE kernel-default-base but not running, the running kernel release is a prefix",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.41.1.160000.2.33",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "16.0",
+				kernel: models.Kernel{
+					Release: "6.12.0-160000.4-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  false,
+		},
+		{
+			name: "SUSE kernel-default-base but another flavor is running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.4.0",
+					Release: "150600.8.8.1.150600.4.3.1",
+					Arch:    "x86_64",
+				},
+				family:  constant.SUSEEnterpriseServer,
+				release: "15.6",
+				kernel: models.Kernel{
+					Release: "6.4.0-150600.8.8-azure",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  false,
+		},
+		{
+			name: "SUSE kernel-default-base, subpackage of kernel-default, and running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "4.4.74",
+					Release: "92.35.1",
+					Arch:    "x86_64",
+				},
+				family:  constant.SUSEEnterpriseServer,
+				release: "12.2",
+				kernel: models.Kernel{
+					Release: "4.4.74-92.35-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  true,
+		},
+		{
 			name: "kernel is kernel-debug, but pack is kernel",
 			args: args{
 				pack: models.Package{
