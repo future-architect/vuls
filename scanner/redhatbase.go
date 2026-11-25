@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -504,7 +505,13 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, models.SrcPackage
 func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
 	bins := make(models.Packages)
 	srcs := make(models.SrcPackages)
-	latestKernelReleases := make(map[string]ver.Version)
+	// When the running kernel release is unknown, the kernel packages of the latest release are kept for each source package
+	// (or each binary package without a source package), so that the kernel packages of a source package are in the same release.
+	type latestKernel struct {
+		release ver.Version
+		names   []string
+	}
+	latestKernels := make(map[string]latestKernel)
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	// community-mysql-common 0 8.0.26 1.module_f35+12627+b26747dd x86_64 mysql:8.0:3520210817160118:f27b74a8
@@ -548,12 +555,35 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 		if isKernel {
 			if o.Kernel.Release == "" {
 				// When the running kernel release is unknown,
-				// use the latest release among the installed releases of each package
-				kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", binpkg.Version, binpkg.Release))
-				if latest, ok := latestKernelReleases[binpkg.Name]; ok && kernelRelease.LessThan(latest) {
-					continue
+				// use the latest release among the installed releases of each source package.
+				// e.g. kernel-default-devel-6.4.0-150600.23.100.1 is dropped by kernel-default-6.4.0-150600.23.103.1 (both from kernel-default) regardless of the order,
+				// while kernel-default-base, from kernel-default-base, does not affect them.
+				key := fmt.Sprintf("bin:%s", binpkg.Name)
+				if srcpkg != nil {
+					key = fmt.Sprintf("src:%s", srcpkg.Name)
 				}
-				latestKernelReleases[binpkg.Name] = kernelRelease
+				kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", binpkg.Version, binpkg.Release))
+				latest, ok := latestKernels[key]
+				switch {
+				case !ok:
+					latest = latestKernel{release: kernelRelease}
+				case kernelRelease.LessThan(latest.release):
+					continue
+				case kernelRelease.GreaterThan(latest.release):
+					// drop the kernel packages of the older release kept so far
+					for _, n := range latest.names {
+						delete(bins, n)
+					}
+					if srcpkg != nil {
+						if p, ok := srcs[srcpkg.Name]; ok {
+							p.BinaryNames = slices.DeleteFunc(p.BinaryNames, func(n string) bool { return slices.Contains(latest.names, n) })
+							srcs[srcpkg.Name] = p
+						}
+					}
+					latest = latestKernel{release: kernelRelease}
+				}
+				latest.names = append(latest.names, binpkg.Name)
+				latestKernels[key] = latest
 			} else if !running {
 				o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", binpkg, o.Kernel)
 				continue
@@ -566,11 +596,6 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 			if p, ok := srcs[srcpkg.Name]; ok {
 				for _, bn := range p.BinaryNames {
 					srcpkg.AddBinaryName(bn)
-				}
-				// When the running kernel release is unknown, the kernel packages of a source can remain in different releases,
-				// e.g. kernel-default-6.4.0-150600.23.103.1 and kernel-default-devel-6.4.0-150600.23.100.1, so keep the latest release of the source regardless of the order.
-				if isKernel && o.Kernel.Release == "" && ver.NewVersion(srcpkg.Version).LessThan(ver.NewVersion(p.Version)) {
-					srcpkg.Version = p.Version
 				}
 			}
 			srcs[srcpkg.Name] = *srcpkg

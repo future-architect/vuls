@@ -89,6 +89,34 @@ kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none
 			},
 		},
 		{
+			name: "kernel not set, kernel-devel only in an older release",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.4"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-devel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel"},
+				},
+			},
+		},
+		{
 			name: "kernel set",
 			fields: fields{base: base{
 				Distro:     config.Distro{Family: constant.Alma, Release: "9.0"},
@@ -429,7 +457,7 @@ kernel-default-devel 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.
 			},
 		},
 		{
-			name: "opensuse.leap 15.6, kernel not set, kernel packages of a source in different releases",
+			name: "opensuse.leap 15.6, kernel not set, an older kernel package of the same source package",
 			fields: fields{base: base{
 				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
 				log:    logging.NewIODiscardLogger(),
@@ -445,24 +473,18 @@ kernel-default-devel 0 6.4.0 150600.23.100.1 x86_64 kernel-default-6.4.0-150600.
 					Release: "150600.23.103.1",
 					Arch:    "x86_64",
 				},
-				"kernel-default-devel": models.Package{
-					Name:    "kernel-default-devel",
-					Version: "6.4.0",
-					Release: "150600.23.100.1",
-					Arch:    "x86_64",
-				},
 			},
 			wantsps: models.SrcPackages{
 				"kernel-default": models.SrcPackage{
 					Name:        "kernel-default",
 					Version:     "6.4.0-150600.23.103.1",
 					Arch:        "src",
-					BinaryNames: []string{"kernel-default-devel", "kernel-default"},
+					BinaryNames: []string{"kernel-default"},
 				},
 			},
 		},
 		{
-			name: "opensuse.leap 15.6, kernel not set, kernel packages of a source in different releases, in reverse order",
+			name: "opensuse.leap 15.6, kernel not set, an older kernel package of the same source package, in ascending order",
 			fields: fields{base: base{
 				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
 				log:    logging.NewIODiscardLogger(),
@@ -478,19 +500,13 @@ kernel-default 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103
 					Release: "150600.23.103.1",
 					Arch:    "x86_64",
 				},
-				"kernel-default-devel": models.Package{
-					Name:    "kernel-default-devel",
-					Version: "6.4.0",
-					Release: "150600.23.100.1",
-					Arch:    "x86_64",
-				},
 			},
 			wantsps: models.SrcPackages{
 				"kernel-default": models.SrcPackage{
 					Name:        "kernel-default",
 					Version:     "6.4.0-150600.23.103.1",
 					Arch:        "src",
-					BinaryNames: []string{"kernel-default", "kernel-default-devel"},
+					BinaryNames: []string{"kernel-default"},
 				},
 			},
 		},
