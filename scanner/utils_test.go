@@ -219,6 +219,78 @@ func Test_isRunningKernel(t *testing.T) {
 			wantRunning:  true,
 		},
 		{
+			name: "SUSE kernel-default-base but not running, the running kernel release is a prefix of its source release",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.41.2.1.160000.2.33",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "16.0",
+				kernel: models.Kernel{
+					Release: "6.12.0-160000.41-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  false,
+		},
+		{
+			name: "SUSE kernel-default-base of a source release that extends another and running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.41.2.1.160000.2.33",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "16.0",
+				kernel: models.Kernel{
+					Release: "6.12.0-160000.41.2-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  true,
+		},
+		{
+			name: "SUSE kernel-default-base of Tumbleweed and running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "7.3.5",
+					Release: "1.1.36.17",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSE,
+				release: "tumbleweed",
+				kernel: models.Kernel{
+					Release: "7.3.5-1-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  true,
+		},
+		{
+			name: "SUSE kernel-default-base without a distribution prefix and running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default-base",
+					Version: "5.3.18",
+					Release: "24.99.1.9.46.1",
+					Arch:    "x86_64",
+				},
+				family:  constant.SUSEEnterpriseServer,
+				release: "15.2",
+				kernel: models.Kernel{
+					Release: "5.3.18-24.99-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  true,
+		},
+		{
 			name: "SUSE kernel-azure and running",
 			args: args{
 				pack: models.Package{

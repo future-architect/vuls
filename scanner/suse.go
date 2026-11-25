@@ -272,13 +272,40 @@ func isRunningSUSEKernel(pack models.Package, kernel models.Kernel) (isKernel, r
 	}
 
 	if subpackage == "base" {
-		// kernel-<flavor>-base may append its own release to the release of kernel-<flavor>,
-		// e.g. kernel-default-base-6.12.0-160000.41.1.160000.2.33 runs as 6.12.0-160000.41-default, so compare by prefix.
-		return true, strings.HasPrefix(fmt.Sprintf("%s-%s", pack.Version, pack.Release), fmt.Sprintf("%s.", runningRelease))
+		return true, isSUSEKernelBaseOf(pack, runningRelease)
 	}
 	// The running kernel release omits the build counter, e.g. kernel-default-6.12.0-160000.41.1 runs as 6.12.0-160000.41-default.
 	i := strings.LastIndex(pack.Release, ".")
 	return true, i >= 0 && fmt.Sprintf("%s-%s", pack.Version, pack.Release[:i]) == runningRelease
+}
+
+var suseDistributionPrefixPattern = regexp.MustCompile(`^[0-9]{6}$`)
+
+// isSUSEKernelBaseOf reports whether pack, kernel-<flavor>-base, runs as runningRelease (the running kernel release without the flavor).
+//
+// kernel-<flavor>-base may append its own release to the release of kernel-<flavor> (<source release>.<build counter>),
+// e.g. kernel-default-base-6.12.0-160000.41.1.160000.2.33 runs as 6.12.0-160000.41-default, so it is compared by prefix.
+// Where the source release starts with a 6-digit distribution prefix (e.g. 150600 of SLE 15 SP6, 160000 of openSUSE Leap 16.0),
+// the appended release starts with it as well, which tells the release from that of a longer source release:
+// kernel-default-base-6.12.0-160000.41.2.1.160000.2.33 runs as 6.12.0-160000.41.2-default, not as 6.12.0-160000.41-default.
+// Without the prefix (e.g. kernel-default-base-7.3.5-1.1.36.17 of Tumbleweed, kernel-default-base-5.3.18-24.99.1.9.46.1 of SLE 15 SP2),
+// where the appended release starts is unknown, so the prefix alone is compared.
+func isSUSEKernelBaseOf(pack models.Package, runningRelease string) bool {
+	rest, ok := strings.CutPrefix(fmt.Sprintf("%s-%s", pack.Version, pack.Release), fmt.Sprintf("%s.", runningRelease))
+	if !ok {
+		return false
+	}
+	_, appended, found := strings.Cut(rest, ".") // <build counter>[.<appended release>]
+	if !found {
+		// the same release as kernel-<flavor>, e.g. kernel-default-base-4.4.74-92.35.1 of SLE 12 SP2
+		return true
+	}
+	_, sourceRelease, _ := strings.Cut(runningRelease, "-")
+	prefix, _, _ := strings.Cut(sourceRelease, ".")
+	if !suseDistributionPrefixPattern.MatchString(prefix) {
+		return true
+	}
+	return strings.HasPrefix(appended, fmt.Sprintf("%s.", prefix))
 }
 
 // rebootRequired reports whether the last installed kernel of the running flavor differs from the running kernel.

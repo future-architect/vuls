@@ -247,6 +247,18 @@ package kernel-default-base is not installed`,
 			want:         true,
 		},
 		{
+			name:   "kernel-default-base needs-reboot, the last installed release extends the running kernel release",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout: `kernel-default-base-6.12.0-160000.41.2.1.160000.2.33.x86_64 Wed Nov 25 10:00:00 2026
+kernel-default-base-6.12.0-160000.41.1.160000.2.31.x86_64 Tue Nov 24 10:00:00 2026
+package kernel-default is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
 			name:   "kernel-default-base no-reboot",
 			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
 			result: execResult{
