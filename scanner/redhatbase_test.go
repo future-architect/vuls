@@ -388,6 +388,46 @@ kernel-firmware-nvidia-gspx-G06 0 550.100 150600.3.7.1 x86_64 kernel-firmware-nv
 				},
 			},
 		},
+		{
+			name: "opensuse.leap 15.6, kernel not set",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default-base 0 6.4.0 150600.23.103.1.150600.12.48.1 x86_64 kernel-default-base-6.4.0-150600.23.103.1.150600.12.48.1.src.rpm
+kernel-default-devel 0 6.4.0 150600.23.100.1 x86_64 kernel-default-6.4.0-150600.23.100.1.nosrc.rpm
+kernel-default-devel 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default-base": models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.4.0",
+					Release: "150600.23.103.1.150600.12.48.1",
+					Arch:    "x86_64",
+				},
+				"kernel-default-devel": models.Package{
+					Name:    "kernel-default-devel",
+					Version: "6.4.0",
+					Release: "150600.23.103.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default-base": models.SrcPackage{
+					Name:        "kernel-default-base",
+					Version:     "6.4.0-150600.23.103.1.150600.12.48.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-base"},
+				},
+				"kernel-default": models.SrcPackage{
+					Name:        "kernel-default",
+					Version:     "6.4.0-150600.23.103.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-devel"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

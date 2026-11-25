@@ -504,7 +504,7 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, models.SrcPackage
 func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
 	bins := make(models.Packages)
 	srcs := make(models.SrcPackages)
-	latestKernelRelease := ver.NewVersion("")
+	latestKernelReleases := make(map[string]ver.Version)
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	// community-mysql-common 0 8.0.26 1.module_f35+12627+b26747dd x86_64 mysql:8.0:3520210817160118:f27b74a8
@@ -548,12 +548,12 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 		if isKernel {
 			if o.Kernel.Release == "" {
 				// When the running kernel release is unknown,
-				// use the latest release among the installed release
+				// use the latest release among the installed releases of each package
 				kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", binpkg.Version, binpkg.Release))
-				if kernelRelease.LessThan(latestKernelRelease) {
+				if latest, ok := latestKernelReleases[binpkg.Name]; ok && kernelRelease.LessThan(latest) {
 					continue
 				}
-				latestKernelRelease = kernelRelease
+				latestKernelReleases[binpkg.Name] = kernelRelease
 			} else if !running {
 				o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", binpkg, o.Kernel)
 				continue
