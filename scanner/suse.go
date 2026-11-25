@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -283,7 +284,7 @@ func isRunningSUSEKernel(pack models.Package, kernel models.Kernel) (isKernel, r
 // rebootRequired reports whether the last installed kernel of the running flavor differs from the running kernel.
 // The running kernel can be provided by kernel-<flavor>-base instead of kernel-<flavor> (e.g. openSUSE Leap Minimal VM), so both are queried.
 func (o *suse) rebootRequired(fn func(pkgNames []string) execResult) (bool, error) {
-	running, flavor, ok := splitSUSEKernelRelease(o.Kernel.Release)
+	_, flavor, ok := splitSUSEKernelRelease(o.Kernel.Release)
 	if !ok {
 		// e.g. the kernel of a container host. The flavor is also passed to the shell, so do not use an unexpected one.
 		o.log.Debugf("Failed to detect the flavor of the running kernel. release: %q", o.Kernel.Release)
@@ -311,19 +312,42 @@ func (o *suse) rebootRequired(fn func(pkgNames []string) execResult) (bool, erro
 	scanner := bufio.NewScanner(strings.NewReader(r.Stdout))
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
-		if len(fields) == 0 || !strings.HasPrefix(fields[0], "kernel-") {
+		if len(fields) == 0 {
 			continue
 		}
-		// The running kernel release omits the build counter of kernel-<flavor>, and kernel-<flavor>-base appends its own release to that of kernel-<flavor>.
-		// e.g. both kernel-default-6.12.0-160000.41.1 and kernel-default-base-6.12.0-160000.41.1.160000.2.33 run as 6.12.0-160000.41-default
-		for _, n := range pkgNames {
-			if strings.HasPrefix(fields[0], fmt.Sprintf("%s-%s.", n, running)) {
-				return false, nil
-			}
+		pack, ok := parseSUSEKernelRPMQLast(fields[0], pkgNames)
+		if !ok {
+			continue
 		}
-		return true, nil
+		// the first one is the last installed kernel
+		_, running := isRunningSUSEKernel(pack, o.Kernel)
+		return !running, nil
 	}
 	return false, nil
+}
+
+// parseSUSEKernelRPMQLast parses a package of rpm -q --last, <name>-<version>-<release>(.<arch>), for the given names.
+// e.g. kernel-default-6.12.0-160000.41.1.x86_64, or kernel-default-3.0.101-108.87.1 without the arch on SLES 11
+func parseSUSEKernelRPMQLast(s string, names []string) (models.Package, bool) {
+	for _, n := range names {
+		rest, ok := strings.CutPrefix(s, fmt.Sprintf("%s-", n))
+		// the version starts with a digit, which tells kernel-default-6.12.0-... from kernel-default-base-6.12.0-...
+		if !ok || rest == "" || rest[0] < '0' || rest[0] > '9' {
+			continue
+		}
+		// the release of a kernel ends with the build counter, so a non-numeric last part is the arch
+		if i := strings.LastIndex(rest, "."); i >= 0 {
+			if _, err := strconv.Atoi(rest[i+1:]); err != nil {
+				rest = rest[:i]
+			}
+		}
+		v, r, ok := strings.Cut(rest, "-")
+		if !ok {
+			continue
+		}
+		return models.Package{Name: n, Version: v, Release: r}, true
+	}
+	return models.Package{}, false
 }
 
 func (o *suse) scanUpdatablePackages() (models.Packages, error) {

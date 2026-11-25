@@ -235,6 +235,18 @@ package kernel-default-base is not installed`,
 			want:         true,
 		},
 		{
+			name:   "kernel-default needs-reboot, the last installed release extends the running kernel release",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout: `kernel-default-6.12.0-160000.41.2.1.x86_64   Wed Nov 25 10:00:00 2026
+kernel-default-6.12.0-160000.41.1.x86_64     Tue Nov 24 10:00:00 2026
+package kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
 			name:   "kernel-default-base no-reboot",
 			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
 			result: execResult{
@@ -381,6 +393,60 @@ package                                       kernel-azure-base is not installed
 			}
 			if got != tt.want {
 				t.Errorf("suse.rebootRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseSUSEKernelRPMQLast(t *testing.T) {
+	names := []string{"kernel-default", "kernel-default-base"}
+	tests := []struct {
+		name   string
+		s      string
+		want   models.Package
+		wantOK bool
+	}{
+		{
+			name:   "kernel-default",
+			s:      "kernel-default-6.12.0-160000.41.1.x86_64",
+			want:   models.Package{Name: "kernel-default", Version: "6.12.0", Release: "160000.41.1"},
+			wantOK: true,
+		},
+		{
+			name:   "kernel-default-base",
+			s:      "kernel-default-base-6.12.0-160000.41.1.160000.2.33.x86_64",
+			want:   models.Package{Name: "kernel-default-base", Version: "6.12.0", Release: "160000.41.1.160000.2.33"},
+			wantOK: true,
+		},
+		{
+			name:   "without arch",
+			s:      "kernel-default-3.0.101-108.87.1",
+			want:   models.Package{Name: "kernel-default", Version: "3.0.101", Release: "108.87.1"},
+			wantOK: true,
+		},
+		{
+			name:   "release with letters",
+			s:      "kernel-default-5.3.18-lp152.106.1.aarch64",
+			want:   models.Package{Name: "kernel-default", Version: "5.3.18", Release: "lp152.106.1"},
+			wantOK: true,
+		},
+		{
+			name: "another package",
+			s:    "kernel-default-devel-6.12.0-160000.41.1.x86_64",
+		},
+		{
+			name: "not installed",
+			s:    "package",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := parseSUSEKernelRPMQLast(tt.s, names)
+			if ok != tt.wantOK {
+				t.Errorf("parseSUSEKernelRPMQLast() ok = %v, want %v", ok, tt.wantOK)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseSUSEKernelRPMQLast() = %v, want %v", got, tt.want)
 			}
 		})
 	}
