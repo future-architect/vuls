@@ -203,6 +203,47 @@ kernel-core 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm 
 			},
 		},
 		{
+			name: "kernel not set, kernel packages of a source package in different releases, interleaved",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.4"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-core 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-devel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+				"kernel-core": models.Package{
+					Name:    "kernel-core",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel", "kernel-devel"},
+				},
+			},
+		},
+		{
 			name: "kernel set",
 			fields: fields{base: base{
 				Distro:     config.Distro{Family: constant.Alma, Release: "9.0"},
