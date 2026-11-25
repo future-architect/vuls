@@ -324,6 +324,70 @@ kernel-default-base 0 6.12.0 160000.41.1.160000.2.33 x86_64 kernel-default-base-
 				},
 			},
 		},
+		{
+			name: "suse.linux.enterprise.server 15.6, kernel-azure",
+			fields: fields{base: base{
+				Distro:     config.Distro{Family: constant.SUSEEnterpriseServer, Release: "15.6"},
+				osPackages: osPackages{Kernel: models.Kernel{Release: "6.4.0-150600.8.55-azure"}},
+				log:        logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-azure 0 6.4.0 150600.8.55.1 x86_64 kernel-azure-6.4.0-150600.8.55.1.nosrc.rpm
+kernel-azure 0 6.4.0 150600.8.58.1 x86_64 kernel-azure-6.4.0-150600.8.58.1.nosrc.rpm
+kernel-azure-devel 0 6.4.0 150600.8.55.1 x86_64 kernel-azure-6.4.0-150600.8.55.1.nosrc.rpm
+kernel-azure-devel 0 6.4.0 150600.8.58.1 x86_64 kernel-azure-6.4.0-150600.8.58.1.nosrc.rpm
+kernel-devel-azure 0 6.4.0 150600.8.55.1 noarch kernel-source-azure-6.4.0-150600.8.55.1.src.rpm
+kernel-devel-azure 0 6.4.0 150600.8.58.1 noarch kernel-source-azure-6.4.0-150600.8.58.1.src.rpm
+kernel-default 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm
+kernel-firmware-nvidia-gspx-G06 0 550.100 150600.3.7.1 x86_64 kernel-firmware-nvidia-gspx-G06-550.100-150600.3.7.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-azure": models.Package{
+					Name:    "kernel-azure",
+					Version: "6.4.0",
+					Release: "150600.8.55.1",
+					Arch:    "x86_64",
+				},
+				"kernel-azure-devel": models.Package{
+					Name:    "kernel-azure-devel",
+					Version: "6.4.0",
+					Release: "150600.8.55.1",
+					Arch:    "x86_64",
+				},
+				"kernel-devel-azure": models.Package{
+					Name:    "kernel-devel-azure",
+					Version: "6.4.0",
+					Release: "150600.8.55.1",
+					Arch:    "noarch",
+				},
+				"kernel-firmware-nvidia-gspx-G06": models.Package{
+					Name:    "kernel-firmware-nvidia-gspx-G06",
+					Version: "550.100",
+					Release: "150600.3.7.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-azure": models.SrcPackage{
+					Name:        "kernel-azure",
+					Version:     "6.4.0-150600.8.55.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-azure-devel", "kernel-azure"},
+				},
+				"kernel-source-azure": models.SrcPackage{
+					Name:        "kernel-source-azure",
+					Version:     "6.4.0-150600.8.55.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-devel-azure"},
+				},
+				"kernel-firmware-nvidia-gspx-G06": models.SrcPackage{
+					Name:        "kernel-firmware-nvidia-gspx-G06",
+					Version:     "550.100-150600.3.7.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-firmware-nvidia-gspx-G06"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

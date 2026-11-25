@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/future-architect/vuls/config"
@@ -205,17 +206,88 @@ func (o *suse) scanPackages() (err error) {
 
 var suseKernelFlavorPattern = regexp.MustCompile(`^[0-9A-Za-z_]+$`)
 
+// splitSUSEKernelRelease splits the running kernel release into the release without the flavor and the flavor,
+// e.g. 6.12.0-160000.41-default -> 6.12.0-160000.41, default.
+// ok is false for a release without a valid flavor, e.g. the kernel of a container host.
+func splitSUSEKernelRelease(release string) (running, flavor string, ok bool) {
+	i := strings.LastIndex(release, "-")
+	if i < 0 || !suseKernelFlavorPattern.MatchString(release[i+1:]) {
+		return "", "", false
+	}
+	return release[:i], release[i+1:], true
+}
+
+// suseKernelFlavors are the known flavors of SUSE kernels. kernel-<flavor> runs as <version>-<release>-<flavor>.
+var suseKernelFlavors = []string{"64kb", "azure", "debug", "default", "kvmsmall", "longterm", "lpae", "nvidia", "nvidia64kb", "pae", "preempt", "rt", "rt_debug", "vanilla", "xen", "zfcpdump"}
+
+// suseKernelFlavorSubpackages are the subpackages of kernel-<flavor> that can be installed in multiple versions, e.g. kernel-default-devel.
+var suseKernelFlavorSubpackages = []string{"base", "devel", "extra", "optional", "livepatch"}
+
+// suseKernelCommonPackages are the kernel packages shared among the flavors that can be installed in multiple versions.
+var suseKernelCommonPackages = []string{
+	"kernel-devel", "kernel-devel-azure", "kernel-devel-longterm", "kernel-devel-nvidia", "kernel-devel-rt",
+	"kernel-source", "kernel-source-azure", "kernel-source-longterm", "kernel-source-nvidia", "kernel-source-rt", "kernel-source-vanilla",
+	"kernel-syms", "kernel-syms-azure", "kernel-syms-longterm", "kernel-syms-nvidia", "kernel-syms-rt",
+}
+
+// parseSUSEKernelFlavorPackageName parses kernel-<flavor> or kernel-<flavor>-<subpackage> for the given flavors.
+func parseSUSEKernelFlavorPackageName(name string, flavors []string) (flavor, subpackage string, ok bool) {
+	for _, f := range flavors {
+		rest, found := strings.CutPrefix(name, fmt.Sprintf("kernel-%s", f))
+		if !found {
+			continue
+		}
+		if rest == "" {
+			return f, "", true
+		}
+		if s, found := strings.CutPrefix(rest, "-"); found && slices.Contains(suseKernelFlavorSubpackages, s) {
+			return f, s, true
+		}
+	}
+	return "", "", false
+}
+
+// isRunningSUSEKernel reports whether pack is a kernel package that can be installed in multiple versions, and whether it is of the running kernel.
+func isRunningSUSEKernel(pack models.Package, kernel models.Kernel) (isKernel, running bool) {
+	runningRelease, runningFlavor, ok := splitSUSEKernelRelease(kernel.Release)
+
+	flavor, subpackage := "", ""
+	if !slices.Contains(suseKernelCommonPackages, pack.Name) {
+		flavors := suseKernelFlavors
+		if ok && !slices.Contains(flavors, runningFlavor) {
+			// a flavor unknown to vuls is also handled if it is running
+			flavors = append(slices.Clone(flavors), runningFlavor)
+		}
+		var isFlavorPackage bool
+		flavor, subpackage, isFlavorPackage = parseSUSEKernelFlavorPackageName(pack.Name, flavors)
+		if !isFlavorPackage {
+			return false, false
+		}
+	}
+
+	if !ok || (flavor != "" && flavor != runningFlavor) {
+		return true, false
+	}
+
+	if subpackage == "base" {
+		// kernel-<flavor>-base may append its own release to the release of kernel-<flavor>,
+		// e.g. kernel-default-base-6.12.0-160000.41.1.160000.2.33 runs as 6.12.0-160000.41-default, so compare by prefix.
+		return true, strings.HasPrefix(fmt.Sprintf("%s-%s", pack.Version, pack.Release), fmt.Sprintf("%s.", runningRelease))
+	}
+	// The running kernel release omits the build counter, e.g. kernel-default-6.12.0-160000.41.1 runs as 6.12.0-160000.41-default.
+	i := strings.LastIndex(pack.Release, ".")
+	return true, i >= 0 && fmt.Sprintf("%s-%s", pack.Version, pack.Release[:i]) == runningRelease
+}
+
 // rebootRequired reports whether the last installed kernel of the running flavor differs from the running kernel.
 // The running kernel can be provided by kernel-<flavor>-base instead of kernel-<flavor> (e.g. openSUSE Leap Minimal VM), so both are queried.
 func (o *suse) rebootRequired(fn func(pkgNames []string) execResult) (bool, error) {
-	// e.g. 6.12.0-160000.41-default -> running: 6.12.0-160000.41, flavor: default
-	i := strings.LastIndex(o.Kernel.Release, "-")
-	if i < 0 || !suseKernelFlavorPattern.MatchString(o.Kernel.Release[i+1:]) {
+	running, flavor, ok := splitSUSEKernelRelease(o.Kernel.Release)
+	if !ok {
 		// e.g. the kernel of a container host. The flavor is also passed to the shell, so do not use an unexpected one.
 		o.log.Debugf("Failed to detect the flavor of the running kernel. release: %q", o.Kernel.Release)
 		return false, nil
 	}
-	running, flavor := o.Kernel.Release[:i], o.Kernel.Release[i+1:]
 
 	pkgNames := []string{fmt.Sprintf("kernel-%s", flavor), fmt.Sprintf("kernel-%s-base", flavor)}
 	r := fn(pkgNames)
