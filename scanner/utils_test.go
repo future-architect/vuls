@@ -417,6 +417,24 @@ func Test_isRunningKernel(t *testing.T) {
 			wantRunning:  true,
 		},
 		{
+			name: "SUSE kernel-devel with a build counter other than 1 and running",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-devel",
+					Version: "6.4.0",
+					Release: "150600.23.60.4",
+					Arch:    "noarch",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "15.6",
+				kernel: models.Kernel{
+					Release: "6.4.0-150600.23.60-default",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  true,
+		},
+		{
 			name: "SUSE kernel-devel but another branch is running",
 			args: args{
 				pack: models.Package{
@@ -501,6 +519,24 @@ func Test_isRunningKernel(t *testing.T) {
 				release: "16.0",
 				kernel: models.Kernel{
 					Release: "5.14.0-427.13.1.el9_4.x86_64",
+				},
+			},
+			wantIsKernel: true,
+			wantRunning:  false,
+		},
+		{
+			name: "SUSE kernel-default, but the running kernel is of a container host with a flavor",
+			args: args{
+				pack: models.Package{
+					Name:    "kernel-default",
+					Version: "6.12.0",
+					Release: "160000.41.1",
+					Arch:    "x86_64",
+				},
+				family:  constant.OpenSUSELeap,
+				release: "16.0",
+				kernel: models.Kernel{
+					Release: "6.8.0-138-generic",
 				},
 			},
 			wantIsKernel: true,
