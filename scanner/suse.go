@@ -178,7 +178,8 @@ func (o *suse) scanPackages() (err error) {
 	}
 
 	fn := func(pkgNames []string) execResult {
-		return o.exec(fmt.Sprintf("rpm -q --last %s", strings.Join(pkgNames, " ")), noSudo)
+		// LANGUAGE for the message of a package that is not installed
+		return o.exec(fmt.Sprintf("LANGUAGE=en_US.UTF-8 rpm -q --last %s", strings.Join(pkgNames, " ")), noSudo)
 	}
 	o.Kernel.RebootRequired, err = o.rebootRequired(fn)
 	if err != nil {
@@ -291,8 +292,15 @@ func (o *suse) rebootRequired(fn func(pkgNames []string) execResult) (bool, erro
 
 	pkgNames := []string{fmt.Sprintf("kernel-%s", flavor), fmt.Sprintf("kernel-%s-base", flavor)}
 	r := fn(pkgNames)
-	// rpm -q exits with the number of packages that are not installed
-	if !r.isSuccess(0, 1, 2) {
+	// rpm -q exits with the number of packages that are not installed, reporting each of them, e.g. "package kernel-default is not installed".
+	// A nonzero exit status without such reports, e.g. a failure of the command itself, is an error.
+	notInstalled := 0
+	for _, line := range slices.Concat(strings.Split(r.Stdout, "\n"), strings.Split(r.Stderr, "\n")) {
+		if fields := strings.Fields(line); len(fields) == 5 && fields[0] == "package" && slices.Contains(pkgNames, fields[1]) && strings.Join(fields[2:], " ") == "is not installed" {
+			notInstalled++
+		}
+	}
+	if !r.isSuccess(0, 1, 2) || notInstalled != r.ExitStatus {
 		return false, xerrors.Errorf("Failed to detect the last installed kernel : %v", r)
 	}
 

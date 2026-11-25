@@ -322,6 +322,38 @@ package kernel-default-base is not installed`,
 			wantErr:      true,
 		},
 		{
+			name:   "command failed with exit status 1",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stderr:     "Error response from daemon: container is not running",
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			wantErr:      true,
+		},
+		{
+			name:   "exit status 2, but only one package is reported as not installed",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout:     "package kernel-default-base is not installed",
+				ExitStatus: 2,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			wantErr:      true,
+		},
+		{
+			name:   "padded not installed message",
+			kernel: models.Kernel{Release: "6.4.0-150600.8.58-azure"},
+			result: execResult{
+				Stdout: `kernel-azure-6.4.0-150600.8.58.1.x86_64       Wed Nov 25 00:25:22 2026
+kernel-azure-6.4.0-150600.8.55.1.x86_64       Wed Nov 25 00:25:22 2026
+package                                       kernel-azure-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-azure", "kernel-azure-base"},
+			want:         false,
+		},
+		{
 			name:   "unknown kernel flavor",
 			kernel: models.Kernel{Release: "6.12.1"},
 			want:   false,
