@@ -428,6 +428,39 @@ kernel-default-devel 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.
 				},
 			},
 		},
+		{
+			name: "opensuse.leap 15.6, kernel not set, kernel packages of a source in different releases",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm
+kernel-default-devel 0 6.4.0 150600.23.100.1 x86_64 kernel-default-6.4.0-150600.23.100.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default": models.Package{
+					Name:    "kernel-default",
+					Version: "6.4.0",
+					Release: "150600.23.103.1",
+					Arch:    "x86_64",
+				},
+				"kernel-default-devel": models.Package{
+					Name:    "kernel-default-devel",
+					Version: "6.4.0",
+					Release: "150600.23.100.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default": models.SrcPackage{
+					Name:        "kernel-default",
+					Version:     "6.4.0-150600.23.103.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-devel", "kernel-default"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -567,6 +567,11 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 				for _, bn := range p.BinaryNames {
 					srcpkg.AddBinaryName(bn)
 				}
+				// When the running kernel release is unknown, the kernel packages of a source can remain in different releases,
+				// e.g. kernel-default-6.4.0-150600.23.103.1 and kernel-default-devel-6.4.0-150600.23.100.1, so keep the latest release of the source regardless of the order.
+				if isKernel && o.Kernel.Release == "" && ver.NewVersion(srcpkg.Version).LessThan(ver.NewVersion(p.Version)) {
+					srcpkg.Version = p.Version
+				}
 			}
 			srcs[srcpkg.Name] = *srcpkg
 		}
