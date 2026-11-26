@@ -380,7 +380,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"41": {StandardSupportUntil: time.Date(2025, 12, 14, 23, 59, 59, 0, time.UTC)},
 			"42": {StandardSupportUntil: time.Date(2026, 5, 27, 23, 59, 59, 0, time.UTC)},
 			"43": {StandardSupportUntil: time.Date(2026, 12, 2, 23, 59, 59, 0, time.UTC)},
-			"44": {StandardSupportUntil: time.Date(2027, 6, 2, 23, 59, 59, 0, time.UTC)},
+			"44": {StandardSupportUntil: time.Date(2027, 6, 2, 23, 59, 59, 0, time.UTC)}, // SUPPORT_END is 2027-05-19 (44-18), but it is extended when the Fedora 46 release slips
 			"45": {StandardSupportUntil: time.Date(2027, 12, 8, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
