@@ -77,7 +77,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface) {
 			logging.Log.Warnf("Unknown Debian/Ubuntu version. lsb_release -ir: %s", r)
 		} else {
 			distro := strings.ToLower(trim(result[1]))
-			deb.setDistro(distro, trim(result[2]))
+			deb.setDistroOrUpstream(c, distro, trim(result[2]))
 		}
 		return true, deb
 	}
@@ -97,7 +97,7 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface) {
 			deb.setDistro("debian/ubuntu", "unknown")
 		} else {
 			distro := strings.ToLower(trim(result[1]))
-			deb.setDistro(distro, trim(result[2]))
+			deb.setDistroOrUpstream(c, distro, trim(result[2]))
 		}
 		return true, deb
 	}
@@ -116,6 +116,64 @@ func detectDebian(c config.ServerInfo) (bool, osTypeInterface) {
 
 func trim(str string) string {
 	return strings.TrimSpace(str)
+}
+
+// setDistroOrUpstream sets the distro as reported by the target. Derivatives of
+// Ubuntu/Debian that Vuls has no vulnerability data for (e.g. Linux Mint, Zorin OS,
+// elementary OS) identify themselves with their own name, but ship
+// /etc/upstream-release/lsb-release naming the release they are built on and take
+// most packages from its archive. For those, the target is scanned as the upstream
+// release and a warning records the substitution.
+func (o *debian) setDistroOrUpstream(c config.ServerInfo, distro, release string) {
+	switch distro {
+	case constant.Ubuntu, constant.Debian, constant.Raspbian:
+		o.setDistro(distro, release)
+		return
+	}
+	r := exec(c, "cat /etc/upstream-release/lsb-release", noSudo)
+	if !r.isSuccess() {
+		o.setDistro(distro, release)
+		return
+	}
+	upDistro, upRelease, ok := parseUpstreamRelease(r.Stdout)
+	if !ok {
+		o.setDistro(distro, release)
+		return
+	}
+	msg := fmt.Sprintf("%s %s is not supported directly; scanning as its upstream release %s %s (/etc/upstream-release/lsb-release). Packages from the derivative's own repositories are not covered by the upstream vulnerability data.", distro, release, upDistro, upRelease)
+	logging.Log.Warnf("%s: %s", c.ServerName, msg)
+	o.warns = append(o.warns, xerrors.New(msg))
+	o.setDistro(upDistro, upRelease)
+}
+
+// parseUpstreamRelease parses /etc/upstream-release/lsb-release, e.g.
+//
+//	DISTRIB_ID=Ubuntu
+//	DISTRIB_RELEASE=24.04
+//	DISTRIB_CODENAME=noble
+//	DISTRIB_DESCRIPTION="Ubuntu Noble Numbat"
+//
+// It returns ok only for upstreams Vuls has data for (Ubuntu, Debian).
+func parseUpstreamRelease(stdout string) (distro, release string, ok bool) {
+	for line := range strings.SplitSeq(stdout, "\n") {
+		k, v, found := strings.Cut(trim(line), "=")
+		if !found {
+			continue
+		}
+		v = strings.Trim(trim(v), `"'`)
+		switch k {
+		case "DISTRIB_ID":
+			distro = strings.ToLower(v)
+		case "DISTRIB_RELEASE":
+			release = v
+		}
+	}
+	switch distro {
+	case constant.Ubuntu, constant.Debian:
+		return distro, release, release != ""
+	default:
+		return "", "", false
+	}
 }
 
 func (o *debian) checkScanMode() error {
