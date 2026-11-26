@@ -2,9 +2,11 @@ package scanner
 
 import (
 	"cmp"
+	"encoding/json"
 	"os"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -1115,5 +1117,67 @@ linux-virtual,ii ,5.15.0.69.67,linux-meta,5.15.0.69.67
 				t.Errorf("debian.parseInstalledPackages() src: (-got +want):%s\n", diff)
 			}
 		})
+	}
+}
+
+func TestDebianSourcePackageVersions(t *testing.T) {
+	const oldVersion = "8.5.0-2ubuntu10"
+	const newVersion = "8.5.0-2ubuntu10.9"
+	lines := []string{
+		"curl,ii ," + newVersion + ",curl," + newVersion,
+		"libcurl4t64:arm64,ii ," + newVersion + ",curl," + newVersion,
+		"libcurl3t64-gnutls:arm64,hi ," + oldVersion + ",curl," + oldVersion,
+	}
+	want := models.SrcPackages{
+		"curl@" + oldVersion: {Name: "curl", Version: oldVersion, BinaryNames: []string{"libcurl3t64-gnutls"}},
+		"curl@" + newVersion: {Name: "curl", Version: newVersion, BinaryNames: []string{"curl", "libcurl4t64"}},
+		"zlib":               {Name: "zlib", Version: "1:1.3-1", BinaryNames: []string{"zlib1g"}},
+	}
+	wantVersions := map[string]string{"curl": newVersion, "libcurl4t64": newVersion, "libcurl3t64-gnutls": oldVersion, "zlib1g": "1:1.3-1"}
+	for _, family := range []string{constant.Debian, constant.Ubuntu, constant.Raspbian} {
+		for _, tt := range []struct {
+			name  string
+			order []int
+		}{
+			{name: "old first", order: []int{2, 0, 1}},
+			{name: "old last", order: []int{0, 1, 2}},
+			{name: "interleaved", order: []int{0, 2, 1}},
+		} {
+			t.Run(family+"/"+tt.name, func(t *testing.T) {
+				var input []string
+				for _, i := range tt.order {
+					input = append(input, lines[i])
+				}
+				// A binNMU-style binary version differs from its source version.
+				input = append(input, "zlib1g,ii ,1:1.3-1+b1,zlib,1:1.3-1")
+				d := newDebian(config.ServerInfo{})
+				d.Distro = config.Distro{Family: family}
+				bins, srcs, err := d.parseInstalledPackages(strings.Join(input, "\n"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if diff := gocmp.Diff(want, srcs, gocmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+					t.Fatalf("source versions collapsed or binary associations changed (-want +got):\n%s", diff)
+				}
+				if len(bins) != 4 || bins["libcurl3t64-gnutls"].Version != oldVersion || bins["zlib1g"].Version != "1:1.3-1+b1" {
+					t.Fatalf("binary package versions changed: %v", bins)
+				}
+				// Reporting can load the scan result in a separate process.
+				data, err := json.Marshal(models.ScanResult{Packages: bins, SrcPackages: srcs})
+				if err != nil {
+					t.Fatal(err)
+				}
+				var restored models.ScanResult
+				if err := json.Unmarshal(data, &restored); err != nil {
+					t.Fatal(err)
+				}
+				for bin, version := range wantVersions {
+					src, ok := restored.SrcPackages.FindByBinName(bin)
+					if !ok || src.Version != version {
+						t.Errorf("source for %s after JSON roundtrip = %v, want version %s", bin, src, version)
+					}
+				}
+			})
+		}
 	}
 }
