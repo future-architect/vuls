@@ -250,6 +250,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 		}[release]
 	case constant.OpenSUSELeap:
 		// https://en.opensuse.org/Lifetime
+		// 16.0 and later: product-endoflife() of Leap-release
 		eol, found = map[string]EOL{
 			"42.1": {Ended: true},
 			"42.2": {Ended: true},
@@ -365,6 +366,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 	case constant.Fedora:
 		// https://docs.fedoraproject.org/en-US/releases/eol/
 		// https://endoflife.date/fedora
+		// SUPPORT_END in /etc/os-release of fedora-release-common
 		eol, found = map[string]EOL{
 			"32": {StandardSupportUntil: time.Date(2021, 5, 24, 23, 59, 59, 0, time.UTC)},
 			"33": {StandardSupportUntil: time.Date(2021, 11, 29, 23, 59, 59, 0, time.UTC)},
@@ -376,9 +378,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"39": {StandardSupportUntil: time.Date(2024, 11, 25, 23, 59, 59, 0, time.UTC)},
 			"40": {StandardSupportUntil: time.Date(2025, 5, 12, 23, 59, 59, 0, time.UTC)},
 			"41": {StandardSupportUntil: time.Date(2025, 12, 14, 23, 59, 59, 0, time.UTC)},
-			"42": {StandardSupportUntil: time.Date(2026, 5, 13, 23, 59, 59, 0, time.UTC)},
+			"42": {StandardSupportUntil: time.Date(2026, 5, 27, 23, 59, 59, 0, time.UTC)},
 			"43": {StandardSupportUntil: time.Date(2026, 12, 2, 23, 59, 59, 0, time.UTC)},
-			"44": {StandardSupportUntil: time.Date(2027, 5, 19, 23, 59, 59, 0, time.UTC)},
+			"44": {StandardSupportUntil: time.Date(2027, 6, 2, 23, 59, 59, 0, time.UTC)},
 			"45": {StandardSupportUntil: time.Date(2027, 12, 8, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
