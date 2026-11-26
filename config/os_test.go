@@ -1419,6 +1419,22 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 			found:    true,
 		},
 		{
+			name:     "openSUSE Leap 16.1 supported",
+			fields:   fields{family: constant.OpenSUSELeap, release: "16.1"},
+			now:      time.Date(2028, 11, 30, 23, 59, 59, 0, time.UTC),
+			stdEnded: false,
+			extEnded: false,
+			found:    true,
+		},
+		{
+			name:     "openSUSE Leap 16.1 eol since 2028-12-1",
+			fields:   fields{family: constant.OpenSUSELeap, release: "16.1"},
+			now:      time.Date(2028, 12, 1, 0, 0, 0, 0, time.UTC),
+			stdEnded: true,
+			extEnded: true,
+			found:    true,
+		},
+		{
 			name:     "Windows 10 EOL",
 			fields:   fields{family: constant.Windows, release: "Windows 10 for x64-based Systems"},
 			now:      time.Date(2022, 12, 8, 23, 59, 59, 0, time.UTC),

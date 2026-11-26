@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -78,14 +77,7 @@ func isRunningKernel(pack models.Package, family, release string, kernel models.
 		}
 
 	case constant.OpenSUSE, constant.OpenSUSELeap, constant.SUSEEnterpriseServer, constant.SUSEEnterpriseDesktop:
-		switch pack.Name {
-		case "kernel-default":
-			// Remove the last period and later because uname don't show that.
-			ss := strings.Split(pack.Release, ".")
-			return true, kernel.Release == fmt.Sprintf("%s-%s-default", pack.Version, strings.Join(ss[0:len(ss)-1], "."))
-		default:
-			return false, false
-		}
+		return isRunningSUSEKernel(pack, kernel)
 	default:
 		logging.Log.Warnf("Reboot required is not implemented yet: %s, %v", family, kernel)
 		return false, false

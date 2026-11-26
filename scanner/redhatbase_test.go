@@ -89,6 +89,161 @@ kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none
 			},
 		},
 		{
+			name: "kernel not set, kernel-devel only in an older release",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.4"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-devel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel"},
+				},
+			},
+		},
+		{
+			name: "kernel not set, only kernel-devel in a newer release",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.4"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-core 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-devel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+				"kernel-core": models.Package{
+					Name:    "kernel-core",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-devel"},
+				},
+			},
+		},
+		{
+			name: "kernel not set, only kernel-devel in a newer release, in descending order",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.4"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-devel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-core 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+				"kernel-core": models.Package{
+					Name:    "kernel-core",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-devel"},
+				},
+			},
+		},
+		{
+			name: "kernel not set, kernel packages of a source package in different releases, interleaved",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.Alma, Release: "9.4"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-core 0 5.14.0 427.13.1.el9_4 x86_64 kernel-5.14.0-427.13.1.el9_4.src.rpm (none)
+kernel-devel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)
+kernel 0 5.14.0 503.15.1.el9_5 x86_64 kernel-5.14.0-503.15.1.el9_5.src.rpm (none)`,
+			},
+			wantbps: models.Packages{
+				"kernel": models.Package{
+					Name:    "kernel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+				"kernel-core": models.Package{
+					Name:    "kernel-core",
+					Version: "5.14.0",
+					Release: "427.13.1.el9_4",
+					Arch:    "x86_64",
+				},
+				"kernel-devel": models.Package{
+					Name:    "kernel-devel",
+					Version: "5.14.0",
+					Release: "503.15.1.el9_5",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel": models.SrcPackage{
+					Name:        "kernel",
+					Version:     "5.14.0-503.15.1.el9_5",
+					Arch:        "src",
+					BinaryNames: []string{"kernel", "kernel-devel"},
+				},
+			},
+		},
+		{
 			name: "kernel set",
 			fields: fields{base: base{
 				Distro:     config.Distro{Family: constant.Alma, Release: "9.0"},
@@ -293,6 +448,204 @@ java-1.8.0-amazon-corretto 1 1.8.0_432.b06 1.amzn2 x86_64 java-1.8.0-amazon-corr
 					Version:     "1:1.8.0_432.b06-1.amzn2",
 					Arch:        "src",
 					BinaryNames: []string{"java-1.8.0-amazon-corretto"},
+				},
+			},
+		},
+		{
+			name: "opensuse.leap 16.0, kernel-default-base",
+			fields: fields{base: base{
+				Distro:     config.Distro{Family: constant.OpenSUSELeap, Release: "16.0"},
+				osPackages: osPackages{Kernel: models.Kernel{Release: "6.12.0-160000.40-default"}},
+				log:        logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default-base 0 6.12.0 160000.40.1.160000.2.29 x86_64 kernel-default-base-6.12.0-160000.40.1.160000.2.29.src.rpm
+kernel-default-base 0 6.12.0 160000.41.1.160000.2.33 x86_64 kernel-default-base-6.12.0-160000.41.1.160000.2.33.src.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default-base": models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.12.0",
+					Release: "160000.40.1.160000.2.29",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default-base": models.SrcPackage{
+					Name:        "kernel-default-base",
+					Version:     "6.12.0-160000.40.1.160000.2.29",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-base"},
+				},
+			},
+		},
+		{
+			name: "suse.linux.enterprise.server 15.6, kernel-azure",
+			fields: fields{base: base{
+				Distro:     config.Distro{Family: constant.SUSEEnterpriseServer, Release: "15.6"},
+				osPackages: osPackages{Kernel: models.Kernel{Release: "6.4.0-150600.8.55-azure"}},
+				log:        logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-azure 0 6.4.0 150600.8.55.1 x86_64 kernel-azure-6.4.0-150600.8.55.1.nosrc.rpm
+kernel-azure 0 6.4.0 150600.8.58.1 x86_64 kernel-azure-6.4.0-150600.8.58.1.nosrc.rpm
+kernel-azure-devel 0 6.4.0 150600.8.55.1 x86_64 kernel-azure-6.4.0-150600.8.55.1.nosrc.rpm
+kernel-azure-devel 0 6.4.0 150600.8.58.1 x86_64 kernel-azure-6.4.0-150600.8.58.1.nosrc.rpm
+kernel-devel-azure 0 6.4.0 150600.8.55.1 noarch kernel-source-azure-6.4.0-150600.8.55.1.src.rpm
+kernel-devel-azure 0 6.4.0 150600.8.58.1 noarch kernel-source-azure-6.4.0-150600.8.58.1.src.rpm
+kernel-default 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm
+kernel-firmware-nvidia-gspx-G06 0 550.100 150600.3.7.1 x86_64 kernel-firmware-nvidia-gspx-G06-550.100-150600.3.7.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-azure": models.Package{
+					Name:    "kernel-azure",
+					Version: "6.4.0",
+					Release: "150600.8.55.1",
+					Arch:    "x86_64",
+				},
+				"kernel-azure-devel": models.Package{
+					Name:    "kernel-azure-devel",
+					Version: "6.4.0",
+					Release: "150600.8.55.1",
+					Arch:    "x86_64",
+				},
+				"kernel-devel-azure": models.Package{
+					Name:    "kernel-devel-azure",
+					Version: "6.4.0",
+					Release: "150600.8.55.1",
+					Arch:    "noarch",
+				},
+				"kernel-firmware-nvidia-gspx-G06": models.Package{
+					Name:    "kernel-firmware-nvidia-gspx-G06",
+					Version: "550.100",
+					Release: "150600.3.7.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-azure": models.SrcPackage{
+					Name:        "kernel-azure",
+					Version:     "6.4.0-150600.8.55.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-azure-devel", "kernel-azure"},
+				},
+				"kernel-source-azure": models.SrcPackage{
+					Name:        "kernel-source-azure",
+					Version:     "6.4.0-150600.8.55.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-devel-azure"},
+				},
+				"kernel-firmware-nvidia-gspx-G06": models.SrcPackage{
+					Name:        "kernel-firmware-nvidia-gspx-G06",
+					Version:     "550.100-150600.3.7.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-firmware-nvidia-gspx-G06"},
+				},
+			},
+		},
+		{
+			name: "opensuse.leap 15.6, kernel not set",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default-base 0 6.4.0 150600.23.103.1.150600.12.48.1 x86_64 kernel-default-base-6.4.0-150600.23.103.1.150600.12.48.1.src.rpm
+kernel-default-devel 0 6.4.0 150600.23.100.1 x86_64 kernel-default-6.4.0-150600.23.100.1.nosrc.rpm
+kernel-default-devel 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default-base": models.Package{
+					Name:    "kernel-default-base",
+					Version: "6.4.0",
+					Release: "150600.23.103.1.150600.12.48.1",
+					Arch:    "x86_64",
+				},
+				"kernel-default-devel": models.Package{
+					Name:    "kernel-default-devel",
+					Version: "6.4.0",
+					Release: "150600.23.103.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default-base": models.SrcPackage{
+					Name:        "kernel-default-base",
+					Version:     "6.4.0-150600.23.103.1.150600.12.48.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-base"},
+				},
+				"kernel-default": models.SrcPackage{
+					Name:        "kernel-default",
+					Version:     "6.4.0-150600.23.103.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default-devel"},
+				},
+			},
+		},
+		{
+			name: "opensuse.leap 15.6, kernel not set, kernel packages of a source package in different releases",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm
+kernel-default-devel 0 6.4.0 150600.23.100.1 x86_64 kernel-default-6.4.0-150600.23.100.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default": models.Package{
+					Name:    "kernel-default",
+					Version: "6.4.0",
+					Release: "150600.23.103.1",
+					Arch:    "x86_64",
+				},
+				"kernel-default-devel": models.Package{
+					Name:    "kernel-default-devel",
+					Version: "6.4.0",
+					Release: "150600.23.100.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default": models.SrcPackage{
+					Name:        "kernel-default",
+					Version:     "6.4.0-150600.23.103.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default"},
+				},
+			},
+		},
+		{
+			name: "opensuse.leap 15.6, kernel not set, kernel packages of a source package in different releases, in ascending order",
+			fields: fields{base: base{
+				Distro: config.Distro{Family: constant.OpenSUSELeap, Release: "15.6"},
+				log:    logging.NewIODiscardLogger(),
+			}},
+			args: args{
+				stdout: `kernel-default-devel 0 6.4.0 150600.23.100.1 x86_64 kernel-default-6.4.0-150600.23.100.1.nosrc.rpm
+kernel-default 0 6.4.0 150600.23.103.1 x86_64 kernel-default-6.4.0-150600.23.103.1.nosrc.rpm`,
+			},
+			wantbps: models.Packages{
+				"kernel-default": models.Package{
+					Name:    "kernel-default",
+					Version: "6.4.0",
+					Release: "150600.23.103.1",
+					Arch:    "x86_64",
+				},
+				"kernel-default-devel": models.Package{
+					Name:    "kernel-default-devel",
+					Version: "6.4.0",
+					Release: "150600.23.100.1",
+					Arch:    "x86_64",
+				},
+			},
+			wantsps: models.SrcPackages{
+				"kernel-default": models.SrcPackage{
+					Name:        "kernel-default",
+					Version:     "6.4.0-150600.23.103.1",
+					Arch:        "src",
+					BinaryNames: []string{"kernel-default"},
 				},
 			},
 		},
