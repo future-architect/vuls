@@ -59,19 +59,19 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			},
 			"7": {
 				StandardSupportUntil: time.Date(2024, 6, 30, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2028, 6, 30, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 			"8": {
 				StandardSupportUntil: time.Date(2029, 5, 31, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2033, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 			"9": {
 				StandardSupportUntil: time.Date(2032, 5, 31, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2036, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 			"10": {
 				StandardSupportUntil: time.Date(2035, 5, 31, 23, 59, 59, 0, time.UTC),
-				ExtendedSupportUntil: time.Date(2038, 5, 31, 23, 59, 59, 0, time.UTC),
+				ExtendedSupportUntil: time.Date(2039, 5, 31, 23, 59, 59, 0, time.UTC),
 			},
 		}[major(release)]
 	case constant.CentOS:
@@ -85,7 +85,7 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"8":        {StandardSupportUntil: time.Date(2021, 12, 31, 23, 59, 59, 0, time.UTC)},
 			"stream8":  {StandardSupportUntil: time.Date(2024, 5, 31, 23, 59, 59, 0, time.UTC)},
 			"stream9":  {StandardSupportUntil: time.Date(2027, 5, 31, 23, 59, 59, 0, time.UTC)},
-			"stream10": {StandardSupportUntil: time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)},
+			"stream10": {StandardSupportUntil: time.Date(2030, 5, 31, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Alma:
 		eol, found = map[string]EOL{
@@ -377,8 +377,9 @@ func GetEOL(family, release string) (eol EOL, found bool) {
 			"40": {StandardSupportUntil: time.Date(2025, 5, 12, 23, 59, 59, 0, time.UTC)},
 			"41": {StandardSupportUntil: time.Date(2025, 12, 14, 23, 59, 59, 0, time.UTC)},
 			"42": {StandardSupportUntil: time.Date(2026, 5, 13, 23, 59, 59, 0, time.UTC)},
-			"43": {StandardSupportUntil: time.Date(2026, 12, 9, 23, 59, 59, 0, time.UTC)},
-			"44": {StandardSupportUntil: time.Date(2027, 6, 2, 23, 59, 59, 0, time.UTC)},
+			"43": {StandardSupportUntil: time.Date(2026, 12, 2, 23, 59, 59, 0, time.UTC)},
+			"44": {StandardSupportUntil: time.Date(2027, 5, 19, 23, 59, 59, 0, time.UTC)},
+			"45": {StandardSupportUntil: time.Date(2027, 12, 8, 23, 59, 59, 0, time.UTC)},
 		}[major(release)]
 	case constant.Windows:
 		// https://learn.microsoft.com/ja-jp/lifecycle/products/?products=windows
