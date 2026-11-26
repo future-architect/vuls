@@ -26,7 +26,7 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: vulsio/integration
-        ref: f1e643c892c9b2445a1a87c7b9cc56647bc40184
+        ref: 58dfaacbde2d3311552c6729ef9b7d7c977494b9
         path: integration
         persist-credentials: false
     - name: Set up Go 1.x

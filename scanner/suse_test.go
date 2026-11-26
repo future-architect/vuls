@@ -8,6 +8,7 @@ import (
 
 	"github.com/future-architect/vuls/config"
 	"github.com/future-architect/vuls/constant"
+	"github.com/future-architect/vuls/logging"
 	"github.com/future-architect/vuls/models"
 )
 
@@ -186,5 +187,279 @@ VERSION_ID="15"`,
 		if tt.ver != ver {
 			t.Errorf("[%d] expected %s, actual %s", i, tt.ver, ver)
 		}
+	}
+}
+
+func Test_suse_rebootRequired(t *testing.T) {
+	tests := []struct {
+		name         string
+		kernel       models.Kernel
+		result       execResult
+		wantPkgNames []string
+		want         bool
+		wantErr      bool
+	}{
+		{
+			name:   "kernel-default no-reboot",
+			kernel: models.Kernel{Release: "6.12.0-160000.5-default"},
+			result: execResult{
+				Stdout: `kernel-default-6.12.0-160000.5.1.x86_64      Thu May  7 06:00:00 2026
+package kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         false,
+		},
+		{
+			name:   "kernel-default needs-reboot",
+			kernel: models.Kernel{Release: "6.12.0-160000.5-default"},
+			result: execResult{
+				Stdout: `kernel-default-6.12.0-160000.29.1.x86_64     Thu May  7 06:10:00 2026
+kernel-default-6.12.0-160000.5.1.x86_64      Thu May  7 06:00:00 2026
+package kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:   "kernel-default needs-reboot, the running kernel release is a prefix of the last installed one",
+			kernel: models.Kernel{Release: "6.12.0-160000.4-default"},
+			result: execResult{
+				Stdout: `kernel-default-6.12.0-160000.41.1.x86_64     Tue Nov 24 10:00:00 2026
+kernel-default-6.12.0-160000.4.1.x86_64      Thu May  7 06:00:00 2026
+package kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:   "kernel-default needs-reboot, the last installed release extends the running kernel release",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout: `kernel-default-6.12.0-160000.41.2.1.x86_64   Wed Nov 25 10:00:00 2026
+kernel-default-6.12.0-160000.41.1.x86_64     Tue Nov 24 10:00:00 2026
+package kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:   "kernel-default-base needs-reboot, the last installed release extends the running kernel release",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout: `kernel-default-base-6.12.0-160000.41.2.1.160000.2.33.x86_64 Wed Nov 25 10:00:00 2026
+kernel-default-base-6.12.0-160000.41.1.160000.2.31.x86_64 Tue Nov 24 10:00:00 2026
+package kernel-default is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:   "kernel-default-base no-reboot",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout: `kernel-default-base-6.12.0-160000.41.1.160000.2.33.x86_64 Tue Nov 24 09:51:20 2026
+kernel-default-base-6.12.0-160000.40.1.160000.2.29.x86_64 Tue Nov 24 09:51:07 2026
+package kernel-default is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         false,
+		},
+		{
+			name:   "kernel-default-base needs-reboot",
+			kernel: models.Kernel{Release: "6.12.0-160000.40-default"},
+			result: execResult{
+				Stdout: `kernel-default-base-6.12.0-160000.41.1.160000.2.33.x86_64 Tue Nov 24 09:51:20 2026
+kernel-default-base-6.12.0-160000.40.1.160000.2.29.x86_64 Tue Nov 24 09:51:07 2026
+package kernel-default is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:   "kernel-default installed after the running kernel-default-base",
+			kernel: models.Kernel{Release: "6.12.0-160000.40-default"},
+			result: execResult{
+				Stdout: `kernel-default-6.12.0-160000.41.1.x86_64     Tue Nov 24 10:00:00 2026
+kernel-default-base-6.12.0-160000.40.1.160000.2.29.x86_64 Tue Nov 24 09:51:07 2026`,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:   "kernel-azure no-reboot",
+			kernel: models.Kernel{Release: "6.4.0-150600.8.8-azure"},
+			result: execResult{
+				Stdout: `kernel-azure-6.4.0-150600.8.8.1.x86_64       Mon 01 Jul 2024 00:00:00 AM UTC
+package kernel-azure-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-azure", "kernel-azure-base"},
+			want:         false,
+		},
+		{
+			name:   "kernel not installed",
+			kernel: models.Kernel{Release: "6.8.0-138-generic"},
+			result: execResult{
+				Stdout: `package kernel-generic-base is not installed
+package kernel-generic is not installed`,
+				ExitStatus: 2,
+			},
+			wantPkgNames: []string{"kernel-generic", "kernel-generic-base"},
+			want:         false,
+		},
+		{
+			name:   "kernel-default and kernel-default-base of the same version no-reboot",
+			kernel: models.Kernel{Release: "4.4.74-92.35-default"},
+			result: execResult{
+				Stdout: `kernel-default-base-4.4.74-92.35.1.x86_64    Wed 12 Jul 2017 01:02:03 AM UTC
+kernel-default-4.4.74-92.35.1.x86_64         Wed 12 Jul 2017 01:02:03 AM UTC
+kernel-default-base-4.4.59-92.20.2.x86_64    Thu 01 Jun 2017 01:02:03 AM UTC
+kernel-default-4.4.59-92.20.2.x86_64         Thu 01 Jun 2017 01:02:03 AM UTC`,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         false,
+		},
+		{
+			name:   "kernel-default without arch needs-reboot",
+			kernel: models.Kernel{Release: "3.0.101-108.84-default"},
+			result: execResult{
+				Stdout: `kernel-default-3.0.101-108.87.1               Thu 07 Mar 2019 01:02:03 AM UTC
+kernel-default-3.0.101-108.84.1               Wed 16 Jan 2019 01:02:03 AM UTC
+package kernel-default-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			want:         true,
+		},
+		{
+			name:         "rpm failed",
+			kernel:       models.Kernel{Release: "6.12.0-160000.41-default"},
+			result:       execResult{ExitStatus: 127},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			wantErr:      true,
+		},
+		{
+			name:   "command failed with exit status 1",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stderr:     "Error response from daemon: container is not running",
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			wantErr:      true,
+		},
+		{
+			name:   "exit status 2, but only one package is reported as not installed",
+			kernel: models.Kernel{Release: "6.12.0-160000.41-default"},
+			result: execResult{
+				Stdout:     "package kernel-default-base is not installed",
+				ExitStatus: 2,
+			},
+			wantPkgNames: []string{"kernel-default", "kernel-default-base"},
+			wantErr:      true,
+		},
+		{
+			name:   "padded not installed message",
+			kernel: models.Kernel{Release: "6.4.0-150600.8.58-azure"},
+			result: execResult{
+				Stdout: `kernel-azure-6.4.0-150600.8.58.1.x86_64       Wed Nov 25 00:25:22 2026
+kernel-azure-6.4.0-150600.8.55.1.x86_64       Wed Nov 25 00:25:22 2026
+package                                       kernel-azure-base is not installed`,
+				ExitStatus: 1,
+			},
+			wantPkgNames: []string{"kernel-azure", "kernel-azure-base"},
+			want:         false,
+		},
+		{
+			name:   "unknown kernel flavor",
+			kernel: models.Kernel{Release: "6.12.1"},
+			want:   false,
+		},
+		{
+			name:   "unexpected kernel flavor",
+			kernel: models.Kernel{Release: "6.12.0-1-x';touch /tmp/pwn;'"},
+			want:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &suse{redhatBase: redhatBase{base: base{osPackages: osPackages{Kernel: tt.kernel}, log: logging.NewIODiscardLogger()}}}
+			var gotPkgNames []string
+			got, err := o.rebootRequired(func(pkgNames []string) execResult {
+				gotPkgNames = pkgNames
+				return tt.result
+			})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("suse.rebootRequired() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotPkgNames, tt.wantPkgNames) {
+				t.Errorf("suse.rebootRequired() pkgNames = %v, want %v", gotPkgNames, tt.wantPkgNames)
+			}
+			if got != tt.want {
+				t.Errorf("suse.rebootRequired() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseSUSEKernelRPMQLast(t *testing.T) {
+	names := []string{"kernel-default", "kernel-default-base"}
+	tests := []struct {
+		name   string
+		s      string
+		want   models.Package
+		wantOK bool
+	}{
+		{
+			name:   "kernel-default",
+			s:      "kernel-default-6.12.0-160000.41.1.x86_64",
+			want:   models.Package{Name: "kernel-default", Version: "6.12.0", Release: "160000.41.1"},
+			wantOK: true,
+		},
+		{
+			name:   "kernel-default-base",
+			s:      "kernel-default-base-6.12.0-160000.41.1.160000.2.33.x86_64",
+			want:   models.Package{Name: "kernel-default-base", Version: "6.12.0", Release: "160000.41.1.160000.2.33"},
+			wantOK: true,
+		},
+		{
+			name:   "without arch",
+			s:      "kernel-default-3.0.101-108.87.1",
+			want:   models.Package{Name: "kernel-default", Version: "3.0.101", Release: "108.87.1"},
+			wantOK: true,
+		},
+		{
+			name:   "release with letters",
+			s:      "kernel-default-5.3.18-lp152.106.1.aarch64",
+			want:   models.Package{Name: "kernel-default", Version: "5.3.18", Release: "lp152.106.1"},
+			wantOK: true,
+		},
+		{
+			name: "another package",
+			s:    "kernel-default-devel-6.12.0-160000.41.1.x86_64",
+		},
+		{
+			name: "not installed",
+			s:    "package",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := parseSUSEKernelRPMQLast(tt.s, names)
+			if ok != tt.wantOK {
+				t.Errorf("parseSUSEKernelRPMQLast() ok = %v, want %v", ok, tt.wantOK)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseSUSEKernelRPMQLast() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

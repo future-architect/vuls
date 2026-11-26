@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -504,7 +505,9 @@ func (o *redhatBase) scanInstalledPackages() (models.Packages, models.SrcPackage
 func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, models.SrcPackages, error) {
 	bins := make(models.Packages)
 	srcs := make(models.SrcPackages)
-	latestKernelRelease := ver.NewVersion("")
+	// used only when the running kernel release is unknown
+	latestKernelReleases := make(map[string]ver.Version)
+	kernelNames := make(map[string]struct{})
 
 	// openssl 0 1.0.1e	30.el6.11 x86_64
 	// community-mysql-common 0 8.0.26 1.module_f35+12627+b26747dd x86_64 mysql:8.0:3520210817160118:f27b74a8
@@ -548,12 +551,13 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 		if isKernel {
 			if o.Kernel.Release == "" {
 				// When the running kernel release is unknown,
-				// use the latest release among the installed release
+				// use the latest release among the installed releases of each package
 				kernelRelease := ver.NewVersion(fmt.Sprintf("%s-%s", binpkg.Version, binpkg.Release))
-				if kernelRelease.LessThan(latestKernelRelease) {
+				if latest, ok := latestKernelReleases[binpkg.Name]; ok && kernelRelease.LessThan(latest) {
 					continue
 				}
-				latestKernelRelease = kernelRelease
+				latestKernelReleases[binpkg.Name] = kernelRelease
+				kernelNames[binpkg.Name] = struct{}{}
 			} else if !running {
 				o.log.Debugf("Not a running kernel. pack: %#v, kernel: %#v", binpkg, o.Kernel)
 				continue
@@ -564,6 +568,19 @@ func (o *redhatBase) parseInstalledPackages(stdout string) (models.Packages, mod
 		bins[binpkg.Name] = *binpkg
 		if srcpkg != nil {
 			if p, ok := srcs[srcpkg.Name]; ok {
+				if isKernel && o.Kernel.Release == "" && p.Version != srcpkg.Version {
+					// When the running kernel release is unknown, the kernel packages of a source package can remain in different releases,
+					// e.g. kernel-5.14.0-427.13.1.el9_4 and kernel-devel-5.14.0-503.15.1.el9_5.
+					// A source package has only one version, so it keeps only the kernel packages of its latest release regardless of the order,
+					// and the others remain without a source package rather than with the source version of another release.
+					if ver.NewVersion(srcpkg.Version).LessThan(ver.NewVersion(p.Version)) {
+						continue
+					}
+					p.BinaryNames = slices.DeleteFunc(p.BinaryNames, func(n string) bool {
+						_, ok := kernelNames[n]
+						return ok
+					})
+				}
 				for _, bn := range p.BinaryNames {
 					srcpkg.AddBinaryName(bn)
 				}
