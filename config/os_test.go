@@ -1258,15 +1258,15 @@ func TestEOL_IsStandardSupportEnded(t *testing.T) {
 		{
 			name:     "Fedora 44 supported",
 			fields:   fields{family: constant.Fedora, release: "44"},
-			now:      time.Date(2027, 6, 2, 23, 59, 59, 0, time.UTC),
+			now:      time.Date(2027, 5, 19, 23, 59, 59, 0, time.UTC),
 			stdEnded: false,
 			extEnded: false,
 			found:    true,
 		},
 		{
-			name:     "Fedora 44 eol since 2027-06-03",
+			name:     "Fedora 44 eol since 2027-05-20",
 			fields:   fields{family: constant.Fedora, release: "44"},
-			now:      time.Date(2027, 6, 3, 0, 0, 0, 0, time.UTC),
+			now:      time.Date(2027, 5, 20, 0, 0, 0, 0, time.UTC),
 			stdEnded: true,
 			extEnded: true,
 			found:    true,
