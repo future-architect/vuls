@@ -1,0 +1,26 @@
+name: govulncheck
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
+        with:
+          go-version-file: go.mod
+        env:
+          GOEXPERIMENT: jsonv2
